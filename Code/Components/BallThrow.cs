@@ -15,13 +15,16 @@ public sealed class BallThrow : Component
 
 	private BallGrab ballGrab;
 	private ThrowChargeBar throwChargeBar;
+	private Rigidbody playerBody;
 	private bool isChargingThrow;
+	private Vector3 lockedChargePosition;
 	private float throwChargeStartedAt;
 
 	protected override void OnStart()
 	{
 		ballGrab = Components.Get<BallGrab>();
 		throwChargeBar = Components.Get<ThrowChargeBar>();
+		playerBody = Components.Get<Rigidbody>();
 	}
 
 	protected override void OnUpdate()
@@ -48,6 +51,13 @@ public sealed class BallThrow : Component
 
 		if ( isChargingThrow )
 		{
+			// Keep aiming active, but freeze movement while charging.
+			Input.AnalogMove = Vector3.Zero;
+			WorldPosition = lockedChargePosition;
+			if ( playerBody.IsValid() )
+			{
+				playerBody.Velocity = Vector3.Zero;
+			}
 			throwChargeBar?.SetCharge( GetThrowChargeLerp() );
 		}
 	}
@@ -56,6 +66,7 @@ public sealed class BallThrow : Component
 	{
 		isChargingThrow = true;
 		throwChargeStartedAt = Time.Now;
+		lockedChargePosition = WorldPosition;
 		throwChargeBar?.Show();
 		throwChargeBar?.SetCharge( 0f );
 	}
@@ -94,5 +105,4 @@ public sealed class BallThrow : Component
 			? 1f
 			: (clampedChargeSeconds - MinThrowChargeTime) / (MaxThrowChargeTime - MinThrowChargeTime);
 	}
-
 }
