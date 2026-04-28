@@ -14,12 +14,14 @@ public sealed class BallThrow : Component
 	[Property] public float MinThrowUpForceMultiplier { get; set; } = 0.6f;
 
 	private BallGrab ballGrab;
+	private ThrowChargeBar throwChargeBar;
 	private bool isChargingThrow;
 	private float throwChargeStartedAt;
 
 	protected override void OnStart()
 	{
 		ballGrab = Components.Get<BallGrab>();
+		throwChargeBar = Components.Get<ThrowChargeBar>();
 	}
 
 	protected override void OnUpdate()
@@ -30,6 +32,7 @@ public sealed class BallThrow : Component
 		if ( !ballGrab.IsHolding )
 		{
 			isChargingThrow = false;
+			throwChargeBar?.Hide();
 			return;
 		}
 
@@ -42,17 +45,25 @@ public sealed class BallThrow : Component
 		{
 			ThrowHeldBall();
 		}
+
+		if ( isChargingThrow )
+		{
+			throwChargeBar?.SetCharge( GetThrowChargeLerp() );
+		}
 	}
 
 	private void StartThrowCharge()
 	{
 		isChargingThrow = true;
 		throwChargeStartedAt = Time.Now;
+		throwChargeBar?.Show();
+		throwChargeBar?.SetCharge( 0f );
 	}
 
 	private void ThrowHeldBall()
 	{
 		isChargingThrow = false;
+		throwChargeBar?.Hide();
 
 		var releasedBall = ballGrab.ReleaseHeldBall();
 		if ( !releasedBall.IsValid() )
@@ -64,11 +75,7 @@ public sealed class BallThrow : Component
 		if ( !releasedBallBody.IsValid() )
 			return;
 
-		var chargeHeldSeconds = Time.Now - throwChargeStartedAt;
-		var clampedChargeSeconds = chargeHeldSeconds.Clamp( MinThrowChargeTime, MaxThrowChargeTime );
-		var chargeLerp = MaxThrowChargeTime <= MinThrowChargeTime
-			? 1f
-			: (clampedChargeSeconds - MinThrowChargeTime) / (MaxThrowChargeTime - MinThrowChargeTime);
+		var chargeLerp = GetThrowChargeLerp();
 		var throwForceMultiplier = MinThrowForceMultiplier.LerpTo( 1f, chargeLerp );
 		var throwUpForceMultiplier = MinThrowUpForceMultiplier.LerpTo( 1f, chargeLerp );
 
@@ -78,4 +85,14 @@ public sealed class BallThrow : Component
 		releasedBall.Transform.Position = throwStartPosition;
 		releasedBallBody.Velocity = (throwDirection * ThrowForce * throwForceMultiplier) + (Vector3.Up * ThrowUpForce * throwUpForceMultiplier);
 	}
+
+	private float GetThrowChargeLerp()
+	{
+		var chargeHeldSeconds = Time.Now - throwChargeStartedAt;
+		var clampedChargeSeconds = chargeHeldSeconds.Clamp( MinThrowChargeTime, MaxThrowChargeTime );
+		return MaxThrowChargeTime <= MinThrowChargeTime
+			? 1f
+			: (clampedChargeSeconds - MinThrowChargeTime) / (MaxThrowChargeTime - MinThrowChargeTime);
+	}
+
 }

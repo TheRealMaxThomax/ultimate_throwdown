@@ -306,9 +306,13 @@
         },
         {
           "__type": "BallThrow",
-          "__guid": "bf76be28-cd22-4875-8d86-c680927babbb",
+          "__guid": "d033a88d-cd53-4229-8ca4-88e642495a4b",
           "__enabled": true,
           "Flags": 0,
+          "MaxThrowChargeTime": 1,
+          "MinThrowChargeTime": 0.05,
+          "MinThrowForceMultiplier": 0.35,
+          "MinThrowUpForceMultiplier": 0.6,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -321,9 +325,22 @@
             "_type": "gameobject",
             "go": "03fb8c2b-12ff-4603-b732-f45a66e7fd6a"
           },
-          "ThrowForce": 700,
+          "ThrowForce": 1200,
           "ThrowStartOffset": 40,
           "ThrowUpForce": 120
+        },
+        {
+          "__type": "ThrowChargeBar",
+          "__guid": "708d1c89-8c03-4454-ae39-2754f582302a",
+          "__enabled": true,
+          "Flags": 0,
+          "ChargeBarOffset": "0,0,70",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
         }
       ],
       "Children": [
@@ -2439,18 +2456,18 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
       },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
         }
       },
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
+        }
       }
     }
   },
