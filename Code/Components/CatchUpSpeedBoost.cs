@@ -2,25 +2,22 @@ using Sandbox;
 
 public sealed class CatchUpSpeedBoost : Component
 {
-	[Property] public string SprintAction { get; set; } = "run";
-	[Property] public float SprintTimeBeforeBoost { get; set; } = 2.0f;
-	[Property] public float SprintBoostMultiplier { get; set; } = 1.15f;
-	[Property] public float MinMoveInputForSprint { get; set; } = 0.1f;
+	[Property] public string ForwardAction { get; set; } = "forward";
+	[Property] public float StartMoveSpeed { get; set; } = 140f;
+	[Property] public float SprintMoveSpeed { get; set; } = 220f;
+	[Property] public float CatchUpMoveSpeed { get; set; } = 320f;
+	[Property] public float TimeToSprintSpeed { get; set; } = 2.0f;
+	[Property] public float TimeToCatchUpSpeed { get; set; } = 4.0f;
+	[Property] public float MinForwardInput { get; set; } = 0.1f;
 
 	private BallGrab ballGrab;
 	private PlayerController playerController;
-	private float baseRunSpeed;
-	private float sprintTime;
-	private bool isBoostActive;
+	private float forwardMoveTime;
 
 	protected override void OnStart()
 	{
 		ballGrab = Components.Get<BallGrab>();
 		playerController = Components.Get<PlayerController>();
-		if ( playerController.IsValid() )
-		{
-			baseRunSpeed = playerController.RunSpeed;
-		}
 	}
 
 	protected override void OnUpdate()
@@ -28,8 +25,6 @@ public sealed class CatchUpSpeedBoost : Component
 		if ( !playerController.IsValid() )
 		{
 			playerController = Components.Get<PlayerController>();
-			if ( playerController.IsValid() )
-				baseRunSpeed = playerController.RunSpeed;
 		}
 
 		if ( !playerController.IsValid() )
@@ -39,28 +34,29 @@ public sealed class CatchUpSpeedBoost : Component
 			ballGrab = Components.Get<BallGrab>();
 
 		var isHoldingBall = ballGrab?.IsHolding ?? false;
-		var isSprinting = Input.Down( SprintAction ) && Input.AnalogMove.Length >= MinMoveInputForSprint;
+		var isMovingForward = Input.Down( ForwardAction ) || Input.AnalogMove.y > MinForwardInput;
 
-		if ( !isHoldingBall && isSprinting )
-		{
-			sprintTime += Time.Delta;
-		}
+		if ( isMovingForward )
+			forwardMoveTime += Time.Delta;
 		else
-		{
-			sprintTime = 0f;
-		}
+			forwardMoveTime = 0f;
 
-		var shouldHaveBoost = !isHoldingBall && isSprinting && sprintTime >= SprintTimeBeforeBoost;
+		var targetSpeed = GetTargetSpeed( isHoldingBall, isMovingForward );
+		playerController.WalkSpeed = targetSpeed;
+		playerController.RunSpeed = targetSpeed;
+	}
 
-		if ( shouldHaveBoost && !isBoostActive )
-		{
-			playerController.RunSpeed = baseRunSpeed * SprintBoostMultiplier;
-			isBoostActive = true;
-		}
-		else if ( !shouldHaveBoost && isBoostActive )
-		{
-			playerController.RunSpeed = baseRunSpeed;
-			isBoostActive = false;
-		}
+	private float GetTargetSpeed( bool isHoldingBall, bool isMovingForward )
+	{
+		if ( !isMovingForward )
+			return StartMoveSpeed;
+
+		if ( forwardMoveTime >= TimeToCatchUpSpeed && !isHoldingBall )
+			return CatchUpMoveSpeed;
+
+		if ( forwardMoveTime >= TimeToSprintSpeed )
+			return SprintMoveSpeed;
+
+		return StartMoveSpeed;
 	}
 }
