@@ -305,8 +305,21 @@
           "PromptText": "Pick Up With E"
         },
         {
+          "__type": "ThrowChargeBar",
+          "__guid": "708d1c89-8c03-4454-ae39-2754f582302a",
+          "__enabled": true,
+          "Flags": 0,
+          "ChargeBarOffset": "0,0,70",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        },
+        {
           "__type": "BallThrow",
-          "__guid": "d033a88d-cd53-4229-8ca4-88e642495a4b",
+          "__guid": "7e849884-e060-4c39-8860-9c475b50f8ef",
           "__enabled": true,
           "Flags": 0,
           "MaxThrowChargeTime": 2,
@@ -328,19 +341,6 @@
           "ThrowForce": 1200,
           "ThrowStartOffset": 40,
           "ThrowUpForce": 120
-        },
-        {
-          "__type": "ThrowChargeBar",
-          "__guid": "708d1c89-8c03-4454-ae39-2754f582302a",
-          "__enabled": true,
-          "Flags": 0,
-          "ChargeBarOffset": "0,0,70",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
         }
       ],
       "Children": [
