@@ -34,29 +34,20 @@ public sealed class ThrowChargeBar : Component
 
 	private string BuildChargeBarText()
 	{
-		const int totalBlocks = 12;
+		const int totalBlocks = 24;
 		var filledBlocks = (int)(charge01 * totalBlocks + 0.5f);
 		filledBlocks = filledBlocks.Clamp( 0, totalBlocks );
 
-		var bar = "";
+		var bar = "[";
 		for ( var i = 0; i < totalBlocks; i++ )
 		{
-			var isFilled = i < filledBlocks;
-			if ( !isFilled )
-			{
-				bar += "⬛";
-				continue;
-			}
+			if ( i == 8 || i == 16 )
+				bar += "|";
 
-			if ( i < 4 )
-				bar += "🟥";
-			else if ( i < 8 )
-				bar += "🟨";
-			else
-				bar += "🟩";
+			bar += i < filledBlocks ? "█" : "░";
 		}
+		bar += "]";
 
-		var percent = (int)(charge01 * 100f + 0.5f);
-		return $"Throw Charge: {bar} {percent}%";
+		return $"Throw Charge: {bar}";
 	}
 }

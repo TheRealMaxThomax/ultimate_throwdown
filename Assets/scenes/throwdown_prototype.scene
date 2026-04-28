@@ -309,7 +309,7 @@
           "__guid": "d033a88d-cd53-4229-8ca4-88e642495a4b",
           "__enabled": true,
           "Flags": 0,
-          "MaxThrowChargeTime": 1,
+          "MaxThrowChargeTime": 2,
           "MinThrowChargeTime": 0.05,
           "MinThrowForceMultiplier": 0.35,
           "MinThrowUpForceMultiplier": 0.6,
