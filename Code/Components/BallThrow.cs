@@ -19,6 +19,7 @@ public sealed class BallThrow : Component
 	private bool isChargingThrow;
 	private Vector3 lockedChargePosition;
 	private float throwChargeStartedAt;
+	public bool IsChargingThrow => isChargingThrow;
 
 	protected override void OnStart()
 	{
