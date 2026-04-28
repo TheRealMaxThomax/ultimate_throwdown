@@ -31,10 +31,13 @@ Good commit message examples:
 - `add throw cooldown timer`
 
 ## 5) End of Session
+- In chat, type: `session wrap-up`.
 - Update `SESSION_NOTES.md` handoff section:
   - What changed
   - What is blocked
   - Exactly what to do next
+- Update `BACKLOG.md` status (move completed items to Done).
+- Update `PLAYTEST_CHECKLIST.md` only if test steps changed.
 - Push your latest commit so GitHub has backup.
 
 ## Optional Safety Rule (Recommended)
