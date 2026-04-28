@@ -20,6 +20,7 @@ Keep items short and clear.
 ## Ideas (Later)
 - [ ] Build proper HUD throw charge bar (single rectangle with red/yellow/green sections and smooth fill).
 - [ ] Add animation hooks for hold/throw.
+- [ ] Add catch-up sprint animation (head slightly down, arm up, charging posture) for the non-ball-carrier catch-up state.
 - [ ] Add sound effects for pickup/drop/throw.
 - [ ] Add UI feedback for throw cooldown (if added).
 

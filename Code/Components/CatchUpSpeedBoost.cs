@@ -13,6 +13,7 @@ public sealed class CatchUpSpeedBoost : Component
 	private BallGrab ballGrab;
 	private PlayerController playerController;
 	private float forwardMoveTime;
+	private float nonHoldingForwardMoveTime;
 
 	protected override void OnStart()
 	{
@@ -41,6 +42,11 @@ public sealed class CatchUpSpeedBoost : Component
 		else
 			forwardMoveTime = 0f;
 
+		if ( !isHoldingBall && isMovingForward )
+			nonHoldingForwardMoveTime += Time.Delta;
+		else
+			nonHoldingForwardMoveTime = 0f;
+
 		var targetSpeed = GetTargetSpeed( isHoldingBall, isMovingForward );
 		playerController.WalkSpeed = targetSpeed;
 		playerController.RunSpeed = targetSpeed;
@@ -51,7 +57,12 @@ public sealed class CatchUpSpeedBoost : Component
 		if ( !isMovingForward )
 			return StartMoveSpeed;
 
-		if ( forwardMoveTime >= TimeToCatchUpSpeed && !isHoldingBall )
+		// Catch-up timer only runs while not holding the ball.
+		var catchUpDelay = TimeToCatchUpSpeed - TimeToSprintSpeed;
+		if ( catchUpDelay < 0f )
+			catchUpDelay = 0f;
+
+		if ( !isHoldingBall && nonHoldingForwardMoveTime >= catchUpDelay )
 			return CatchUpMoveSpeed;
 
 		if ( forwardMoveTime >= TimeToSprintSpeed )
