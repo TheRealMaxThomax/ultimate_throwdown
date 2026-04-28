@@ -14,7 +14,7 @@ public sealed class CatchUpSpeedBoost : Component
 	private BallThrow ballThrow;
 	private PlayerController playerController;
 	private float forwardMoveTime;
-	private float nonHoldingForwardMoveTime;
+	private float nonHoldingSprintTime;
 
 	protected override void OnStart()
 	{
@@ -45,7 +45,7 @@ public sealed class CatchUpSpeedBoost : Component
 		if ( isChargingThrow )
 		{
 			forwardMoveTime = 0f;
-			nonHoldingForwardMoveTime = 0f;
+			nonHoldingSprintTime = 0f;
 			playerController.WalkSpeed = StartMoveSpeed;
 			playerController.RunSpeed = StartMoveSpeed;
 			return;
@@ -56,10 +56,11 @@ public sealed class CatchUpSpeedBoost : Component
 		else
 			forwardMoveTime = 0f;
 
-		if ( !isHoldingBall && isMovingForward )
-			nonHoldingForwardMoveTime += Time.Delta;
+		var isInSprintStage = isMovingForward && forwardMoveTime >= TimeToSprintSpeed;
+		if ( !isHoldingBall && isInSprintStage )
+			nonHoldingSprintTime += Time.Delta;
 		else
-			nonHoldingForwardMoveTime = 0f;
+			nonHoldingSprintTime = 0f;
 
 		var targetSpeed = GetTargetSpeed( isHoldingBall, isMovingForward );
 		playerController.WalkSpeed = targetSpeed;
@@ -78,9 +79,13 @@ public sealed class CatchUpSpeedBoost : Component
 			return SprintMoveSpeed;
 
 		// Catch-up timer only runs while not holding the ball.
-		// This keeps a clear 3-stage flow:
-		// Start -> Sprint at TimeToSprintSpeed -> CatchUp at TimeToCatchUpSpeed.
-		if ( nonHoldingForwardMoveTime >= TimeToCatchUpSpeed )
+		// If sprint starts at 2s and catch-up is at 4s total,
+		// this means 2s in sprint before catch-up.
+		var catchUpDelay = TimeToCatchUpSpeed - TimeToSprintSpeed;
+		if ( catchUpDelay < 0f )
+			catchUpDelay = 0f;
+
+		if ( nonHoldingSprintTime >= catchUpDelay )
 			return CatchUpMoveSpeed;
 
 		return SprintMoveSpeed;
