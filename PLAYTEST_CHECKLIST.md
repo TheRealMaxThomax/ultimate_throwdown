@@ -23,10 +23,18 @@ Run this quick checklist before committing gameplay changes.
 - [ ] While charging, camera aim still works.
 - [ ] On release throw, movement returns immediately.
 
+## Movement Ramp (`CatchUpSpeedBoost`)
+- [ ] Forward movement without ball ramps through all 3 stages (start -> sprint -> catch-up) with no stage skip.
+- [ ] Forward movement with ball ramps to sprint stage only (no catch-up).
+- [ ] Dropping ball while sprinting starts catch-up countdown from non-holder sprint time (no instant catch-up).
+- [ ] While charging throw, movement ramp resets to start speed.
+- [ ] After throw release, movement ramp restarts from start speed.
+
 ## Stability
 - [ ] No script compile errors.
 - [ ] `BallThrow` appears in Add Component list.
 - [ ] `ThrowChargeBar` appears in Add Component list.
+- [ ] `CatchUpSpeedBoost` appears in Add Component list.
 - [ ] No obvious regressions in grab/drop behavior.
 
 ## If Component Is Missing

@@ -9,6 +9,7 @@ Keep items short and clear.
 ## TODO (Next Up)
 - [ ] Tune `ThrowForce`, `ThrowUpForce`, and `ThrowStartOffset`.
 - [ ] Tune charged throw values (`MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`).
+- [ ] Tune movement ramp values (`StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`).
 - [ ] Decide if throw cooldown is needed.
 - [ ] Decide next loop piece: scoring/reset or pass/catch.
 - [ ] HUD timing decision: keep temporary debug charge bar until throw feel is stable for a few sessions, then build proper HUD charge panel.
@@ -32,3 +33,6 @@ Keep items short and clear.
 - [x] Add hold-to-charge throw strength scaling.
 - [x] Add `ThrowChargeBar` gameplay feedback component.
 - [x] Lock player movement during throw charge while preserving camera aim.
+- [x] Add `CatchUpSpeedBoost` component for staged movement speed ramp.
+- [x] Make catch-up timer start only after sprint stage (prevents skipping middle speed).
+- [x] Reset movement ramp while throw-charging so post-throw movement restarts at start speed.

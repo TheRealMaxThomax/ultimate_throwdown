@@ -6,7 +6,7 @@ Keep entries short, specific, and current.
 ## Project Snapshot
 - **Current Goal:** Core ball gameplay first: stable grab/drop/throw before animation polish.
 - **Current Branch:** `main` (tracking `origin/main`).
-- **Build/Run Status:** s&box opens and gameplay scripts compile; `BallThrow` now supports hold-to-charge throw, in-world charge bar display, and movement lock during charge; occasional inspector component-list stale state fixed by save/recompile/restart.
+- **Build/Run Status:** s&box opens and gameplay scripts compile; `BallThrow` supports hold-to-charge throw with charge bar and movement lock; `CatchUpSpeedBoost` now uses 3-stage speed ramp with throw-charge-aware reset and non-holder catch-up timing; occasional inspector component-list stale state fixed by save/recompile/restart.
 - **Last Updated:** 28/04/26
 
 ## Important Decisions
@@ -31,6 +31,7 @@ Only include constraints that are easy to forget and expensive to violate.
 ## Collaboration Preferences
 - Experience level: Beginner (new to development).
 - Communication style: Explain steps in simple language, avoid jargon where possible, and include quick "what/why" context for commands and changes.
+- Reminder: If naming confusion/repeated renames starts happening, propose expanding Naming Canon (especially before team size or system count grows).
 
 ## Known Issues / Risks
 - [ ] Throw tuning still placeholder (force/arc may need balancing).
@@ -47,9 +48,9 @@ Only include constraints that are easy to forget and expensive to violate.
   - Next action: Add throw/run-holding animations after mechanics lock-in.
 
 ## Current Plan (Top 3)
-1. Playtest charged throw feel and tune `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `MinThrowChargeTime`, and `MaxThrowChargeTime`.
-2. Keep current charge bar as temporary gameplay feedback; defer polished HUD panel until throw feel is stable.
-3. Build next core mechanic loop piece (e.g., scoring/reset or pass/catch behavior) after throw feels locked in.
+1. Playtest and tune movement ramp values in `CatchUpSpeedBoost` (`StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`).
+2. Playtest charged throw feel and tune `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `MinThrowChargeTime`, and `MaxThrowChargeTime`.
+3. Build next core mechanic loop piece (e.g., scoring/reset or pass/catch behavior) after movement + throw feel are both stable.
 
 ## Component Missing Recovery (s&box)
 If a component (for example `BallThrow`) does not appear in Add Component:
@@ -66,12 +67,18 @@ Use these exact names unless explicitly changed in chat.
 
 - Core state owner component: `BallGrab`
 - Throw helper component: `BallThrow`
+- Catch-up movement component: `CatchUpSpeedBoost`
+- Throw charge display component: `ThrowChargeBar`
 - Hold-state public getter: `IsHolding`
 - Held-ball public getter: `HeldBall`
 - Ball selection properties: `MainBall`, `MainBallName`
 - Interaction properties: `InteractDistance`, `InteractAction`, `HoldAnchor`, `PromptText`
 - Internal ball references in `BallGrab`: `ballObject`, `ballBody`, `ballOriginalParent`, `ballCollidersToRestore`
 - Throw properties in `BallThrow`: `ThrowAction`, `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `PickupDelayAfterThrow`, `ThrowDirectionSource`
+- Charge tuning properties in `BallThrow`: `MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`
+- Charge-state public getter in `BallThrow`: `IsChargingThrow`
+- Catch-up movement properties in `CatchUpSpeedBoost`: `ForwardAction`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `MinForwardInput`
+- Throw charge bar property in `ThrowChargeBar`: `ChargeBarOffset`
 - Core release method in `BallGrab`: `ReleaseHeldBall()`
 - Pickup lockout method in `BallGrab`: `BlockPickupForSeconds(float seconds)`
 
@@ -83,6 +90,6 @@ Paste this at the start of a new session:
 ## End-of-Session Handoff
 Update this checklist before ending a chat:
 
-- What changed: Added charged throw behavior in `BallThrow` (hold to charge, release to throw), added `ThrowChargeBar` component, iterated charge bar style to a single long sectioned bar, added safe movement lock during charge, and confirmed Git/GitHub workflow throughout session.
-- What is still blocked: No blocker. Main remaining risk is throw feel tuning and animation polish (charge still shows run/walk animation in place).
-- Exactly what to do next: Run 10-15 focused throw tests, tune charge and force values, then decide whether to add throw cooldown or move to next core loop feature (scoring/reset or pass/catch).
+- What changed: Added and iterated `CatchUpSpeedBoost` with 3-stage forward movement (start -> sprint -> catch-up), renamed from `sprintchargeup`, replaced reflection with whitelist-safe `PlayerController` access, fixed stage-skip bugs, made catch-up timer start only in non-holder sprint stage, and reset movement ramp while throw-charging via `BallThrow.IsChargingThrow`.
+- What is still blocked: No major blocker. Remaining work is gameplay tuning (movement + throw feel) and animation polish (charge still shows run/walk animation in place).
+- Exactly what to do next: Run 10-15 movement tests (with/without ball, with throw-charge), tune `CatchUpSpeedBoost` values, then resume next core loop feature (scoring/reset or pass/catch).

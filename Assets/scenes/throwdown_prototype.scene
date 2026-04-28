@@ -341,6 +341,25 @@
           "ThrowForce": 1200,
           "ThrowStartOffset": 40,
           "ThrowUpForce": 120
+        },
+        {
+          "__type": "CatchUpSpeedBoost",
+          "__guid": "36aaecd1-60b1-40f0-8fd4-da791a5cbe29",
+          "__enabled": true,
+          "Flags": 0,
+          "CatchUpMoveSpeed": 320,
+          "ForwardAction": "forward",
+          "MinForwardInput": 0.1,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "SprintMoveSpeed": 220,
+          "StartMoveSpeed": 140,
+          "TimeToCatchUpSpeed": 4,
+          "TimeToSprintSpeed": 2
         }
       ],
       "Children": [
@@ -2456,9 +2475,6 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
-      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
@@ -2468,6 +2484,9 @@
         "Data": {
           "SelectionSets": []
         }
+      },
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
       }
     }
   },
