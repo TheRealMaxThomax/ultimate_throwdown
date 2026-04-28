@@ -306,7 +306,7 @@
         },
         {
           "__type": "BallThrow",
-          "__guid": "4ed0e6f3-2b54-4842-a810-4fdf07b2f490",
+          "__guid": "bf76be28-cd22-4875-8d86-c680927babbb",
           "__enabled": true,
           "Flags": 0,
           "OnComponentDestroy": null,
@@ -2439,14 +2439,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
-        }
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
+        }
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
         }
       },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
