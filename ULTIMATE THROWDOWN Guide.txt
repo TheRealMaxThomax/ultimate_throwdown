@@ -1,0 +1,17 @@
+ULTIMATE THROWDOWN
+Cursor:
+
+1. At the end of each chat, ask me: “update SESSION_NOTES.md with what matters.”
+At the start of the next chat, say: “read SESSION_NOTES.md first.”
+
+2.Read SESSION_NOTES.md first, then continue from the listed next tasks.
+If anything is outdated, propose an updated plan and update the notes file.
+
+3. When you add new gameplay systems and/or every hour do this in terminal.
+git add .
+git commit -m "describe the change"
+git push
+
+4. also do 
+git status
+in terminal to sync git and git hub
