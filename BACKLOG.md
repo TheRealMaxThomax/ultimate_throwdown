@@ -8,12 +8,14 @@ Keep items short and clear.
 
 ## TODO (Next Up)
 - [ ] Tune `ThrowForce`, `ThrowUpForce`, and `ThrowStartOffset`.
+- [ ] Tune charged throw values (`MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`).
 - [ ] Decide if throw cooldown is needed.
 - [ ] Decide next loop piece: scoring/reset or pass/catch.
 - [ ] HUD timing decision: keep temporary debug charge bar until throw feel is stable for a few sessions, then build proper HUD charge panel.
 
 ## Bugs / Issues
-- [ ] (none currently)
+- [ ] While charging throw, movement is locked but walk/run animations still play in place.
+  - Plan: Fix during animation pass by driving animator from explicit charge/throw state (`IsChargingThrow`) instead of movement input alone.
 
 ## Ideas (Later)
 - [ ] Build proper HUD throw charge bar (single rectangle with red/yellow/green sections and smooth fill).
@@ -26,3 +28,6 @@ Keep items short and clear.
 - [x] Keep hold-state source of truth in `BallGrab`.
 - [x] Add pickup lockout after throw.
 - [x] Set up Git + GitHub backup workflow.
+- [x] Add hold-to-charge throw strength scaling.
+- [x] Add `ThrowChargeBar` gameplay feedback component.
+- [x] Lock player movement during throw charge while preserving camera aim.

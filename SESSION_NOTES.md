@@ -6,8 +6,8 @@ Keep entries short, specific, and current.
 ## Project Snapshot
 - **Current Goal:** Core ball gameplay first: stable grab/drop/throw before animation polish.
 - **Current Branch:** `main` (tracking `origin/main`).
-- **Build/Run Status:** s&box opens and gameplay scripts compile; `BallThrow` works with camera-based aim source; occasional inspector component-list stale state fixed by recompile/restart.
-- **Last Updated:** 2026-04-28
+- **Build/Run Status:** s&box opens and gameplay scripts compile; `BallThrow` now supports hold-to-charge throw, in-world charge bar display, and movement lock during charge; occasional inspector component-list stale state fixed by save/recompile/restart.
+- **Last Updated:** 28/04/26
 
 ## Important Decisions
 - **Keep `BallGrab` as the source of truth for hold state.**
@@ -37,15 +37,19 @@ Only include constraints that are easy to forget and expensive to violate.
   - Impact: Throw feel may be too strong/weak depending on map and movement speed.
   - Owner: Max
   - Next action: Tune `ThrowForce`, `ThrowUpForce`, and `ThrowStartOffset` in inspector playtests.
+- [ ] While charging throw, walk/run animations can still play in place even though movement is locked.
+  - Impact: Mechanics are correct, but visual polish is rough during charge.
+  - Owner: Max
+  - Next action: Handle with explicit charge/throw animation states in animation pass.
 - [ ] Future animation integration not done yet.
   - Impact: Visual quality lower for now, but mechanics are playable.
   - Owner: Max
   - Next action: Add throw/run-holding animations after mechanics lock-in.
 
 ## Current Plan (Top 3)
-1. Playtest throw feel and tune values in `BallThrow`.
-2. Optionally add throw cooldown / animation hooks (events/timers) if needed.
-3. Build next core mechanic loop piece (e.g., scoring/reset or pass/catch behavior).
+1. Playtest charged throw feel and tune `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `MinThrowChargeTime`, and `MaxThrowChargeTime`.
+2. Keep current charge bar as temporary gameplay feedback; defer polished HUD panel until throw feel is stable.
+3. Build next core mechanic loop piece (e.g., scoring/reset or pass/catch behavior) after throw feels locked in.
 
 ## Component Missing Recovery (s&box)
 If a component (for example `BallThrow`) does not appear in Add Component:
@@ -79,6 +83,6 @@ Paste this at the start of a new session:
 ## End-of-Session Handoff
 Update this checklist before ending a chat:
 
-- What changed: Added safety fixes to `BallGrab`; created `BallThrow`; fixed aim direction using `ThrowDirectionSource`; fixed third-person spawn issue by using camera for direction only; added short pickup block after throw; added component-missing recovery checklist; initialized Git, made baseline + guide commits, and connected/pushed to GitHub (`TheRealMaxThomax/ultimate_throwdown`).
-- What is still blocked: No major blocker. Remaining work is throw feel tuning and future animation pass.
-- Exactly what to do next: Keep `ThrowDirectionSource` set to main camera, run 10-15 throw tests, tune `ThrowForce`/`ThrowUpForce`/`ThrowStartOffset`, then choose next mechanic milestone (cooldown hooks vs scoring/reset loop).
+- What changed: Added charged throw behavior in `BallThrow` (hold to charge, release to throw), added `ThrowChargeBar` component, iterated charge bar style to a single long sectioned bar, added safe movement lock during charge, and confirmed Git/GitHub workflow throughout session.
+- What is still blocked: No blocker. Main remaining risk is throw feel tuning and animation polish (charge still shows run/walk animation in place).
+- Exactly what to do next: Run 10-15 focused throw tests, tune charge and force values, then decide whether to add throw cooldown or move to next core loop feature (scoring/reset or pass/catch).
