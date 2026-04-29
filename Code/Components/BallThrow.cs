@@ -12,7 +12,7 @@ public sealed class BallThrow : Component
 	[Property] public float MaxThrowChargeTime { get; set; } = 2.0f;
 	[Property] public float MinThrowForceMultiplier { get; set; } = 0.35f;
 	[Property] public float MinThrowUpForceMultiplier { get; set; } = 0.6f;
-	[Property] public bool EnableNetDebugLogs { get; set; } = true;
+	[Property] public bool EnableNetDebugLogs { get; set; } = false;
 
 	private BallGrab ballGrab;
 	private ThrowChargeBar throwChargeBar;

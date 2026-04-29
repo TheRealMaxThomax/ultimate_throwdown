@@ -6,8 +6,8 @@ Keep entries short, specific, and current.
 ## Project Snapshot
 - **Current Goal:** Core ball gameplay first: stable grab/drop/throw before animation polish.
 - **Current Branch:** `main` (tracking `origin/main`).
-- **Build/Run Status:** s&box opens and gameplay scripts compile; `BallThrow` supports hold-to-charge throw with charge bar and movement lock; `CatchUpSpeedBoost` now uses 3-stage speed ramp with throw-charge-aware reset and non-holder catch-up timing; occasional inspector component-list stale state fixed by save/recompile/restart.
-- **Last Updated:** 28/04/26
+- **Build/Run Status:** s&box opens and scripts compile. Multiplayer test windows now see each other. Host and client can both see client pickup/drop in baseline tests after networking stabilization (`GameNetworkManager`, host-approved ball RPC flow, held-ball hierarchy physics suppression on clients).
+- **Last Updated:** 29/04/26
 
 ## Important Decisions
 - **Keep `BallGrab` as the source of truth for hold state.**
@@ -19,6 +19,12 @@ Keep entries short, specific, and current.
 - **Use optional direct ball reference (`MainBall`) with name fallback (`MainBallName`).**
   - Why: Direct reference is safer; name fallback keeps flexibility.
   - Date: 2026-04-28
+- **Use host-approved RPC flow for grab/drop/throw in multiplayer.**
+  - Why: Prevents client-side state divergence and keeps one source of gameplay truth.
+  - Date: 2026-04-29
+- **Use startup scene `scenes/throwdown_prototype.scene` with `GameNetworkManager` active.**
+  - Why: Local multi-window networking tests require the correct gameplay scene and per-connection player spawning.
+  - Date: 2026-04-29
 
 ## Constraints and Rules
 Only include constraints that are easy to forget and expensive to violate.
@@ -27,6 +33,7 @@ Only include constraints that are easy to forget and expensive to violate.
 - Performance constraints: Keep gameplay logic simple for now; no heavy systems needed yet.
 - Code style/conventions: Beginner-readable names, short methods, one source of truth for state.
 - Tooling/workflow constraints: After script edits, allow recompile/restart editor if component does not appear.
+- Networking constraints: Ball gameplay state is host-authoritative; avoid client-only gameplay mutation paths.
 
 ## Collaboration Preferences
 - Experience level: Beginner (new to development).
@@ -46,11 +53,15 @@ Only include constraints that are easy to forget and expensive to violate.
   - Impact: Visual quality lower for now, but mechanics are playable.
   - Owner: Max
   - Next action: Add throw/run-holding animations after mechanics lock-in.
+- [ ] Multiplayer still needs broader stress testing (rapid pickup/drop/throw spam, jump-drop edge cases, longer sessions).
+  - Impact: Core behavior is much better, but edge desync risk remains until stress tests pass repeatedly.
+  - Owner: Max
+  - Next action: Run 2-window multiplayer consistency pass for 15-20 minutes and log any repro steps.
 
 ## Current Plan (Top 3)
-1. Playtest and tune movement ramp values in `CatchUpSpeedBoost` (`StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`).
-2. Playtest charged throw feel and tune `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `MinThrowChargeTime`, and `MaxThrowChargeTime`.
-3. Build next core mechanic loop piece (e.g., scoring/reset or pass/catch behavior) after movement + throw feel are both stable.
+1. Run focused multiplayer validation pass using 2 windows (`Join via new instance`) and confirm no regressions in pickup/drop/throw sync.
+2. Playtest and tune movement ramp values in `CatchUpSpeedBoost` (`StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`).
+3. Playtest charged throw feel and tune `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `MinThrowChargeTime`, and `MaxThrowChargeTime`.
 
 ## Component Missing Recovery (s&box)
 If a component (for example `BallThrow`) does not appear in Add Component:
@@ -74,6 +85,9 @@ Use these exact names unless explicitly changed in chat.
 - Ball selection properties: `MainBall`, `MainBallName`
 - Interaction properties: `InteractDistance`, `InteractAction`, `HoldAnchor`, `PromptText`
 - Internal ball references in `BallGrab`: `ballObject`, `ballBody`, `ballOriginalParent`, `ballCollidersToRestore`
+- Multiplayer manager component: `GameNetworkManager`
+- Sync property in `BallGrab`: `NetIsHolding`
+- Multiplayer debug property: `EnableNetDebugLogs`
 - Throw properties in `BallThrow`: `ThrowAction`, `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `PickupDelayAfterThrow`, `ThrowDirectionSource`
 - Charge tuning properties in `BallThrow`: `MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`
 - Charge-state public getter in `BallThrow`: `IsChargingThrow`
@@ -90,6 +104,6 @@ Paste this at the start of a new session:
 ## End-of-Session Handoff
 Update this checklist before ending a chat:
 
-- What changed: Added and iterated `CatchUpSpeedBoost` with 3-stage forward movement (start -> sprint -> catch-up), renamed from `sprintchargeup`, replaced reflection with whitelist-safe `PlayerController` access, fixed stage-skip bugs, made catch-up timer start only in non-holder sprint stage, and reset movement ramp while throw-charging via `BallThrow.IsChargingThrow`.
-- What is still blocked: No major blocker. Remaining work is gameplay tuning (movement + throw feel) and animation polish (charge still shows run/walk animation in place).
-- Exactly what to do next: Run 10-15 movement tests (with/without ball, with throw-charge), tune `CatchUpSpeedBoost` values, then resume next core loop feature (scoring/reset or pass/catch).
+- What changed: Added `GameNetworkManager`, switched startup scene to `throwdown_prototype`, moved grab/drop/throw into host-approved RPC flow, synced hold state via `NetIsHolding`, added explicit ball ownership helpers, and disabled/restored ball hierarchy rigidbodies/colliders while held to reduce multiplayer desync and collision artifacts.
+- What is still blocked: Not hard-blocked, but needs broader multiplayer stress coverage before declaring fully stable.
+- Exactly what to do next: Run extended 2-window multiplayer pass (pickup/drop/throw spam + jump-drop), note any reproducible edge cases, then continue tuning movement + throw feel.

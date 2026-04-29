@@ -9,7 +9,7 @@ public sealed class BallGrab : Component
 	[Property] public string InteractAction { get; set; } = "use";
 	[Property] public GameObject HoldAnchor { get; set; }
 	[Property] public string PromptText { get; set; } = "Pick Up With E";
-	[Property] public bool EnableNetDebugLogs { get; set; } = true;
+	[Property] public bool EnableNetDebugLogs { get; set; } = false;
 
 	private GameObject ballObject;
 	private GameObject ballOriginalParent;
@@ -18,8 +18,11 @@ public sealed class BallGrab : Component
 	private bool warnedAboutDuplicateMainBallName;
 	private bool isHolding;
 	[Sync( SyncFlags.FromHost )] private bool NetIsHolding { get => isHolding; set => isHolding = value; }
+	[Sync( SyncFlags.FromHost )] private Vector3 NetHeldBallWorldPosition { get; set; }
+	[Sync( SyncFlags.FromHost )] private Rotation NetHeldBallWorldRotation { get; set; }
 	private float pickupBlockedUntilTime;
 	private bool localDropPending;
+	private bool clientAppliedHeldPhysicsState;
 	public bool IsHolding => isHolding;
 	public GameObject HeldBall => ballObject;
 
@@ -38,11 +41,22 @@ public sealed class BallGrab : Component
 
 		if ( !Networking.IsHost && ballObject.IsValid() )
 		{
-			ApplyClientHeldPhysicsState( isHolding );
+			if ( isHolding || clientAppliedHeldPhysicsState )
+			{
+				ApplyClientHeldPhysicsState( isHolding );
+				clientAppliedHeldPhysicsState = isHolding;
+			}
 		}
 
 		if ( (Networking.IsHost || Network.IsOwner) && !localDropPending && isHolding && ballObject.IsValid() )
 		{
+			KeepHeldBallAttachedToAnchor();
+			NetHeldBallWorldPosition = ballObject.WorldPosition;
+			NetHeldBallWorldRotation = ballObject.WorldRotation;
+		}
+		else if ( !Networking.IsHost && !localDropPending && isHolding && ballObject.IsValid() )
+		{
+			// Remote visual path: align directly to holder anchor on this client.
 			KeepHeldBallAttachedToAnchor();
 		}
 
@@ -232,6 +246,7 @@ public sealed class BallGrab : Component
 
 		NetIsHolding = false;
 		localDropPending = false;
+		clientAppliedHeldPhysicsState = false;
 		return ballObject;
 	}
 
@@ -298,5 +313,6 @@ public sealed class BallGrab : Component
 		ballOriginalParent = null;
 		NetIsHolding = false;
 		localDropPending = false;
+		clientAppliedHeldPhysicsState = false;
 	}
 }

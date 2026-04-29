@@ -5,7 +5,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 {
 	[Property] public string PlayerTemplateName { get; set; } = "Player";
 	[Property] public bool DisableTemplateOnStart { get; set; } = true;
-	[Property] public bool EnableNetDebugLogs { get; set; } = true;
+	[Property] public bool EnableNetDebugLogs { get; set; } = false;
 
 	private readonly Dictionary<long, GameObject> spawnedPlayersBySteamId = new();
 	private GameObject playerTemplate;

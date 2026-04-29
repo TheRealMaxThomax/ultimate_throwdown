@@ -7,6 +7,7 @@ Keep items short and clear.
 - Make core grab/drop/throw loop feel good and stable.
 
 ## TODO (Next Up)
+- [ ] Run extended 2-window multiplayer stress pass (15-20 min): pickup/drop/throw spam + jump-drop edge cases.
 - [ ] Tune `ThrowForce`, `ThrowUpForce`, and `ThrowStartOffset`.
 - [ ] Tune charged throw values (`MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`).
 - [ ] Tune movement ramp values (`StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`).
@@ -17,6 +18,8 @@ Keep items short and clear.
 ## Bugs / Issues
 - [ ] While charging throw, movement is locked but walk/run animations still play in place.
   - Plan: Fix during animation pass by driving animator from explicit charge/throw state (`IsChargingThrow`) instead of movement input alone.
+- [ ] Verify no remaining client-only ball-drop desyncs in longer sessions.
+  - Plan: Run multiplayer consistency checklist and record exact repro steps if any mismatch returns.
 
 ## Ideas (Later)
 - [ ] Build proper HUD throw charge bar (single rectangle with red/yellow/green sections and smooth fill).
@@ -36,3 +39,8 @@ Keep items short and clear.
 - [x] Add `CatchUpSpeedBoost` component for staged movement speed ramp.
 - [x] Make catch-up timer start only after sprint stage (prevents skipping middle speed).
 - [x] Reset movement ramp while throw-charging so post-throw movement restarts at start speed.
+- [x] Add multiplayer test setup/checklist items for `Join via new instance`.
+- [x] Add `GameNetworkManager` and wire startup scene to `throwdown_prototype`.
+- [x] Move grab/drop/throw into host-approved multiplayer flow.
+- [x] Improve held-ball stability by handling rigidbody/collider state across ball hierarchy while held.
+- [x] Switch `EnableNetDebugLogs` to off-by-default after stabilization pass.

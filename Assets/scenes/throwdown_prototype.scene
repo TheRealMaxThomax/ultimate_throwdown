@@ -52,7 +52,7 @@
           "__enabled": true,
           "Flags": 0,
           "DisableTemplateOnStart": true,
-          "EnableNetDebugLogs": true,
+          "EnableNetDebugLogs": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -303,7 +303,7 @@
           "__guid": "9cb2a931-2559-4677-a050-e9a4bbd8b97b",
           "__enabled": true,
           "Flags": 0,
-          "EnableNetDebugLogs": true,
+          "EnableNetDebugLogs": false,
           "HoldAnchor": {
             "_type": "gameobject",
             "go": "a3d8abc0-0afb-47f7-9377-d5af7a1d31b6"
@@ -338,7 +338,7 @@
           "__guid": "7e849884-e060-4c39-8860-9c475b50f8ef",
           "__enabled": true,
           "Flags": 0,
-          "EnableNetDebugLogs": true,
+          "EnableNetDebugLogs": false,
           "MaxThrowChargeTime": 2,
           "MinThrowChargeTime": 0.05,
           "MinThrowForceMultiplier": 0.35,
@@ -2497,13 +2497,13 @@
           "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
         }
       },
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
         }
+      },
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
       }
     }
   },

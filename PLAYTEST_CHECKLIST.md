@@ -46,8 +46,15 @@ Run this quick checklist before committing gameplay changes.
 - [ ] No obvious regressions in grab/drop behavior.
 
 ## Multiplayer Consistency (2 Windows)
+- [ ] Host and client can both see each player character after join.
 - [ ] Client pickup appears correctly on host window.
+- [ ] Client pickup appears correctly on client window (no delayed teleport to hand).
+- [ ] Client drop appears correctly on host window.
+- [ ] Client drop appears correctly on client window (no disappear/fly/bounce desync).
+- [ ] Client jump + drop appears consistent on both windows.
+- [ ] Host pickup/drop appears correctly on both windows.
 - [ ] Client throw appears correctly on host window (no "double ball" mismatch).
+- [ ] Client throw appears correctly on client window.
 - [ ] Rapid pickup/throw spam stays consistent on both windows.
 - [ ] Throw charge bar appears only for the throwing player.
 
