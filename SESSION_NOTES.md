@@ -6,7 +6,7 @@ Keep entries short, specific, and current.
 ## Project Snapshot
 - **Current Goal:** Core ball gameplay first: stable grab/drop/throw before animation polish.
 - **Current Branch:** `main` (tracking `origin/main`).
-- **Build/Run Status:** s&box opens and scripts compile. Multiplayer test windows now see each other. Host and client can both see client pickup/drop in baseline tests after networking stabilization (`GameNetworkManager`, host-approved ball RPC flow, held-ball hierarchy physics suppression on clients).
+- **Build/Run Status:** s&box opens and scripts compile. `BallGrab` was split so client-side visual/smoothing logic now lives in `BallClientFeel` while host-authoritative grab/drop state stays in `BallGrab`. Multiplayer host/client can both see pickup/drop for both players in baseline tests; free-ball feel tuning is still in progress.
 - **Last Updated:** 29/04/26
 
 ## Important Decisions
@@ -85,11 +85,15 @@ Treat these as mandatory implementation rules for all new gameplay features.
   - Impact: Core behavior is much better, but edge desync risk remains until stress tests pass repeatedly.
   - Owner: Max
   - Next action: Run 2-window multiplayer consistency pass for 15-20 minutes and log any repro steps.
+- [ ] Free-ball collision feel on client still not equal to host feel.
+  - Impact: Ball is largely consistent across screens, but client contact feels less direct/smooth than host contact.
+  - Owner: Max
+  - Next action: Tune/iterate free-ball client visual follow settings and validate with repeatable push tests from multiple angles.
 
 ## Current Plan (Top 3)
 1. Run focused multiplayer validation pass using 2 windows (`Join via new instance`) and confirm no regressions in pickup/drop/throw sync.
-2. Playtest and tune movement ramp values in `CatchUpSpeedBoost` (`StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`).
-3. Playtest charged throw feel and tune `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `MinThrowChargeTime`, and `MaxThrowChargeTime`.
+2. Improve client free-ball collision feel via `BallClientFeel` tuning while preserving shared host/client ball location consistency.
+3. Playtest and tune movement ramp values in `CatchUpSpeedBoost` and charged throw feel once networking baseline is comfortable.
 
 ## Component Missing Recovery (s&box)
 If a component (for example `BallThrow`) does not appear in Add Component:
@@ -105,6 +109,7 @@ If a component (for example `BallThrow`) does not appear in Add Component:
 Use these exact names unless explicitly changed in chat.
 
 - Core state owner component: `BallGrab`
+- Client feel helper component: `BallClientFeel`
 - Throw helper component: `BallThrow`
 - Catch-up movement component: `CatchUpSpeedBoost`
 - Throw charge display component: `ThrowChargeBar`
@@ -112,10 +117,12 @@ Use these exact names unless explicitly changed in chat.
 - Held-ball public getter: `HeldBall`
 - Ball selection properties: `MainBall`, `MainBallName`
 - Interaction properties: `InteractDistance`, `InteractAction`, `HoldAnchor`, `PromptText`
-- Internal ball references in `BallGrab`: `ballObject`, `ballBody`, `ballOriginalParent`, `ballCollidersToRestore`
+- Internal ball references in `BallGrab`: `ballObject`, `ballOriginalParent`, `ballCollidersToRestore`, `ballBodiesToRestore`
 - Multiplayer manager component: `GameNetworkManager`
 - Sync property in `BallGrab`: `NetIsHolding`
+- Host-synced ball transform properties in `BallGrab`: `NetHeldBallWorldPosition`, `NetHeldBallWorldRotation`
 - Multiplayer debug property: `EnableNetDebugLogs`
+- Free-ball feel properties in `BallClientFeel`: `FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`
 - Throw properties in `BallThrow`: `ThrowAction`, `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `PickupDelayAfterThrow`, `ThrowDirectionSource`
 - Charge tuning properties in `BallThrow`: `MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`
 - Charge-state public getter in `BallThrow`: `IsChargingThrow`
@@ -132,6 +139,6 @@ Paste this at the start of a new session:
 ## End-of-Session Handoff
 Update this checklist before ending a chat:
 
-- What changed: Added `GameNetworkManager`, switched startup scene to `throwdown_prototype`, moved grab/drop/throw into host-approved RPC flow, synced hold state via `NetIsHolding`, added explicit ball ownership helpers, and disabled/restored ball hierarchy rigidbodies/colliders while held to reduce multiplayer desync and collision artifacts.
-- What is still blocked: Not hard-blocked, but needs broader multiplayer stress coverage before declaring fully stable.
-- Exactly what to do next: Run extended 2-window multiplayer pass (pickup/drop/throw spam + jump-drop), note any reproducible edge cases, then continue tuning movement + throw feel.
+- What changed: Split client-side feel/smoothing code out of `BallGrab` into new `BallClientFeel`. `BallGrab` now focuses on host-authoritative grab/drop/hold state and RPC flow. Scene now includes `BallClientFeel` with tuning properties for free-ball responsiveness.
+- What is still blocked: Client free-ball collision feel still not as natural/snappy as host despite improved shared-location consistency.
+- Exactly what to do next: Run 2-window free-ball push tests (host push + client push from multiple approach angles), tune `BallClientFeel` properties (`FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`), and only then continue with gameplay tuning/features.

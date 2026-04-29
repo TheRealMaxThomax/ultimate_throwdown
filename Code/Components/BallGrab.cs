@@ -10,9 +10,6 @@ public sealed class BallGrab : Component
 	[Property] public GameObject HoldAnchor { get; set; }
 	[Property] public string PromptText { get; set; } = "Pick Up With E";
 	[Property] public bool EnableNetDebugLogs { get; set; } = false;
-	[Property] public float FreeBallVisualFollowSharpness { get; set; } = 14f;
-	[Property] public float ContactBoostSharpness { get; set; } = 42f;
-	[Property] public float ContactBoostDuration { get; set; } = 0.12f;
 
 	private GameObject ballObject;
 	private GameObject ballOriginalParent;
@@ -25,9 +22,10 @@ public sealed class BallGrab : Component
 	[Sync( SyncFlags.FromHost )] private Rotation NetHeldBallWorldRotation { get; set; }
 	private float pickupBlockedUntilTime;
 	private bool localDropPending;
-	private float contactBoostUntilTime;
 	public bool IsHolding => isHolding;
 	public GameObject HeldBall => ballObject;
+	public Vector3 SyncedBallWorldPosition => NetHeldBallWorldPosition;
+	public Rotation SyncedBallWorldRotation => NetHeldBallWorldRotation;
 
 	protected override void OnStart()
 	{
@@ -36,33 +34,9 @@ public sealed class BallGrab : Component
 
 	protected override void OnUpdate()
 	{
-		var isLocalController = Network.IsOwner;
-
-		// Host authority + owner visual follow for responsiveness.
 		if ( !isHolding )
 		{
 			localDropPending = false;
-		}
-
-		if ( !Networking.IsHost && ballObject.IsValid() )
-		{
-			ApplyClientProxyBallState( isHolding );
-			if ( isLocalController )
-			{
-				// Held ball: snap to host for correctness.
-				// Free ball: smooth follow to reduce visible jitter/lag pop.
-				if ( isHolding )
-				{
-					ballObject.WorldPosition = NetHeldBallWorldPosition;
-					ballObject.WorldRotation = NetHeldBallWorldRotation;
-				}
-				else
-				{
-					var visualSharpness = Time.Now < contactBoostUntilTime ? ContactBoostSharpness : FreeBallVisualFollowSharpness;
-					ballObject.WorldPosition = Vector3.Lerp( ballObject.WorldPosition, NetHeldBallWorldPosition, Time.Delta * visualSharpness );
-					ballObject.WorldRotation = Rotation.Slerp( ballObject.WorldRotation, NetHeldBallWorldRotation, Time.Delta * visualSharpness );
-				}
-			}
 		}
 
 		if ( Networking.IsHost && !localDropPending && isHolding && ballObject.IsValid() )
@@ -108,13 +82,8 @@ public sealed class BallGrab : Component
 		if ( !inRange )
 			return;
 
-		if ( !isLocalController )
+		if ( !Network.IsOwner )
 			return;
-
-		if ( !isHolding )
-		{
-			TryTriggerContactVisualBoost();
-		}
 
 		if ( Input.Pressed( InteractAction ) )
 		{
@@ -123,28 +92,6 @@ public sealed class BallGrab : Component
 
 			RequestPickUpBallOnHost();
 		}
-	}
-
-	private void TryTriggerContactVisualBoost()
-	{
-		if ( !ballObject.IsValid() )
-			return;
-
-		var toBall = (ballObject.WorldPosition - WorldPosition).WithZ( 0f );
-		var distance = toBall.Length;
-		if ( distance > 42f )
-			return;
-
-		var moveInput = Input.AnalogMove.WithZ( 0f );
-		if ( moveInput.Length < 0.15f )
-			return;
-
-		var moveDirection = moveInput.Normal;
-		var approachDot = moveDirection.Dot( toBall.Normal );
-		if ( approachDot < 0.25f )
-			return;
-
-		contactBoostUntilTime = Time.Now + ContactBoostDuration;
 	}
 
 	private void FindMainBall()
@@ -310,32 +257,6 @@ public sealed class BallGrab : Component
 
 		ballObject.WorldPosition = parentTarget.WorldPosition;
 		ballObject.WorldRotation = parentTarget.WorldRotation;
-	}
-
-	private void ApplyClientProxyBallState( bool holding )
-	{
-		// Only suppress local proxy physics while held.
-		// Free-ball state must stay active so host-driven motion is visible.
-		foreach ( var body in ballObject.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
-		{
-			if ( !body.IsValid() )
-				continue;
-
-			body.Enabled = !holding;
-			if ( holding )
-			{
-				body.Velocity = Vector3.Zero;
-				body.AngularVelocity = Vector3.Zero;
-			}
-		}
-
-		foreach ( var collider in ballObject.Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ) )
-		{
-			if ( !collider.IsValid() )
-				continue;
-
-			collider.Enabled = !holding;
-		}
 	}
 
 	private void AssignBallOwner( Connection connection )

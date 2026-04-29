@@ -15,6 +15,8 @@ This is the simple process to follow each time you work on the game.
 - Test after each small change.
 - If something breaks, stop and fix before adding more features.
 - For multiplayer logic, always run a quick 2-window validation after core changes.
+- When tuning multiplayer feel, use the same repeatable test path each run (same start spot, same movement approach) so changes are measurable.
+- If one component starts doing too many jobs, split by responsibility before adding more features (for example authority/state vs client feel/polish).
 
 ## 3) Definition of Done (Before Commit)
 Only commit when all are true:
@@ -48,6 +50,7 @@ Good commit message examples:
 - Start host play session.
 - Use network icon -> `Join via new instance`.
 - Validate: both players visible, client pickup visible to both, client drop visible to both, client throw visible to both.
+- Validate free-ball push consistency: host push and client push produce matching direction/time/location on both windows.
 - If behavior differs by window, stop feature work and fix networking consistency first.
 
 ## Optional Safety Rule (Recommended)

@@ -8,6 +8,8 @@ Keep items short and clear.
 
 ## TODO (Next Up)
 - [ ] Run extended 2-window multiplayer stress pass (15-20 min): pickup/drop/throw spam + jump-drop edge cases.
+- [ ] Improve free-ball client feel to better match host while keeping shared position consistency.
+- [ ] Tune `BallClientFeel` values (`FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`) with repeatable multiplayer push tests.
 - [ ] Tune `ThrowForce`, `ThrowUpForce`, and `ThrowStartOffset`.
 - [ ] Tune charged throw values (`MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`).
 - [ ] Tune movement ramp values (`StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`).
@@ -20,6 +22,8 @@ Keep items short and clear.
   - Plan: Fix during animation pass by driving animator from explicit charge/throw state (`IsChargingThrow`) instead of movement input alone.
 - [ ] Verify no remaining client-only ball-drop desyncs in longer sessions.
   - Plan: Run multiplayer consistency checklist and record exact repro steps if any mismatch returns.
+- [ ] Free-ball client collision feel is still less direct than host feel.
+  - Plan: Keep host-authoritative ball truth, then improve client perceived responsiveness via safe visual tuning.
 
 ## Ideas (Later)
 - [ ] Build proper HUD throw charge bar (single rectangle with red/yellow/green sections and smooth fill).
@@ -44,3 +48,4 @@ Keep items short and clear.
 - [x] Move grab/drop/throw into host-approved multiplayer flow.
 - [x] Improve held-ball stability by handling rigidbody/collider state across ball hierarchy while held.
 - [x] Switch `EnableNetDebugLogs` to off-by-default after stabilization pass.
+- [x] Split client-side smoothing/feel logic from `BallGrab` into `BallClientFeel`.

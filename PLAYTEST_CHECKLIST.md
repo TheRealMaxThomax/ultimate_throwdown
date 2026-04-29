@@ -43,6 +43,7 @@ Run this quick checklist before committing gameplay changes.
 - [ ] `BallThrow` appears in Add Component list.
 - [ ] `ThrowChargeBar` appears in Add Component list.
 - [ ] `CatchUpSpeedBoost` appears in Add Component list.
+- [ ] `BallClientFeel` appears in Add Component list.
 - [ ] No obvious regressions in grab/drop behavior.
 
 ## Multiplayer Consistency (2 Windows)
@@ -57,6 +58,9 @@ Run this quick checklist before committing gameplay changes.
 - [ ] Client throw appears correctly on client window.
 - [ ] Rapid pickup/throw spam stays consistent on both windows.
 - [ ] Throw charge bar appears only for the throwing player.
+- [ ] Host free-ball push moves ball consistently on both windows (same direction/time).
+- [ ] Client free-ball push moves ball consistently on both windows (same direction/time).
+- [ ] Free-ball client feel is acceptable (not overly floaty/laggy compared with host).
 
 ## If Component Is Missing
 Follow `Component Missing Recovery (s&box)` in `SESSION_NOTES.md`.
