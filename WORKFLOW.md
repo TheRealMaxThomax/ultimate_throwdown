@@ -56,3 +56,13 @@ Good commit message examples:
 ## Optional Safety Rule (Recommended)
 If work feels risky or experimental, create a branch first:
 - `git checkout -b feature/short-description`
+
+## Refactor-Only Safety Pass (Recommended)
+Use this when cleaning up code structure/readability without adding features.
+
+- Start by stating: `refactor-only, no behavior change intended`.
+- Limit each pass to 1-2 files.
+- Keep edits small (method extraction, naming clarity, dead code cleanup).
+- Do not mix feature changes into refactor-only passes.
+- After changes: compile and run quick 2-window sanity checks for touched gameplay flow.
+- Commit separately with a refactor-only message.

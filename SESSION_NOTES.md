@@ -34,6 +34,7 @@ Only include constraints that are easy to forget and expensive to violate.
 - Code style/conventions: Beginner-readable names, short methods, one source of truth for state.
 - Tooling/workflow constraints: After script edits, allow recompile/restart editor if component does not appear.
 - Networking constraints: Ball gameplay state is host-authoritative; avoid client-only gameplay mutation paths.
+- Refactor safety constraint: Mark cleanup chats as `refactor-only, no behavior change intended`, keep scope to 1-2 files, and run quick regression checks after.
 
 ## Network-Safe Rules (Always Apply)
 Treat these as mandatory implementation rules for all new gameplay features.
