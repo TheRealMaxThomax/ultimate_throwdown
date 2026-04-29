@@ -1,0 +1,23 @@
+---
+description: Global guardrails to prevent spaghetti and accidental regressions
+alwaysApply: true
+---
+
+# Core Coding Guardrails
+
+- Use the simplest fix that solves the task.
+- Keep edits small and focused. Do not do big rewrites unless asked.
+- Do not add "future-proof" systems unless the same need appears 2-3 times.
+- Before coding, explain plan in plain English.
+- After coding, explain what changed, why, risk, and quick test steps.
+
+## Protect Existing Fixes
+
+- Keep existing fixes by default.
+- If a fix must be replaced, say what is changing and why first.
+- Then re-test the old bug path to confirm no regression.
+
+## Project Example
+
+- Good: `BallGrab` owns hold state, `BallThrow` handles throw flow, `BallClientFeel` handles visual feel only.
+- Bad: Spread gameplay truth across multiple components "for convenience."

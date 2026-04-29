@@ -1,0 +1,33 @@
+---
+description: Gameplay component boundaries and multiplayer authority rules
+globs: Code/Components/**/*.cs
+alwaysApply: false
+---
+
+# Gameplay, Networking, and Component Rules
+
+- Keep one source of truth for each gameplay state.
+- Host/server is final authority for gameplay outcomes.
+- Client input is a request, not a final result.
+- Sync final host-approved state for multiplayer gameplay.
+- Keep gameplay logic separate from client-only visuals/feel.
+
+## Component Rules
+
+- Keep each component focused on one main job.
+- Avoid hidden cross-component side effects.
+- Reuse existing patterns/components before adding new systems.
+
+## Multiplayer Regression Checks
+
+- For gameplay edits, test in 2 windows:
+  - host action visible on client,
+  - client action visible on host,
+  - rapid repeat/spam case,
+  - one edge case.
+
+## Project Example
+
+- Good: `BallThrow` asks host to throw; host validates and applies.
+- Bad: Client directly sets shared throw outcome.
+- Good: `BallGrab` owns hold state; `BallClientFeel` is visual-only.

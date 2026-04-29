@@ -1,0 +1,27 @@
+---
+description: Animation event timing and safe audio lifecycle rules
+globs: Code/Components/**/*.cs
+alwaysApply: false
+---
+
+# Animation and Audio Safety Rules
+
+- Use animation events/tags for gameplay sync timing when available.
+- Do not guess timing from hardcoded animation lengths unless no event exists.
+- If a timer fallback is needed, mark it clearly for later replacement.
+
+## Audio Rules
+
+- Do not spawn sounds at world origin by accident.
+- Spawn from the correct source transform (player, ball, or event transform).
+- For sounds that need cleanup, stop/dispose on exit, cancel, disable, or destroy.
+
+## Quick Checks
+
+- Confirm sound plays at correct location in host and client views.
+- Confirm no orphaned looping sound remains after cancel/drop/throw.
+
+## Project Example
+
+- Good: Throw release SFX triggers from animation event at release frame.
+- Bad: Throw release SFX uses guessed delay while events are available.
