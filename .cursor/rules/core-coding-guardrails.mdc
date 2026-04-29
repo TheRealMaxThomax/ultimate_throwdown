@@ -17,6 +17,12 @@ alwaysApply: true
 - If a fix must be replaced, say what is changing and why first.
 - Then re-test the old bug path to confirm no regression.
 
+## Prefer Built-In First
+
+- Prefer built-in s&box components/features when they satisfy the requirement.
+- Write custom code only when built-in options are not sufficient.
+- When choosing custom code, state briefly why built-in was not enough.
+
 ## Project Example
 
 - Good: `BallGrab` owns hold state, `BallThrow` handles throw flow, `BallClientFeel` handles visual feel only.
