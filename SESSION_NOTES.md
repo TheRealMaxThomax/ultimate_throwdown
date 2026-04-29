@@ -35,6 +35,34 @@ Only include constraints that are easy to forget and expensive to violate.
 - Tooling/workflow constraints: After script edits, allow recompile/restart editor if component does not appear.
 - Networking constraints: Ball gameplay state is host-authoritative; avoid client-only gameplay mutation paths.
 
+## Network-Safe Rules (Always Apply)
+Treat these as mandatory implementation rules for all new gameplay features.
+
+1. **Authority first (before coding):**
+   - Decide who owns truth for gameplay outcomes (default: host/server).
+   - Do not let clients finalize gameplay outcomes.
+2. **Input is a request, not a result:**
+   - Client sends action request to host (for example tackle, grab, throw).
+   - Host validates and applies final result.
+3. **Sync final gameplay state:**
+   - Sync authoritative end states (`IsHolding`, `IsRagdolled`, cooldown state, etc.).
+   - Do not rely on local-only gameplay booleans for shared truth.
+4. **Separate gameplay and visuals:**
+   - Gameplay logic must be authoritative and replicated.
+   - Client-only effects/animations are fine, but must not decide outcomes.
+5. **2-window validation is required before done:**
+   - Host action visible correctly on client.
+   - Client action visible correctly on host.
+   - Rapid repeat/spam test.
+   - At least one edge case (jump/mid-air/moving fast/timing overlap).
+
+### Feature Build Pattern (Use Every Time)
+1. Define authority and synced state fields first.
+2. Implement host RPC request flow for actions.
+3. Apply outcomes on host only, then replicate/sync.
+4. Add minimal visual handling after gameplay sync is stable.
+5. Run multiplayer checklist before marking feature complete.
+
 ## Collaboration Preferences
 - Experience level: Beginner (new to development).
 - Communication style: Explain steps in simple language, avoid jargon where possible, and include quick "what/why" context for commands and changes.
