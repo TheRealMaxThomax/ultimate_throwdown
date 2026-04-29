@@ -2,6 +2,14 @@
 
 Run this quick checklist before committing gameplay changes.
 
+## Multiplayer Test Setup (Solo)
+- [ ] Start play mode in editor (this is your host window).
+- [ ] In header bar, click the network status icon.
+- [ ] Click `Join via new instance` to spawn a second client window.
+- [ ] Confirm second window joins host session successfully.
+- [ ] If reconnect is needed, use `reconnect` in the second window console.
+- [ ] If needed, manual join fallback is `connect local` in second window console.
+
 ## Core Ball Loop
 - [ ] Can approach the ball and see prompt text.
 - [ ] Can pick up ball using `InteractAction`.
@@ -36,6 +44,12 @@ Run this quick checklist before committing gameplay changes.
 - [ ] `ThrowChargeBar` appears in Add Component list.
 - [ ] `CatchUpSpeedBoost` appears in Add Component list.
 - [ ] No obvious regressions in grab/drop behavior.
+
+## Multiplayer Consistency (2 Windows)
+- [ ] Client pickup appears correctly on host window.
+- [ ] Client throw appears correctly on host window (no "double ball" mismatch).
+- [ ] Rapid pickup/throw spam stays consistent on both windows.
+- [ ] Throw charge bar appears only for the throwing player.
 
 ## If Component Is Missing
 Follow `Component Missing Recovery (s&box)` in `SESSION_NOTES.md`.

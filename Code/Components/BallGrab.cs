@@ -9,14 +9,17 @@ public sealed class BallGrab : Component
 	[Property] public string InteractAction { get; set; } = "use";
 	[Property] public GameObject HoldAnchor { get; set; }
 	[Property] public string PromptText { get; set; } = "Pick Up With E";
+	[Property] public bool EnableNetDebugLogs { get; set; } = true;
 
 	private GameObject ballObject;
-	private Rigidbody ballBody;
 	private GameObject ballOriginalParent;
 	private readonly List<Collider> ballCollidersToRestore = new();
+	private readonly List<Rigidbody> ballBodiesToRestore = new();
 	private bool warnedAboutDuplicateMainBallName;
 	private bool isHolding;
+	[Sync( SyncFlags.FromHost )] private bool NetIsHolding { get => isHolding; set => isHolding = value; }
 	private float pickupBlockedUntilTime;
+	private bool localDropPending;
 	public bool IsHolding => isHolding;
 	public GameObject HeldBall => ballObject;
 
@@ -27,6 +30,22 @@ public sealed class BallGrab : Component
 
 	protected override void OnUpdate()
 	{
+		// Host authority + owner visual follow for responsiveness.
+		if ( !isHolding )
+		{
+			localDropPending = false;
+		}
+
+		if ( !Networking.IsHost && ballObject.IsValid() )
+		{
+			ApplyClientHeldPhysicsState( isHolding );
+		}
+
+		if ( (Networking.IsHost || Network.IsOwner) && !localDropPending && isHolding && ballObject.IsValid() )
+		{
+			KeepHeldBallAttachedToAnchor();
+		}
+
 		if ( isHolding && !ballObject.IsValid() )
 		{
 			ResetHoldingState();
@@ -36,7 +55,8 @@ public sealed class BallGrab : Component
 
 		if ( isHolding && Input.Pressed( InteractAction ) )
 		{
-			DropBall();
+			localDropPending = true;
+			RequestDropBallOnHost();
 			return;
 		}
 
@@ -46,11 +66,11 @@ public sealed class BallGrab : Component
 			return;
 		}
 
-		var inRange = Vector3.DistanceBetween( Transform.Position, ballObject.Transform.Position ) <= InteractDistance;
+		var inRange = Vector3.DistanceBetween( WorldPosition, ballObject.WorldPosition ) <= InteractDistance;
 
 		if ( inRange && !isHolding )
 		{
-			DebugOverlay.Text( ballObject.Transform.Position + Vector3.Up * 20f, PromptText );
+			DebugOverlay.Text( ballObject.WorldPosition + Vector3.Up * 20f, PromptText );
 		}
 
 		if ( !inRange )
@@ -61,7 +81,7 @@ public sealed class BallGrab : Component
 			if ( Time.Now < pickupBlockedUntilTime )
 				return;
 
-			PickUpBall();
+			RequestPickUpBallOnHost();
 		}
 	}
 
@@ -70,7 +90,6 @@ public sealed class BallGrab : Component
 		if ( MainBall.IsValid() )
 		{
 			ballObject = MainBall;
-			ballBody = ballObject.Components.Get<Rigidbody>();
 			return;
 		}
 
@@ -96,7 +115,6 @@ public sealed class BallGrab : Component
 		}
 
 		ballObject = firstMatch;
-		ballBody = ballObject.IsValid() ? ballObject.Components.Get<Rigidbody>() : null;
 	}
 
 	private void PickUpBall()
@@ -107,17 +125,21 @@ public sealed class BallGrab : Component
 		ballOriginalParent = ballObject.Parent;
 
 		var parentTarget = HoldAnchor.IsValid() ? HoldAnchor : GameObject;
-		ballObject.SetParent( parentTarget, true );
-		ballObject.Transform.Position = parentTarget.Transform.Position;
-		ballObject.Transform.Rotation = parentTarget.Transform.Rotation;
+		ballObject.WorldPosition = parentTarget.WorldPosition;
+		ballObject.WorldRotation = parentTarget.WorldRotation;
 
-		if ( ballBody.IsValid() )
+		ballBodiesToRestore.Clear();
+		foreach ( var body in ballObject.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
 		{
-			ballBody.Enabled = false;
+			if ( !body.IsValid() )
+				continue;
+
+			body.Enabled = false;
+			ballBodiesToRestore.Add( body );
 		}
 
 		ballCollidersToRestore.Clear();
-		foreach ( var collider in ballObject.Components.GetAll<Collider>() )
+		foreach ( var collider in ballObject.Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ) )
 		{
 			if ( !collider.IsValid() )
 				continue;
@@ -126,7 +148,7 @@ public sealed class BallGrab : Component
 			ballCollidersToRestore.Add( collider );
 		}
 
-		isHolding = true;
+		NetIsHolding = true;
 	}
 
 	private void DropBall()
@@ -134,17 +156,70 @@ public sealed class BallGrab : Component
 		ReleaseHeldBall();
 	}
 
+	[Rpc.Host]
+	private void RequestPickUpBallOnHost()
+	{
+		var hostDistanceToBall = ballObject.IsValid()
+			? Vector3.DistanceBetween( WorldPosition, ballObject.WorldPosition )
+			: -1f;
+
+		if ( EnableNetDebugLogs )
+		{
+			Log.Info( $"[NetDebug] Host pickup request received. Caller={Rpc.Caller.DisplayName} HolderObject={GameObject.Name} BallValid={ballObject.IsValid()} IsHolding={isHolding} HostDistanceToBall={hostDistanceToBall}" );
+		}
+
+		if ( !ballObject.IsValid() || isHolding )
+			return;
+
+		if ( Time.Now < pickupBlockedUntilTime )
+			return;
+
+		PickUpBall();
+		AssignBallOwner( Connection.Host );
+		if ( EnableNetDebugLogs )
+		{
+			Log.Info( $"[NetDebug] Host approved pickup. HolderObject={GameObject.Name}" );
+		}
+	}
+
+	[Rpc.Host]
+	private void RequestDropBallOnHost()
+	{
+		if ( EnableNetDebugLogs )
+		{
+			Log.Info( $"[NetDebug] Host drop request received. Caller={Rpc.Caller.DisplayName} IsHolding={isHolding}" );
+		}
+
+		if ( !isHolding )
+			return;
+
+		AssignBallOwner( Connection.Host );
+		DropBall();
+		localDropPending = false;
+	}
+
 	public GameObject ReleaseHeldBall()
 	{
 		if ( !ballObject.IsValid() || !isHolding )
 			return null;
 
-		ballObject.SetParent( ballOriginalParent, true );
-
-		if ( ballBody.IsValid() )
+		var dropSource = HoldAnchor.IsValid() ? HoldAnchor : GameObject;
+		if ( dropSource.IsValid() )
 		{
-			ballBody.Enabled = true;
+			// Keep the dropped ball out of player collider overlap to avoid explosive bounce.
+			ballObject.WorldPosition = dropSource.WorldPosition + (dropSource.WorldRotation.Forward * 20f) + (Vector3.Up * 4f);
 		}
+
+		foreach ( var body in ballBodiesToRestore )
+		{
+			if ( !body.IsValid() )
+				continue;
+
+			body.Velocity = Vector3.Zero;
+			body.AngularVelocity = Vector3.Zero;
+			body.Enabled = true;
+		}
+		ballBodiesToRestore.Clear();
 
 		foreach ( var collider in ballCollidersToRestore )
 		{
@@ -155,8 +230,61 @@ public sealed class BallGrab : Component
 		}
 		ballCollidersToRestore.Clear();
 
-		isHolding = false;
+		NetIsHolding = false;
+		localDropPending = false;
 		return ballObject;
+	}
+
+	public void TransferBallOwnershipToHost()
+	{
+		AssignBallOwner( Connection.Host );
+	}
+
+	private void KeepHeldBallAttachedToAnchor()
+	{
+		var parentTarget = HoldAnchor.IsValid() ? HoldAnchor : GameObject;
+		if ( !parentTarget.IsValid() )
+			return;
+
+		ballObject.WorldPosition = parentTarget.WorldPosition;
+		ballObject.WorldRotation = parentTarget.WorldRotation;
+	}
+
+	private void ApplyClientHeldPhysicsState( bool holding )
+	{
+		// Keep client-side ball physics quiet while held so local simulation
+		// does not fight networked host authority.
+		foreach ( var body in ballObject.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !body.IsValid() )
+				continue;
+
+			body.Enabled = !holding;
+			if ( holding )
+			{
+				body.Velocity = Vector3.Zero;
+				body.AngularVelocity = Vector3.Zero;
+			}
+		}
+
+		foreach ( var collider in ballObject.Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !collider.IsValid() )
+				continue;
+
+			collider.Enabled = !holding;
+		}
+	}
+
+	private void AssignBallOwner( Connection connection )
+	{
+		if ( !ballObject.IsValid() || connection is null )
+			return;
+
+		if ( !ballObject.Network.Active )
+			return;
+
+		ballObject.Network.AssignOwnership( connection );
 	}
 
 	public void BlockPickupForSeconds( float seconds )
@@ -167,8 +295,8 @@ public sealed class BallGrab : Component
 	private void ResetHoldingState()
 	{
 		ballCollidersToRestore.Clear();
-		ballBody = null;
 		ballOriginalParent = null;
-		isHolding = false;
+		NetIsHolding = false;
+		localDropPending = false;
 	}
 }

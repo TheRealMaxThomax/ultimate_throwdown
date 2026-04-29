@@ -12,6 +12,7 @@ public sealed class BallThrow : Component
 	[Property] public float MaxThrowChargeTime { get; set; } = 2.0f;
 	[Property] public float MinThrowForceMultiplier { get; set; } = 0.35f;
 	[Property] public float MinThrowUpForceMultiplier { get; set; } = 0.6f;
+	[Property] public bool EnableNetDebugLogs { get; set; } = true;
 
 	private BallGrab ballGrab;
 	private ThrowChargeBar throwChargeBar;
@@ -47,7 +48,10 @@ public sealed class BallThrow : Component
 
 		if ( isChargingThrow && Input.Released( ThrowAction ) )
 		{
-			ThrowHeldBall();
+			var chargeLerp = GetThrowChargeLerp();
+			isChargingThrow = false;
+			throwChargeBar?.Hide();
+			RequestThrowHeldBallOnHost( chargeLerp );
 		}
 
 		if ( isChargingThrow )
@@ -72,11 +76,18 @@ public sealed class BallThrow : Component
 		throwChargeBar?.SetCharge( 0f );
 	}
 
-	private void ThrowHeldBall()
+	[Rpc.Host]
+	private void RequestThrowHeldBallOnHost( float chargeLerp )
 	{
-		isChargingThrow = false;
-		throwChargeBar?.Hide();
+		if ( EnableNetDebugLogs )
+		{
+			Log.Info( $"[NetDebug] Host throw request received. Caller={Rpc.Caller.DisplayName} IsHolding={(ballGrab?.IsHolding ?? false)} Charge={chargeLerp}" );
+		}
 
+		if ( ballGrab is null || !ballGrab.IsHolding )
+			return;
+
+		ballGrab.TransferBallOwnershipToHost();
 		var releasedBall = ballGrab.ReleaseHeldBall();
 		if ( !releasedBall.IsValid() )
 			return;
@@ -87,15 +98,19 @@ public sealed class BallThrow : Component
 		if ( !releasedBallBody.IsValid() )
 			return;
 
-		var chargeLerp = GetThrowChargeLerp();
+		chargeLerp = chargeLerp.Clamp( 0f, 1f );
 		var throwForceMultiplier = MinThrowForceMultiplier.LerpTo( 1f, chargeLerp );
 		var throwUpForceMultiplier = MinThrowUpForceMultiplier.LerpTo( 1f, chargeLerp );
 
 		var directionSource = ThrowDirectionSource.IsValid() ? ThrowDirectionSource : GameObject;
 		var throwDirection = directionSource.WorldRotation.Forward;
-		var throwStartPosition = releasedBall.Transform.Position + (throwDirection * ThrowStartOffset) + (Vector3.Up * 10f);
-		releasedBall.Transform.Position = throwStartPosition;
+		var throwStartPosition = releasedBall.WorldPosition + (throwDirection * ThrowStartOffset) + (Vector3.Up * 10f);
+		releasedBall.WorldPosition = throwStartPosition;
 		releasedBallBody.Velocity = (throwDirection * ThrowForce * throwForceMultiplier) + (Vector3.Up * ThrowUpForce * throwUpForceMultiplier);
+		if ( EnableNetDebugLogs )
+		{
+			Log.Info( $"[NetDebug] Host applied throw. Speed={releasedBallBody.Velocity.Length}" );
+		}
 	}
 
 	private float GetThrowChargeLerp()

@@ -25,6 +25,11 @@ public sealed class CatchUpSpeedBoost : Component
 
 	protected override void OnUpdate()
 	{
+		// Networking safety: movement speed authority should come from the
+		// authoritative instance, not proxy copies.
+		if ( IsProxy )
+			return;
+
 		if ( !playerController.IsValid() )
 		{
 			playerController = Components.Get<PlayerController>();

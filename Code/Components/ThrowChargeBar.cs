@@ -25,6 +25,9 @@ public sealed class ThrowChargeBar : Component
 
 	protected override void OnUpdate()
 	{
+		if ( IsProxy )
+			return;
+
 		if ( !isVisible )
 			return;
 
