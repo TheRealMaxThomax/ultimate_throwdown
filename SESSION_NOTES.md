@@ -6,8 +6,8 @@ Keep entries short, specific, and current.
 ## Project Snapshot
 - **Current Goal:** Core ball gameplay first: stable grab/drop/throw before animation polish.
 - **Current Branch:** `main` (tracking `origin/main`).
-- **Build/Run Status:** s&box opens and scripts compile. Multiplayer grab/drop/throw is stable across host/client with `BallGrab` authoritative and `BallClientFeel` handling client feel. Cosmetics now sync for all players on host and clients via `PlayerCosmeticsSync`; visual LOD flicker issues were stabilized by locking player/clothing renderers to highest LOD after apply.
-- **Last Updated:** 30/04/26
+- **Build/Run Status:** s&box opens and scripts compile. Multiplayer grab/drop/throw still works. Ball size was increased (`main_ball` scale `0.4`) and passive push anti-abuse tuning is active in `CatchUpSpeedBoost` (`BallPushBlockRadius=30`, `BallPushApproachDot=0.1`). Major unresolved blocker remains: first-contact client solidity inconsistency until first grab/drop cycle.
+- **Last Updated:** 30/04/26 (late session)
 
 ## Important Decisions
 - **Keep `BallGrab` as the source of truth for hold state.**
@@ -33,6 +33,9 @@ Keep entries short, specific, and current.
   - Date: 2026-04-30
 - **Lock player/clothing LOD after cosmetics apply (`LodOverride = 0`).**
   - Why: Prevents camera-distance/angle skin tone and cosmetic visual glitches caused by LOD transitions.
+  - Date: 2026-04-30
+- **Keep experimental ball push/lock systems scoped and removable.**
+  - Why: Several anti-push experiments caused regressions; keep core grab/throw stable while iterating.
   - Date: 2026-04-30
 
 ## Constraints and Rules
@@ -110,9 +113,9 @@ Treat these as mandatory implementation rules for all new gameplay features.
   - Next action: Run 2-3 player session and validate pickup/drop/throw, cosmetics visibility, and camera-distance render stability for 10+ minutes.
 
 ## Current Plan (Top 3)
-1. Run a short multiplayer regression pass (2-3 windows) to confirm no regressions in pickup/drop/throw sync after cosmetics and LOD fixes.
-2. Resume `BallClientFeel` free-ball tuning to reduce host/client contact feel difference while preserving shared location consistency.
-3. Playtest and tune movement ramp values in `CatchUpSpeedBoost` and charged throw feel once free-ball feel is acceptable.
+1. Solve the MUST-SOLVE client first-contact ball solidity bug (client can walk/jump into ball until first grab/drop).
+2. Keep grab/throw stable while deciding final design for passive push (likely disabled or heavily limited until kick exists).
+3. Add intentional kick mechanic later as the reliable way to move free ball via player action.
 
 ## Proven Fix Recipes (Reuse)
 Use these when the same symptom appears again.
@@ -171,6 +174,7 @@ Use these exact names unless explicitly changed in chat.
 - Charge tuning properties in `BallThrow`: `MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`
 - Charge-state public getter in `BallThrow`: `IsChargingThrow`
 - Catch-up movement properties in `CatchUpSpeedBoost`: `ForwardAction`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `MinForwardInput`
+- Anti-dribble properties in `CatchUpSpeedBoost`: `BallPushBlockRadius`, `BallPushApproachDot`
 - Throw charge bar property in `ThrowChargeBar`: `ChargeBarOffset`
 - Core release method in `BallGrab`: `ReleaseHeldBall()`
 - Pickup lockout method in `BallGrab`: `BlockPickupForSeconds(float seconds)`
@@ -186,5 +190,5 @@ Paste this at the start of a new session:
 Update this checklist before ending a chat:
 
 - What changed: Split client-side feel/smoothing code out of `BallGrab` into new `BallClientFeel`. `BallGrab` now focuses on host-authoritative grab/drop/hold state and RPC flow. Scene now includes `BallClientFeel` with tuning properties for free-ball responsiveness.
-- What is still blocked: Core gameplay is stable; remaining polish gap is client free-ball collision feel versus host.
-- Exactly what to do next: Run 2-3 window regression pass (pickup/drop/throw + cosmetics visibility + camera-distance visual stability), then continue `BallClientFeel` tuning (`FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`) with repeatable push tests.
+- What is still blocked: MUST-SOLVE client first-contact ball solidity inconsistency (before first grab/drop) and related exploit risk.
+- Exactly what to do next: Repro in fresh host + 2 clients without any pickup first, instrument/log first-contact ball state on host/client, and implement a deterministic pre-interaction normalization that does not require pickup/drop to stabilize.
