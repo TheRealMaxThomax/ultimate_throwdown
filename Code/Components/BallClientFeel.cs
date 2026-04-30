@@ -63,7 +63,7 @@ public sealed class BallClientFeel : Component
 		{
 			if ( appliedFreeProxyState )
 			{
-				ApplyClientProxyBallState( ball, false );
+				ApplyFreeBallOwnerProxyState( ball, false );
 				appliedFreeProxyState = false;
 			}
 			return;
@@ -89,9 +89,10 @@ public sealed class BallClientFeel : Component
 
 		if ( !appliedFreeProxyState )
 		{
-			// Use visual-follow only for free ball on owning client to avoid local physics
+			// Use visual-follow only for free ball on owning client to avoid local rigidbody
 			// fighting host-sync correction during bounces (jitter/rapid up-down artifacts).
-			ApplyClientProxyBallState( ball, true );
+			// Keep colliders enabled so first-contact solidity remains consistent.
+			ApplyFreeBallOwnerProxyState( ball, true );
 			appliedFreeProxyState = true;
 		}
 
@@ -157,6 +158,32 @@ public sealed class BallClientFeel : Component
 				continue;
 
 			collider.Enabled = !holding;
+		}
+	}
+
+	private static void ApplyFreeBallOwnerProxyState( GameObject ball, bool useVisualProxy )
+	{
+		foreach ( var body in ball.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !body.IsValid() )
+				continue;
+
+			body.Enabled = !useVisualProxy;
+			if ( useVisualProxy )
+			{
+				body.Velocity = Vector3.Zero;
+				body.AngularVelocity = Vector3.Zero;
+			}
+		}
+
+		// Preserve colliders while proxying free-ball visuals so the client still gets
+		// immediate solid contact before any pickup/drop cycle.
+		foreach ( var collider in ball.Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !collider.IsValid() )
+				continue;
+
+			collider.Enabled = true;
 		}
 	}
 
