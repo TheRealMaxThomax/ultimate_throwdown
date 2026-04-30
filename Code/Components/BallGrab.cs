@@ -22,6 +22,7 @@ public sealed class BallGrab : Component
 	[Sync( SyncFlags.FromHost )] private Rotation NetHeldBallWorldRotation { get; set; }
 	private float pickupBlockedUntilTime;
 	private bool localDropPending;
+	private bool appliedClientHeldProxyState;
 	public bool IsHolding => isHolding;
 	public GameObject HeldBall => ballObject;
 	public Vector3 SyncedBallWorldPosition => NetHeldBallWorldPosition;
@@ -44,6 +45,10 @@ public sealed class BallGrab : Component
 			KeepHeldBallAttachedToAnchor();
 			NetHeldBallWorldPosition = ballObject.WorldPosition;
 			NetHeldBallWorldRotation = ballObject.WorldRotation;
+		}
+		else if ( !Networking.IsHost && ballObject.IsValid() )
+		{
+			ApplyClientHeldVisualState();
 		}
 
 		if ( isHolding && !ballObject.IsValid() )
@@ -259,6 +264,58 @@ public sealed class BallGrab : Component
 		ballObject.WorldRotation = parentTarget.WorldRotation;
 	}
 
+	private void ApplyClientHeldVisualState()
+	{
+		if ( isHolding )
+		{
+			var parentTarget = HoldAnchor.IsValid() ? HoldAnchor : GameObject;
+			if ( parentTarget.IsValid() )
+			{
+				ballObject.WorldPosition = parentTarget.WorldPosition;
+				ballObject.WorldRotation = parentTarget.WorldRotation;
+			}
+			else
+			{
+				ballObject.WorldPosition = NetHeldBallWorldPosition;
+				ballObject.WorldRotation = NetHeldBallWorldRotation;
+			}
+
+			ApplyClientProxyBallState( ballObject, true );
+			appliedClientHeldProxyState = true;
+			return;
+		}
+
+		if ( !appliedClientHeldProxyState )
+			return;
+
+		ApplyClientProxyBallState( ballObject, false );
+		appliedClientHeldProxyState = false;
+	}
+
+	private static void ApplyClientProxyBallState( GameObject ball, bool holding )
+	{
+		foreach ( var body in ball.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !body.IsValid() )
+				continue;
+
+			body.Enabled = !holding;
+			if ( holding )
+			{
+				body.Velocity = Vector3.Zero;
+				body.AngularVelocity = Vector3.Zero;
+			}
+		}
+
+		foreach ( var collider in ball.Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !collider.IsValid() )
+				continue;
+
+			collider.Enabled = !holding;
+		}
+	}
+
 	private void AssignBallOwner( Connection connection )
 	{
 		if ( !ballObject.IsValid() || connection is null )
@@ -281,5 +338,6 @@ public sealed class BallGrab : Component
 		ballOriginalParent = null;
 		NetIsHolding = false;
 		localDropPending = false;
+		appliedClientHeldProxyState = false;
 	}
 }
