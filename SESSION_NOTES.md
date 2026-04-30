@@ -6,8 +6,8 @@ Keep entries short, specific, and current.
 ## Project Snapshot
 - **Current Goal:** Core ball gameplay first: stable grab/drop/throw before animation polish.
 - **Current Branch:** `main` (tracking `origin/main`).
-- **Build/Run Status:** s&box opens and scripts compile. `BallGrab` was split so client-side visual/smoothing logic now lives in `BallClientFeel` while host-authoritative grab/drop state stays in `BallGrab`. Multiplayer host/client can both see pickup/drop for both players in baseline tests; free-ball feel tuning is still in progress.
-- **Last Updated:** 29/04/26
+- **Build/Run Status:** s&box opens and scripts compile. Multiplayer grab/drop/throw is stable across host/client with `BallGrab` authoritative and `BallClientFeel` handling client feel. Cosmetics now sync for all players on host and clients via `PlayerCosmeticsSync`; visual LOD flicker issues were stabilized by locking player/clothing renderers to highest LOD after apply.
+- **Last Updated:** 30/04/26
 
 ## Important Decisions
 - **Keep `BallGrab` as the source of truth for hold state.**
@@ -25,6 +25,15 @@ Keep entries short, specific, and current.
 - **Use startup scene `scenes/throwdown_prototype.scene` with `GameNetworkManager` active.**
   - Why: Local multi-window networking tests require the correct gameplay scene and per-connection player spawning.
   - Date: 2026-04-29
+- **Keep cosmetics sync in a dedicated visual component (`PlayerCosmeticsSync`) instead of `GameNetworkManager`.**
+  - Why: Isolates visual/avatar timing logic from network spawn authority to avoid multiplayer spawn regressions.
+  - Date: 2026-04-30
+- **Use `ClothingContainer.CreateFromConnection(ownerConnection, false)` for remote cosmetics apply.**
+  - Why: Remote clients may not have ownership verification for other players; `removeUnowned=true` can strip valid cosmetics.
+  - Date: 2026-04-30
+- **Lock player/clothing LOD after cosmetics apply (`LodOverride = 0`).**
+  - Why: Prevents camera-distance/angle skin tone and cosmetic visual glitches caused by LOD transitions.
+  - Date: 2026-04-30
 
 ## Constraints and Rules
 Only include constraints that are easy to forget and expensive to violate.
@@ -34,6 +43,7 @@ Only include constraints that are easy to forget and expensive to violate.
 - Code style/conventions: Beginner-readable names, short methods, one source of truth for state.
 - Tooling/workflow constraints: After script edits, allow recompile/restart editor if component does not appear.
 - Networking constraints: Ball gameplay state is host-authoritative; avoid client-only gameplay mutation paths.
+- Cosmetics/visual constraints: Keep avatar/cosmetics apply logic visual-only and isolated from spawn authority components.
 - Refactor safety constraint: Mark cleanup chats as `refactor-only, no behavior change intended`, keep scope to 1-2 files, and run quick regression checks after.
 
 ## Network-Safe Rules (Always Apply)
@@ -90,11 +100,15 @@ Treat these as mandatory implementation rules for all new gameplay features.
   - Impact: Ball is largely consistent across screens, but client contact feels less direct/smooth than host contact.
   - Owner: Max
   - Next action: Tune/iterate free-ball client visual follow settings and validate with repeatable push tests from multiple angles.
+- [ ] Need one fresh regression pass after cosmetics + LOD stabilization commit.
+  - Impact: Main flows are passing, but one clean verification pass helps catch any side effects before moving to new features.
+  - Owner: Max
+  - Next action: Run 2-3 player session and validate pickup/drop/throw, cosmetics visibility, and camera-distance render stability for 10+ minutes.
 
 ## Current Plan (Top 3)
-1. Run focused multiplayer validation pass using 2 windows (`Join via new instance`) and confirm no regressions in pickup/drop/throw sync.
-2. Improve client free-ball collision feel via `BallClientFeel` tuning while preserving shared host/client ball location consistency.
-3. Playtest and tune movement ramp values in `CatchUpSpeedBoost` and charged throw feel once networking baseline is comfortable.
+1. Run a short multiplayer regression pass (2-3 windows) to confirm no regressions in pickup/drop/throw sync after cosmetics and LOD fixes.
+2. Resume `BallClientFeel` free-ball tuning to reduce host/client contact feel difference while preserving shared location consistency.
+3. Playtest and tune movement ramp values in `CatchUpSpeedBoost` and charged throw feel once free-ball feel is acceptable.
 
 ## Component Missing Recovery (s&box)
 If a component (for example `BallThrow`) does not appear in Add Component:
@@ -131,6 +145,8 @@ Use these exact names unless explicitly changed in chat.
 - Throw charge bar property in `ThrowChargeBar`: `ChargeBarOffset`
 - Core release method in `BallGrab`: `ReleaseHeldBall()`
 - Pickup lockout method in `BallGrab`: `BlockPickupForSeconds(float seconds)`
+- Cosmetics sync component: `PlayerCosmeticsSync`
+- Cosmetics sync properties: `FirstApplyDelay`, `RetryInterval`, `MaxApplyAttempts`, `LockHighestLodAfterApply`, `EnableDebugLogs`
 
 ## Next Chat Kickoff
 Paste this at the start of a new session:
@@ -141,5 +157,5 @@ Paste this at the start of a new session:
 Update this checklist before ending a chat:
 
 - What changed: Split client-side feel/smoothing code out of `BallGrab` into new `BallClientFeel`. `BallGrab` now focuses on host-authoritative grab/drop/hold state and RPC flow. Scene now includes `BallClientFeel` with tuning properties for free-ball responsiveness.
-- What is still blocked: Client free-ball collision feel still not as natural/snappy as host despite improved shared-location consistency.
-- Exactly what to do next: Run 2-window free-ball push tests (host push + client push from multiple approach angles), tune `BallClientFeel` properties (`FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`), and only then continue with gameplay tuning/features.
+- What is still blocked: Core gameplay is stable; remaining polish gap is client free-ball collision feel versus host.
+- Exactly what to do next: Run 2-3 window regression pass (pickup/drop/throw + cosmetics visibility + camera-distance visual stability), then continue `BallClientFeel` tuning (`FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`) with repeatable push tests.

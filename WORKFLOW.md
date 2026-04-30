@@ -51,6 +51,8 @@ Good commit message examples:
 - Use network icon -> `Join via new instance`.
 - Validate: both players visible, client pickup visible to both, client drop visible to both, client throw visible to both.
 - Validate free-ball push consistency: host push and client push produce matching direction/time/location on both windows.
+- Validate cosmetics visibility: each player sees every player's cosmetics (not just self).
+- Validate camera-distance render stability: skin/cosmetics should not shift/glitch when camera angle or distance changes.
 - If behavior differs by window, stop feature work and fix networking consistency first.
 
 ## Optional Safety Rule (Recommended)
