@@ -400,6 +400,7 @@
           "Flags": 0,
           "EnableDebugLogs": false,
           "FirstApplyDelay": 0.25,
+          "LockHighestLodAfterApply": true,
           "MaxApplyAttempts": 8,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,

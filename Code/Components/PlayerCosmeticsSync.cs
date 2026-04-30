@@ -8,6 +8,7 @@ public sealed class PlayerCosmeticsSync : Component
 	[Property] public float FirstApplyDelay { get; set; } = 0.25f;
 	[Property] public float RetryInterval { get; set; } = 1.0f;
 	[Property] public int MaxApplyAttempts { get; set; } = 8;
+	[Property] public bool LockHighestLodAfterApply { get; set; } = true;
 	[Property] public bool EnableDebugLogs { get; set; } = false;
 
 	private Dresser dresser;
@@ -94,6 +95,12 @@ public sealed class PlayerCosmeticsSync : Component
 			// Using removeUnowned=false prevents valid remote cosmetics from being stripped.
 			var clothing = ClothingContainer.CreateFromConnection( ownerConnection, false );
 			await clothing.ApplyAsync( bodyRenderer, CancellationToken.None );
+
+			if ( LockHighestLodAfterApply )
+			{
+				ApplyStableLodOverrides();
+			}
+
 			appliedSuccessfully = true;
 			if ( EnableDebugLogs )
 			{
@@ -123,6 +130,18 @@ public sealed class PlayerCosmeticsSync : Component
 		if ( EnableDebugLogs )
 		{
 			Log.Info( $"[Cosmetics] Retry {applyAttempts}/{MaxApplyAttempts} for '{GameObject.Name}': {reason}" );
+		}
+	}
+
+	private void ApplyStableLodOverrides()
+	{
+		foreach ( var renderer in Components.GetAll<ModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !renderer.IsValid() )
+				continue;
+
+			// Keep player body/clothing visuals stable across distance/camera angle changes.
+			renderer.LodOverride = 0;
 		}
 	}
 }
