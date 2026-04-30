@@ -1,14 +1,33 @@
 using Sandbox;
+using System.Collections.Generic;
 
 public sealed class BallClientFeel : Component
 {
 	[Property] public float FreeBallVisualFollowSharpness { get; set; } = 14f;
 	[Property] public float ContactBoostSharpness { get; set; } = 42f;
 	[Property] public float ContactBoostDuration { get; set; } = 0.12f;
+	[Property] public float InterpolationDelay { get; set; } = 0.06f;
+	[Property] public int MaxSnapshots { get; set; } = 24;
 
 	private BallGrab ballGrab;
 	private float contactBoostUntilTime;
 	private bool appliedHeldProxyState;
+	private bool appliedFreeProxyState;
+	private readonly List<BallSnapshot> snapshots = new();
+
+	private readonly struct BallSnapshot
+	{
+		public BallSnapshot( float time, Vector3 position, Rotation rotation )
+		{
+			Time = time;
+			Position = position;
+			Rotation = rotation;
+		}
+
+		public float Time { get; }
+		public Vector3 Position { get; }
+		public Rotation Rotation { get; }
+	}
 
 	protected override void OnStart()
 	{
@@ -39,7 +58,14 @@ public sealed class BallClientFeel : Component
 		}
 
 		if ( !Network.IsOwner )
+		{
+			if ( appliedFreeProxyState )
+			{
+				ApplyClientProxyBallState( ball, false );
+				appliedFreeProxyState = false;
+			}
 			return;
+		}
 
 		if ( isHolding )
 		{
@@ -55,14 +81,37 @@ public sealed class BallClientFeel : Component
 				ball.WorldPosition = ballGrab.SyncedBallWorldPosition;
 				ball.WorldRotation = ballGrab.SyncedBallWorldRotation;
 			}
+			snapshots.Clear();
+			return;
+		}
+
+		if ( !appliedFreeProxyState )
+		{
+			// Use visual-follow only for free ball on owning client to avoid local physics
+			// fighting host-sync correction during bounces (jitter/rapid up-down artifacts).
+			ApplyClientProxyBallState( ball, true );
+			appliedFreeProxyState = true;
+		}
+
+		var syncedPosition = ballGrab.SyncedBallWorldPosition;
+		var syncedRotation = ballGrab.SyncedBallWorldRotation;
+		RecordSnapshot( syncedPosition, syncedRotation );
+
+		if ( TryGetBufferedTarget( out var bufferedPosition, out var bufferedRotation ) )
+		{
+			// Buffered interpolation already smooths between host snapshots,
+			// so render directly to avoid double-smoothing floaty motion.
+			ball.WorldPosition = bufferedPosition;
+			ball.WorldRotation = bufferedRotation;
 			return;
 		}
 
 		TryTriggerContactVisualBoost( ball );
 
 		var visualSharpness = Time.Now < contactBoostUntilTime ? ContactBoostSharpness : FreeBallVisualFollowSharpness;
-		ball.WorldPosition = Vector3.Lerp( ball.WorldPosition, ballGrab.SyncedBallWorldPosition, Time.Delta * visualSharpness );
-		ball.WorldRotation = Rotation.Slerp( ball.WorldRotation, ballGrab.SyncedBallWorldRotation, Time.Delta * visualSharpness );
+		var followAlpha = MathX.Clamp( Time.Delta * visualSharpness, 0f, 1f );
+		ball.WorldPosition = Vector3.Lerp( ball.WorldPosition, syncedPosition, followAlpha );
+		ball.WorldRotation = Rotation.Slerp( ball.WorldRotation, syncedRotation, followAlpha );
 	}
 
 	private void TryTriggerContactVisualBoost( GameObject ball )
@@ -106,5 +155,57 @@ public sealed class BallClientFeel : Component
 
 			collider.Enabled = !holding;
 		}
+	}
+
+	private void RecordSnapshot( Vector3 position, Rotation rotation )
+	{
+		if ( snapshots.Count > 0 )
+		{
+			var last = snapshots[snapshots.Count - 1];
+			if ( last.Position == position && last.Rotation == rotation )
+				return;
+		}
+
+		snapshots.Add( new BallSnapshot( Time.Now, position, rotation ) );
+		if ( snapshots.Count > MaxSnapshots )
+		{
+			snapshots.RemoveAt( 0 );
+		}
+	}
+
+	private bool TryGetBufferedTarget( out Vector3 position, out Rotation rotation )
+	{
+		position = default;
+		rotation = default;
+
+		if ( snapshots.Count == 0 )
+			return false;
+
+		var targetTime = Time.Now - InterpolationDelay;
+		if ( snapshots.Count == 1 || targetTime <= snapshots[0].Time )
+		{
+			position = snapshots[0].Position;
+			rotation = snapshots[0].Rotation;
+			return true;
+		}
+
+		for ( var i = 1; i < snapshots.Count; i++ )
+		{
+			var newer = snapshots[i];
+			if ( newer.Time < targetTime )
+				continue;
+
+			var older = snapshots[i - 1];
+			var span = newer.Time - older.Time;
+			var t = span > 0.0001f ? MathX.Clamp( (targetTime - older.Time) / span, 0f, 1f ) : 1f;
+			position = Vector3.Lerp( older.Position, newer.Position, t );
+			rotation = Rotation.Slerp( older.Rotation, newer.Rotation, t );
+			return true;
+		}
+
+		var last = snapshots[snapshots.Count - 1];
+		position = last.Position;
+		rotation = last.Rotation;
+		return true;
 	}
 }
