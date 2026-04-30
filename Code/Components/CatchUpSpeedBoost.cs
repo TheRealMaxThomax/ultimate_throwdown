@@ -10,8 +10,8 @@ public sealed class CatchUpSpeedBoost : Component
 	[Property] public float TimeToSprintSpeed { get; set; } = 2.0f;
 	[Property] public float TimeToCatchUpSpeed { get; set; } = 4.0f;
 	[Property] public float MinForwardInput { get; set; } = 0.1f;
-	[Property] public float BallPushBlockRadius { get; set; } = 90f;
-	[Property] public float BallPushApproachDot { get; set; } = 0.25f;
+	[Property] public float BallPushBlockRadius { get; set; } = 30f;
+	[Property] public float BallPushApproachDot { get; set; } = 0.1f;
 
 	private BallGrab ballGrab;
 	private BallThrow ballThrow;

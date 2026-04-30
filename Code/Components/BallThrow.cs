@@ -107,6 +107,7 @@ public sealed class BallThrow : Component
 		var throwStartPosition = releasedBall.WorldPosition + (throwDirection * ThrowStartOffset) + (Vector3.Up * 10f);
 		releasedBall.WorldPosition = throwStartPosition;
 		releasedBallBody.Velocity = (throwDirection * ThrowForce * throwForceMultiplier) + (Vector3.Up * ThrowUpForce * throwUpForceMultiplier);
+		releasedBall.Components.Get<BallPlayerPushLock>()?.SuppressForSeconds( 0.75f );
 		if ( EnableNetDebugLogs )
 		{
 			Log.Info( $"[NetDebug] Host applied throw. Speed={releasedBallBody.Velocity.Length}" );

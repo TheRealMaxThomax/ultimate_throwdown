@@ -34,6 +34,9 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 	public void OnActive( Connection connection )
 	{
+		if ( !Networking.IsHost )
+			return;
+
 		SpawnPlayerForConnectionIfMissing( connection );
 	}
 
@@ -151,4 +154,5 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 			Log.Info( $"[NetDebug] Spawned player for {connection.DisplayName} ({connection.SteamId})." );
 		}
 	}
+
 }

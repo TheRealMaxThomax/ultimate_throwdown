@@ -80,6 +80,10 @@ Treat these as mandatory implementation rules for all new gameplay features.
 - Reminder: If naming confusion/repeated renames starts happening, propose expanding Naming Canon (especially before team size or system count grows).
 
 ## Known Issues / Risks
+- [ ] MUST SOLVE: client sees ball as non-solid on first interaction (can walk/jump into it) until first grab+drop cycle.
+  - Impact: High exploit risk and inconsistent game feel; clients can generate unfair ball movement before normalization.
+  - Owner: Max
+  - Next action: Implement a reliable per-client first-contact solid-state fix that works before any pickup/drop (treat as blocking issue before release).
 - [ ] Throw tuning still placeholder (force/arc may need balancing).
   - Impact: Throw feel may be too strong/weak depending on map and movement speed.
   - Owner: Max
