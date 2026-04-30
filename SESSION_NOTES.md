@@ -6,8 +6,8 @@ Keep entries short, specific, and current.
 ## Project Snapshot
 - **Current Goal:** Core ball gameplay first: stable grab/drop/throw before animation polish.
 - **Current Branch:** `main` (tracking `origin/main`).
-- **Build/Run Status:** s&box opens and scripts compile. Multiplayer grab/drop/throw still works. Ball size was increased (`main_ball` scale `0.4`) and passive push anti-abuse tuning is active in `CatchUpSpeedBoost` (`BallPushBlockRadius=30`, `BallPushApproachDot=0.1`). Major unresolved blocker remains: first-contact client solidity inconsistency until first grab/drop cycle.
-- **Last Updated:** 30/04/26 (late session)
+- **Build/Run Status:** s&box opens and scripts compile. Multiplayer grab/drop/throw still works. Ball size was increased (`main_ball` scale `0.4`) and passive push anti-abuse tuning is active in `CatchUpSpeedBoost` (`BallPushBlockRadius=30`, `BallPushApproachDot=0.1`). MUST-SOLVE first-contact client solidity bug was fixed by keeping colliders enabled during owning-client free-ball visual proxy in `BallClientFeel`.
+- **Last Updated:** 30/04/26 (solidity fix landed)
 
 ## Important Decisions
 - **Keep `BallGrab` as the source of truth for hold state.**
@@ -83,10 +83,24 @@ Treat these as mandatory implementation rules for all new gameplay features.
 - Reminder: If naming confusion/repeated renames starts happening, propose expanding Naming Canon (especially before team size or system count grows).
 
 ## Known Issues / Risks
-- [ ] MUST SOLVE: client sees ball as non-solid on first interaction (can walk/jump into it) until first grab+drop cycle.
-  - Impact: High exploit risk and inconsistent game feel; clients can generate unfair ball movement before normalization.
+- [ ] TOP PRIORITY (next session): keep full ball physics feel, but remove reliable passive dribble from player body contact.
+  - What Max wants: `grab`, `throw`, and `kick` are the only intentional/reliable ways to move the ball.
+  - Must preserve: ball still collides/bounces off players and world, rolls naturally, and does not feel frozen/dead.
+  - Problem to prevent: players should not be able to effectively "walk the ball" with capsule contact as a strong movement mechanic.
+  - Recommended solution:
+    1. Keep player-ball collisions enabled (for believable bounce/contact), but treat them as low-authority movement.
+    2. Add host-authoritative anti-dribble dampening on the ball during recent player-contact windows.
+    3. In that window, clamp/dampen horizontal velocity in low/mid "dribble band" speeds, while allowing higher throw/kick speeds to carry.
+    4. Add a short post-kick/throw grace window where heavy dampening is reduced (so intentional actions still feel strong).
+    5. Tune physics materials (lower player-vs-ball friction, keep ball bounce reasonable) to reduce sticky rubbing/dribble.
+  - Suggested implementation shape: small dedicated ball component (for example `BallPlayerContactDampener`) with inspector tuning values and host-only velocity correction.
   - Owner: Max
-  - Next action: Implement a reliable per-client first-contact solid-state fix that works before any pickup/drop (treat as blocking issue before release).
+  - Next action: Implement minimal host-only dampener, run 2-3 window tests, and tune until passive dribble is weak but bounce/roll still feels alive.
+- [x] MUST SOLVED: client first-contact non-solid bug (could walk/jump into ball until first grab+drop).
+  - Impact: Previously high exploit risk and inconsistent feel; now mitigated with deterministic collider-on behavior.
+  - Owner: Max
+  - Fix landed: `BallClientFeel` free-ball owner proxy now disables rigidbodies only and keeps colliders enabled.
+  - Validation to keep: Fresh host + 2 clients, no pickup/drop first, confirm immediate solid contact on all windows.
 - [ ] Throw tuning still placeholder (force/arc may need balancing).
   - Impact: Throw feel may be too strong/weak depending on map and movement speed.
   - Owner: Max
@@ -113,9 +127,9 @@ Treat these as mandatory implementation rules for all new gameplay features.
   - Next action: Run 2-3 player session and validate pickup/drop/throw, cosmetics visibility, and camera-distance render stability for 10+ minutes.
 
 ## Current Plan (Top 3)
-1. Solve the MUST-SOLVE client first-contact ball solidity bug (client can walk/jump into ball until first grab/drop).
-2. Keep grab/throw stable while deciding final design for passive push (likely disabled or heavily limited until kick exists).
-3. Add intentional kick mechanic later as the reliable way to move free ball via player action.
+1. TOP PRIORITY: implement anti-dribble behavior so passive player body-push is not a reliable ball movement mechanic, while preserving natural bounce/roll physics.
+2. Run focused multiplayer regression/tuning pass: fresh startup no-warmup first-contact test, then passive push attempts, then rapid pickup/drop/throw spam.
+3. Add intentional kick mechanic as the primary free-ball movement action and tune dampener around kick/throw windows.
 
 ## Proven Fix Recipes (Reuse)
 Use these when the same symptom appears again.
@@ -126,7 +140,7 @@ Use these when the same symptom appears again.
 
 **What actually fixed it**
 1. Keep host as full gameplay/physics authority (`BallGrab` remains source of truth).
-2. In `BallClientFeel`, disable local free-ball physics/collision on owning client during free-ball visual follow (prevent local physics fighting host corrections).
+2. In `BallClientFeel`, disable local free-ball rigidbody simulation on owning client during free-ball visual follow, but keep colliders enabled (prevents local physics fighting host corrections while preserving first-contact solidity).
 3. Buffer recent host snapshots on client (`position`, `rotation`, timestamp) and render from delayed buffered target (`InterpolationDelay`) instead of chasing latest transform each frame.
 4. Avoid double smoothing: when buffered target is available, render directly from buffered interpolation result.
 5. Add velocity-aware interpolation path (snapshot linear velocity + Hermite position interpolation) to better preserve bounce/throw arc shape.
@@ -189,6 +203,6 @@ Paste this at the start of a new session:
 ## End-of-Session Handoff
 Update this checklist before ending a chat:
 
-- What changed: Split client-side feel/smoothing code out of `BallGrab` into new `BallClientFeel`. `BallGrab` now focuses on host-authoritative grab/drop/hold state and RPC flow. Scene now includes `BallClientFeel` with tuning properties for free-ball responsiveness.
-- What is still blocked: MUST-SOLVE client first-contact ball solidity inconsistency (before first grab/drop) and related exploit risk.
-- Exactly what to do next: Repro in fresh host + 2 clients without any pickup first, instrument/log first-contact ball state on host/client, and implement a deterministic pre-interaction normalization that does not require pickup/drop to stabilize.
+- What changed: Fixed MUST-SOLVE first-contact solidity bug by updating `BallClientFeel` free-ball owner proxy to keep colliders enabled while disabling rigidbody simulation. Also set next-session top priority: keep natural ball physics but remove reliable passive dribble/body-push.
+- What is still blocked: Passive body-push/dribble still needs host-authoritative dampening/tuning so contact remains believable but not an effective movement exploit.
+- Exactly what to do next: Build a small host-only contact dampener component on the ball (recent player-contact window, dribble-band horizontal damping/clamp, lighter damping during post-kick/throw grace window), then run 2-3 window tuning tests until bounce/roll feel is preserved and passive dribble is weak.
