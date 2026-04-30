@@ -110,6 +110,29 @@ Treat these as mandatory implementation rules for all new gameplay features.
 2. Resume `BallClientFeel` free-ball tuning to reduce host/client contact feel difference while preserving shared location consistency.
 3. Playtest and tune movement ramp values in `CatchUpSpeedBoost` and charged throw feel once free-ball feel is acceptable.
 
+## Proven Fix Recipes (Reuse)
+Use these when the same symptom appears again.
+
+### Client Free-Ball Jitter (Host looks good, client looks floaty/jittery)
+**Symptom**
+- Host sees natural bounces, client sees rapid up/down jitter or floaty correction (especially jump-apex drop tests).
+
+**What actually fixed it**
+1. Keep host as full gameplay/physics authority (`BallGrab` remains source of truth).
+2. In `BallClientFeel`, disable local free-ball physics/collision on owning client during free-ball visual follow (prevent local physics fighting host corrections).
+3. Buffer recent host snapshots on client (`position`, `rotation`, timestamp) and render from delayed buffered target (`InterpolationDelay`) instead of chasing latest transform each frame.
+4. Avoid double smoothing: when buffered target is available, render directly from buffered interpolation result.
+5. Add velocity-aware interpolation path (snapshot linear velocity + Hermite position interpolation) to better preserve bounce/throw arc shape.
+
+**What did NOT help enough**
+- Tuning only `FreeBallVisualFollowSharpness` / `ContactBoostSharpness` / `ContactBoostDuration` without changing interpolation approach.
+- Hard snap thresholds for normal motion (reduced one jitter pattern but made roll/push look framey/teleporty).
+
+**Validation path**
+- 2+ windows.
+- Repeat exact apex jump-drop test and normal run/push test from same start point.
+- Confirm host/client ball path similarity improved without introducing framey motion.
+
 ## Component Missing Recovery (s&box)
 If a component (for example `BallThrow`) does not appear in Add Component:
 
@@ -136,8 +159,10 @@ Use these exact names unless explicitly changed in chat.
 - Multiplayer manager component: `GameNetworkManager`
 - Sync property in `BallGrab`: `NetIsHolding`
 - Host-synced ball transform properties in `BallGrab`: `NetHeldBallWorldPosition`, `NetHeldBallWorldRotation`
+- Host-synced ball velocity properties in `BallGrab`: `NetHeldBallLinearVelocity`, `NetHeldBallAngularVelocity`
 - Multiplayer debug property: `EnableNetDebugLogs`
 - Free-ball feel properties in `BallClientFeel`: `FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`
+- Snapshot interpolation properties in `BallClientFeel`: `InterpolationDelay`, `MaxSnapshots`
 - Throw properties in `BallThrow`: `ThrowAction`, `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `PickupDelayAfterThrow`, `ThrowDirectionSource`
 - Charge tuning properties in `BallThrow`: `MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`
 - Charge-state public getter in `BallThrow`: `IsChargingThrow`

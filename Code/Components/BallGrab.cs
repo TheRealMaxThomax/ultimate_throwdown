@@ -20,6 +20,8 @@ public sealed class BallGrab : Component
 	[Sync( SyncFlags.FromHost )] private bool NetIsHolding { get => isHolding; set => isHolding = value; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetHeldBallWorldPosition { get; set; }
 	[Sync( SyncFlags.FromHost )] private Rotation NetHeldBallWorldRotation { get; set; }
+	[Sync( SyncFlags.FromHost )] private Vector3 NetHeldBallLinearVelocity { get; set; }
+	[Sync( SyncFlags.FromHost )] private Vector3 NetHeldBallAngularVelocity { get; set; }
 	private float pickupBlockedUntilTime;
 	private bool localDropPending;
 	private bool appliedClientHeldProxyState;
@@ -27,6 +29,8 @@ public sealed class BallGrab : Component
 	public GameObject HeldBall => ballObject;
 	public Vector3 SyncedBallWorldPosition => NetHeldBallWorldPosition;
 	public Rotation SyncedBallWorldRotation => NetHeldBallWorldRotation;
+	public Vector3 SyncedBallLinearVelocity => NetHeldBallLinearVelocity;
+	public Vector3 SyncedBallAngularVelocity => NetHeldBallAngularVelocity;
 
 	protected override void OnStart()
 	{
@@ -43,8 +47,7 @@ public sealed class BallGrab : Component
 		if ( Networking.IsHost && !localDropPending && isHolding && ballObject.IsValid() )
 		{
 			KeepHeldBallAttachedToAnchor();
-			NetHeldBallWorldPosition = ballObject.WorldPosition;
-			NetHeldBallWorldRotation = ballObject.WorldRotation;
+			UpdateSyncedBallState();
 		}
 		else if ( !Networking.IsHost && ballObject.IsValid() )
 		{
@@ -73,8 +76,7 @@ public sealed class BallGrab : Component
 
 		if ( Networking.IsHost )
 		{
-			NetHeldBallWorldPosition = ballObject.WorldPosition;
-			NetHeldBallWorldRotation = ballObject.WorldRotation;
+			UpdateSyncedBallState();
 		}
 
 		var inRange = Vector3.DistanceBetween( WorldPosition, ballObject.WorldPosition ) <= InteractDistance;
@@ -325,6 +327,28 @@ public sealed class BallGrab : Component
 			return;
 
 		ballObject.Network.AssignOwnership( connection );
+	}
+
+	private void UpdateSyncedBallState()
+	{
+		NetHeldBallWorldPosition = ballObject.WorldPosition;
+		NetHeldBallWorldRotation = ballObject.WorldRotation;
+
+		var body = GetPrimaryBallBody();
+		if ( body.IsValid() )
+		{
+			NetHeldBallLinearVelocity = body.Velocity;
+			NetHeldBallAngularVelocity = body.AngularVelocity;
+			return;
+		}
+
+		NetHeldBallLinearVelocity = Vector3.Zero;
+		NetHeldBallAngularVelocity = Vector3.Zero;
+	}
+
+	private Rigidbody GetPrimaryBallBody()
+	{
+		return ballObject.Components.Get<Rigidbody>( FindMode.EverythingInSelfAndDescendants );
 	}
 
 	public void BlockPickupForSeconds( float seconds )

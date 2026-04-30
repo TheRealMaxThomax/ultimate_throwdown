@@ -17,16 +17,18 @@ public sealed class BallClientFeel : Component
 
 	private readonly struct BallSnapshot
 	{
-		public BallSnapshot( float time, Vector3 position, Rotation rotation )
+		public BallSnapshot( float time, Vector3 position, Rotation rotation, Vector3 linearVelocity )
 		{
 			Time = time;
 			Position = position;
 			Rotation = rotation;
+			LinearVelocity = linearVelocity;
 		}
 
 		public float Time { get; }
 		public Vector3 Position { get; }
 		public Rotation Rotation { get; }
+		public Vector3 LinearVelocity { get; }
 	}
 
 	protected override void OnStart()
@@ -95,7 +97,8 @@ public sealed class BallClientFeel : Component
 
 		var syncedPosition = ballGrab.SyncedBallWorldPosition;
 		var syncedRotation = ballGrab.SyncedBallWorldRotation;
-		RecordSnapshot( syncedPosition, syncedRotation );
+		var syncedLinearVelocity = ballGrab.SyncedBallLinearVelocity;
+		RecordSnapshot( syncedPosition, syncedRotation, syncedLinearVelocity );
 
 		if ( TryGetBufferedTarget( out var bufferedPosition, out var bufferedRotation ) )
 		{
@@ -157,16 +160,16 @@ public sealed class BallClientFeel : Component
 		}
 	}
 
-	private void RecordSnapshot( Vector3 position, Rotation rotation )
+	private void RecordSnapshot( Vector3 position, Rotation rotation, Vector3 linearVelocity )
 	{
 		if ( snapshots.Count > 0 )
 		{
 			var last = snapshots[snapshots.Count - 1];
-			if ( last.Position == position && last.Rotation == rotation )
+			if ( last.Position == position && last.Rotation == rotation && last.LinearVelocity == linearVelocity )
 				return;
 		}
 
-		snapshots.Add( new BallSnapshot( Time.Now, position, rotation ) );
+		snapshots.Add( new BallSnapshot( Time.Now, position, rotation, linearVelocity ) );
 		if ( snapshots.Count > MaxSnapshots )
 		{
 			snapshots.RemoveAt( 0 );
@@ -198,7 +201,7 @@ public sealed class BallClientFeel : Component
 			var older = snapshots[i - 1];
 			var span = newer.Time - older.Time;
 			var t = span > 0.0001f ? MathX.Clamp( (targetTime - older.Time) / span, 0f, 1f ) : 1f;
-			position = Vector3.Lerp( older.Position, newer.Position, t );
+			position = HermitePosition( older, newer, t, span );
 			rotation = Rotation.Slerp( older.Rotation, newer.Rotation, t );
 			return true;
 		}
@@ -207,5 +210,19 @@ public sealed class BallClientFeel : Component
 		position = last.Position;
 		rotation = last.Rotation;
 		return true;
+	}
+
+	private static Vector3 HermitePosition( BallSnapshot older, BallSnapshot newer, float t, float span )
+	{
+		var t2 = t * t;
+		var t3 = t2 * t;
+		var h00 = (2f * t3) - (3f * t2) + 1f;
+		var h10 = t3 - (2f * t2) + t;
+		var h01 = (-2f * t3) + (3f * t2);
+		var h11 = t3 - t2;
+
+		var m0 = older.LinearVelocity * span;
+		var m1 = newer.LinearVelocity * span;
+		return (h00 * older.Position) + (h10 * m0) + (h01 * newer.Position) + (h11 * m1);
 	}
 }

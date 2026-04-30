@@ -53,6 +53,7 @@ Good commit message examples:
 - Validate free-ball push consistency: host push and client push produce matching direction/time/location on both windows.
 - Validate cosmetics visibility: each player sees every player's cosmetics (not just self).
 - Validate camera-distance render stability: skin/cosmetics should not shift/glitch when camera angle or distance changes.
+- If free-ball looks jittery/floaty only on client, use the proven recipe in `SESSION_NOTES.md` (`Proven Fix Recipes`) before random tuning.
 - If behavior differs by window, stop feature work and fix networking consistency first.
 
 ## Optional Safety Rule (Recommended)
