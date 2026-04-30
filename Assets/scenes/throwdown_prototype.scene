@@ -48,7 +48,7 @@
         },
         {
           "__type": "GameNetworkManager",
-          "__guid": "e98a7a15-141b-4a85-aef8-3d80a1f26ad5",
+          "__guid": "fbc3324a-74da-476d-9f9c-c1abccd478e0",
           "__enabled": true,
           "Flags": 0,
           "DisableTemplateOnStart": true,
@@ -377,6 +377,37 @@
           "StartMoveSpeed": 140,
           "TimeToCatchUpSpeed": 4,
           "TimeToSprintSpeed": 2
+        },
+        {
+          "__type": "BallClientFeel",
+          "__guid": "4ba1f8bf-ccb2-4c04-a1c1-c11cc50e7f81",
+          "__enabled": true,
+          "Flags": 0,
+          "ContactBoostDuration": 0.12,
+          "ContactBoostSharpness": 42,
+          "FreeBallVisualFollowSharpness": 14,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        },
+        {
+          "__type": "PlayerCosmeticsSync",
+          "__guid": "454d712a-a96b-448b-8c59-3317c8be8789",
+          "__enabled": true,
+          "Flags": 0,
+          "EnableDebugLogs": false,
+          "FirstApplyDelay": 0.25,
+          "MaxApplyAttempts": 8,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RetryInterval": 1
         }
       ],
       "Children": [
@@ -2492,18 +2523,18 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
+        }
       },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
         }
       },
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
-        }
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
       }
     }
   },
