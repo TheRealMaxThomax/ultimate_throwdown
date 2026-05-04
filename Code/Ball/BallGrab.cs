@@ -1,6 +1,5 @@
 using Sandbox;
 using Sandbox.Diagnostics;
-using System;
 
 public sealed class BallGrab : Component
 {
@@ -9,15 +8,11 @@ public sealed class BallGrab : Component
 	[Property] public float InteractDistance { get; set; } = 120f;
 	[Property] public string InteractAction { get; set; } = "use";
 	[Property] public float PickupDelayAfterDrop { get; set; } = 0.25f;
-	[Property] public float DropForwardOffset { get; set; } = 32f;
-	[Property] public float DropUpOffset { get; set; } = 8f;
-	[Property] public float DropCarryMultiplier { get; set; } = 0.45f;
-	[Property] public float DropMaxCarrySpeed { get; set; } = 180f;
-	[Property] public float DropCarryUpVelocity { get; set; } = 10f;
 	[Property] public float DropperNoPushWindow { get; set; } = 0.75f;
 	[Property] public float DropperNoPushRadius { get; set; } = 90f;
 	[Property] public float DropperMaxHorizontalSpeed { get; set; } = 60f;
 	[Property] public GameObject HoldAnchor { get; set; }
+	[Property] public float DropSideOffset { get; set; } = 50f;
 	[Property] public string PromptText { get; set; } = "Pick Up With E";
 	[Property] public bool EnableNetDebugLogs { get; set; } = false;
 
@@ -25,13 +20,6 @@ public sealed class BallGrab : Component
 	private GameObject ballOriginalParent;
 	private readonly List<Collider> ballCollidersToRestore = new();
 	private readonly List<Rigidbody> ballBodiesToRestore = new();
-	private Rigidbody playerBody;
-	private Vector3 previousWorldPosition;
-	private Vector3 estimatedWorldVelocity;
-	private bool hasPreviousWorldPosition;
-	private Vector3 previousHeldAnchorPosition;
-	private Vector3 estimatedHeldAnchorVelocity;
-	private bool hasPreviousHeldAnchorPosition;
 	private bool warnedAboutDuplicateMainBallName;
 	private bool isHolding;
 	[Sync( SyncFlags.FromHost )] private bool NetIsHolding { get => isHolding; set => isHolding = value; }
@@ -42,7 +30,6 @@ public sealed class BallGrab : Component
 	private float pickupBlockedUntilTime;
 	private float nextAutoGrabAttemptAt;
 	private float dropperNoPushUntilTime;
-	private float noPushPreservedHorizontalSpeed;
 	private bool localDropPending;
 	private bool appliedClientHeldProxyState;
 	public bool IsHolding => isHolding;
@@ -54,19 +41,11 @@ public sealed class BallGrab : Component
 
 	protected override void OnStart()
 	{
-		playerBody = Components.Get<Rigidbody>();
-		previousWorldPosition = WorldPosition;
-		hasPreviousWorldPosition = true;
-		var startAnchor = HoldAnchor.IsValid() ? HoldAnchor : GameObject;
-		previousHeldAnchorPosition = startAnchor.IsValid() ? startAnchor.WorldPosition : WorldPosition;
-		hasPreviousHeldAnchorPosition = true;
 		FindMainBall();
 	}
 
 	protected override void OnUpdate()
 	{
-		UpdateEstimatedWorldVelocity();
-
 		if ( !isHolding )
 		{
 			localDropPending = false;
@@ -96,8 +75,7 @@ public sealed class BallGrab : Component
 		if ( isHolding && Input.Pressed( InteractAction ) )
 		{
 			localDropPending = true;
-			var requestedDropCarryVelocity = GetRequestedDropCarryVelocity();
-			RequestDropBallOnHost( requestedDropCarryVelocity );
+			RequestDropBallOnHost();
 			return;
 		}
 
@@ -192,9 +170,9 @@ public sealed class BallGrab : Component
 		NetIsHolding = true;
 	}
 
-	private void DropBall( Vector3 dropCarryVelocity )
+	private void DropBall()
 	{
-		ReleaseHeldBall( dropCarryVelocity );
+		ReleaseHeldBall();
 	}
 
 	[Rpc.Host]
@@ -224,7 +202,7 @@ public sealed class BallGrab : Component
 	}
 
 	[Rpc.Host]
-	private void RequestDropBallOnHost( Vector3 requestedDropCarryVelocity )
+	private void RequestDropBallOnHost()
 	{
 		if ( EnableNetDebugLogs )
 		{
@@ -234,9 +212,8 @@ public sealed class BallGrab : Component
 		if ( !isHolding )
 			return;
 
-		var validatedDropCarryVelocity = ValidateDropCarryVelocity( requestedDropCarryVelocity );
 		AssignBallOwner( Connection.Host );
-		DropBall( validatedDropCarryVelocity );
+		DropBall();
 		BlockPickupForSeconds( PickupDelayAfterDrop );
 		nextAutoGrabAttemptAt = Time.Now + PickupDelayAfterDrop;
 		dropperNoPushUntilTime = Time.Now + DropperNoPushWindow;
@@ -245,13 +222,7 @@ public sealed class BallGrab : Component
 
 	private void ApplyDropperNoPushWindow()
 	{
-		if ( Time.Now >= dropperNoPushUntilTime )
-		{
-			noPushPreservedHorizontalSpeed = 0f;
-			return;
-		}
-
-		if ( isHolding || !ballObject.IsValid() )
+		if ( Time.Now >= dropperNoPushUntilTime || isHolding || !ballObject.IsValid() )
 			return;
 
 		var ballBody = GetPrimaryBallBody();
@@ -264,46 +235,32 @@ public sealed class BallGrab : Component
 			return;
 
 		var horizontalVelocity = ballBody.Velocity.WithZ( 0f );
-		// Do not clamp intentional drop carry below DropperMaxHorizontalSpeed; that erased carry velocity every frame.
-		var horizontalCap = MathF.Max( DropperMaxHorizontalSpeed, noPushPreservedHorizontalSpeed );
-		if ( horizontalVelocity.Length <= horizontalCap )
+		if ( horizontalVelocity.Length <= DropperMaxHorizontalSpeed )
 			return;
 
-		var clampedHorizontal = horizontalVelocity.Normal * horizontalCap;
+		var clampedHorizontal = horizontalVelocity.Normal * DropperMaxHorizontalSpeed;
 		ballBody.Velocity = new Vector3( clampedHorizontal.x, clampedHorizontal.y, ballBody.Velocity.z );
 	}
 
-	public GameObject ReleaseHeldBall( Vector3? overrideDropCarryVelocity = null )
+	public GameObject ReleaseHeldBall()
 	{
 		if ( !ballObject.IsValid() || !isHolding )
 			return null;
 
-		noPushPreservedHorizontalSpeed = overrideDropCarryVelocity.HasValue
-			? overrideDropCarryVelocity.Value.WithZ( 0f ).Length
-			: 0f;
+		var playerController = Components.Get<PlayerController>();
+		var facingRotation = playerController.IsValid()
+			? Rotation.FromYaw( playerController.EyeAngles.yaw )
+			: GameObject.WorldRotation;
+		ballObject.WorldPosition = GameObject.WorldPosition + (facingRotation.Right * DropSideOffset) + (Vector3.Up * 4f);
 
-		var dropSource = HoldAnchor.IsValid() ? HoldAnchor : GameObject;
-		if ( dropSource.IsValid() )
-		{
-			var dropForward = dropSource.WorldRotation.Forward.WithZ( 0f );
-			if ( dropForward.Length < 0.001f )
-			{
-				dropForward = GameObject.WorldRotation.Forward.WithZ( 0f );
-			}
-
-			dropForward = dropForward.Length > 0.001f ? dropForward.Normal : Vector3.Forward;
-			ballObject.WorldPosition = dropSource.WorldPosition + (dropForward * DropForwardOffset) + (Vector3.Up * DropUpOffset);
-		}
-
-		var dropCarryVelocity = overrideDropCarryVelocity ?? GetDropCarryVelocity();
 		foreach ( var body in ballBodiesToRestore )
 		{
 			if ( !body.IsValid() )
 				continue;
 
-			body.Enabled = true;
-			body.Velocity = dropCarryVelocity;
+			body.Velocity = Vector3.Zero;
 			body.AngularVelocity = Vector3.Zero;
+			body.Enabled = true;
 		}
 		ballBodiesToRestore.Clear();
 
@@ -321,95 +278,6 @@ public sealed class BallGrab : Component
 		return ballObject;
 	}
 
-	private Vector3 GetDropCarryVelocity()
-	{
-		if ( !playerBody.IsValid() )
-		{
-			playerBody = Components.Get<Rigidbody>();
-		}
-
-		// Prefer held-anchor velocity because it directly tracks the held ball movement path.
-		var sourceVelocity = estimatedHeldAnchorVelocity;
-		if ( sourceVelocity.WithZ( 0f ).Length < 1f && playerBody.IsValid() )
-		{
-			sourceVelocity = playerBody.Velocity;
-		}
-
-		if ( sourceVelocity.WithZ( 0f ).Length < 1f )
-		{
-			// Host-side proxy rigidbody velocity can be zero for remote players; use transform-derived estimate.
-			sourceVelocity = estimatedWorldVelocity;
-		}
-
-		var horizontalCarry = sourceVelocity.WithZ( 0f ) * DropCarryMultiplier;
-		if ( horizontalCarry.Length > DropMaxCarrySpeed )
-		{
-			horizontalCarry = horizontalCarry.Normal * DropMaxCarrySpeed;
-		}
-
-		return horizontalCarry + (Vector3.Up * DropCarryUpVelocity);
-	}
-
-	private Vector3 GetRequestedDropCarryVelocity()
-	{
-		var sourceVelocity = playerBody.IsValid() ? playerBody.Velocity : Vector3.Zero;
-		if ( sourceVelocity.WithZ( 0f ).Length < 1f )
-		{
-			sourceVelocity = estimatedHeldAnchorVelocity;
-		}
-
-		if ( sourceVelocity.WithZ( 0f ).Length < 1f )
-		{
-			sourceVelocity = estimatedWorldVelocity;
-		}
-
-		var horizontalCarry = sourceVelocity.WithZ( 0f ) * DropCarryMultiplier;
-		if ( horizontalCarry.Length < 1f )
-		{
-			var inputMove = Input.AnalogMove.WithZ( 0f );
-			if ( inputMove.Length > 0.1f )
-			{
-				horizontalCarry = inputMove.Normal * (DropMaxCarrySpeed * 0.5f);
-			}
-		}
-
-		if ( horizontalCarry.Length > DropMaxCarrySpeed )
-		{
-			horizontalCarry = horizontalCarry.Normal * DropMaxCarrySpeed;
-		}
-
-		return horizontalCarry + (Vector3.Up * DropCarryUpVelocity);
-	}
-
-	private Vector3 ValidateDropCarryVelocity( Vector3 requestedDropCarryVelocity )
-	{
-		var horizontal = requestedDropCarryVelocity.WithZ( 0f );
-		if ( horizontal.Length > DropMaxCarrySpeed )
-		{
-			horizontal = horizontal.Normal * DropMaxCarrySpeed;
-		}
-
-		var up = requestedDropCarryVelocity.z.Clamp( -30f, DropCarryUpVelocity + 40f );
-		return new Vector3( horizontal.x, horizontal.y, up );
-	}
-
-	private void UpdateEstimatedWorldVelocity()
-	{
-		if ( !hasPreviousWorldPosition )
-		{
-			previousWorldPosition = WorldPosition;
-			hasPreviousWorldPosition = true;
-			estimatedWorldVelocity = Vector3.Zero;
-			return;
-		}
-
-		if ( Time.Delta <= 0.0001f )
-			return;
-
-		estimatedWorldVelocity = (WorldPosition - previousWorldPosition) / Time.Delta;
-		previousWorldPosition = WorldPosition;
-	}
-
 	public void TransferBallOwnershipToHost()
 	{
 		AssignBallOwner( Connection.Host );
@@ -421,26 +289,8 @@ public sealed class BallGrab : Component
 		if ( !parentTarget.IsValid() )
 			return;
 
-		UpdateHeldAnchorVelocityEstimate( parentTarget.WorldPosition );
 		ballObject.WorldPosition = parentTarget.WorldPosition;
 		ballObject.WorldRotation = parentTarget.WorldRotation;
-	}
-
-	private void UpdateHeldAnchorVelocityEstimate( Vector3 anchorWorldPosition )
-	{
-		if ( !hasPreviousHeldAnchorPosition )
-		{
-			previousHeldAnchorPosition = anchorWorldPosition;
-			hasPreviousHeldAnchorPosition = true;
-			estimatedHeldAnchorVelocity = Vector3.Zero;
-			return;
-		}
-
-		if ( Time.Delta <= 0.0001f )
-			return;
-
-		estimatedHeldAnchorVelocity = (anchorWorldPosition - previousHeldAnchorPosition) / Time.Delta;
-		previousHeldAnchorPosition = anchorWorldPosition;
 	}
 
 	private void ApplyClientHeldVisualState()
@@ -540,6 +390,5 @@ public sealed class BallGrab : Component
 		NetIsHolding = false;
 		localDropPending = false;
 		appliedClientHeldProxyState = false;
-		noPushPreservedHorizontalSpeed = 0f;
 	}
 }
