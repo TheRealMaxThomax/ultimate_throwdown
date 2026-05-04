@@ -14,6 +14,7 @@ public sealed class BallGrab : Component
 	[Property] public float DropperMaxHorizontalSpeed { get; set; } = 60f;
 	[Property] public GameObject HoldAnchor { get; set; }
 	[Property] public float DropSideOffset { get; set; } = 50f;
+	[Property, Range( 0f, 2f )] public float DropVelocityScale { get; set; } = 0.5f;
 	[Property] public string PromptText { get; set; } = "Pick Up With E";
 	[Property] public bool EnableNetDebugLogs { get; set; } = false;
 
@@ -77,7 +78,7 @@ public sealed class BallGrab : Component
 		if ( isHolding && Input.Pressed( InteractAction ) )
 		{
 			localDropPending = true;
-			var localVelocity = Components.Get<PlayerController>()?.Velocity ?? Vector3.Zero;
+			var localVelocity = (Components.Get<PlayerController>()?.Velocity ?? Vector3.Zero) * DropVelocityScale;
 			RequestDropBallOnHost( localVelocity );
 			return;
 		}
