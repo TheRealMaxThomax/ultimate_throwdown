@@ -14,6 +14,8 @@ Run this quick checklist before committing gameplay changes.
 - [ ] Can approach the ball and see prompt text.
 - [ ] Can pick up ball using `InteractAction`.
 - [ ] While holding, can drop ball correctly.
+- [ ] Drop appears on player's right side relative to current facing direction.
+- [ ] Drop carry speed matches `DropVelocityScale` tuning (0 = no carry, 0.5 = half carry, 1 = full carry).
 - [ ] While holding, can throw ball using `ThrowAction`.
 - [ ] After throw, pickup is blocked briefly then allowed again.
 

@@ -6,8 +6,8 @@ Keep entries short, specific, and current.
 ## Project Snapshot
 - **Current Goal:** Core ball gameplay first: stable grab/drop/throw before animation polish.
 - **Current Branch:** `main` (tracking `origin/main`).
-- **Build/Run Status:** s&box opens and scripts compile. Multiplayer grab/drop/throw works. Auto-grab on contact is live. Ball size `main_ball` scale `0.4`. `BallPlayerPushLock` removed entirely. Code reorganised into system subfolders (`Ball/`, `Player/`, `Network/`).
-- **Last Updated:** 04/05/26 (auto-grab, cleanup session)
+- **Build/Run Status:** s&box opens and scripts compile. Multiplayer grab/drop/throw works. Auto-grab on contact is live. Drop now places ball to player-right based on current facing yaw, and dropped ball can inherit scaled player velocity (`DropVelocityScale`). Ball size `main_ball` scale `0.4`. `BallPlayerPushLock` removed entirely. Code reorganised into system subfolders (`Ball/`, `Player/`, `Network/`).
+- **Last Updated:** 04/05/26 (drop behavior tuning session)
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
@@ -51,6 +51,12 @@ Keep entries short, specific, and current.
   - Date: 2026-05-04
 - **No separate kick mechanic.**
   - Why: Auto-grab on contact already handles moving the free ball into play; adding kick would duplicate that role. Focus stays on grab/drop/throw feel and tuning.
+  - Date: 2026-05-04
+- **Drop placement uses player-facing yaw (not hold anchor forward).**
+  - Why: Keeps drop side consistent relative to current movement/facing instead of depending on anchor orientation.
+  - Date: 2026-05-04
+- **Dropped ball inherits scaled player velocity via inspector slider.**
+  - Why: Makes drop feel responsive while keeping tuning control (`DropVelocityScale`) and preserving no-push guardrails.
   - Date: 2026-05-04
 
 ## Constraints and Rules
@@ -182,12 +188,19 @@ Use these exact names unless explicitly changed in chat.
 - Held-ball public getter: `HeldBall`
 - Ball selection properties: `MainBall`, `MainBallName`
 - Interaction properties: `InteractDistance`, `InteractAction`, `HoldAnchor`
+- BallGrab pickup/drop timing properties: `PickupDelayAfterDrop`, `DropperNoPushWindow`
+- BallGrab drop no-push tuning properties: `DropperNoPushRadius`, `DropperMaxHorizontalSpeed`
+- Drop tuning properties in `BallGrab`: `DropSideOffset`, `DropVelocityScale`
+- BallGrab prompt property: `PromptText`
 - Auto-grab rate limiter in `BallGrab`: `nextAutoGrabAttemptAt`
 - Internal ball references in `BallGrab`: `ballObject`, `ballOriginalParent`, `ballCollidersToRestore`, `ballBodiesToRestore`
 - Multiplayer manager component: `GameNetworkManager`
+- Network manager properties: `PlayerTemplateName`, `DisableTemplateOnStart`
 - Sync property in `BallGrab`: `NetIsHolding`
 - Host-synced ball transform properties in `BallGrab`: `NetHeldBallWorldPosition`, `NetHeldBallWorldRotation`
 - Host-synced ball velocity properties in `BallGrab`: `NetHeldBallLinearVelocity`, `NetHeldBallAngularVelocity`
+- Client-read synced ball transform getters in `BallGrab`: `SyncedBallWorldPosition`, `SyncedBallWorldRotation`
+- Client-read synced ball velocity getters in `BallGrab`: `SyncedBallLinearVelocity`, `SyncedBallAngularVelocity`
 - Multiplayer debug property: `EnableNetDebugLogs`
 - Free-ball feel properties in `BallClientFeel`: `FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`
 - Snapshot interpolation properties in `BallClientFeel`: `InterpolationDelay`, `MaxSnapshots`
@@ -197,6 +210,7 @@ Use these exact names unless explicitly changed in chat.
 - Catch-up movement properties in `CatchUpSpeedBoost`: `ForwardAction`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `MinForwardInput`
 - Throw charge bar property in `ThrowChargeBar`: `ChargeBarOffset`
 - Core release method in `BallGrab`: `ReleaseHeldBall()`
+- Ball ownership handoff method in `BallGrab`: `TransferBallOwnershipToHost()`
 - Pickup lockout method in `BallGrab`: `BlockPickupForSeconds(float seconds)`
 - Cosmetics sync component: `PlayerCosmeticsSync`
 - Cosmetics sync properties: `FirstApplyDelay`, `RetryInterval`, `MaxApplyAttempts`, `LockHighestLodAfterApply`, `EnableDebugLogs`
@@ -207,6 +221,6 @@ Paste this at the start of a new session:
 `Read SESSION_NOTES.md first, continue from Current Plan, and propose any needed updates before coding.`
 
 ## End-of-Session Handoff
-- What changed: Auto-grab on contact implemented (walking into ball picks it up). `BallPlayerPushLock` removed entirely. `CatchUpSpeedBoost` cleaned up (anti-dribble push block dead code removed). Code reorganised from flat `Code/Components/` into `Code/Ball/`, `Code/Player/`, `Code/Network/` subfolders. Two new Cursor rules added: `engine-scene-ownership` and `folder-structure`.
-- What is still blocked: No major blockers. Auto-grab needs a 2-window regression test to confirm feel.
-- Exactly what to do next: Fresh 2-window session — test auto-grab, throw, drop. Then throw tuning and stress testing per Current Plan (no kick; auto-grab covers free-ball pickup).
+- What changed: Drop now spawns to player-right using current facing yaw (instead of hold-anchor-forward). Drop now carries scaled player momentum using `DropVelocityScale` (default `0.5`). Drop no-push clamp now preserves inherited drop momentum floor instead of wiping it.
+- What is still blocked: No major blockers. Needs fresh 2-window regression pass focused on drop consistency and feel.
+- Exactly what to do next: Fresh host+client pass — validate right-side drop orientation, drop momentum carry at current slider value, and no-push behavior under immediate re-contact. Then continue throw tuning and stress testing per Current Plan.
