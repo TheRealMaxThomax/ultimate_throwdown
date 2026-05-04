@@ -41,13 +41,16 @@ Keep entries short, specific, and current.
   - Why: Prevents camera-distance/angle skin tone and cosmetic visual glitches caused by LOD transitions.
   - Date: 2026-04-30
 - **Auto-grab on contact: walking into the ball picks it up automatically.**
-  - Why: Client-side prediction required to make body-push feel consistent across host/client is too complex for current stage. Auto-grab is the same compromise made by Extreme Football Throwdown (Garry's Mod). Grab/throw/kick are the only intentional ball interactions.
+  - Why: Client-side prediction required to make body-push feel consistent across host/client is too complex for current stage. Auto-grab is the same compromise made by Extreme Football Throwdown (Garry's Mod). Intentional ball interactions are grab, drop, and throw only (no separate kick).
   - Date: 2026-05-04
 - **Removed `BallPlayerPushLock` entirely.**
   - Why: Auto-grab intercepts players before they reach push range; the component was redundant.
   - Date: 2026-05-04
 - **Composition over inheritance; flat components over Core/Hub architecture.**
   - Why: s&box is built for component composition. A central "Core data" file creates God Object risks. Each component owns one job.
+  - Date: 2026-05-04
+- **No separate kick mechanic.**
+  - Why: Auto-grab on contact already handles moving the free ball into play; adding kick would duplicate that role. Focus stays on grab/drop/throw feel and tuning.
   - Date: 2026-05-04
 
 ## Constraints and Rules
@@ -123,8 +126,8 @@ Treat these as mandatory implementation rules for all new gameplay features.
 
 ## Current Plan (Top 3)
 1. Run 2-window regression pass: confirm auto-grab feels good, throw still works, no new desyncs.
-2. Add intentional kick mechanic as the primary free-ball movement action (since body-push is intentionally removed).
-3. Throw tuning pass — force, arc, and charge feel.
+2. Throw tuning pass — force, arc, and charge feel.
+3. Broader multiplayer stress testing (spam pickup/drop/throw, jump-drop edge cases, longer sessions).
 
 ## Proven Fix Recipes (Reuse)
 Use these when the same symptom appears again.
@@ -206,4 +209,4 @@ Paste this at the start of a new session:
 ## End-of-Session Handoff
 - What changed: Auto-grab on contact implemented (walking into ball picks it up). `BallPlayerPushLock` removed entirely. `CatchUpSpeedBoost` cleaned up (anti-dribble push block dead code removed). Code reorganised from flat `Code/Components/` into `Code/Ball/`, `Code/Player/`, `Code/Network/` subfolders. Two new Cursor rules added: `engine-scene-ownership` and `folder-structure`.
 - What is still blocked: No major blockers. Auto-grab needs a 2-window regression test to confirm feel.
-- Exactly what to do next: Fresh 2-window session — test auto-grab, throw, drop. Then plan kick mechanic as the primary intentional free-ball interaction.
+- Exactly what to do next: Fresh 2-window session — test auto-grab, throw, drop. Then throw tuning and stress testing per Current Plan (no kick; auto-grab covers free-ball pickup).

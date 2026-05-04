@@ -360,10 +360,29 @@
           "ThrowUpForce": 120
         },
         {
+          "__type": "BallClientFeel",
+          "__guid": "4ba1f8bf-ccb2-4c04-a1c1-c11cc50e7f81",
+          "__enabled": true,
+          "Flags": 0,
+          "ContactBoostDuration": 0.12,
+          "ContactBoostSharpness": 42,
+          "FreeBallVisualFollowSharpness": 14,
+          "InterpolationDelay": 0.06,
+          "MaxSnapshots": 24,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        },
+        {
           "__type": "CatchUpSpeedBoost",
           "__guid": "36aaecd1-60b1-40f0-8fd4-da791a5cbe29",
           "__enabled": true,
           "Flags": 0,
+          "BallPushApproachDot": 0.1,
+          "BallPushBlockRadius": 30,
           "CatchUpMoveSpeed": 320,
           "ForwardAction": "forward",
           "MinForwardInput": 0.1,
@@ -377,21 +396,6 @@
           "StartMoveSpeed": 140,
           "TimeToCatchUpSpeed": 4,
           "TimeToSprintSpeed": 2
-        },
-        {
-          "__type": "BallClientFeel",
-          "__guid": "4ba1f8bf-ccb2-4c04-a1c1-c11cc50e7f81",
-          "__enabled": true,
-          "Flags": 0,
-          "ContactBoostDuration": 0.12,
-          "ContactBoostSharpness": 42,
-          "FreeBallVisualFollowSharpness": 14,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
         },
         {
           "__type": "PlayerCosmeticsSync",
@@ -2404,7 +2408,7 @@
       "Name": "main_ball",
       "Position": "35.7384491,111.545502,145.562531",
       "Rotation": "0,0,0,1",
-      "Scale": "0.4,0.4,0.4",
+      "Scale": "0.400000006,0.400000006,0.400000006",
       "Tags": "ball",
       "Enabled": true,
       "NetworkMode": 2,
@@ -2446,7 +2450,7 @@
           "__enabled": true,
           "Flags": 0,
           "AngularDamping": 0.2,
-          "EnableImpactDamage": true,
+          "EnableImpactDamage": false,
           "EnhancedCcd": true,
           "Gravity": true,
           "GravityScale": 1,
@@ -2481,8 +2485,8 @@
           "Flags": 0,
           "Center": "0,0,0",
           "ColliderFlags": 0,
-          "Elasticity": 0.25,
-          "Friction": 0.35,
+          "Elasticity": 0.7955801,
+          "Friction": 0.35911602,
           "IsTrigger": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -2495,7 +2499,7 @@
           "OnTriggerEnter": null,
           "OnTriggerExit": null,
           "Radius": 32,
-          "RollingResistance": 0.3,
+          "RollingResistance": 0.06629834,
           "Static": false,
           "Surface": null,
           "SurfaceVelocity": "0,0,0"
@@ -2504,9 +2508,8 @@
           "__type": "BallPlayerPushLock",
           "__guid": "8208b55d-b6be-42a0-97ad-e3ead9f41115",
           "__enabled": true,
-          "EnableDebugLogs": false,
           "Flags": 0,
-          "MaxAllowedBodyPushSpeed": 220,
+          "EnableDebugLogs": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2514,6 +2517,8 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "PlayerLockRadius": 90,
+          "PushDirectionDot": 0.3,
+          "PushGainThreshold": 5,
           "ThrowExemptSeconds": 0.75
         }
       ],
@@ -2540,6 +2545,9 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
+      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
@@ -2549,9 +2557,6 @@
         "Data": {
           "SelectionSets": []
         }
-      },
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
       }
     }
   },
