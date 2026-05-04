@@ -6,8 +6,14 @@ Keep entries short, specific, and current.
 ## Project Snapshot
 - **Current Goal:** Core ball gameplay first: stable grab/drop/throw before animation polish.
 - **Current Branch:** `main` (tracking `origin/main`).
-- **Build/Run Status:** s&box opens and scripts compile. Multiplayer grab/drop/throw still works. Ball size was increased (`main_ball` scale `0.4`) and passive push anti-abuse tuning is active in `CatchUpSpeedBoost` (`BallPushBlockRadius=30`, `BallPushApproachDot=0.1`). MUST-SOLVE first-contact client solidity bug was fixed by keeping colliders enabled during owning-client free-ball visual proxy in `BallClientFeel`.
-- **Last Updated:** 30/04/26 (solidity fix landed)
+- **Build/Run Status:** s&box opens and scripts compile. Multiplayer grab/drop/throw works. Auto-grab on contact is live. Ball size `main_ball` scale `0.4`. `BallPlayerPushLock` removed entirely. Code reorganised into system subfolders (`Ball/`, `Player/`, `Network/`).
+- **Last Updated:** 04/05/26 (auto-grab, cleanup session)
+
+## Code Folder Structure
+- `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
+- `Code/Player/` — CatchUpSpeedBoost, PlayerCosmeticsSync
+- `Code/Network/` — GameNetworkManager
+- New systems get their own folder (e.g. `Code/Ultimates/`, `Code/UI/`)
 
 ## Important Decisions
 - **Keep `BallGrab` as the source of truth for hold state.**
@@ -34,9 +40,15 @@ Keep entries short, specific, and current.
 - **Lock player/clothing LOD after cosmetics apply (`LodOverride = 0`).**
   - Why: Prevents camera-distance/angle skin tone and cosmetic visual glitches caused by LOD transitions.
   - Date: 2026-04-30
-- **Keep experimental ball push/lock systems scoped and removable.**
-  - Why: Several anti-push experiments caused regressions; keep core grab/throw stable while iterating.
-  - Date: 2026-04-30
+- **Auto-grab on contact: walking into the ball picks it up automatically.**
+  - Why: Client-side prediction required to make body-push feel consistent across host/client is too complex for current stage. Auto-grab is the same compromise made by Extreme Football Throwdown (Garry's Mod). Grab/throw/kick are the only intentional ball interactions.
+  - Date: 2026-05-04
+- **Removed `BallPlayerPushLock` entirely.**
+  - Why: Auto-grab intercepts players before they reach push range; the component was redundant.
+  - Date: 2026-05-04
+- **Composition over inheritance; flat components over Core/Hub architecture.**
+  - Why: s&box is built for component composition. A central "Core data" file creates God Object risks. Each component owns one job.
+  - Date: 2026-05-04
 
 ## Constraints and Rules
 Only include constraints that are easy to forget and expensive to violate.
@@ -48,6 +60,7 @@ Only include constraints that are easy to forget and expensive to violate.
 - Networking constraints: Ball gameplay state is host-authoritative; avoid client-only gameplay mutation paths.
 - Cosmetics/visual constraints: Keep avatar/cosmetics apply logic visual-only and isolated from spawn authority components.
 - Refactor safety constraint: Mark cleanup chats as `refactor-only, no behavior change intended`, keep scope to 1-2 files, and run quick regression checks after.
+- Scene/inspector constraint: Agent does not edit `.scene` or prefab files. All in-engine setup is done by Max.
 
 ## Network-Safe Rules (Always Apply)
 Treat these as mandatory implementation rules for all new gameplay features.
@@ -83,24 +96,10 @@ Treat these as mandatory implementation rules for all new gameplay features.
 - Reminder: If naming confusion/repeated renames starts happening, propose expanding Naming Canon (especially before team size or system count grows).
 
 ## Known Issues / Risks
-- [ ] TOP PRIORITY (next session): keep full ball physics feel, but remove reliable passive dribble from player body contact.
-  - What Max wants: `grab`, `throw`, and `kick` are the only intentional/reliable ways to move the ball.
-  - Must preserve: ball still collides/bounces off players and world, rolls naturally, and does not feel frozen/dead.
-  - Problem to prevent: players should not be able to effectively "walk the ball" with capsule contact as a strong movement mechanic.
-  - Recommended solution:
-    1. Keep player-ball collisions enabled (for believable bounce/contact), but treat them as low-authority movement.
-    2. Add host-authoritative anti-dribble dampening on the ball during recent player-contact windows.
-    3. In that window, clamp/dampen horizontal velocity in low/mid "dribble band" speeds, while allowing higher throw/kick speeds to carry.
-    4. Add a short post-kick/throw grace window where heavy dampening is reduced (so intentional actions still feel strong).
-    5. Tune physics materials (lower player-vs-ball friction, keep ball bounce reasonable) to reduce sticky rubbing/dribble.
-  - Suggested implementation shape: small dedicated ball component (for example `BallPlayerContactDampener`) with inspector tuning values and host-only velocity correction.
-  - Owner: Max
-  - Next action: Implement minimal host-only dampener, run 2-3 window tests, and tune until passive dribble is weak but bounce/roll still feels alive.
+- [x] Anti-dribble / passive push resolved via auto-grab on contact.
+  - Decided: body-push is too complex to make consistent across host/client. Auto-grab is the EF Throwdown compromise and fits the game design.
 - [x] MUST SOLVED: client first-contact non-solid bug (could walk/jump into ball until first grab+drop).
-  - Impact: Previously high exploit risk and inconsistent feel; now mitigated with deterministic collider-on behavior.
-  - Owner: Max
   - Fix landed: `BallClientFeel` free-ball owner proxy now disables rigidbodies only and keeps colliders enabled.
-  - Validation to keep: Fresh host + 2 clients, no pickup/drop first, confirm immediate solid contact on all windows.
 - [ ] Throw tuning still placeholder (force/arc may need balancing).
   - Impact: Throw feel may be too strong/weak depending on map and movement speed.
   - Owner: Max
@@ -117,19 +116,15 @@ Treat these as mandatory implementation rules for all new gameplay features.
   - Impact: Core behavior is much better, but edge desync risk remains until stress tests pass repeatedly.
   - Owner: Max
   - Next action: Run 2-window multiplayer consistency pass for 15-20 minutes and log any repro steps.
-- [ ] Free-ball collision feel on client still not equal to host feel.
-  - Impact: Ball is largely consistent across screens, but client contact feels less direct/smooth than host contact.
+- [ ] Need one fresh regression pass after this session's changes.
+  - Impact: Auto-grab + cleanup touches several files; one clean 2-window pass recommended.
   - Owner: Max
-  - Next action: Tune/iterate free-ball client visual follow settings and validate with repeatable push tests from multiple angles.
-- [ ] Need one fresh regression pass after cosmetics + LOD stabilization commit.
-  - Impact: Main flows are passing, but one clean verification pass helps catch any side effects before moving to new features.
-  - Owner: Max
-  - Next action: Run 2-3 player session and validate pickup/drop/throw, cosmetics visibility, and camera-distance render stability for 10+ minutes.
+  - Next action: Fresh host + client session, test grab/drop/throw/auto-grab, confirm no regressions.
 
 ## Current Plan (Top 3)
-1. TOP PRIORITY: implement anti-dribble behavior so passive player body-push is not a reliable ball movement mechanic, while preserving natural bounce/roll physics.
-2. Run focused multiplayer regression/tuning pass: fresh startup no-warmup first-contact test, then passive push attempts, then rapid pickup/drop/throw spam.
-3. Add intentional kick mechanic as the primary free-ball movement action and tune dampener around kick/throw windows.
+1. Run 2-window regression pass: confirm auto-grab feels good, throw still works, no new desyncs.
+2. Add intentional kick mechanic as the primary free-ball movement action (since body-push is intentionally removed).
+3. Throw tuning pass — force, arc, and charge feel.
 
 ## Proven Fix Recipes (Reuse)
 Use these when the same symptom appears again.
@@ -154,6 +149,14 @@ Use these when the same symptom appears again.
 - Repeat exact apex jump-drop test and normal run/push test from same start point.
 - Confirm host/client ball path similarity improved without introducing framey motion.
 
+### Body-Push Consistency (Host can push ball, client cannot)
+**What was tried and failed:**
+- Gain-detection (per-frame horizontal speed increase near player) — per-frame impulses too small to catch reliably.
+- Grace-period after throw — ball still pushable during grace window.
+- `BallPush` RPC component — correct pattern but adds complexity and round-trip delay makes it feel different to host.
+
+**Decision:** Don't solve body-push. Use auto-grab instead. Same compromise as Extreme Football Throwdown (Garry's Mod).
+
 ## Component Missing Recovery (s&box)
 If a component (for example `BallThrow`) does not appear in Add Component:
 
@@ -175,7 +178,8 @@ Use these exact names unless explicitly changed in chat.
 - Hold-state public getter: `IsHolding`
 - Held-ball public getter: `HeldBall`
 - Ball selection properties: `MainBall`, `MainBallName`
-- Interaction properties: `InteractDistance`, `InteractAction`, `HoldAnchor`, `PromptText`
+- Interaction properties: `InteractDistance`, `InteractAction`, `HoldAnchor`
+- Auto-grab rate limiter in `BallGrab`: `nextAutoGrabAttemptAt`
 - Internal ball references in `BallGrab`: `ballObject`, `ballOriginalParent`, `ballCollidersToRestore`, `ballBodiesToRestore`
 - Multiplayer manager component: `GameNetworkManager`
 - Sync property in `BallGrab`: `NetIsHolding`
@@ -188,7 +192,6 @@ Use these exact names unless explicitly changed in chat.
 - Charge tuning properties in `BallThrow`: `MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`
 - Charge-state public getter in `BallThrow`: `IsChargingThrow`
 - Catch-up movement properties in `CatchUpSpeedBoost`: `ForwardAction`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `MinForwardInput`
-- Anti-dribble properties in `CatchUpSpeedBoost`: `BallPushBlockRadius`, `BallPushApproachDot`
 - Throw charge bar property in `ThrowChargeBar`: `ChargeBarOffset`
 - Core release method in `BallGrab`: `ReleaseHeldBall()`
 - Pickup lockout method in `BallGrab`: `BlockPickupForSeconds(float seconds)`
@@ -201,8 +204,6 @@ Paste this at the start of a new session:
 `Read SESSION_NOTES.md first, continue from Current Plan, and propose any needed updates before coding.`
 
 ## End-of-Session Handoff
-Update this checklist before ending a chat:
-
-- What changed: Fixed MUST-SOLVE first-contact solidity bug by updating `BallClientFeel` free-ball owner proxy to keep colliders enabled while disabling rigidbody simulation. Also set next-session top priority: keep natural ball physics but remove reliable passive dribble/body-push.
-- What is still blocked: Passive body-push/dribble still needs host-authoritative dampening/tuning so contact remains believable but not an effective movement exploit.
-- Exactly what to do next: Build a small host-only contact dampener component on the ball (recent player-contact window, dribble-band horizontal damping/clamp, lighter damping during post-kick/throw grace window), then run 2-3 window tuning tests until bounce/roll feel is preserved and passive dribble is weak.
+- What changed: Auto-grab on contact implemented (walking into ball picks it up). `BallPlayerPushLock` removed entirely. `CatchUpSpeedBoost` cleaned up (anti-dribble push block dead code removed). Code reorganised from flat `Code/Components/` into `Code/Ball/`, `Code/Player/`, `Code/Network/` subfolders. Two new Cursor rules added: `engine-scene-ownership` and `folder-structure`.
+- What is still blocked: No major blockers. Auto-grab needs a 2-window regression test to confirm feel.
+- Exactly what to do next: Fresh 2-window session — test auto-grab, throw, drop. Then plan kick mechanic as the primary intentional free-ball interaction.

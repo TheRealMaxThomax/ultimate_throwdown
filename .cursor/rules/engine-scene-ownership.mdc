@@ -1,0 +1,16 @@
+---
+description: User owns s&box scene/inspector work; agent provides steps only
+alwaysApply: true
+---
+
+# In-Engine and Scene Ownership
+
+- **Do not edit** serialized s&box scene/prefab assets (for example `*.scene` under `Assets/`, or other editor-owned serialized files) unless the user **explicitly** asks the agent to change them.
+- The user is learning the engine; they should perform **in-editor** setup (components, references, properties, hierarchy) themselves.
+- When a change needs to happen in the engine, **describe what to do** in clear steps: where to click, which object, which component, which property values, what to wire up. Keep instructions beginner-friendly.
+- **Code** (for example `Code/**/*.cs`) may still be edited when the user requests implementation help, as long as it does not require silently editing scene files to complete the task.
+
+## Good vs bad
+
+- **Good:** "Add `BallClientFeel` to the ball, set `InterpolationDelay` to 0.06, then save the scene."
+- **Bad:** Patching `throwdown_prototype.scene` in the repo to set those values for them.

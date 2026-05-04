@@ -1,0 +1,23 @@
+---
+description: Code folder organisation by system
+alwaysApply: true
+---
+
+# Folder Structure
+
+All gameplay code lives under `Code/` organised by system. Do not put new files flat into `Code/` or a generic `Components/` folder.
+
+## Current systems
+
+| Folder | What belongs there |
+|--------|-------------------|
+| `Code/Ball/` | Ball state, throw, feel, charge bar |
+| `Code/Player/` | Player movement, speed boost, cosmetics |
+| `Code/Network/` | Network manager, connection handling |
+
+## Rules
+
+- When adding a new file, place it in the matching system folder.
+- If no folder fits, create a new one named after the system (e.g. `Code/Ultimates/`, `Code/UI/`).
+- Never put gameplay components back into a flat `Code/Components/` folder.
+- `Assembly.cs` and `MyComponent.cs` stay at `Code/` root (engine files, do not move).
