@@ -318,6 +318,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "PickupDelayAfterDrop": 0.75,
           "PromptText": "Pick Up With E"
         },
         {
@@ -381,8 +382,6 @@
           "__guid": "36aaecd1-60b1-40f0-8fd4-da791a5cbe29",
           "__enabled": true,
           "Flags": 0,
-          "BallPushApproachDot": 0.1,
-          "BallPushBlockRadius": 30,
           "CatchUpMoveSpeed": 320,
           "ForwardAction": "forward",
           "MinForwardInput": 0.1,
@@ -2503,23 +2502,6 @@
           "Static": false,
           "Surface": null,
           "SurfaceVelocity": "0,0,0"
-        },
-        {
-          "__type": "BallPlayerPushLock",
-          "__guid": "8208b55d-b6be-42a0-97ad-e3ead9f41115",
-          "__enabled": true,
-          "Flags": 0,
-          "EnableDebugLogs": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "PlayerLockRadius": 90,
-          "PushDirectionDot": 0.3,
-          "PushGainThreshold": 5,
-          "ThrowExemptSeconds": 0.75
         }
       ],
       "Children": []

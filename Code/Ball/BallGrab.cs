@@ -7,6 +7,10 @@ public sealed class BallGrab : Component
 	[Property] public string MainBallName { get; set; } = "main_ball";
 	[Property] public float InteractDistance { get; set; } = 120f;
 	[Property] public string InteractAction { get; set; } = "use";
+	[Property] public float PickupDelayAfterDrop { get; set; } = 0.25f;
+	[Property] public float DropperNoPushWindow { get; set; } = 0.75f;
+	[Property] public float DropperNoPushRadius { get; set; } = 90f;
+	[Property] public float DropperMaxHorizontalSpeed { get; set; } = 60f;
 	[Property] public GameObject HoldAnchor { get; set; }
 	[Property] public string PromptText { get; set; } = "Pick Up With E";
 	[Property] public bool EnableNetDebugLogs { get; set; } = false;
@@ -24,6 +28,7 @@ public sealed class BallGrab : Component
 	[Sync( SyncFlags.FromHost )] private Vector3 NetHeldBallAngularVelocity { get; set; }
 	private float pickupBlockedUntilTime;
 	private float nextAutoGrabAttemptAt;
+	private float dropperNoPushUntilTime;
 	private bool localDropPending;
 	private bool appliedClientHeldProxyState;
 	public bool IsHolding => isHolding;
@@ -49,6 +54,10 @@ public sealed class BallGrab : Component
 		{
 			KeepHeldBallAttachedToAnchor();
 			UpdateSyncedBallState();
+		}
+		else if ( Networking.IsHost )
+		{
+			ApplyDropperNoPushWindow();
 		}
 		else if ( !Networking.IsHost && ballObject.IsValid() )
 		{
@@ -204,7 +213,32 @@ public sealed class BallGrab : Component
 
 		AssignBallOwner( Connection.Host );
 		DropBall();
+		BlockPickupForSeconds( PickupDelayAfterDrop );
+		nextAutoGrabAttemptAt = Time.Now + PickupDelayAfterDrop;
+		dropperNoPushUntilTime = Time.Now + DropperNoPushWindow;
 		localDropPending = false;
+	}
+
+	private void ApplyDropperNoPushWindow()
+	{
+		if ( Time.Now >= dropperNoPushUntilTime || isHolding || !ballObject.IsValid() )
+			return;
+
+		var ballBody = GetPrimaryBallBody();
+		if ( !ballBody.IsValid() )
+			return;
+
+		var toBall = ballObject.WorldPosition - WorldPosition;
+		var horizontalDistance = toBall.WithZ( 0f ).Length;
+		if ( horizontalDistance > DropperNoPushRadius )
+			return;
+
+		var horizontalVelocity = ballBody.Velocity.WithZ( 0f );
+		if ( horizontalVelocity.Length <= DropperMaxHorizontalSpeed )
+			return;
+
+		var clampedHorizontal = horizontalVelocity.Normal * DropperMaxHorizontalSpeed;
+		ballBody.Velocity = new Vector3( clampedHorizontal.x, clampedHorizontal.y, ballBody.Velocity.z );
 	}
 
 	public GameObject ReleaseHeldBall()
