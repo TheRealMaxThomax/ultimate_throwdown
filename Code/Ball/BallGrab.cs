@@ -1,3 +1,4 @@
+using System;
 using Sandbox;
 using Sandbox.Diagnostics;
 
@@ -30,6 +31,7 @@ public sealed class BallGrab : Component
 	private float pickupBlockedUntilTime;
 	private float nextAutoGrabAttemptAt;
 	private float dropperNoPushUntilTime;
+	private float dropInheritedSpeed;
 	private bool localDropPending;
 	private bool appliedClientHeldProxyState;
 	public bool IsHolding => isHolding;
@@ -75,7 +77,8 @@ public sealed class BallGrab : Component
 		if ( isHolding && Input.Pressed( InteractAction ) )
 		{
 			localDropPending = true;
-			RequestDropBallOnHost();
+			var localVelocity = Components.Get<PlayerController>()?.Velocity ?? Vector3.Zero;
+			RequestDropBallOnHost( localVelocity );
 			return;
 		}
 
@@ -170,9 +173,9 @@ public sealed class BallGrab : Component
 		NetIsHolding = true;
 	}
 
-	private void DropBall()
+	private void DropBall( Vector3 playerVelocity = default )
 	{
-		ReleaseHeldBall();
+		ReleaseHeldBall( playerVelocity );
 	}
 
 	[Rpc.Host]
@@ -202,7 +205,7 @@ public sealed class BallGrab : Component
 	}
 
 	[Rpc.Host]
-	private void RequestDropBallOnHost()
+	private void RequestDropBallOnHost( Vector3 playerVelocity )
 	{
 		if ( EnableNetDebugLogs )
 		{
@@ -213,7 +216,7 @@ public sealed class BallGrab : Component
 			return;
 
 		AssignBallOwner( Connection.Host );
-		DropBall();
+		ReleaseHeldBall( playerVelocity );
 		BlockPickupForSeconds( PickupDelayAfterDrop );
 		nextAutoGrabAttemptAt = Time.Now + PickupDelayAfterDrop;
 		dropperNoPushUntilTime = Time.Now + DropperNoPushWindow;
@@ -238,11 +241,12 @@ public sealed class BallGrab : Component
 		if ( horizontalVelocity.Length <= DropperMaxHorizontalSpeed )
 			return;
 
-		var clampedHorizontal = horizontalVelocity.Normal * DropperMaxHorizontalSpeed;
+		var maxAllowed = MathF.Max( DropperMaxHorizontalSpeed, dropInheritedSpeed );
+		var clampedHorizontal = horizontalVelocity.Normal * maxAllowed;
 		ballBody.Velocity = new Vector3( clampedHorizontal.x, clampedHorizontal.y, ballBody.Velocity.z );
 	}
 
-	public GameObject ReleaseHeldBall()
+	public GameObject ReleaseHeldBall( Vector3 playerVelocity = default )
 	{
 		if ( !ballObject.IsValid() || !isHolding )
 			return null;
@@ -251,6 +255,7 @@ public sealed class BallGrab : Component
 		var facingRotation = playerController.IsValid()
 			? Rotation.FromYaw( playerController.EyeAngles.yaw )
 			: GameObject.WorldRotation;
+		dropInheritedSpeed = playerVelocity.WithZ( 0f ).Length;
 		ballObject.WorldPosition = GameObject.WorldPosition + (facingRotation.Right * DropSideOffset) + (Vector3.Up * 4f);
 
 		foreach ( var body in ballBodiesToRestore )
@@ -258,9 +263,9 @@ public sealed class BallGrab : Component
 			if ( !body.IsValid() )
 				continue;
 
-			body.Velocity = Vector3.Zero;
-			body.AngularVelocity = Vector3.Zero;
 			body.Enabled = true;
+			body.Velocity = playerVelocity;
+			body.AngularVelocity = Vector3.Zero;
 		}
 		ballBodiesToRestore.Clear();
 
