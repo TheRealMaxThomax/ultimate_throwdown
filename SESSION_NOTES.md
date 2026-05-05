@@ -4,14 +4,14 @@ Use this file as persistent project memory between chats.
 Keep entries short, specific, and current.
 
 ## Project Snapshot
-- **Current Goal:** Core ball gameplay first: stable grab/drop/throw before animation polish.
-- **Current Branch:** `main` (tracking `origin/main`).
-- **Build/Run Status:** s&box opens and scripts compile. Multiplayer grab/drop/throw works. Auto-grab on contact is live. Drop now places ball to player-right based on current facing yaw, and dropped ball can inherit scaled player velocity (`DropVelocityScale`). Ball size `main_ball` scale `0.4`. `BallPlayerPushLock` removed entirely. Code reorganised into system subfolders (`Ball/`, `Player/`, `Network/`).
-- **Last Updated:** 04/05/26 (drop behavior tuning session)
+- **Current Goal:** Tackle system — ragdoll fly-back working on client, stand-up and impulse need final fixes.
+- **Current Branch:** `feature/class-system` (pushed to origin).
+- **Build/Run Status:** Compiles clean. Grab/drop/throw works. ClassData wired to CatchUpSpeedBoost and BallThrow. PlayerTackle detection works. Client ragdolls on tackle. Stand-up broken (see Current Tackle Debug Status below).
+- **Last Updated:** 05/05/26 (class system + tackle system session)
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
-- `Code/Player/` — CatchUpSpeedBoost, PlayerCosmeticsSync
+- `Code/Player/` — CatchUpSpeedBoost, PlayerCosmeticsSync, ClassData, PlayerClass, PlayerTackle
 - `Code/Network/` — GameNetworkManager
 - New systems get their own folder (e.g. `Code/Ultimates/`, `Code/UI/`)
 
@@ -138,10 +138,42 @@ These are small gaps in existing code that must be filled before the planned sys
   - Owner: Max
   - Next action: Fresh host + client session, test grab/drop/throw/auto-grab, confirm no regressions.
 
+## Current Tackle Debug Status (Resume Here Next Chat)
+
+### What works
+- Tackle detection: host distance+direction+charge-speed check fires correctly. Debug log `[Tackle] Player_Thomax → Player_Thomax (2)` appears.
+- Sync: `NetIsRagdolled` and `NetRagdollImpulse` sync from host to client correctly. Both machines detect state change.
+- Client ragdolls visually when tackled. `ApplyRagdollLocally` disables PlayerController and enables ModelPhysics on the client.
+
+### What is broken
+- **Stand-up broken:** `StandUpLocally` was previously failing to re-enable `PlayerController` because `Components.Get<PlayerController>()` returns null for disabled components. Fixed in last code change by switching to cached `playerController` field. **Not yet tested** — this was the last code change before running out of context.
+- **Impulse not applying on host:** `PhysicsGroup` is always null on the host for the client's Body child. This is expected — the client owns the physics. Impulse should apply on client. Client logs for PhysicsGroup status not yet seen.
+- **Host visual:** On host screen the victim stays standing (host can't simulate client-owned ragdoll physics). This may be acceptable — victim ragdolls on their own screen which is what matters.
+
+### Exact last code change (not yet tested)
+Cached `modelPhysics` in `OnStart` using `FindMode.EverythingInSelfAndDescendants`. Both `ApplyRagdollLocally` and `StandUpLocally` now use cached `playerController` and `modelPhysics` fields instead of re-fetching. This should fix stand-up.
+
+### Next test steps
+1. Compile and test — host runs into client at charge speed
+2. Check client console for: `PhysicsGroup ready | Found=True` and `StandUpLocally | Controller re-enabled=True`
+3. Check if client ragdolls AND stands back up after 2 seconds
+4. If `PhysicsGroup=False` on client, the issue is ModelPhysics not being found — check `modelPhysics` is not null in `OnStart` log
+
+### Scene setup that must be correct
+- `PlayerTackle` on root player object (gets dropped on recompile — check every session)
+- `Model Physics` on the **Body child** (the child with `SkinnedModelRenderer`), NOT on root player
+- `Model Physics` must be **disabled** (unchecked) by default
+- `PlayerClass` on root player with Speedster/Sniper/Juggernaut `.cdata` asset assigned
+- `CatchUpSpeedBoost` on root player
+- All three `.cdata` assets must have values set manually (s&box doesn't auto-apply C# defaults):
+  - Movement: StartMoveSpeed=140, SprintMoveSpeed=220, CatchUpMoveSpeed=320, TimeToSprintSpeed=2, TimeToCatchUpSpeed=4
+  - Tackle: TriggerSphereRadius=40, RagdollDuration=2, PostTackleInvincibilityDuration=1, BallLaunchForceOnTackle=500, BallPickupLockoutAfterTackle=1.5
+  - Mass: Mass=80 (same placeholder for all three for now)
+
 ## Current Plan (Top 3)
-1. Run 2-window regression pass: confirm auto-grab feels good, throw still works, no new desyncs.
-2. Build `ClassData` resource and wire `CatchUpSpeedBoost` + `BallThrow` to read from it.
-3. Build tackle system on top of stable ClassData foundation.
+1. Finish tackle system: confirm stand-up works, confirm impulse applies (client flies on tackle), tune force values.
+2. Regression pass: grab/drop/throw/auto-grab still working after class system wiring.
+3. Throw tuning pass and broader multiplayer stress testing.
 
 ---
 
@@ -364,6 +396,6 @@ Paste this at the start of a new session:
 `Read SESSION_NOTES.md first, continue from Current Plan, and propose any needed updates before coding.`
 
 ## End-of-Session Handoff
-- What changed (05/05/26): Class system and tackle system fully designed and locked in SESSION_NOTES. No code written yet. Build order agreed: regression pass → ClassData resource → wire CatchUpSpeedBoost + BallThrow → tackle system.
-- What is still blocked: No blockers. Regression pass still pending from last session.
-- Exactly what to do next: Fresh host+client regression pass (drop orientation, drop momentum, auto-grab). Then start `ClassData` as a `[GameResource]` with the fields from the Planned Systems section above.
+- What changed (05/05/26): ClassData [GameResource] built. PlayerClass component built. CatchUpSpeedBoost reads movement stats from ClassData (with inspector fallback). BallThrow reads ThrowPower from ClassData. IsAtChargeSpeed public getter added to CatchUpSpeedBoost. PlayerTackle built: host distance+direction+charge-speed detection, synced NetIsRagdolled/NetRagdollImpulse, ApplyRagdollLocally/StandUpLocally run on all machines. Last fix: switched to cached playerController/modelPhysics fields to fix stand-up. Not yet retested after last fix.
+- What is still blocked: Tackle stand-up and impulse application not confirmed working. See Current Tackle Debug Status above.
+- Exactly what to do next: Open new chat, read SESSION_NOTES, compile, test tackle, check client console logs for PhysicsGroup and StandUpLocally results.

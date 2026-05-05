@@ -493,6 +493,35 @@
               },
               "Tint": "1,1,1,1",
               "UseAnimGraph": true
+            },
+            {
+              "__type": "Sandbox.ModelPhysics",
+              "__guid": "f4622b07-bf81-4fe0-96c9-a113f713d0de",
+              "__enabled": false,
+              "Flags": 0,
+              "Bodies": [],
+              "IgnoreRoot": false,
+              "Joints": [],
+              "Locking": {
+                "X": false,
+                "Y": false,
+                "Z": false,
+                "Pitch": false,
+                "Yaw": false,
+                "Roll": false
+              },
+              "Model": null,
+              "MotionEnabled": true,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "PhysicsWereCreated": false,
+              "Renderer": null,
+              "RigidbodyFlags": 0,
+              "StartAsleep": false
             }
           ],
           "Children": [
@@ -2545,18 +2574,18 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
       },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
         }
       },
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
+        }
       }
     }
   },
