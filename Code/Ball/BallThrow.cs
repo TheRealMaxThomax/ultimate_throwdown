@@ -16,6 +16,7 @@ public sealed class BallThrow : Component
 
 	private BallGrab ballGrab;
 	private ThrowChargeBar throwChargeBar;
+	private PlayerClass playerClass;
 	private Rigidbody playerBody;
 	private bool isChargingThrow;
 	private Vector3 lockedChargePosition;
@@ -26,6 +27,7 @@ public sealed class BallThrow : Component
 	{
 		ballGrab = Components.Get<BallGrab>();
 		throwChargeBar = Components.Get<ThrowChargeBar>();
+		playerClass = Components.Get<PlayerClass>();
 		playerBody = Components.Get<Rigidbody>();
 	}
 
@@ -103,6 +105,7 @@ public sealed class BallThrow : Component
 		chargeLerp = chargeLerp.Clamp( 0f, 1f );
 		var throwForceMultiplier = MinThrowForceMultiplier.LerpTo( 1f, chargeLerp );
 		var throwUpForceMultiplier = MinThrowUpForceMultiplier.LerpTo( 1f, chargeLerp );
+		var classPower = playerClass?.CurrentClass?.ThrowPower ?? 1f;
 
 		// Use direction from Rpc.Caller so the throw matches local aim. Host-side transform can lag for remote players.
 		var throwDirection = throwDirectionFromCaller.Length > 0.001f
@@ -110,7 +113,7 @@ public sealed class BallThrow : Component
 			: (ThrowDirectionSource.IsValid() ? ThrowDirectionSource : GameObject).WorldRotation.Forward;
 		var throwStartPosition = releasedBall.WorldPosition + (throwDirection * ThrowStartOffset) + (Vector3.Up * 10f);
 		releasedBall.WorldPosition = throwStartPosition;
-		releasedBallBody.Velocity = (throwDirection * ThrowForce * throwForceMultiplier) + (Vector3.Up * ThrowUpForce * throwUpForceMultiplier);
+		releasedBallBody.Velocity = (throwDirection * ThrowForce * throwForceMultiplier * classPower) + (Vector3.Up * ThrowUpForce * throwUpForceMultiplier * classPower);
 
 		if ( EnableNetDebugLogs )
 		{

@@ -14,14 +14,17 @@ public sealed class CatchUpSpeedBoost : Component
 	private BallGrab ballGrab;
 	private BallThrow ballThrow;
 	private PlayerController playerController;
+	private PlayerClass playerClass;
 	private float forwardMoveTime;
 	private float nonHoldingSprintTime;
+	public bool IsAtChargeSpeed { get; private set; }
 
 	protected override void OnStart()
 	{
 		ballGrab = Components.Get<BallGrab>();
 		ballThrow = Components.Get<BallThrow>();
 		playerController = Components.Get<PlayerController>();
+		playerClass = Components.Get<PlayerClass>();
 	}
 
 	protected override void OnUpdate()
@@ -48,8 +51,10 @@ public sealed class CatchUpSpeedBoost : Component
 		{
 			forwardMoveTime = 0f;
 			nonHoldingSprintTime = 0f;
-			playerController.WalkSpeed = StartMoveSpeed;
-			playerController.RunSpeed = StartMoveSpeed;
+			IsAtChargeSpeed = false;
+			var startSpeed = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
+			playerController.WalkSpeed = startSpeed;
+			playerController.RunSpeed = startSpeed;
 			return;
 		}
 
@@ -58,7 +63,8 @@ public sealed class CatchUpSpeedBoost : Component
 		else
 			forwardMoveTime = 0f;
 
-		var isInSprintStage = isMovingForward && forwardMoveTime >= TimeToSprintSpeed;
+		var timeToSprint = ClassStat( playerClass?.CurrentClass?.TimeToSprintSpeed, TimeToSprintSpeed );
+		var isInSprintStage = isMovingForward && forwardMoveTime >= timeToSprint;
 		if ( !isHoldingBall && isInSprintStage )
 			nonHoldingSprintTime += Time.Delta;
 		else
@@ -70,16 +76,38 @@ public sealed class CatchUpSpeedBoost : Component
 
 	private float GetTargetSpeed( bool isHoldingBall, bool isMovingForward )
 	{
-		if ( !isMovingForward )
-			return StartMoveSpeed;
+		var startSpeed = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
+		var sprintSpeed = ClassStat( playerClass?.CurrentClass?.SprintMoveSpeed, SprintMoveSpeed );
+		var catchUpSpeed = ClassStat( playerClass?.CurrentClass?.CatchUpMoveSpeed, CatchUpMoveSpeed );
+		var timeToSprint = ClassStat( playerClass?.CurrentClass?.TimeToSprintSpeed, TimeToSprintSpeed );
+		var timeToCatchUp = ClassStat( playerClass?.CurrentClass?.TimeToCatchUpSpeed, TimeToCatchUpSpeed );
 
-		if ( forwardMoveTime < TimeToSprintSpeed )
-			return StartMoveSpeed;
+		if ( !isMovingForward )
+		{
+			IsAtChargeSpeed = false;
+			return startSpeed;
+		}
+
+		if ( forwardMoveTime < timeToSprint )
+		{
+			IsAtChargeSpeed = false;
+			return startSpeed;
+		}
 
 		if ( isHoldingBall )
-			return SprintMoveSpeed;
+		{
+			IsAtChargeSpeed = false;
+			return sprintSpeed;
+		}
 
-		var catchUpDelay = MathF.Max( 0f, TimeToCatchUpSpeed - TimeToSprintSpeed );
-		return nonHoldingSprintTime >= catchUpDelay ? CatchUpMoveSpeed : SprintMoveSpeed;
+		var catchUpDelay = MathF.Max( 0f, timeToCatchUp - timeToSprint );
+		var atCatchUp = nonHoldingSprintTime >= catchUpDelay;
+		IsAtChargeSpeed = atCatchUp;
+		return atCatchUp ? catchUpSpeed : sprintSpeed;
+	}
+
+	private static float ClassStat( float? classStat, float fallback )
+	{
+		return classStat ?? fallback;
 	}
 }

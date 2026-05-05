@@ -383,25 +383,6 @@
           "OnComponentUpdate": null
         },
         {
-          "__type": "CatchUpSpeedBoost",
-          "__guid": "36aaecd1-60b1-40f0-8fd4-da791a5cbe29",
-          "__enabled": true,
-          "Flags": 0,
-          "CatchUpMoveSpeed": 320,
-          "ForwardAction": "forward",
-          "MinForwardInput": 0.1,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "SprintMoveSpeed": 220,
-          "StartMoveSpeed": 140,
-          "TimeToCatchUpSpeed": 4,
-          "TimeToSprintSpeed": 2
-        },
-        {
           "__type": "PlayerCosmeticsSync",
           "__guid": "454d712a-a96b-448b-8c59-3317c8be8789",
           "__enabled": true,
@@ -417,6 +398,38 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "RetryInterval": 1
+        },
+        {
+          "__type": "PlayerClass",
+          "__guid": "a13a8635-d347-4439-8c09-f5de73d612c3",
+          "__enabled": true,
+          "Flags": 0,
+          "CurrentClass": "classes/speedster.cdata",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        },
+        {
+          "__type": "CatchUpSpeedBoost",
+          "__guid": "f2eaf873-d65c-424b-9952-5c6167ecb3bd",
+          "__enabled": true,
+          "Flags": 0,
+          "CatchUpMoveSpeed": 320,
+          "ForwardAction": "forward",
+          "MinForwardInput": 0.1,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "SprintMoveSpeed": 220,
+          "StartMoveSpeed": 140,
+          "TimeToCatchUpSpeed": 4,
+          "TimeToSprintSpeed": 2
         }
       ],
       "Children": [
@@ -2532,14 +2545,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
-        }
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
+        }
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
         }
       },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
