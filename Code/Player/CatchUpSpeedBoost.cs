@@ -38,6 +38,7 @@ public sealed class CatchUpSpeedBoost : Component
 		if ( !playerController.IsValid() )
 			return;
 
+
 		if ( ballGrab is null )
 			ballGrab = Components.Get<BallGrab>();
 		if ( ballThrow is null )

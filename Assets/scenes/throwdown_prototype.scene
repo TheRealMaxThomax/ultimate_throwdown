@@ -430,6 +430,23 @@
           "StartMoveSpeed": 140,
           "TimeToCatchUpSpeed": 4,
           "TimeToSprintSpeed": 2
+        },
+        {
+          "__type": "PlayerTackle",
+          "__guid": "2dac0e83-48ec-40f2-a99b-771e85dfa533",
+          "__enabled": true,
+          "Flags": 0,
+          "BaseTackleForce": 800,
+          "EnableTackleDebugLogs": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "TackleCooldown": 1,
+          "TackleDirectionThreshold": 0.5,
+          "TackleImpulseMultiplier": 1
         }
       ],
       "Children": [
@@ -2574,13 +2591,13 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
-      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
         }
+      },
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
       },
       "Sandbox.SelectionSetsSystem": {
         "Data": {

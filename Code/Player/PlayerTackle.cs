@@ -6,6 +6,10 @@ public sealed class PlayerTackle : Component
 	[Property] public float TackleImpulseMultiplier { get; set; } = 1f;
 	[Property] public float TackleDirectionThreshold { get; set; } = 0.5f;
 	[Property] public float TackleCooldown { get; set; } = 1f;
+	[Property] public float TackleLaunchSpeed { get; set; } = 600f;
+	[Property] public float RagdollGravity { get; set; } = 800f;
+	[Property] public float RagdollCameraDistance { get; set; } = 200f;
+	[Property] public float RagdollCameraHeight { get; set; } = 80f;
 	[Property] public bool EnableTackleDebugLogs { get; set; } = false;
 
 	// Host writes, all machines read and react locally
@@ -19,10 +23,15 @@ public sealed class PlayerTackle : Component
 	private bool wasRagdolled;
 	private float tackleBlockedUntil;
 
+	// Ragdoll simulation state (owning machine only)
+	private Vector3 ragdollVelocity;
+	private float ragdollGroundZ;
+	private Vector3 ragdollCameraOffset;
+
 	private CatchUpSpeedBoost speedBoost;
 	private PlayerClass playerClass;
 	private PlayerController playerController;
-	private ModelPhysics modelPhysics;
+	private CameraComponent activeCamera;
 
 	public bool IsTackleImmune => isTackleImmune;
 	public bool IsRagdolled => isRagdolled;
@@ -32,16 +41,27 @@ public sealed class PlayerTackle : Component
 		speedBoost = Components.Get<CatchUpSpeedBoost>();
 		playerClass = Components.Get<PlayerClass>();
 		playerController = Components.Get<PlayerController>();
-		modelPhysics = Components.Get<ModelPhysics>( FindMode.EverythingInSelfAndDescendants );
+
+		// Cache the local main camera — only used on the owning machine during ragdoll
+		foreach ( var cam in Scene.GetAllComponents<CameraComponent>() )
+		{
+			if ( cam.IsMainCamera )
+			{
+				activeCamera = cam;
+				break;
+			}
+		}
 	}
 
 	protected override void OnUpdate()
 	{
+		// Owning machine simulates position and drives camera during ragdoll
+		if ( isRagdolled && !IsProxy )
+			SimulateRagdoll();
+
 		// Every machine reacts to ragdoll state changes locally
 		if ( isRagdolled != wasRagdolled )
 		{
-			Log.Info( $"[Tackle] Ragdoll state change on {GameObject.Name}: {wasRagdolled} → {isRagdolled} | IsHost={Networking.IsHost}" );
-
 			if ( isRagdolled )
 				ApplyRagdollLocally();
 			else
@@ -89,6 +109,33 @@ public sealed class PlayerTackle : Component
 
 			ExecuteTackle( candidate, impulse );
 			break;
+		}
+	}
+
+	// Runs every frame on the owning machine while ragdolled
+	private void SimulateRagdoll()
+	{
+		// Apply gravity and move
+		ragdollVelocity.z -= RagdollGravity * Time.Delta;
+		var nextPos = WorldPosition + ragdollVelocity * Time.Delta;
+
+		// Clamp to starting Z so the player can't sink underground
+		if ( nextPos.z < ragdollGroundZ )
+		{
+			nextPos = nextPos.WithZ( ragdollGroundZ );
+			ragdollVelocity = ragdollVelocity.WithZ( 0f );
+		}
+
+		WorldPosition = nextPos;
+
+		// Keep camera following the player using the offset captured at tackle start.
+		// Rotation is computed fresh each frame — looking from camera toward player center
+		// with an explicit up vector so the camera can never end up upside-down.
+		if ( activeCamera.IsValid() )
+		{
+			activeCamera.WorldPosition = WorldPosition + ragdollCameraOffset;
+			var toPlayerCenter = (WorldPosition + Vector3.Up * 36f - activeCamera.WorldPosition).Normal;
+			activeCamera.WorldRotation = Rotation.LookAt( toPlayerCenter, Vector3.Up );
 		}
 	}
 
@@ -142,38 +189,39 @@ public sealed class PlayerTackle : Component
 	}
 
 	// Called locally on every machine when ragdoll starts
-	private async void ApplyRagdollLocally()
+	private void ApplyRagdollLocally()
 	{
-		Log.Info( $"[Tackle] ApplyRagdollLocally on {GameObject.Name} | IsHost={Networking.IsHost} | Controller={playerController.IsValid()} | ModelPhysics={modelPhysics.IsValid()}" );
+		Log.Info( $"[Tackle] ApplyRagdollLocally on {GameObject.Name} | IsProxy={IsProxy}" );
 
+		// Only the owning machine simulates flight and drives the camera
+		if ( !IsProxy )
+		{
+			// Snapshot camera state before disabling the controller
+			// Compute camera offset from player facing direction at tackle time.
+			// CameraComponent.WorldPosition is not reliable (controller drives it internally),
+			// so we build the offset ourselves: behind the player and elevated.
+			var playerForward = WorldRotation.Forward.WithZ( 0f );
+			if ( playerForward.LengthSquared > 0.001f ) playerForward = playerForward.Normal;
+			ragdollCameraOffset = -playerForward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
+
+			ragdollGroundZ = WorldPosition.z;
+			var launchDir = (NetRagdollImpulse.Normal + Vector3.Up * 0.7f).Normal;
+			ragdollVelocity = launchDir * TackleLaunchSpeed;
+
+			Log.Info( $"[Tackle] Launch: {launchDir} × {TackleLaunchSpeed} | CamOffset={ragdollCameraOffset}" );
+		}
+
+		// Disable on all machines so the controller doesn't fight SimulateRagdoll on the owner
+		// and so animation/input is paused on proxies
 		if ( playerController.IsValid() ) playerController.Enabled = false;
-		if ( modelPhysics.IsValid() ) modelPhysics.Enabled = true;
-
-		// Poll until PhysicsGroup is ready — can take several frames after ModelPhysics is enabled
-		PhysicsGroup physGroup = null;
-		var deadline = Time.Now + 1f;
-		while ( physGroup == null && Time.Now < deadline )
-		{
-			await GameTask.DelaySeconds( 0.05f );
-			if ( !IsValid ) return;
-			physGroup = modelPhysics?.PhysicsGroup;
-		}
-
-		Log.Info( $"[Tackle] PhysicsGroup on {GameObject.Name} | Found={physGroup != null} | BodyCount={physGroup?.BodyCount}" );
-
-		if ( physGroup != null && physGroup.BodyCount > 0 )
-		{
-			physGroup.GetBody( 0 ).ApplyImpulse( NetRagdollImpulse );
-			Log.Info( $"[Tackle] Impulse applied on {GameObject.Name}: {NetRagdollImpulse.Length:F0}" );
-		}
 	}
 
 	// Called locally on every machine when ragdoll ends
 	private void StandUpLocally()
 	{
-		if ( modelPhysics.IsValid() ) modelPhysics.Enabled = false;
 		if ( playerController.IsValid() ) playerController.Enabled = true;
 
-		Log.Info( $"[Tackle] StandUpLocally on {GameObject.Name} | IsHost={Networking.IsHost} | Controller re-enabled={playerController.IsValid()}" );
+		ragdollVelocity = Vector3.Zero;
+		Log.Info( $"[Tackle] StandUpLocally on {GameObject.Name} | IsProxy={IsProxy}" );
 	}
 }
