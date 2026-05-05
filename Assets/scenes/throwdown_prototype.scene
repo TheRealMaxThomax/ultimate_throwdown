@@ -307,6 +307,7 @@
           "DropperNoPushRadius": 90,
           "DropperNoPushWindow": 0.75,
           "DropSideOffset": 25,
+          "DropVelocityScale": 0.5,
           "EnableNetDebugLogs": false,
           "HoldAnchor": {
             "_type": "gameobject",
@@ -2531,6 +2532,11 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
+        }
+      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
@@ -2538,11 +2544,6 @@
       },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
         "DisableClientRecording": false
-      },
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
-        }
       }
     }
   },

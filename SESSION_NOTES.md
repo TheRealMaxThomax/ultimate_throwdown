@@ -104,6 +104,14 @@ Treat these as mandatory implementation rules for all new gameplay features.
 - Communication style: Explain steps in simple language, avoid jargon where possible, and include quick "what/why" context for commands and changes.
 - Reminder: If naming confusion/repeated renames starts happening, propose expanding Naming Canon (especially before team size or system count grows).
 
+## Prerequisites for Planned Systems
+These are small gaps in existing code that must be filled before the planned systems can be built. Do not build these proactively — add them at the time they're needed.
+
+- [ ] `CatchUpSpeedBoost` needs a `public bool IsAtChargeSpeed { get; private set; }` getter so the tackle system can check if the attacker qualifies.
+- [ ] `CatchUpSpeedBoost` speed/timing properties need to be driven from `ClassData` instead of inspector values.
+- [ ] `BallThrow` force and charge timing need to accept per-class multipliers from `ClassData`.
+- [ ] Player capsule size (height/radius) needs to be set from `ClassData.ModelScale` when class system is built.
+
 ## Known Issues / Risks
 - [x] Anti-dribble / passive push resolved via auto-grab on contact.
   - Decided: body-push is too complex to make consistent across host/client. Auto-grab is the EF Throwdown compromise and fits the game design.
@@ -132,8 +140,135 @@ Treat these as mandatory implementation rules for all new gameplay features.
 
 ## Current Plan (Top 3)
 1. Run 2-window regression pass: confirm auto-grab feels good, throw still works, no new desyncs.
-2. Throw tuning pass — force, arc, and charge feel.
-3. Broader multiplayer stress testing (spam pickup/drop/throw, jump-drop edge cases, longer sessions).
+2. Build `ClassData` resource and wire `CatchUpSpeedBoost` + `BallThrow` to read from it.
+3. Build tackle system on top of stable ClassData foundation.
+
+---
+
+## Planned Systems (Design Locked, Not Yet Built)
+
+### Class System
+
+Three player classes. **All player stats read from `ClassData` — never hardcoded on components.**
+
+| Class | Mass | Size | Speed Ramp | Throw |
+|---|---|---|---|---|
+| Speedster | Lightest | Smallest | Reaches charge speed fastest | Default |
+| Sniper | Middle | Middle | Middle ramp | Faster charge, higher force |
+| Juggernaut | Heaviest | Biggest | Slowest ramp | Default |
+
+**`ClassData` fields (s&box `[GameResource]`):**
+
+| Field | Type | Notes |
+|---|---|---|
+| `ClassName` | string | Display name |
+| `Mass` | float | Gameplay-only — used in tackle formula, not a physics property |
+| `CapsuleHeight` | float | Player capsule height |
+| `CapsuleRadius` | float | Player capsule radius |
+| `ModelScale` | float | Visual scale |
+| `TriggerSphereRadius` | float | Tackle detection sphere radius; scales with class size |
+| `StartMoveSpeed` | float | Replaces hardcoded value in `CatchUpSpeedBoost` |
+| `SprintMoveSpeed` | float | Replaces hardcoded value in `CatchUpSpeedBoost` |
+| `CatchUpMoveSpeed` | float | Replaces hardcoded value in `CatchUpSpeedBoost` |
+| `TimeToSprintSpeed` | float | Speedster lowest, Juggernaut highest |
+| `TimeToCatchUpSpeed` | float | Speedster lowest, Juggernaut highest |
+| `WalkTurnSpeed` | float | Turn rate while walking |
+| `RunTurnSpeed` | float | Turn rate while sprinting |
+| `ChargeTurnSpeed` | float | Turn rate at charge speed |
+| `MomentumMultiplier` | float | How much momentum carries on direction change/stop |
+| `ThrowPower` | float | Sniper > 1.0, others 1.0 |
+| `DodgeCooldown` | float | Cooldown between dodges |
+| `DodgeDistance` | float | How far a dodge travels |
+| `DodgeInvincibilityWindow` | float | Invincibility frames during dodge |
+| `RagdollDuration` | float | Seconds down after being tackled (default 2s) |
+| `PostTackleInvincibilityDuration` | float | Short invincibility after standing back up |
+| `BallLaunchForceOnTackle` | float | How hard ball flies when tackle-dropped |
+| `BallPickupLockoutAfterTackle` | float | Seconds ball can't be grabbed after tackle drop |
+| `TackleChargeRampRate` | float | Juggernaut passive: bonus multiplier per second at charge speed |
+| `MaxTackleChargeBonus` | float | Juggernaut passive: cap on the ramp bonus |
+| `IgnoreWeaponSpeedPenalty` | bool | If true, class ignores weapon-hold speed slowdown |
+| `WeaponSwingSpeedPenaltyDuration` | float | Seconds reset to walking speed after any weapon swing |
+
+**Global (not in ClassData):**
+- `TackleImpulseMultiplier` — single tuning knob on the tackle component, not per-class
+
+**Explicitly removed:**
+- `ThrowChargeSpeedMultiplier` — dropped; Sniper's identity is `ThrowPower` + dodge-while-charging passive
+- `MaxSpeed`, `Acceleration` — dropped; keeping three-tier speed system (`StartMoveSpeed`/`SprintMoveSpeed`/`CatchUpMoveSpeed`)
+- `WeaponMissSpeedPenalty` — renamed to `WeaponSwingSpeedPenaltyDuration` (penalty applies on all swings, not miss-only)
+| `PostTackleInvincibilityDuration` | float | Short post-ragdoll window, exact value TBD via playtesting |
+| `BallLaunchForceOnTackle` | float | How hard ball flies when tackle-dropped |
+| `BallPickupLockoutAfterTackle` | float | Seconds ball can't be grabbed after a tackle drops it |
+
+**Notes:**
+- `Mass` is gameplay-only. `PlayerController` is a character controller with no physics mass. The tackle formula uses this float directly.
+- Class size affects model scale, capsule dimensions, and trigger sphere radius — all live in `ClassData`.
+- `CatchUpSpeedBoost` will need to read from `ClassData` instead of its own inspector properties when this is built. Ask before modifying it.
+- `BallThrow` force will need to read from `ClassData` (`ThrowPower`). Ask before modifying it.
+- Weapon system is future work. `IgnoreWeaponSpeedPenalty` and `WeaponSwingSpeedPenaltyDuration` are in ClassData now so the per-class tuning is ready when weapons get built.
+- Weapon rules: holding a weapon forces all classes to Juggernaut's `TimeToCatchUpSpeed` (unless `IgnoreWeaponSpeedPenalty = true`). Any weapon swing resets speed to walking speed for `WeaponSwingSpeedPenaltyDuration` seconds. Weapons are one-use: ranged/explosive consumed on use; melee only breaks on a successful hit.
+- Passives and ults are designed (see below) but not being built yet. They will be selectable at match/round start.
+
+---
+
+### Dodge Mechanic (Planned, Not Built Yet)
+
+- Players can dodge left or right on input.
+- Has a cooldown.
+- Lives in its own component: `PlayerDodge`.
+- Must expose `public bool IsDodging` so the tackle system can query it on the host.
+- Passives interact with dodge state — build `PlayerDodge` as a standalone system before wiring any passive logic.
+
+---
+
+### Passives and Ults (Designed, Not Being Built Yet)
+
+Selectable per class at match/round start.
+
+**Speedster**
+- *Passive:* Short speed boost on successfully dodging a tackle. Detection: when host fires a tackle attempt and victim's `IsDodging` is true → tackle is nullified → trigger speed boost. If `IsDodging` is false → normal tackle applies.
+- *Ult:* Lightning dash. Long-distance charge in a fixed direction. Charge-up time required. **Facing direction is snapshotted at the moment the charge begins — player cannot adjust aim during charge-up.** On contact with a player, delivers a powerful tackle.
+
+**Sniper**
+- *Passive:* Can dodge while charging throw. Other classes cannot dodge during charge. (`PlayerDodge` must check if player is Sniper before allowing dodge during charge state.)
+- *Ult:* Sonic boom throw. Ball travels its normal arc, but creates an AOE ragdoll zone along the flight path each frame. Requires a flag (`IsUltThrow` or a projectile mode) on the ball so it knows to run sweep logic. Most complex system of the four — build last.
+
+**Juggernaut**
+- *Passive:* The longer they stay at charge speed, the more powerful their tackle. Bonus accumulates at `TackleChargeRampRate` per second, capped at `MaxTackleChargeBonus`. Resets immediately when they drop below charge speed (counterplay: slow them down to reset their stack).
+- *Ult:* AOE circular stomp. Centered on the Juggernaut. All players within radius are sent flying as ragdolls.
+
+---
+
+### Tackle System
+
+**Core rules:**
+- Trigger sphere on each player (radius from `ClassData.TriggerSphereRadius`), slightly larger than capsule. **Never `OnPhysicsCollision`** — unreliable in multiplayer.
+- Tackles only trigger when attacker is at charge speed. Need `IsAtChargeSpeed` public getter on `CatchUpSpeedBoost` (doesn't exist yet).
+- Velocity + direction check before applying: dot product of (attacker velocity direction) · (direction to victim) must exceed a tunable threshold (~0.5, roughly 60° forward cone). Threshold is a tunable property.
+- Host-authoritative. Trigger detection and ragdoll application on host only.
+
+**Impulse formula:**
+```
+massRatio = clamp(attacker.Mass / victim.Mass, 0.5, 2.5)
+impulse = attackerVelocity × baseTackleForce × massRatio × TackleImpulseMultiplier
+```
+- `TackleImpulseMultiplier` is **global** (not per-class). Mass ratio already handles class differentiation. Add per-class only if playtesting proves it's needed.
+- Result: Juggernaut → Speedster is strongest hit (high mass / low mass ≈ 2.5). Speedster → Juggernaut is weakest (low / high ≈ 0.5). Sniper is middle.
+
+**On tackle hit:**
+1. Victim enters full ragdoll — gets sent flying by impulse.
+2. Victim drops ball; ball also gets launched (not just dropped). `BallLaunchForceOnTackle` from `ClassData`.
+3. Ball pickup is locked out for `BallPickupLockoutAfterTackle` seconds (uses existing `BlockPickupForSeconds`).
+4. After `RagdollDuration` (2s default) victim stands back up.
+5. Post-tackle invincibility window starts (`PostTackleInvincibilityDuration`).
+
+**Ghost collider bug (s&box known issue):**
+- Add a 0.05s delay after calling `BecomeRagdoll` before applying the physics impulse.
+- Without this, the collider isn't fully initialized and the impulse is ignored.
+
+**Auto-grab stays as distance check (not trigger sphere):**
+- `OnPhysicsCollision` unreliability is the reason tackles need trigger spheres. Auto-grab doesn't have that problem.
+- Distance check runs every frame and only targets one known object. Switching to a trigger sphere adds editor setup and collider filtering for no gain.
 
 ## Proven Fix Recipes (Reuse)
 Use these when the same symptom appears again.
@@ -214,6 +349,14 @@ Use these exact names unless explicitly changed in chat.
 - Pickup lockout method in `BallGrab`: `BlockPickupForSeconds(float seconds)`
 - Cosmetics sync component: `PlayerCosmeticsSync`
 - Cosmetics sync properties: `FirstApplyDelay`, `RetryInterval`, `MaxApplyAttempts`, `LockHighestLodAfterApply`, `EnableDebugLogs`
+- Class data resource: `ClassData`
+- Class data fields: `ClassName`, `Mass`, `CapsuleHeight`, `CapsuleRadius`, `ModelScale`, `TriggerSphereRadius`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `WalkTurnSpeed`, `RunTurnSpeed`, `ChargeTurnSpeed`, `MomentumMultiplier`, `ThrowPower`, `DodgeCooldown`, `DodgeDistance`, `DodgeInvincibilityWindow`, `RagdollDuration`, `PostTackleInvincibilityDuration`, `BallLaunchForceOnTackle`, `BallPickupLockoutAfterTackle`, `TackleChargeRampRate`, `MaxTackleChargeBonus`, `IgnoreWeaponSpeedPenalty`, `WeaponSwingSpeedPenaltyDuration`
+- Tackle system component (planned): `PlayerTackle`
+- Tackle tuning properties (planned): `BaseTackleForce`, `TackleImpulseMultiplier` (global), `TackleDirectionThreshold`
+- Charge speed public getter (planned): `IsAtChargeSpeed` on `CatchUpSpeedBoost`
+- Dodge component (planned): `PlayerDodge`
+- Dodge state public getter (planned): `IsDodging` on `PlayerDodge`
+- Juggernaut passive ClassData fields: `TackleChargeRampRate`, `MaxTackleChargeBonus`
 
 ## Next Chat Kickoff
 Paste this at the start of a new session:
@@ -221,6 +364,6 @@ Paste this at the start of a new session:
 `Read SESSION_NOTES.md first, continue from Current Plan, and propose any needed updates before coding.`
 
 ## End-of-Session Handoff
-- What changed: Drop now spawns to player-right using current facing yaw (instead of hold-anchor-forward). Drop now carries scaled player momentum using `DropVelocityScale` (default `0.5`). Drop no-push clamp now preserves inherited drop momentum floor instead of wiping it.
-- What is still blocked: No major blockers. Needs fresh 2-window regression pass focused on drop consistency and feel.
-- Exactly what to do next: Fresh host+client pass — validate right-side drop orientation, drop momentum carry at current slider value, and no-push behavior under immediate re-contact. Then continue throw tuning and stress testing per Current Plan.
+- What changed (05/05/26): Class system and tackle system fully designed and locked in SESSION_NOTES. No code written yet. Build order agreed: regression pass → ClassData resource → wire CatchUpSpeedBoost + BallThrow → tackle system.
+- What is still blocked: No blockers. Regression pass still pending from last session.
+- Exactly what to do next: Fresh host+client regression pass (drop orientation, drop momentum, auto-grab). Then start `ClassData` as a `[GameResource]` with the fields from the Planned Systems section above.
