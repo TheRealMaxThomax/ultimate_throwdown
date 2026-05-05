@@ -444,9 +444,13 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "RagdollCameraDistance": 200,
+          "RagdollCameraHeight": 80,
+          "RagdollGravity": 800,
           "TackleCooldown": 1,
           "TackleDirectionThreshold": 0.5,
-          "TackleImpulseMultiplier": 1
+          "TackleImpulseMultiplier": 1,
+          "TackleLaunchSpeed": 600
         }
       ],
       "Children": [
@@ -527,7 +531,7 @@
                 "Yaw": false,
                 "Roll": false
               },
-              "Model": null,
+              "Model": "models/citizen/citizen.vmdl",
               "MotionEnabled": true,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
@@ -536,7 +540,12 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "PhysicsWereCreated": false,
-              "Renderer": null,
+              "Renderer": {
+                "_type": "component",
+                "component_id": "6a94aa0a-bfeb-4579-ba4b-bf5d4dc2b704",
+                "go": "b79c6e41-cb5d-458f-b796-63a15a512e9e",
+                "component_type": "SkinnedModelRenderer"
+              },
               "RigidbodyFlags": 0,
               "StartAsleep": false
             }
@@ -2591,6 +2600,11 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
+        }
+      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
@@ -2598,11 +2612,6 @@
       },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
         "DisableClientRecording": false
-      },
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
       }
     }
   },
