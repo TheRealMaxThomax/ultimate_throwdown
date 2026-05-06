@@ -246,10 +246,20 @@ public sealed class PlayerTackle : Component
 		await GameTask.DelaySeconds( ragdollDuration );
 		if ( !victim.IsValid() ) return;
 
-		// Snap stand-up to wherever the ragdoll landed
-		victim.NetStandUpPosition = victim.ragdollObject.IsValid()
+		// Trace straight down from the ragdoll's pelvis to find the actual floor.
+		// ragdollObject.WorldPosition is the pelvis (IgnoreRoot=false) — waist height above the floor.
+		// Without this, the player stands up floating at pelvis height and falls in an idle animation
+		// until their controller finds the ground.
+		var ragdollPos = victim.ragdollObject.IsValid()
 			? victim.ragdollObject.WorldPosition
 			: victim.WorldPosition;
+
+		var tr = Scene.Trace
+			.Ray( ragdollPos + Vector3.Up * 30f, ragdollPos + Vector3.Down * 200f )
+			.IgnoreGameObject( victim.ragdollObject )
+			.Run();
+
+		victim.NetStandUpPosition = tr.Hit ? tr.HitPosition : ragdollPos;
 
 		if ( victim.ragdollObject.IsValid() )
 			victim.ragdollObject.Destroy();
