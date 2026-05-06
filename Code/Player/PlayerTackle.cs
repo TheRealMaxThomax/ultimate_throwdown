@@ -232,6 +232,13 @@ public sealed class PlayerTackle : Component
 		if ( EnableTackleDebugLogs && pb0 != null )
 			Log.Info( $"[Tackle] After velocity | Group={group != null} Vel={pb0.Velocity}" );
 
+		// Tag every GameObject in the ragdoll hierarchy so the floor trace at stand-up time
+		// can exclude them. Without this the trace hits the ragdoll's own limbs lying on the
+		// floor and reports those as the floor surface — snapping the player to knee/arm height.
+		ragdollGo.Tags.Add( "ragdoll" );
+		foreach ( var body in mp.Bodies )
+			body.Component?.GameObject?.Tags.Add( "ragdoll" );
+
 		// Network the ragdoll now that it already has launch velocity.
 		ragdollGo.NetworkSpawn();
 		victim.ragdollObject = ragdollGo;
@@ -256,7 +263,7 @@ public sealed class PlayerTackle : Component
 
 		var tr = Scene.Trace
 			.Ray( ragdollPos + Vector3.Up * 30f, ragdollPos + Vector3.Down * 200f )
-			.IgnoreGameObject( victim.ragdollObject )
+			.WithoutTags( "ragdoll" )
 			.Run();
 
 		victim.NetStandUpPosition = tr.Hit ? tr.HitPosition : ragdollPos;
