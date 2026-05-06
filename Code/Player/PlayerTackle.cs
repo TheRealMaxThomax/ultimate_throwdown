@@ -7,15 +7,15 @@ public sealed class PlayerTackle : Component
 	[Property] public float TackleDirectionThreshold { get; set; } = 0.5f;
 	[Property] public float TackleCooldown { get; set; } = 1f;
 	[Property] public float TackleLaunchSpeed { get; set; } = 600f;
-	[Property] public float RagdollGravity { get; set; } = 800f;
 	[Property] public float RagdollCameraDistance { get; set; } = 200f;
 	[Property] public float RagdollCameraHeight { get; set; } = 80f;
 	[Property] public bool EnableTackleDebugLogs { get; set; } = false;
 
-	// Host writes, all machines read and react locally
+	// Host writes, all machines read
 	private bool isRagdolled;
 	[Sync( SyncFlags.FromHost )] private bool NetIsRagdolled { get => isRagdolled; set => isRagdolled = value; }
-	[Sync( SyncFlags.FromHost )] private Vector3 NetRagdollImpulse { get; set; }
+	[Sync( SyncFlags.FromHost )] private Vector3 NetRagdollPosition { get; set; }
+	[Sync( SyncFlags.FromHost )] private Vector3 NetStandUpPosition { get; set; }
 
 	private bool isTackleImmune;
 	[Sync( SyncFlags.FromHost )] private bool NetIsTackleImmune { get => isTackleImmune; set => isTackleImmune = value; }
@@ -23,10 +23,14 @@ public sealed class PlayerTackle : Component
 	private bool wasRagdolled;
 	private float tackleBlockedUntil;
 
-	// Ragdoll simulation state (owning machine only)
-	private Vector3 ragdollVelocity;
-	private float ragdollGroundZ;
+	// Camera state (owning machine only)
 	private Vector3 ragdollCameraOffset;
+
+	// Host-only: the spawned ragdoll physics object
+	private GameObject ragdollObject;
+
+	// Renderers hidden during ragdoll — cached at tackle time so cosmetics are included
+	private readonly System.Collections.Generic.List<SkinnedModelRenderer> hiddenRenderers = new();
 
 	private CatchUpSpeedBoost speedBoost;
 	private PlayerClass playerClass;
@@ -54,9 +58,27 @@ public sealed class PlayerTackle : Component
 
 	protected override void OnUpdate()
 	{
-		// Owning machine simulates position and drives camera during ragdoll
+		// Host keeps NetRagdollPosition current from the spawned physics ragdoll
+		if ( isRagdolled && Networking.IsHost && ragdollObject.IsValid() )
+			NetRagdollPosition = ragdollObject.WorldPosition;
+
+		// Re-enforce renderer hide every frame during ragdoll — catches anything that re-enables them
+		if ( isRagdolled )
+			foreach ( var r in hiddenRenderers )
+				if ( r.IsValid() ) r.Enabled = false;
+
+		// Owner tracks the ragdoll position and drives the camera
 		if ( isRagdolled && !IsProxy )
-			SimulateRagdoll();
+		{
+			WorldPosition = NetRagdollPosition;
+
+			if ( activeCamera.IsValid() )
+			{
+				activeCamera.WorldPosition = WorldPosition + ragdollCameraOffset;
+				var toPlayerCenter = (WorldPosition + Vector3.Up * 36f - activeCamera.WorldPosition).Normal;
+				activeCamera.WorldRotation = Rotation.LookAt( toPlayerCenter, Vector3.Up );
+			}
+		}
 
 		// Every machine reacts to ragdoll state changes locally
 		if ( isRagdolled != wasRagdolled )
@@ -111,29 +133,6 @@ public sealed class PlayerTackle : Component
 		}
 	}
 
-	// Owning machine simulates fly-back each frame.
-	// WorldPosition is replicated to host so the host sees the victim fly.
-	private void SimulateRagdoll()
-	{
-		ragdollVelocity.z -= RagdollGravity * Time.Delta;
-		var nextPos = WorldPosition + ragdollVelocity * Time.Delta;
-
-		if ( nextPos.z < ragdollGroundZ )
-		{
-			nextPos = nextPos.WithZ( ragdollGroundZ );
-			ragdollVelocity = ragdollVelocity.WithZ( 0f );
-		}
-
-		WorldPosition = nextPos;
-
-		if ( activeCamera.IsValid() )
-		{
-			activeCamera.WorldPosition = WorldPosition + ragdollCameraOffset;
-			var toPlayerCenter = (WorldPosition + Vector3.Up * 36f - activeCamera.WorldPosition).Normal;
-			activeCamera.WorldRotation = Rotation.LookAt( toPlayerCenter, Vector3.Up );
-		}
-	}
-
 	private void ExecuteTackle( PlayerTackle victim, Vector3 impulse )
 	{
 		var classData = victim.playerClass?.CurrentClass;
@@ -157,10 +156,60 @@ public sealed class PlayerTackle : Component
 			}
 		}
 
-		victim.NetRagdollImpulse = impulse;
+		// Seed position before enabling ragdoll so owner doesn't snap to Vector3.Zero
+		victim.NetRagdollPosition = victim.WorldPosition;
 		victim.NetIsRagdolled = true;
 
+		SpawnRagdollObject( victim, impulse );
 		HandleRagdollRecovery( victim );
+	}
+
+	// Spawns a host-owned physics ragdoll at the victim's position.
+	// NetworkSpawn makes it visible on all clients automatically.
+	// Physics runs on the host without client transform ownership conflicts.
+	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 impulse )
+	{
+		var ragdollGo = new GameObject( true, "PlayerRagdoll" );
+		ragdollGo.WorldPosition = victim.WorldPosition;
+		ragdollGo.WorldRotation = victim.WorldRotation;
+
+		// Only copy the base body renderer (first one found).
+		// Copying clothing renderers too causes them to appear as a T-pose ghost — additional
+		// SkinnedModelRenderers on the ragdoll object aren't driven by ModelPhysics.
+		var baseVictimRenderer = victim.Components.Get<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants );
+		var primaryRenderer = ragdollGo.AddComponent<SkinnedModelRenderer>();
+		primaryRenderer.Model = baseVictimRenderer?.Model;
+
+		var ragdollPhysics = ragdollGo.AddComponent<ModelPhysics>();
+		ragdollPhysics.Renderer = primaryRenderer;
+		ragdollPhysics.Enabled = true;
+
+		ragdollGo.NetworkSpawn();
+		victim.ragdollObject = ragdollGo;
+
+		// Brief delay for physics bodies to fully initialise before applying impulse
+		await GameTask.DelaySeconds( 0.05f );
+		if ( !ragdollGo.IsValid() ) return;
+
+		// Apply impulse to root body only — joints propagate motion to other bones naturally.
+		// Applying to all bodies simultaneously fights joint constraints and causes erratic launches.
+		var launchDir = (impulse.Normal + Vector3.Up * 0.35f).Normal;
+		if ( ragdollPhysics.Bodies.Count > 0 )
+		{
+			var rootBody = ragdollPhysics.Bodies[0].Component;
+			if ( rootBody.IsValid() )
+				rootBody.Velocity = launchDir * TackleLaunchSpeed;
+		}
+
+		if ( EnableTackleDebugLogs )
+		{
+			Log.Info( $"[Tackle] Ragdoll spawned | Bodies={ragdollPhysics.Bodies.Count} | Launch={launchDir} × {TackleLaunchSpeed}" );
+			for ( int i = 0; i < ragdollPhysics.Bodies.Count; i++ )
+			{
+				var b = ragdollPhysics.Bodies[i];
+				Log.Info( $"[Ragdoll] Body[{i}] GameObject={b.Component?.GameObject?.Name} Pos={b.Component?.WorldPosition}" );
+			}
+		}
 	}
 
 	private async void HandleRagdollRecovery( PlayerTackle victim )
@@ -171,6 +220,15 @@ public sealed class PlayerTackle : Component
 
 		await GameTask.DelaySeconds( ragdollDuration );
 		if ( !victim.IsValid() ) return;
+
+		// Snap stand-up to wherever the ragdoll landed
+		victim.NetStandUpPosition = victim.ragdollObject.IsValid()
+			? victim.ragdollObject.WorldPosition
+			: victim.WorldPosition;
+
+		if ( victim.ragdollObject.IsValid() )
+			victim.ragdollObject.Destroy();
+		victim.ragdollObject = null;
 
 		victim.NetIsRagdolled = false;
 
@@ -190,21 +248,29 @@ public sealed class PlayerTackle : Component
 			var playerForward = WorldRotation.Forward.WithZ( 0f );
 			if ( playerForward.LengthSquared > 0.001f ) playerForward = playerForward.Normal;
 			ragdollCameraOffset = -playerForward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
-
-			ragdollGroundZ = WorldPosition.z;
-			var launchDir = (NetRagdollImpulse.Normal + Vector3.Up * 0.7f).Normal;
-			ragdollVelocity = launchDir * TackleLaunchSpeed;
-
-			Log.Info( $"[Tackle] Launch: {launchDir} × {TackleLaunchSpeed}" );
 		}
 
+		// Cache all renderers at tackle time — cosmetics are loaded by now, unlike at OnStart
+		hiddenRenderers.Clear();
+		hiddenRenderers.AddRange( Components.GetAll<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants ) );
+		foreach ( var r in hiddenRenderers )
+			if ( r.IsValid() ) r.Enabled = false;
+
+		Log.Info( $"[Tackle] Hiding {hiddenRenderers.Count} renderer(s) on {GameObject.Name}" );
 		if ( playerController.IsValid() ) playerController.Enabled = false;
 	}
 
 	private void StandUpLocally()
 	{
+		// Snap to ragdoll landing position before re-enabling the controller
+		if ( !IsProxy )
+			WorldPosition = NetStandUpPosition;
+
+		foreach ( var r in hiddenRenderers )
+			if ( r.IsValid() ) r.Enabled = true;
+		hiddenRenderers.Clear();
 		if ( playerController.IsValid() ) playerController.Enabled = true;
-		ragdollVelocity = Vector3.Zero;
+
 		Log.Info( $"[Tackle] StandUpLocally on {GameObject.Name} | IsProxy={IsProxy}" );
 	}
 }
