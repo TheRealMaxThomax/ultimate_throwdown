@@ -151,7 +151,6 @@ These are small gaps in existing code that must be filled before the planned sys
 
 ### What is still missing / known issues
 - **Launch force too high:** `TackleLaunchSpeed=150` still sends ragdoll too far. Real physics gravity is much weaker than `SimulateRagdoll`'s simplified gravity was. Try values in the 30–80 range next session. Upward arc in code is `Vector3.Up * 0.35f` — may also need reducing.
-- **Ragdoll starts in T-pose:** Spawned ragdoll has no initial animation, so physics begins from T-pose before collapsing. Fix: copy victim's current bone world transforms to the ragdoll physics bodies right after they initialise (before impulse). API path: `victimRenderer.SceneObject.GetAttachment(boneName)` — unconfirmed, needs testing.
 - **Ragdoll is naked:** Only base body model copied to ragdoll. Clothing SkinnedModelRenderers copied to the same GameObject don't get driven by `ModelPhysics` — they sit in T-pose as a ghost. Decision: accept naked ragdoll for now; revisit clothing on ragdoll when a multi-renderer physics approach is found.
 - **Camera snap on stand-up:** One-frame camera teleport when `PlayerController` re-enables. Fix is a lerp — low priority.
 
@@ -167,8 +166,8 @@ These are small gaps in existing code that must be filled before the planned sys
 
 ## Current Plan (Top 3)
 1. **Tune ragdoll launch force** — `TackleLaunchSpeed` is still too high at 150. Start at 50 and work up in the inspector until the arc feels right. Also consider reducing the upward arc from `Vector3.Up * 0.35f` toward `0.2f` in code if horizontal flight is preferred.
-2. **Fix ragdoll T-pose start** — copy victim's current bone world positions to the ragdoll physics bodies immediately after `ModelPhysics` enables. Try `victimRenderer.SceneObject?.GetAttachment(boneName)` for each body's game object name.
-3. **Camera lerp on stand-up** — one-frame snap when controller re-enables. Low priority until ragdoll feel is tuned.
+2. **Camera lerp on stand-up** — one-frame snap when controller re-enables. Low priority until ragdoll feel is tuned.
+3. **Regression pass** — grab/drop/throw/auto-grab still working after all changes this session.
 
 ---
 
@@ -200,7 +199,6 @@ How it works:
 - `GetAll<SkinnedModelRenderer>` for hiding must be called at tackle time, not at `OnStart` — cosmetics are added dynamically after spawn.
 
 ### Remaining ragdoll polish (not blocking)
-- **T-pose start:** Ragdoll's renderer has no animation, so physics starts from T-pose. To fix: after bodies initialise, read victim's bone world positions via `victimRenderer.SceneObject?.GetAttachment(boneName)` and apply to each body. API not yet confirmed.
 - **Naked ragdoll:** Only base model on ragdoll (no clothing). Clothing on a separate physics-driven ragdoll requires investigation of multi-renderer physics approaches.
 
 ---
@@ -429,5 +427,5 @@ Paste this at the start of a new session:
 
 ## End-of-Session Handoff
 - What changed (06/05/26 session 2): Discovered the correct approach for multiplayer ragdoll — spawn a separate host-owned ragdoll GameObject instead of trying to ragdoll the player object. Implemented Option D: host spawns PlayerRagdoll with ModelPhysics, NetworkSpawn makes it visible everywhere, player renderers hidden during ragdoll, camera follows via NetRagdollPosition, stand-up snaps to NetStandUpPosition. Both screens now see the ragdoll. Committed and pushed to feature/class-system.
-- What is still in progress: Launch force too high (TackleLaunchSpeed needs to be much lower — try 30–80 range). Ragdoll starts in T-pose (bone pose copy from victim not yet implemented). Ragdoll is naked (clothing excluded to avoid T-pose ghost). Camera snap on stand-up (lerp still pending).
-- Exactly what to do next: Open new chat, read SESSION_NOTES, tune TackleLaunchSpeed (and optionally reduce upward arc from 0.35f) until the fly-back arc feels right. Then tackle the T-pose start fix.
+- What is still in progress: Launch force too high (TackleLaunchSpeed needs to be much lower — try 30–80 range). Ragdoll is naked (clothing excluded to avoid T-pose ghost). Camera snap on stand-up (lerp still pending).
+- Exactly what to do next: Open new chat, read SESSION_NOTES, tune TackleLaunchSpeed (and optionally reduce upward arc from 0.35f in code) until the fly-back arc feels right.
