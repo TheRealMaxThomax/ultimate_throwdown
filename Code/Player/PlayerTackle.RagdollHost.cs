@@ -31,12 +31,16 @@ public sealed partial class PlayerTackle
 
 		if ( baseVictimRenderer != null )
 			AddVictimClothingToRagdoll( victim, ragdollGo, primaryRenderer, baseVictimRenderer );
-		// Wait for LOCAL physics to initialise BEFORE networking.
-		// NetworkSpawn() previously disconnected the bodies from the host's physics world
-		// (PhysicsGroup became null after spawn, so velocity writes had no effect).
-		// By waiting first, the local physics world is active and velocity takes hold.
-		// Only then do we NetworkSpawn so clients can see the already-moving ragdoll.
-		await GameTask.DelaySeconds( 0.05f );
+
+		// Network as soon as the mesh exists so we don't sit in a hole where the player is hidden
+		// (NetIsRagdolled) but the ragdoll object hasn't replicated yet. Impulse is applied after
+		// a short host delay so physics bodies exist (see RagdollPhysicsInitDelay).
+		ragdollGo.Tags.Add( "ragdoll" );
+		victim.ragdollObject = ragdollGo;
+		ragdollGo.NetworkSpawn();
+
+		var initDelay = RagdollPhysicsInitDelay.Clamp( 0.01f, 0.25f );
+		await GameTask.DelaySeconds( initDelay );
 		if ( !ragdollGo.IsValid() )
 			return;
 
@@ -48,7 +52,7 @@ public sealed partial class PlayerTackle
 		var group = pb0?.PhysicsGroup;
 
 		if ( EnableTackleDebugLogs )
-			Log.Info( $"[Tackle] Pre-spawn | Bodies={mp.Bodies.Count} BodyType[0]={pb0?.BodyType} Group={group != null}" );
+			Log.Info( $"[Tackle] Post-network impulse | Bodies={mp.Bodies.Count} BodyType[0]={pb0?.BodyType} Group={group != null}" );
 
 		var launchDir = (tackleDir + Vector3.Up * TackleLaunchArc).Normal;
 		var launchVelocity = launchDir * effectiveLaunchSpeed;
@@ -65,16 +69,9 @@ public sealed partial class PlayerTackle
 		if ( EnableTackleDebugLogs && pb0 != null )
 			Log.Info( $"[Tackle] After velocity | Group={group != null} Vel={pb0.Velocity}" );
 
-		// Tag every GameObject in the ragdoll hierarchy so the floor trace at stand-up time
-		// can exclude them. Without this the trace hits the ragdoll's own limbs lying on the
-		// floor and reports those as the floor surface — snapping the player to knee/arm height.
-		ragdollGo.Tags.Add( "ragdoll" );
+		// Tag every physics body for stand-up floor traces.
 		foreach ( var body in mp.Bodies )
 			body.Component?.GameObject?.Tags.Add( "ragdoll" );
-
-		// Network the ragdoll now that it already has launch velocity.
-		ragdollGo.NetworkSpawn();
-		victim.ragdollObject = ragdollGo;
 	}
 
 	/// <summary>
@@ -111,10 +108,42 @@ public sealed partial class PlayerTackle
 	private async void HandleRagdollRecovery( PlayerTackle victim )
 	{
 		var classData = victim.playerClass?.CurrentClass;
-		var ragdollDuration = classData?.RagdollDuration ?? 2f;
+		var downTimeAfterGrounded = classData?.RagdollDuration ?? 2f;
+		var maxTotalRagdoll = classData?.RagdollMaxDuration ?? 8f;
+		var groundSpeedMax = classData?.RagdollGroundSpeedMax ?? 160f;
+		var groundTraceDown = classData?.RagdollGroundTraceDown ?? 120f;
+		var groundTraceUp = classData?.RagdollGroundTraceUp ?? 24f;
 		var invincDuration = classData?.PostTackleInvincibilityDuration ?? 1f;
 
-		await GameTask.DelaySeconds( ragdollDuration );
+		var scene = victim.Scene;
+		var started = Time.Now;
+		var groundedAccum = 0f;
+		const float pollSeconds = 0.05f;
+
+		// SpawnRagdollObject is async; wait briefly so ragdollObject exists on the host.
+		while ( victim.IsValid() && !victim.ragdollObject.IsValid() && Time.Now - started < 2f )
+			await GameTask.DelaySeconds( pollSeconds );
+
+		while ( victim.IsValid() )
+		{
+			if ( Time.Now - started >= maxTotalRagdoll )
+				break;
+
+			var ragdoll = victim.ragdollObject;
+			if ( !ragdoll.IsValid() )
+				break;
+
+			if ( IsRagdollGroundedAndSettled( ragdoll, scene, groundTraceUp, groundTraceDown, groundSpeedMax ) )
+				groundedAccum += pollSeconds;
+			else
+				groundedAccum = 0f;
+
+			if ( groundedAccum >= downTimeAfterGrounded )
+				break;
+
+			await GameTask.DelaySeconds( pollSeconds );
+		}
+
 		if ( !victim.IsValid() )
 			return;
 
@@ -126,7 +155,7 @@ public sealed partial class PlayerTackle
 			? victim.ragdollObject.WorldPosition
 			: victim.WorldPosition;
 
-		var tr = Scene.Trace
+		var tr = scene.Trace
 			.Ray( ragdollPos + Vector3.Up * 30f, ragdollPos + Vector3.Down * 200f )
 			.WithoutTags( "ragdoll" )
 			.Run();
@@ -145,5 +174,35 @@ public sealed partial class PlayerTackle
 			return;
 
 		victim.NetIsTackleImmune = false;
+	}
+
+	/// <summary>Pelvis near floor (trace) and not still moving fast from flight or bounce.</summary>
+	private static bool IsRagdollGroundedAndSettled(
+		GameObject ragdollRoot,
+		Scene scene,
+		float traceUp,
+		float traceDown,
+		float maxPelvisSpeed )
+	{
+		if ( !ragdollRoot.IsValid() )
+			return false;
+
+		var pos = ragdollRoot.WorldPosition;
+		var tr = scene.Trace
+			.Ray( pos + Vector3.Up * traceUp, pos + Vector3.Down * traceDown )
+			.WithoutTags( "ragdoll" )
+			.Run();
+		if ( !tr.Hit )
+			return false;
+
+		var mp = ragdollRoot.Components.Get<ModelPhysics>();
+		if ( mp == null || mp.Bodies.Count == 0 )
+			return false;
+
+		var pelvisBody = mp.Bodies[0].Component?.PhysicsBody;
+		if ( pelvisBody == null )
+			return false;
+
+		return pelvisBody.Velocity.Length <= maxPelvisSpeed;
 	}
 }

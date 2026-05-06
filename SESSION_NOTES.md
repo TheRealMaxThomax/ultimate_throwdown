@@ -4,10 +4,10 @@ Use this file as persistent project memory between chats.
 Keep entries short, specific, and current.
 
 ## Project Snapshot
-- **Current Goal:** Tackle system — launch, mass ratio, Juggernaut charge ramp, stand-up floor trace, `RagdollClientFeel` for tackled client camera. Polish: stand-up camera lerp, naked ragdoll, tuning.
+- **Current Goal:** Tackle polish — launch tuning, camera lerp on stand-up, broader MP stress tests. Core tackle + ragdoll + cosmetics + grounded recovery shipped.
 - **Current Branch:** `feature/class-system` (pushed to origin).
-- **Build/Run Status:** Compiles clean. Tackle + networked ragdoll + `RagdollClientFeel` on player. 2-window test as needed after pulls.
-- **Last Updated:** 06/05/26 (RagdollClientFeel refactor + partial PlayerTackle.RagdollHost; mass/jugg tackle power in code)
+- **Build/Run Status:** Compiles clean. Client + host tackles; ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap.
+- **Last Updated:** 2026-06-06 (MP tackle RPC + cooldown sync + ragdoll cosmetics + early network spawn + grounded stand-up timer; SESSION_NOTES sync)
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
@@ -64,9 +64,8 @@ Keep entries short, specific, and current.
 - **Ragdoll launch impulse on spawned `ModelPhysics`:** after local physics init delay, **`PhysicsBody.ApplyImpulse` on the pelvis only** (`Bodies[0]`): `launchDir × effectiveLaunchSpeed × totalRagdollMass`. Matches whole-body momentum; limbs flex via joints (not rigid same-velocity all bones).
   - Why: `ModelPhysics.PhysicsGroup` is null on spawned ragdolls. Pelvis-only `Rigidbody`/per-body velocity was unreliable. One COM-scale impulse behaves well with the ragdoll constraint graph.
   - Date: 2026-05-06
-- **NetworkSpawn the ragdoll AFTER setting launch velocity, not before.**
-  - Why: Setting velocity on a `NetworkSpawn()`-ed ragdoll before the velocity step was causing `PhysicsGroup` to appear null (bodies disconnected from local physics world). Waiting 0.05s locally, applying velocity, then calling `NetworkSpawn()` keeps the physics group live during velocity assignment.
-  - Date: 2026-05-06
+- **Ragdoll `NetworkSpawn` vs impulse order (current):** `NetworkSpawn` runs **right after** mesh + `CopyBonesFrom` + clothing so the ragdoll replicates before the hidden-player gap; host then waits **`RagdollPhysicsInitDelay`** and applies pelvis **`ApplyImpulse`**. Earlier pipeline tried impulse-then-spawn to keep bodies in local physics; current tradeoff prioritizes visibility; if launches weaken, increase `RagdollPhysicsInitDelay` slightly.
+  - Date: 2026-06-06
 - **`ModelPhysics.MotionEnabled = true` and `IgnoreRoot = false` must be set explicitly on the spawned ragdoll.**
   - Why: `MotionEnabled` ensures physics drives the renderer (not the other way around). `IgnoreRoot = false` ensures the root physics body drives the GameObject's `WorldPosition` so `NetRagdollPosition` (which reads `ragdollObject.WorldPosition`) actually tracks the ragdoll as it flies.
   - Date: 2026-05-06
@@ -78,6 +77,17 @@ Keep entries short, specific, and current.
   - Date: 2026-05-06
 - **Tackled owning client:** `RagdollClientFeel` on player root snapshots `NetRagdollPosition` via `PlayerTackle.SyncedRagdollPelvisPosition`, delayed playback (`InterpolationDelay`, `MaxSnapshots`) — same idea as `BallClientFeel`. Host victim still snaps in `PlayerTackle` only.
   - Date: 2026-05-06
+- **`CatchUpSpeedBoost` at-charge for remote pawns:** owner computes `IsAtChargeSpeed`; `[Sync] NetAtChargeSpeed` replicates so the host can evaluate charge-speed for client-owned attackers (`IsProxy` skip no longer blocks host).
+  - Date: 2026-05-06
+- **Client attacker tackles:** `TryOwnerRequestTackleOnHost` + `[Rpc.Host] RequestTackleApplyOnHost` with victim `GameObject.Id` (Guid), `horizontalMoveDirectionFromOwner`, attacker/victim position snapshots; slop + radius fudge; `NetTackleBlockedUntil` (FromHost, backing field) mirrors tackle cooldown for owners.
+  - Why: Host `PlayerController.Velocity` for remote pawns is unreliable; SteamId can collide in local multi-instance.
+  - Date: 2026-05-06
+- **Ragdoll outfit on spawned ragdoll:** extra victim `SkinnedModelRenderer`s (cosmetics) cloned under ragdoll root with `CopyFrom` + `BoneMergeTarget` = physics body (not naked base-only).
+  - Date: 2026-05-06
+- **Ragdoll visibility gap:** `NetworkSpawn` immediately after mesh + `CopyBonesFrom` + clothing; assign `victim.ragdollObject` then wait `RagdollPhysicsInitDelay` and `ApplyImpulse` (order changed from “impulse then spawn” to avoid frame hole while player renderers hidden).
+  - Date: 2026-05-06
+- **Stand-up timing:** `RagdollDuration` = consecutive seconds **grounded and settled** (floor trace + pelvis speed); bouncing/jostling resets accum. `RagdollMaxDuration` = hard cap from tackle. Intentional: other players bumping the ragdoll can delay get-up until cap.
+  - Date: 2026-06-06
 
 ## Constraints and Rules
 Only include constraints that are easy to forget and expensive to violate.
@@ -161,19 +171,18 @@ These are small gaps in existing code that must be filled before the planned sys
 ## Current Tackle Status (Resume Here Next Chat)
 
 ### What works
-- Tackle detection: host distance+direction+charge-speed check fires correctly.
-- **Ragdoll visual: WORKING on both screens.** Host spawns a separate `PlayerRagdoll` GameObject with the victim's base model + `ModelPhysics`. `NetworkSpawn()` makes it visible to all clients. Physics runs on the host without client transform ownership conflicts.
-- Player model hidden during ragdoll: all renderers cached at tackle time (`hiddenRenderers` list) and re-enforced to `Enabled=false` every frame — catches cosmetics added after spawn and prevents anything re-enabling them.
-- Camera follows ragdoll: owner sets `WorldPosition = NetRagdollPosition` (synced from host each frame), camera offset computed at tackle time.
-- Stand-up: controller re-enables, player snaps to `NetStandUpPosition` (ragdoll's landing position), renderers re-enabled.
-- Post-tackle invincibility window working.
-- `Bodies[0]` = pelvis confirmed. Launch uses `PhysicsGroup.Velocity` (not per-body), so this is informational only.
+- Tackle detection: **host** uses local velocity; **client owners** request via RPC with snapshots (charge speed synced from owner).
+- **Ragdoll visual** on both screens: separate `PlayerRagdoll` with base body + cosmetics (`BoneMergeTarget`); early `NetworkSpawn` to reduce invisible gap.
+- Player model hidden during ragdoll: `hiddenRenderers` cached and re-enforced every frame.
+- Camera follows ragdoll (`NetRagdollPosition` / `RagdollClientFeel` on owning client).
+- Stand-up: host waits for **grounded + settled** time (`RagdollDuration` consecutive) or **`RagdollMaxDuration`** cap; floor trace for `NetStandUpPosition`; invincibility after.
+- Post-tackle invincibility working.
+- `Bodies[0]` = pelvis; launch via **`ApplyImpulse`** (not `PhysicsGroup.Velocity`).
 
 ### What is still missing / known issues
-- **Launch force tuning in progress:** `TackleLaunchSpeed` is confirmed working. At 150 the ragdoll only travels ~35 units (looks like it collapses in place). At 600 it's clearly visible. At 2000 it flies off the map. Good tuning range is probably 400–800 — dial in with in-game feel.
-- **Ragdoll is naked:** Only base body model copied to ragdoll. Clothing SkinnedModelRenderers copied to the same GameObject don't get driven by `ModelPhysics` — they sit in T-pose as a ghost. Decision: accept naked ragdoll for now; revisit clothing on ragdoll when a multi-renderer physics approach is found.
-- **Camera snap on stand-up:** One-frame camera teleport when `PlayerController` re-enables. Fix is a lerp — low priority.
-- **Stand-up hover fixed:** Floor trace at stand-up time now uses `.WithoutTags("ragdoll")`. Previously used `.IgnoreGameObject(root)` which only ignored the root GO — all the bone child objects had their own colliders and the trace was hitting a lying limb and snapping the player to shin/arm height. All body parts now get tagged `"ragdoll"` when the velocity is applied.
+- **Launch force tuning:** `TackleLaunchSpeed` / `TackleLaunchArc` still dial-in (rough band ~400–800 per older notes).
+- **Camera snap on stand-up:** one-frame teleport when controller re-enables — lerp later.
+- **Stand-up hover** (limb trace): mitigated with `.WithoutTags("ragdoll")` on body parts.
 
 ### Scene setup that must be correct every session (recompile may drop some)
 - `PlayerTackle` on root player object (gets dropped on recompile — check every session)
@@ -183,17 +192,25 @@ These are small gaps in existing code that must be filled before the planned sys
 - **Do NOT add `ModelPhysics` to the player prefab** — it is no longer used on the player object. The ragdoll is a separately spawned object.
 - All three `.cdata` assets must have values set manually:
   - Movement: StartMoveSpeed=140, SprintMoveSpeed=220, CatchUpMoveSpeed=320, TimeToSprintSpeed=2, TimeToCatchUpSpeed=4
-  - Tackle: TriggerSphereRadius=40, RagdollDuration=2, PostTackleInvincibilityDuration=1, BallLaunchForceOnTackle=500, BallPickupLockoutAfterTackle=1.5
+  - Tackle: TriggerSphereRadius=40, **RagdollDuration** (= seconds grounded+settled before stand), **RagdollMaxDuration**, **RagdollGroundSpeedMax**, **RagdollGroundTraceDown**, **RagdollGroundTraceUp**, PostTackleInvincibilityDuration=1, BallLaunchForceOnTackle=500, BallPickupLockoutAfterTackle=1.5 (open each `.cdata` in editor for new fields / defaults)
   - Mass: Mass=80 (same placeholder for all three for now)
 
 ## Current Plan (Top 3)
-1. **Tune ragdoll launch** — Use `TackleLaunchSpeed` and `TackleLaunchArc` on `PlayerTackle`. Typical speed range ~400–800; lower arc (e.g. 0.15–0.2) for flatter hits, higher (e.g. 0.4+) for more lob.
-2. **Camera lerp on stand-up** — one-frame snap when controller re-enables. Low priority until ragdoll feel is tuned.
-3. **Regression pass** — grab/drop/throw/auto-grab still working after all tackle changes this session.
+1. **Tune ragdoll launch** — `TackleLaunchSpeed` / `TackleLaunchArc`; try class-specific caps later.
+2. **Camera lerp on stand-up** — one-frame snap when controller re-enables.
+3. **Regression / stress** — grab/drop/throw + tackles multi-window.
 
 ---
 
-## Ragdoll Visual Research (Findings from 06/05/26)
+## End-of-Session Handoff
+- **2026-06-06:** Ground-based ragdoll recovery (`RagdollDuration` = consecutive grounded+settled time; `RagdollMaxDuration` + trace/speed tunables in `ClassData`). SESSION_NOTES updated for MP tackle RPC, cosmetics ragdoll, early `NetworkSpawn`, naming canon.
+- Earlier 06/05 history: separate host ragdoll GO, pelvis `ApplyImpulse`, `RagdollClientFeel`, stand-up floor trace `.WithoutTags("ragdoll")`, etc. (see bullets above).
+
+*(Older session logs below kept for archaeology.)*
+
+## Ragdoll Visual Research
+
+- What changed (06/05/26 session 2): Discovered the correct approach for multiplayer ragdoll — spawn a separate host-owned ragdoll GameObject instead of trying to ragdoll the player object. Implemented Option D: host spawns PlayerRagdoll with ModelPhysics, NetworkSpawn makes it visible everywhere, player renderers hidden during ragdoll, camera follows via NetRagdollPosition, stand-up snaps to NetStandUpPosition. Both screens now see the ragdoll. Committed and pushed to feature/class-system.
 
 ### Why ragdolling the player object itself fails
 All approaches that try to ragdoll the player's own `GameObject` hit the same wall: **the client owns the player's transform and overrides physics every frame.**
@@ -320,9 +337,10 @@ Selectable per class at match/round start.
 
 **Core rules:**
 - Trigger sphere on each player (radius from `ClassData.TriggerSphereRadius`), slightly larger than capsule. **Never `OnPhysicsCollision`** — unreliable in multiplayer.
-- Tackles only trigger when attacker is at charge speed. `IsAtChargeSpeed` public getter on `CatchUpSpeedBoost` — implemented.
-- Velocity + direction check before applying: dot product of (attacker velocity direction) Â· (direction to victim) must exceed a tunable threshold (~0.5, roughly 60Â° forward cone). Threshold is a tunable property.
-- Host-authoritative. Trigger detection and ragdoll application on host only.
+- Tackles only trigger when attacker is at charge speed (`CatchUpSpeedBoost.IsAtChargeSpeed`; owner-replicated).
+- **Host** detection uses local velocity when valid; **client owners** send tackle RPC with aim/position snapshots (host validates).
+- Velocity + direction check before applying: dot product of attacker forward / move dir vs direction to victim must exceed `TackleDirectionThreshold`.
+- Host-authoritative outcomes; ragdoll + stand-up timing on host.
 
 **Launch force (implemented in `PlayerTackle.ExecuteTackle`):**
 - Base: `TackleLaunchSpeed` × `TackleLaunchArc` defines direction; effective speed = `TackleLaunchSpeed × tacklePower`.
@@ -332,14 +350,13 @@ Selectable per class at match/round start.
 - Ragdoll impulse still uses pelvis `ApplyImpulse(launchDir × effectiveSpeed × ragdollPhysics.Mass)` after local init delay.
 
 **On tackle hit:**
-1. Victim enters full ragdoll — gets sent flying by impulse.
-2. Victim drops ball; ball also gets launched (not just dropped). `BallLaunchForceOnTackle` from `ClassData`.
-3. Ball pickup is locked out for `BallPickupLockoutAfterTackle` seconds (uses existing `BlockPickupForSeconds`).
-4. After `RagdollDuration` (2s default) victim stands back up.
-5. Post-tackle invincibility window starts (`PostTackleInvincibilityDuration`).
+1. Victim enters full ragdoll — launched by pelvis `ApplyImpulse` after `RagdollPhysicsInitDelay`.
+2. Victim drops ball; ball launched per `BallLaunchForceOnTackle × tacklePower`; pickup lockout per `BallPickupLockoutAfterTackle`.
+3. After **grounded + settled** for `RagdollDuration` consecutive seconds (or **`RagdollMaxDuration`** cap from tackle), stand-up trace and `NetStandUpPosition`.
+4. Post-tackle invincibility: `PostTackleInvincibilityDuration`.
 
-**Ragdoll init delay:**
-- Wait 0.05s after `ModelPhysics` is added before calling `PhysicsGroup.Velocity` — bodies need at least one physics tick to fully initialise or the velocity is ignored.
+**Ragdoll physics init:**
+- Inspector **`RagdollPhysicsInitDelay`** on `PlayerTackle` (default 0.05s): host wait after `NetworkSpawn` before `ApplyImpulse`. Too low can weaken launch.
 
 **Auto-grab stays as distance check (not trigger sphere):**
 - `OnPhysicsCollision` unreliability is the reason tackles need trigger spheres. Auto-grab doesn't have that problem.
@@ -417,7 +434,7 @@ Use these exact names unless explicitly changed in chat.
 - Throw properties in `BallThrow`: `ThrowAction`, `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `PickupDelayAfterThrow`, `ThrowDirectionSource`
 - Charge tuning properties in `BallThrow`: `MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`
 - Charge-state public getter in `BallThrow`: `IsChargingThrow`
-- Catch-up movement properties in `CatchUpSpeedBoost`: `ForwardAction`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `MinForwardInput`
+- Catch-up movement properties in `CatchUpSpeedBoost`: `ForwardAction`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `MinForwardInput`; charge-speed sync: `NetAtChargeSpeed` (owner → others), public `IsAtChargeSpeed`
 - Throw charge bar property in `ThrowChargeBar`: `ChargeBarOffset`
 - Core release method in `BallGrab`: `ReleaseHeldBall()`
 - Ball ownership handoff method in `BallGrab`: `TransferBallOwnershipToHost()`
@@ -425,17 +442,16 @@ Use these exact names unless explicitly changed in chat.
 - Cosmetics sync component: `PlayerCosmeticsSync`
 - Cosmetics sync properties: `FirstApplyDelay`, `RetryInterval`, `MaxApplyAttempts`, `LockHighestLodAfterApply`, `EnableDebugLogs`
 - Class data resource: `ClassData`
-- Class data fields: `ClassName`, `Mass`, `CapsuleHeight`, `CapsuleRadius`, `ModelScale`, `TriggerSphereRadius`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `WalkTurnSpeed`, `RunTurnSpeed`, `ChargeTurnSpeed`, `MomentumMultiplier`, `ThrowPower`, `DodgeCooldown`, `DodgeDistance`, `DodgeInvincibilityWindow`, `RagdollDuration`, `PostTackleInvincibilityDuration`, `BallLaunchForceOnTackle`, `BallPickupLockoutAfterTackle`, `TackleChargeRampRate`, `MaxTackleChargeBonus`, `IgnoreWeaponSpeedPenalty`, `WeaponSwingSpeedPenaltyDuration`
+- Class data fields: `ClassName`, `Mass`, `CapsuleHeight`, `CapsuleRadius`, `ModelScale`, `TriggerSphereRadius`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `WalkTurnSpeed`, `RunTurnSpeed`, `ChargeTurnSpeed`, `MomentumMultiplier`, `ThrowPower`, `DodgeCooldown`, `DodgeDistance`, `DodgeInvincibilityWindow`, `RagdollDuration` (grounded+settled consecutive seconds before stand), `RagdollMaxDuration`, `RagdollGroundSpeedMax`, `RagdollGroundTraceDown`, `RagdollGroundTraceUp`, `PostTackleInvincibilityDuration`, `BallLaunchForceOnTackle`, `BallPickupLockoutAfterTackle`, `TackleChargeRampRate`, `MaxTackleChargeBonus`, `IgnoreWeaponSpeedPenalty`, `WeaponSwingSpeedPenaltyDuration`
 - Tackle system component: `PlayerTackle`
-- Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `TackleLaunchArc`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`
-- Tackle synced properties: `NetIsRagdolled`, `NetRagdollPosition`, `NetStandUpPosition`, `NetIsTackleImmune`
-- Tackle host-only field: `ragdollObject` (the spawned physics ragdoll GameObject)
+- Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `TackleLaunchArc`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`, `TackleRpcPositionSlop`, `TackleRpcRadiusFudge`, `RagdollPhysicsInitDelay`
+- Tackle synced properties: `NetIsRagdolled`, `NetRagdollPosition`, `NetStandUpPosition`, `NetIsTackleImmune`, `NetTackleBlockedUntil` (host-authored cooldown end time for tackle RPC alignment)
+- Tackle host-only fields: `ragdollObject`; tackle RPC throttle `nextRemoteTackleRequestAt`; cooldown `tackleBlockedUntil` + synced `NetTackleBlockedUntil` / `netTackleBlockedUntil`
 - Tackle renderer cache: `hiddenRenderers` (list of SkinnedModelRenderers hidden during ragdoll)
 - Tackle collider cache: `disabledColliders` (list of Colliders disabled during ragdoll, re-enabled on stand-up)
 - Tackle public getters: `IsRagdolled`, `IsTackleImmune`, `SyncedRagdollPelvisPosition`
 - Tackled-player client feel component: `RagdollClientFeel` (same GO as `PlayerTackle`; owning client)
 - Ragdoll snapshot feel properties in `RagdollClientFeel`: `InterpolationDelay`, `MaxSnapshots`, `FollowSharpness`
-- Charge speed public getter: `IsAtChargeSpeed` on `CatchUpSpeedBoost`
 - Dodge component (planned): `PlayerDodge`
 - Dodge state public getter (planned): `IsDodging` on `PlayerDodge`
 - Juggernaut passive ClassData fields: `TackleChargeRampRate`, `MaxTackleChargeBonus`

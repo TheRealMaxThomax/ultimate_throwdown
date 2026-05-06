@@ -60,8 +60,25 @@ public class ClassData : GameResource
 	[Property, Group( "Tackle" )]
 	public float TriggerSphereRadius { get; set; } = 40f;
 
+	/// <summary>After the ragdoll is grounded and settled, seconds to stay down before standing up.</summary>
 	[Property, Group( "Tackle" )]
 	public float RagdollDuration { get; set; } = 2f;
+
+	/// <summary>Max seconds from tackle until forced stand-up (flying ragdoll, stuck, etc.).</summary>
+	[Property, Group( "Tackle" )]
+	public float RagdollMaxDuration { get; set; } = 8f;
+
+	/// <summary>Pelvis speed (units/s) at or below this counts as settled enough for grounded time.</summary>
+	[Property, Group( "Tackle" )]
+	public float RagdollGroundSpeedMax { get; set; } = 160f;
+
+	/// <summary>Downward trace length from pelvis for floor detection.</summary>
+	[Property, Group( "Tackle" )]
+	public float RagdollGroundTraceDown { get; set; } = 120f;
+
+	/// <summary>Start ray this far above pelvis when testing for floor.</summary>
+	[Property, Group( "Tackle" )]
+	public float RagdollGroundTraceUp { get; set; } = 24f;
 
 	[Property, Group( "Tackle" )]
 	public float PostTackleInvincibilityDuration { get; set; } = 1f;

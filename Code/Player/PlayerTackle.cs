@@ -15,6 +15,8 @@ public sealed partial class PlayerTackle : Component
 	[Property] public float TackleRpcPositionSlop { get; set; } = 128f;
 	/// <summary>Extra multiplier on tackle radius when validating owner snapshots (latency compensation).</summary>
 	[Property] public float TackleRpcRadiusFudge { get; set; } = 1.12f;
+	/// <summary>Host: seconds to wait after networking the ragdoll before ApplyImpulse (lets local physics bodies exist). Too low can weaken launch; too high leaves a visible stall before flight.</summary>
+	[Property] public float RagdollPhysicsInitDelay { get; set; } = 0.05f;
 
 	// Host writes, all machines read
 	private bool isRagdolled;
