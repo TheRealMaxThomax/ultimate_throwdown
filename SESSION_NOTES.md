@@ -4,10 +4,10 @@ Use this file as persistent project memory between chats.
 Keep entries short, specific, and current.
 
 ## Project Snapshot
-- **Current Goal:** Tackle system — ragdoll fly-back working on client, stand-up and impulse need final fixes.
+- **Current Goal:** Tackle system — SimulateRagdoll fly-back working. Visual ragdoll collapse (ModelPhysics) blocked by networking constraints; deferred.
 - **Current Branch:** `feature/class-system` (pushed to origin).
-- **Build/Run Status:** Compiles clean. Grab/drop/throw works. ClassData wired to CatchUpSpeedBoost and BallThrow. PlayerTackle detection works. Client ragdolls on tackle. Stand-up broken (see Current Tackle Debug Status below).
-- **Last Updated:** 05/05/26 (class system + tackle system session)
+- **Build/Run Status:** Compiles clean. Grab/drop/throw works. ClassData wired. PlayerTackle detection, fly-back, stand-up, invincibility window all working. Host sees victim fly via WorldPosition sync.
+- **Last Updated:** 06/05/26 (ragdoll visual investigation session)
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
@@ -138,29 +138,25 @@ These are small gaps in existing code that must be filled before the planned sys
   - Owner: Max
   - Next action: Fresh host + client session, test grab/drop/throw/auto-grab, confirm no regressions.
 
-## Current Tackle Debug Status (Resume Here Next Chat)
+## Current Tackle Status (Resume Here Next Chat)
 
 ### What works
 - Tackle detection: host distance+direction+charge-speed check fires correctly.
 - Sync: `NetIsRagdolled` and `NetRagdollImpulse` sync correctly. Both machines react to state changes.
-- Fly-back: victim gets launched with an upward arc (`NetRagdollImpulse.Normal + Vector3.Up * 0.7f`), manual `SimulateRagdoll` on owning machine handles gravity + ground clamp.
+- Fly-back: victim gets launched with an upward arc (`NetRagdollImpulse.Normal + Vector3.Up * 0.7f`), `SimulateRagdoll` on owning machine handles gravity + ground clamp.
 - Position syncs to host via `WorldPosition` — host sees victim fly.
 - Camera follows victim during ragdoll: offset computed from player facing direction at tackle time, `Rotation.LookAt` keeps it right-side-up.
 - Stand-up: controller re-enables after `RagdollDuration`, victim can move normally.
 - Post-tackle invincibility window working.
-- **`ModelPhysics` rig confirmed working** — citizen model has a ragdoll rig. Setting `Renderer` + `Model` on the `ModelPhysics` component and enabling it causes the character to physically collapse. The rig is ready to use when we want the visual ragdoll.
+- **`ModelPhysics` rig confirmed working** — citizen model has a ragdoll rig (16 bodies). Setting `Renderer` + `Model` and enabling causes the character to visually collapse.
 
 ### What is still missing / known issues
-- **No ragdoll collapse visual yet:** `ModelPhysics` wired up and confirmed working in editor, but code does not enable it during tackle (SimulateRagdoll is the current fly-back method). Enabling ModelPhysics + applying impulse via PhysicsGroup is the next step.
-- **Camera snap on stand-up:** One-frame camera teleport when `PlayerController` re-enables and takes back camera control. Fix is a lerp — low priority, do after ragdoll visual.
-- **Host sees victim standing while flying:** Animation state not synced. Future work.
+- **No ragdoll collapse visual:** ModelPhysics visual collapse is blocked by networking constraints (see Ragdoll Visual Research below). SimulateRagdoll is the current approach and it works for gameplay. Visual ragdoll is deferred.
+- **Camera snap on stand-up:** One-frame camera teleport when `PlayerController` re-enables. Fix is a lerp — low priority.
+- **Host sees victim standing while flying:** The character model doesn't show a ragdoll pose on the host. Future work — needs animation state sync or a different visual approach.
 
 ### Scene setup that must be correct every session (recompile may drop some)
 - `PlayerTackle` on root player object (gets dropped on recompile — check every session)
-- `Model Physics` on the **Body child** (the child with `SkinnedModelRenderer`), NOT on root player
-- `Model Physics` must be **disabled** (unchecked) by default
-- `Model Physics` must have **Renderer** set to the `SkinnedModelRenderer` on the same Body child
-- `Model Physics` must have **Model** set to `models/citizen/citizen.vmdl`
 - `PlayerClass` on root player with Speedster/Sniper/Juggernaut `.cdata` asset assigned
 - `CatchUpSpeedBoost` on root player
 - All three `.cdata` assets must have values set manually:
@@ -169,71 +165,36 @@ These are small gaps in existing code that must be filled before the planned sys
   - Mass: Mass=80 (same placeholder for all three for now)
 
 ## Current Plan (Top 3)
-1. Integrate ModelPhysics visual ragdoll into tackle — see **Ragdoll Integration Plan** below.
-2. Camera lerp on stand-up (1-frame snap when controller retakes camera).
-3. Regression pass: grab/drop/throw/auto-grab still working after class system + tackle wiring.
+1. Camera lerp on stand-up (1-frame snap when controller retakes camera).
+2. Regression pass: grab/drop/throw/auto-grab still working after class system + tackle wiring.
+3. Ragdoll visual collapse — deferred until a working approach is found (see research notes below).
 
 ---
 
-## Ragdoll Integration Plan (Do This Next Session)
+## Ragdoll Visual Research (Findings from 06/05/26)
 
-### Key fact — DO NOT FORGET
-**The s&box citizen model (`models/citizen/citizen.vmdl`) HAS a built-in ragdoll physics rig.** When `ModelPhysics` has `Renderer` and `Model` set correctly and is enabled at runtime, the character physically collapses. Bodies populate automatically. No ModelDoc work needed.
+### Why the ModelPhysics approach failed
+The plan was to enable `ModelPhysics` during a tackle to get a visual bone collapse, then use `physGroup.GetBody(0).Velocity` to launch the character. This failed because:
 
-### What the current code does (SimulateRagdoll approach — working but no collapse visual)
-`PlayerTackle.cs` currently:
-- Disables `PlayerController` on tackle
-- Manually simulates position each frame (`SimulateRagdoll`: gravity + ground clamp via `WorldPosition`)
-- Drives camera manually in `OnUpdate`
-- Re-enables `PlayerController` on stand-up
-- Does NOT touch `ModelPhysics` at all
+1. **`modelPhysics.PhysicsGroup` is always null.** This is the WRONG API. The correct property is `modelPhysics.Bodies` — a networked `List<ModelPhysics.Body>` where each body has a `.Component` (Rigidbody). Bodies = 16 for the citizen model, available immediately after enabling.
 
-### What needs to change to get the visual ragdoll
+2. **Physics runs on the host, not the owning client.** `OnFixedUpdate` does not run on clients for client-owned networked objects. Setting `Rigidbody.Velocity` on bodies from the client side has no effect. The host CAN set body velocities, but the result doesn't replicate to the client because the client owns the transform and overrides the host's physics each frame.
 
-**Step 1 — Add `modelPhysics` back to `PlayerTackle.cs`:**
-```csharp
-// Add field:
-private ModelPhysics modelPhysics;
+3. **`IgnoreRoot=false` (default) conflicts with ownership.** The root physics body tries to drive `WorldPosition`. The host runs physics and moves the bodies. But the client (owner) keeps syncing its own `WorldPosition` back, overriding the host physics. The character ends up frozen in place from the client's perspective.
 
-// In OnStart:
-modelPhysics = Components.Get<ModelPhysics>( FindMode.EverythingInSelfAndDescendants );
-```
+4. **Disabling `ModelPhysics` leaves bones frozen.** When `modelPhysics.Enabled = false`, the `SkinnedModelRenderer` stays in physics-driven mode. Fix: toggle the renderer (disable/enable) after disabling ModelPhysics to force it back to animation-driven mode. Also zero all body velocities first.
 
-**Step 2 — Replace `SimulateRagdoll` with ModelPhysics physics:**
+### What DOES work with ModelPhysics
+- `modelPhysics.Bodies` returns 16 bodies immediately after enabling — correct API for future use.
+- Visual collapse (character crumples) IS visible when ModelPhysics is enabled. The visual works; it's the position/launch that's broken.
 
-`ApplyRagdollLocally` becomes `async void` and:
-1. Computes camera offset (same as now, before disabling controller)
-2. Disables `PlayerController`
-3. Enables `ModelPhysics` → character collapses
-4. Polls `modelPhysics.PhysicsGroup` until non-null (up to 0.5s, 0.05s intervals)
-5. Sets `physGroup.GetBody(0).Velocity = launchDir * TackleLaunchSpeed` on owning machine only (`!IsProxy`)
+### Path forward for visual ragdoll
+The position fly-back must stay on the owning client (`SimulateRagdoll` approach — confirmed working). A visual collapse on top of that requires one of:
+- **`IgnoreRoot=true` + SimulateRagdoll:** ModelPhysics drives bone visuals only; SimulateRagdoll drives root position. Problem: physics bones simulate in world space and don't follow the moving root, so bones stay at tackle location while the root flies away.
+- **Syncing bone positions:** Host simulates ragdoll physics, broadcasts bone positions to all clients via synced properties. Complex but correct. Research needed.
+- **Animation-based collapse:** Play a knock-down animation instead of physics ragdoll. No networking complexity, but less dynamic.
 
-Remove `SimulateRagdoll()` call from `OnUpdate` and delete the method.
-Remove fields: `ragdollVelocity`, `ragdollGroundZ`.
-Remove property: `RagdollGravity`.
-
-Camera update stays in `OnUpdate` reading `WorldPosition` — when ModelPhysics is active with `IgnoreRoot=false` (default), the root physics body drives `WorldPosition`, so the camera follows naturally.
-
-**Step 3 — `StandUpLocally`:**
-```csharp
-private void StandUpLocally()
-{
-    if ( modelPhysics.IsValid() ) modelPhysics.Enabled = false;
-    if ( playerController.IsValid() ) playerController.Enabled = true;
-    Log.Info( $"[Tackle] StandUpLocally on {GameObject.Name} | IsProxy={IsProxy}" );
-}
-```
-
-### Scene setup required (check every session — recompile may clear these)
-- `Model Physics` on Body child must have **Renderer** = `SkinnedModelRenderer` on same object
-- `Model Physics` on Body child must have **Model** = `models/citizen/citizen.vmdl`
-- `Model Physics` must be **disabled** by default
-- `IgnoreRoot` must be **false** (default) so root body drives `WorldPosition`
-
-### Risk to watch for
-- `PhysicsGroup` might be null on proxy machines (host for client-owned player). The poll + `!IsProxy` guard handles this — only the owning machine applies the velocity.
-- `TackleLaunchSpeed` (currently 600) may need tuning — the physics body has its own mass, so the same speed value will feel different from SimulateRagdoll.
-- On stand-up, `WorldPosition` is wherever the ragdoll settled — the controller picks up from there. If the player is partially in the ground, the controller should depenetrate normally.
+**Do not attempt to use `ModelPhysics` with `IgnoreRoot=false` to drive position for a client-owned networked player. It conflicts with transform ownership and will not work.**
 
 ---
 
@@ -456,6 +417,6 @@ Paste this at the start of a new session:
 `Read SESSION_NOTES.md first, continue from Current Plan, and propose any needed updates before coding.`
 
 ## End-of-Session Handoff
-- What changed (05/05/26 session 2): Tackle fly-back fully working (SimulateRagdoll + manual camera). Confirmed citizen model has a ragdoll rig — ModelPhysics collapses character when Renderer+Model are set. Committed and pushed to feature/class-system. Code is on the SimulateRagdoll approach (working). Next step is integrating ModelPhysics visual ragdoll into the tackle flow.
-- What is still blocked: Ragdoll collapse visual (ModelPhysics enable during tackle not coded yet). Camera snap on stand-up (lerp pending).
-- Exactly what to do next: Open new chat, read SESSION_NOTES, add ModelPhysics enable/disable back into PlayerTackle and apply launch via PhysicsGroup.GetBody(0).Velocity.
+- What changed (06/05/26): Investigated ModelPhysics visual ragdoll for tackle. Found PhysicsGroup is wrong API (use Bodies instead). Confirmed physics runs on host only — client-owned objects can't use ModelPhysics to drive position. Reverted to confirmed-working SimulateRagdoll approach. Committed and pushed to feature/class-system.
+- What is still blocked: Ragdoll collapse visual (deferred — needs a networking-compatible approach, see Ragdoll Visual Research above). Camera snap on stand-up (lerp pending).
+- Exactly what to do next: Open new chat, read SESSION_NOTES, start with camera lerp on stand-up OR tackle the ragdoll visual using one of the approaches listed in Ragdoll Visual Research.

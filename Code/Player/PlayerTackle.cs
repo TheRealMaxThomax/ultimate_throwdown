@@ -42,7 +42,6 @@ public sealed class PlayerTackle : Component
 		playerClass = Components.Get<PlayerClass>();
 		playerController = Components.Get<PlayerController>();
 
-		// Cache the local main camera — only used on the owning machine during ragdoll
 		foreach ( var cam in Scene.GetAllComponents<CameraComponent>() )
 		{
 			if ( cam.IsMainCamera )
@@ -112,14 +111,13 @@ public sealed class PlayerTackle : Component
 		}
 	}
 
-	// Runs every frame on the owning machine while ragdolled
+	// Owning machine simulates fly-back each frame.
+	// WorldPosition is replicated to host so the host sees the victim fly.
 	private void SimulateRagdoll()
 	{
-		// Apply gravity and move
 		ragdollVelocity.z -= RagdollGravity * Time.Delta;
 		var nextPos = WorldPosition + ragdollVelocity * Time.Delta;
 
-		// Clamp to starting Z so the player can't sink underground
 		if ( nextPos.z < ragdollGroundZ )
 		{
 			nextPos = nextPos.WithZ( ragdollGroundZ );
@@ -128,9 +126,6 @@ public sealed class PlayerTackle : Component
 
 		WorldPosition = nextPos;
 
-		// Keep camera following the player using the offset captured at tackle start.
-		// Rotation is computed fresh each frame — looking from camera toward player center
-		// with an explicit up vector so the camera can never end up upside-down.
 		if ( activeCamera.IsValid() )
 		{
 			activeCamera.WorldPosition = WorldPosition + ragdollCameraOffset;
@@ -145,7 +140,6 @@ public sealed class PlayerTackle : Component
 		var ballLaunchForce = classData?.BallLaunchForceOnTackle ?? 500f;
 		var ballLockout = classData?.BallPickupLockoutAfterTackle ?? 1.5f;
 
-		// Drop and launch ball if victim is holding it
 		var victimBallGrab = victim.Components.Get<BallGrab>();
 		if ( victimBallGrab?.IsHolding == true )
 		{
@@ -163,7 +157,6 @@ public sealed class PlayerTackle : Component
 			}
 		}
 
-		// Broadcast ragdoll to all machines via sync
 		victim.NetRagdollImpulse = impulse;
 		victim.NetIsRagdolled = true;
 
@@ -188,18 +181,12 @@ public sealed class PlayerTackle : Component
 		victim.NetIsTackleImmune = false;
 	}
 
-	// Called locally on every machine when ragdoll starts
 	private void ApplyRagdollLocally()
 	{
 		Log.Info( $"[Tackle] ApplyRagdollLocally on {GameObject.Name} | IsProxy={IsProxy}" );
 
-		// Only the owning machine simulates flight and drives the camera
 		if ( !IsProxy )
 		{
-			// Snapshot camera state before disabling the controller
-			// Compute camera offset from player facing direction at tackle time.
-			// CameraComponent.WorldPosition is not reliable (controller drives it internally),
-			// so we build the offset ourselves: behind the player and elevated.
 			var playerForward = WorldRotation.Forward.WithZ( 0f );
 			if ( playerForward.LengthSquared > 0.001f ) playerForward = playerForward.Normal;
 			ragdollCameraOffset = -playerForward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
@@ -208,19 +195,15 @@ public sealed class PlayerTackle : Component
 			var launchDir = (NetRagdollImpulse.Normal + Vector3.Up * 0.7f).Normal;
 			ragdollVelocity = launchDir * TackleLaunchSpeed;
 
-			Log.Info( $"[Tackle] Launch: {launchDir} × {TackleLaunchSpeed} | CamOffset={ragdollCameraOffset}" );
+			Log.Info( $"[Tackle] Launch: {launchDir} × {TackleLaunchSpeed}" );
 		}
 
-		// Disable on all machines so the controller doesn't fight SimulateRagdoll on the owner
-		// and so animation/input is paused on proxies
 		if ( playerController.IsValid() ) playerController.Enabled = false;
 	}
 
-	// Called locally on every machine when ragdoll ends
 	private void StandUpLocally()
 	{
 		if ( playerController.IsValid() ) playerController.Enabled = true;
-
 		ragdollVelocity = Vector3.Zero;
 		Log.Info( $"[Tackle] StandUpLocally on {GameObject.Name} | IsProxy={IsProxy}" );
 	}
