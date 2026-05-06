@@ -436,7 +436,7 @@
           "__guid": "9aec9e56-7bf5-4515-a734-80ba9dbe2478",
           "__enabled": true,
           "Flags": 0,
-          "EnableTackleDebugLogs": false,
+          "EnableTackleDebugLogs": true,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -448,7 +448,9 @@
           "TackleCooldown": 1,
           "TackleDirectionThreshold": 0.5,
           "TackleLaunchArc": 0.6,
-          "TackleLaunchSpeed": 600
+          "TackleLaunchSpeed": 600,
+          "TackleRpcPositionSlop": 128,
+          "TackleRpcRadiusFudge": 1.12
         },
         {
           "__type": "RagdollClientFeel",
