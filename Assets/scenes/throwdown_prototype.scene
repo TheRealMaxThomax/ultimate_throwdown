@@ -433,11 +433,10 @@
         },
         {
           "__type": "PlayerTackle",
-          "__guid": "2dac0e83-48ec-40f2-a99b-771e85dfa533",
+          "__guid": "9aec9e56-7bf5-4515-a734-80ba9dbe2478",
           "__enabled": true,
           "Flags": 0,
-          "BaseTackleForce": 800,
-          "EnableTackleDebugLogs": true,
+          "EnableTackleDebugLogs": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -446,11 +445,25 @@
           "OnComponentUpdate": null,
           "RagdollCameraDistance": 200,
           "RagdollCameraHeight": 80,
-          "RagdollGravity": 800,
           "TackleCooldown": 1,
           "TackleDirectionThreshold": 0.5,
-          "TackleImpulseMultiplier": 1,
+          "TackleLaunchArc": 0.6,
           "TackleLaunchSpeed": 600
+        },
+        {
+          "__type": "RagdollClientFeel",
+          "__guid": "835e81fb-bffe-46e2-9f3f-62b095b64dcd",
+          "__enabled": true,
+          "Flags": 0,
+          "FollowSharpness": 18,
+          "InterpolationDelay": 0.06,
+          "MaxSnapshots": 24,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
         }
       ],
       "Children": [
@@ -514,40 +527,6 @@
               },
               "Tint": "1,1,1,1",
               "UseAnimGraph": true
-            },
-            {
-              "__type": "Sandbox.ModelPhysics",
-              "__guid": "f4622b07-bf81-4fe0-96c9-a113f713d0de",
-              "__enabled": false,
-              "Flags": 0,
-              "Bodies": [],
-              "IgnoreRoot": false,
-              "Joints": [],
-              "Locking": {
-                "X": false,
-                "Y": false,
-                "Z": false,
-                "Pitch": false,
-                "Yaw": false,
-                "Roll": false
-              },
-              "Model": "models/citizen/citizen.vmdl",
-              "MotionEnabled": true,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "PhysicsWereCreated": false,
-              "Renderer": {
-                "_type": "component",
-                "component_id": "6a94aa0a-bfeb-4579-ba4b-bf5d4dc2b704",
-                "go": "b79c6e41-cb5d-458f-b796-63a15a512e9e",
-                "component_type": "SkinnedModelRenderer"
-              },
-              "RigidbodyFlags": 0,
-              "StartAsleep": false
             }
           ],
           "Children": [
@@ -2605,13 +2584,13 @@
           "SelectionSets": []
         }
       },
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
+      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
         }
-      },
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
       }
     }
   },

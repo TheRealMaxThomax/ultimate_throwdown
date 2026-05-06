@@ -12,7 +12,7 @@ All gameplay code lives under `Code/` organised by system. Do not put new files 
 | Folder | What belongs there |
 |--------|-------------------|
 | `Code/Ball/` | Ball state, throw, feel, charge bar |
-| `Code/Player/` | Player movement, speed boost, cosmetics |
+| `Code/Player/` | Player movement, speed boost, cosmetics, tackles, tackled-player client feel |
 | `Code/Network/` | Network manager, connection handling |
 
 ## Rules

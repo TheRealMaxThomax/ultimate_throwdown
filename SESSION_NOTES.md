@@ -4,14 +4,14 @@ Use this file as persistent project memory between chats.
 Keep entries short, specific, and current.
 
 ## Project Snapshot
-- **Current Goal:** Tackle system — ragdoll launch now consistent and working. `TackleLaunchSpeed` is live tuning knob. Needs force/arc tuning in inspector. Remaining polish: camera lerp on stand-up, naked ragdoll (clothing excluded).
+- **Current Goal:** Tackle system — ragdoll launch working. Tune `TackleLaunchSpeed` and `TackleLaunchArc` on `PlayerTackle`. Remaining polish: camera lerp on stand-up, naked ragdoll (clothing excluded).
 - **Current Branch:** `feature/class-system` (pushed to origin).
 - **Build/Run Status:** Compiles clean. Grab/drop/throw works. Tackle detection, ragdoll visual, launch force, stand-up, invincibility window all working. Both screens see the ragdoll fly in a consistent direction.
 - **Last Updated:** 06/05/26 session 3 (tackle launch consistency + PhysicsGroup.Velocity fix)
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
-- `Code/Player/` — CatchUpSpeedBoost, PlayerCosmeticsSync, ClassData, PlayerClass, PlayerTackle
+- `Code/Player/` — CatchUpSpeedBoost, PlayerCosmeticsSync, ClassData, PlayerClass, PlayerTackle, PlayerTackle.RagdollHost (partial), RagdollClientFeel
 - `Code/Network/` — GameNetworkManager
 - New systems get their own folder (e.g. `Code/Ultimates/`, `Code/UI/`)
 
@@ -61,9 +61,9 @@ Keep entries short, specific, and current.
 - **Tackle launch direction uses flat horizontal vector toward victim, not attacker velocity.**
   - Why: Attacker velocity includes vertical Z (jump/slope), causing random launch angles. Victim-direction is always consistent regardless of attacker movement state.
   - Date: 2026-05-06
-- **Ragdoll launch uses `PhysicsBody.Velocity` per-body (via `body.Component.PhysicsBody.Velocity`), NOT `Rigidbody.Velocity` or any `PhysicsGroup` path.**
-  - Why: `ModelPhysics.PhysicsGroup` is always null on spawned ragdolls. `PhysicsBody.PhysicsGroup` is also null. `Rigidbody.Velocity` and `Rigidbody.ApplyImpulse` are overridden by the constraint solver. `PhysicsBody.Velocity` bypasses the component layer and writes directly to the physics body — velocity reads back correctly and physics simulates it.
-  - Date: 2026-05-06 (session 4 — corrected from session 3's now-outdated entry)
+- **Ragdoll launch impulse on spawned `ModelPhysics`:** after local physics init delay, **`PhysicsBody.ApplyImpulse` on the pelvis only** (`Bodies[0]`): `launchDir × effectiveLaunchSpeed × totalRagdollMass`. Matches whole-body momentum; limbs flex via joints (not rigid same-velocity all bones).
+  - Why: `ModelPhysics.PhysicsGroup` is null on spawned ragdolls. Pelvis-only `Rigidbody`/per-body velocity was unreliable. One COM-scale impulse behaves well with the ragdoll constraint graph.
+  - Date: 2026-05-06
 - **NetworkSpawn the ragdoll AFTER setting launch velocity, not before.**
   - Why: Setting velocity on a `NetworkSpawn()`-ed ragdoll before the velocity step was causing `PhysicsGroup` to appear null (bodies disconnected from local physics world). Waiting 0.05s locally, applying velocity, then calling `NetworkSpawn()` keeps the physics group live during velocity assignment.
   - Date: 2026-05-06
@@ -72,6 +72,11 @@ Keep entries short, specific, and current.
   - Date: 2026-05-06
 - **Victim's `PlayerController` and `Collider` components disabled immediately in `ExecuteTackle` on the host, not just in `ApplyRagdollLocally`.**
   - Why: `ApplyRagdollLocally` runs one frame after the tackle fires. The ragdoll spawns in that same frame, so bones would spawn inside an active capsule and get ejected in random directions before the launch velocity fires. Immediate disable closes that gap.
+  - Date: 2026-05-06
+- **Tackle power uses `ClassData.Mass` ratio and Juggernaut charge passive (when `TackleChargeRampRate` / `MaxTackleChargeBonus` are non-zero).**
+  - Why: Matches design doc — heavy vs light matchups and Juggernaut ramp at charge speed; `tacklePower = clamp(attackerMass/victimMass, 0.5, 2.5) × (1 + tackleChargeBonus)` scales ragdoll impulse and ball knock-off force. Bonus resets when not at charge speed or when ragdolled.
+  - Date: 2026-05-06
+- **Tackled owning client:** `RagdollClientFeel` on player root snapshots `NetRagdollPosition` via `PlayerTackle.SyncedRagdollPelvisPosition`, delayed playback (`InterpolationDelay`, `MaxSnapshots`) — same idea as `BallClientFeel`. Host victim still snaps in `PlayerTackle` only.
   - Date: 2026-05-06
 
 ## Constraints and Rules
@@ -172,6 +177,7 @@ These are small gaps in existing code that must be filled before the planned sys
 
 ### Scene setup that must be correct every session (recompile may drop some)
 - `PlayerTackle` on root player object (gets dropped on recompile — check every session)
+- `RagdollClientFeel` on root player — smooths owning client's ragdoll camera/puppet (`InterpolationDelay`, `FollowSharpness`; optional tune)
 - `PlayerClass` on root player with Speedster/Sniper/Juggernaut `.cdata` asset assigned
 - `CatchUpSpeedBoost` on root player
 - **Do NOT add `ModelPhysics` to the player prefab** — it is no longer used on the player object. The ragdoll is a separately spawned object.
@@ -181,7 +187,7 @@ These are small gaps in existing code that must be filled before the planned sys
   - Mass: Mass=80 (same placeholder for all three for now)
 
 ## Current Plan (Top 3)
-1. **Tune ragdoll launch force** — `TackleLaunchSpeed` confirmed working. Tested range: 150 (barely moves), 600 (good), 2000 (off the map). Aim for 400–800. Also tune upward arc (`Vector3.Up * 0.35f` in `SpawnRagdollObject`) — reduce toward `0.2f` if you want a flatter, more horizontal fly.
+1. **Tune ragdoll launch** — Use `TackleLaunchSpeed` and `TackleLaunchArc` on `PlayerTackle`. Typical speed range ~400–800; lower arc (e.g. 0.15–0.2) for flatter hits, higher (e.g. 0.4+) for more lob.
 2. **Camera lerp on stand-up** — one-frame snap when controller re-enables. Low priority until ragdoll feel is tuned.
 3. **Regression pass** — grab/drop/throw/auto-grab still working after all tackle changes this session.
 
@@ -318,15 +324,12 @@ Selectable per class at match/round start.
 - Velocity + direction check before applying: dot product of (attacker velocity direction) Â· (direction to victim) must exceed a tunable threshold (~0.5, roughly 60Â° forward cone). Threshold is a tunable property.
 - Host-authoritative. Trigger detection and ragdoll application on host only.
 
-**Launch force (current implementation):**
-- `TackleLaunchSpeed` on `PlayerTackle` is the single global tuning knob. Launch direction is flat horizontal toward victim + fixed upward arc (`Vector3.Up * 0.35f`).
-- Class multipliers will be added when the class system is built (e.g. Juggernaut hits harder). Do not hardcode per-class values yet.
-- Mass ratio formula is designed for when classes are active:
-```
-massRatio = clamp(attacker.Mass / victim.Mass, 0.5, 2.5)
-finalSpeed = TackleLaunchSpeed Ã— massRatio
-```
-- Result: Juggernaut â†’ Speedster is strongest (â‰ˆ 2.5Ã—). Speedster â†’ Juggernaut is weakest (â‰ˆ 0.5Ã—). Sniper is middle.
+**Launch force (implemented in `PlayerTackle.ExecuteTackle`):**
+- Base: `TackleLaunchSpeed` × `TackleLaunchArc` defines direction; effective speed = `TackleLaunchSpeed × tacklePower`.
+- `tacklePower = massRatio × (1 + tackleChargeBonus)`, where `massRatio = clamp(attacker.Mass / victim.Mass, 0.5, 2.5)` from each player's `ClassData` (default mass 80 if missing).
+- Ball knock-off: same direction; speed = `BallLaunchForceOnTackle × tacklePower` from victim's `ClassData`.
+- **Juggernaut-style ramp (any class with non-zero ramp fields):** Host accumulates `tackleChargeBonus` at `TackleChargeRampRate` per second while `IsAtChargeSpeed`, capped by `MaxTackleChargeBonus`; resets to 0 when below charge speed or when this player is ragdolled. Tune Juggernaut's `.cdata` — Speedster/Sniper can leave ramp at 0.
+- Ragdoll impulse still uses pelvis `ApplyImpulse(launchDir × effectiveSpeed × ragdollPhysics.Mass)` after local init delay.
 
 **On tackle hit:**
 1. Victim enters full ragdoll — gets sent flying by impulse.
@@ -424,12 +427,14 @@ Use these exact names unless explicitly changed in chat.
 - Class data resource: `ClassData`
 - Class data fields: `ClassName`, `Mass`, `CapsuleHeight`, `CapsuleRadius`, `ModelScale`, `TriggerSphereRadius`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `WalkTurnSpeed`, `RunTurnSpeed`, `ChargeTurnSpeed`, `MomentumMultiplier`, `ThrowPower`, `DodgeCooldown`, `DodgeDistance`, `DodgeInvincibilityWindow`, `RagdollDuration`, `PostTackleInvincibilityDuration`, `BallLaunchForceOnTackle`, `BallPickupLockoutAfterTackle`, `TackleChargeRampRate`, `MaxTackleChargeBonus`, `IgnoreWeaponSpeedPenalty`, `WeaponSwingSpeedPenaltyDuration`
 - Tackle system component: `PlayerTackle`
-- Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`
+- Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `TackleLaunchArc`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`
 - Tackle synced properties: `NetIsRagdolled`, `NetRagdollPosition`, `NetStandUpPosition`, `NetIsTackleImmune`
 - Tackle host-only field: `ragdollObject` (the spawned physics ragdoll GameObject)
 - Tackle renderer cache: `hiddenRenderers` (list of SkinnedModelRenderers hidden during ragdoll)
 - Tackle collider cache: `disabledColliders` (list of Colliders disabled during ragdoll, re-enabled on stand-up)
-- Tackle public getters: `IsRagdolled`, `IsTackleImmune`
+- Tackle public getters: `IsRagdolled`, `IsTackleImmune`, `SyncedRagdollPelvisPosition`
+- Tackled-player client feel component: `RagdollClientFeel` (same GO as `PlayerTackle`; owning client)
+- Ragdoll snapshot feel properties in `RagdollClientFeel`: `InterpolationDelay`, `MaxSnapshots`, `FollowSharpness`
 - Charge speed public getter: `IsAtChargeSpeed` on `CatchUpSpeedBoost`
 - Dodge component (planned): `PlayerDodge`
 - Dodge state public getter (planned): `IsDodging` on `PlayerDodge`

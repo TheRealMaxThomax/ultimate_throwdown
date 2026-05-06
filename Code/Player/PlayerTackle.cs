@@ -1,10 +1,12 @@
 using Sandbox;
+using System.Collections.Generic;
 
-public sealed class PlayerTackle : Component
+public sealed partial class PlayerTackle : Component
 {
 	[Property] public float TackleDirectionThreshold { get; set; } = 0.5f;
 	[Property] public float TackleCooldown { get; set; } = 1f;
 	[Property] public float TackleLaunchSpeed { get; set; } = 600f;
+	[Property] public float TackleLaunchArc { get; set; } = 0.35f; // upward blend vs flat tackleDir for ragdoll + tackled ball knock-off
 	[Property] public float RagdollCameraDistance { get; set; } = 200f;
 	[Property] public float RagdollCameraHeight { get; set; } = 80f;
 	[Property] public bool EnableTackleDebugLogs { get; set; } = false;
@@ -21,6 +23,9 @@ public sealed class PlayerTackle : Component
 	private bool wasRagdolled;
 	private float tackleBlockedUntil;
 
+	// Host-only: Juggernaut-style tackle ramp (see ClassData.TackleChargeRampRate / MaxTackleChargeBonus)
+	private float tackleChargeBonus;
+
 	// Camera state (owning machine only)
 	private Vector3 ragdollCameraOffset;
 
@@ -28,10 +33,10 @@ public sealed class PlayerTackle : Component
 	private GameObject ragdollObject;
 
 	// Renderers hidden during ragdoll — cached at tackle time so cosmetics are included
-	private readonly System.Collections.Generic.List<SkinnedModelRenderer> hiddenRenderers = new();
+	private readonly List<SkinnedModelRenderer> hiddenRenderers = new();
 
 	// Colliders disabled during ragdoll — re-enabled on stand-up
-	private readonly System.Collections.Generic.List<Collider> disabledColliders = new();
+	private readonly List<Collider> disabledColliders = new();
 
 	private CatchUpSpeedBoost speedBoost;
 	private PlayerClass playerClass;
@@ -40,6 +45,9 @@ public sealed class PlayerTackle : Component
 
 	public bool IsTackleImmune => isTackleImmune;
 	public bool IsRagdolled => isRagdolled;
+
+	// Pelvis world position synced from host; RagdollClientFeel reads this on owning clients
+	public Vector3 SyncedRagdollPelvisPosition => NetRagdollPosition;
 
 	protected override void OnStart()
 	{
@@ -63,25 +71,7 @@ public sealed class PlayerTackle : Component
 		if ( isRagdolled && Networking.IsHost && ragdollObject.IsValid() )
 			NetRagdollPosition = ragdollObject.WorldPosition;
 
-		// Re-enforce renderer hide every frame during ragdoll — catches anything that re-enables them
-		if ( isRagdolled )
-			foreach ( var r in hiddenRenderers )
-				if ( r.IsValid() ) r.Enabled = false;
-
-		// Owner tracks the ragdoll position and drives the camera
-		if ( isRagdolled && !IsProxy )
-		{
-			WorldPosition = NetRagdollPosition;
-
-			if ( activeCamera.IsValid() )
-			{
-				activeCamera.WorldPosition = WorldPosition + ragdollCameraOffset;
-				var toPlayerCenter = (WorldPosition + Vector3.Up * 36f - activeCamera.WorldPosition).Normal;
-				activeCamera.WorldRotation = Rotation.LookAt( toPlayerCenter, Vector3.Up );
-			}
-		}
-
-		// Every machine reacts to ragdoll state changes locally
+		// React to ragdoll state first so ragdoll/camera behave correctly this frame (RagdollClientFeel clears its own buffer on transitions)
 		if ( isRagdolled != wasRagdolled )
 		{
 			if ( isRagdolled )
@@ -92,36 +82,76 @@ public sealed class PlayerTackle : Component
 			wasRagdolled = isRagdolled;
 		}
 
-		// Tackle detection — host only
-		if ( !Networking.IsHost ) return;
-		if ( isRagdolled ) return;
-		if ( Time.Now < tackleBlockedUntil ) return;
-		if ( speedBoost == null || !speedBoost.IsAtChargeSpeed ) return;
+		// Re-enforce renderer hide every frame during ragdoll — catches anything that re-enables them
+		if ( isRagdolled )
+			foreach ( var r in hiddenRenderers )
+				if ( r.IsValid() ) r.Enabled = false;
+
+		// Owner: host snaps to simulated pelvis; owning client smoothing is handled by RagdollClientFeel
+		if ( isRagdolled && !IsProxy )
+		{
+			if ( Networking.IsHost )
+				WorldPosition = NetRagdollPosition;
+
+			if ( activeCamera.IsValid() )
+			{
+				activeCamera.WorldPosition = WorldPosition + ragdollCameraOffset;
+				var toPlayerCenter = (WorldPosition + Vector3.Up * 36f - activeCamera.WorldPosition).Normal;
+				activeCamera.WorldRotation = Rotation.LookAt( toPlayerCenter, Vector3.Up );
+			}
+		}
+
+		if ( Networking.IsHost )
+		{
+			if ( isRagdolled )
+				tackleChargeBonus = 0f;
+			else
+				UpdateTackleChargeBonus();
+		}
+
+		if ( Networking.IsHost )
+			TryDetectAndApplyHostTackle();
+	}
+
+	private void TryDetectAndApplyHostTackle()
+	{
+		if ( isRagdolled )
+			return;
+		if ( Time.Now < tackleBlockedUntil )
+			return;
+		if ( speedBoost == null || !speedBoost.IsAtChargeSpeed )
+			return;
 
 		var myVelocity = playerController?.Velocity ?? Vector3.Zero;
 		var horizontalVelocity = myVelocity.WithZ( 0f );
-		if ( horizontalVelocity.Length < 1f ) return;
+		if ( horizontalVelocity.Length < 1f )
+			return;
 
 		var tackleRadius = playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f;
 
 		foreach ( var candidate in Scene.GetAllComponents<PlayerTackle>() )
 		{
-			if ( candidate == this ) continue;
-			if ( candidate.IsTackleImmune ) continue;
-			if ( candidate.IsRagdolled ) continue;
+			if ( candidate == this )
+				continue;
+			if ( candidate.IsTackleImmune )
+				continue;
+			if ( candidate.IsRagdolled )
+				continue;
 
 			var distance = Vector3.DistanceBetween( WorldPosition, candidate.WorldPosition );
-			if ( distance > tackleRadius ) continue;
+			if ( distance > tackleRadius )
+				continue;
 
 			var toVictim = (candidate.WorldPosition - WorldPosition).WithZ( 0f );
-			if ( toVictim.Length < 0.001f ) continue;
+			if ( toVictim.Length < 0.001f )
+				continue;
 
 			var dot = Vector3.Dot( horizontalVelocity.Normal, toVictim.Normal );
-			if ( dot < TackleDirectionThreshold ) continue;
+			if ( dot < TackleDirectionThreshold )
+				continue;
 
 			tackleBlockedUntil = Time.Now + TackleCooldown;
 
-			// Flat direction toward victim — consistent regardless of attacker vertical velocity or speed
 			var tackleDir = toVictim.Normal;
 
 			if ( EnableTackleDebugLogs )
@@ -134,8 +164,21 @@ public sealed class PlayerTackle : Component
 
 	private void ExecuteTackle( PlayerTackle victim, Vector3 tackleDir )
 	{
+		var attackerMass = playerClass?.CurrentClass?.Mass ?? 80f;
+		var victimMass = victim.playerClass?.CurrentClass?.Mass ?? 80f;
+		if ( attackerMass <= 0f ) attackerMass = 80f;
+		if ( victimMass <= 0f ) victimMass = 80f;
+
+		var massRatio = MathX.Clamp( attackerMass / victimMass, 0.5f, 2.5f );
+		var juggMult = 1f + tackleChargeBonus;
+		var tacklePower = massRatio * juggMult;
+		var effectiveLaunchSpeed = TackleLaunchSpeed * tacklePower;
+
+		if ( EnableTackleDebugLogs )
+			Log.Info( $"[Tackle] Power massRatio={massRatio:F2} juggMult={juggMult:F2} → launchSpeed={effectiveLaunchSpeed:F0}" );
+
 		var classData = victim.playerClass?.CurrentClass;
-		var ballLaunchForce = classData?.BallLaunchForceOnTackle ?? 500f;
+		var ballLaunchForce = (classData?.BallLaunchForceOnTackle ?? 500f) * tacklePower;
 		var ballLockout = classData?.BallPickupLockoutAfterTackle ?? 1.5f;
 
 		var victimBallGrab = victim.Components.Get<BallGrab>();
@@ -147,7 +190,7 @@ public sealed class PlayerTackle : Component
 				var ballBody = droppedBall.Components.Get<Rigidbody>( FindMode.EverythingInSelfAndDescendants );
 				if ( ballBody.IsValid() )
 				{
-					var ballLaunchDir = (tackleDir + Vector3.Up * 0.3f).Normal;
+					var ballLaunchDir = (tackleDir + Vector3.Up * TackleLaunchArc).Normal;
 					ballBody.Velocity = ballLaunchDir * ballLaunchForce;
 				}
 
@@ -167,118 +210,25 @@ public sealed class PlayerTackle : Component
 		victim.NetRagdollPosition = victim.WorldPosition;
 		victim.NetIsRagdolled = true;
 
-		SpawnRagdollObject( victim, tackleDir );
+		SpawnRagdollObject( victim, tackleDir, effectiveLaunchSpeed );
 		HandleRagdollRecovery( victim );
 	}
 
-	// Spawns a host-owned physics ragdoll at the victim's position.
-	// NetworkSpawn makes it visible on all clients automatically.
-	// Physics runs on the host without client transform ownership conflicts.
-	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 tackleDir )
+	private void UpdateTackleChargeBonus()
 	{
-		var ragdollGo = new GameObject( true, "PlayerRagdoll" );
-		ragdollGo.WorldPosition = victim.WorldPosition + Vector3.Up * 10f;
-		ragdollGo.WorldRotation = victim.WorldRotation;
-
-		// Only copy the base body renderer (first one found).
-		// Copying clothing renderers too causes them to appear as a T-pose ghost — additional
-		// SkinnedModelRenderers on the ragdoll object aren't driven by ModelPhysics.
-		var baseVictimRenderer = victim.Components.Get<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants );
-		var primaryRenderer = ragdollGo.AddComponent<SkinnedModelRenderer>();
-		primaryRenderer.Model = baseVictimRenderer?.Model;
-
-		var ragdollPhysics = ragdollGo.AddComponent<ModelPhysics>();
-		ragdollPhysics.Renderer = primaryRenderer;
-		ragdollPhysics.MotionEnabled = true;
-		ragdollPhysics.IgnoreRoot = false;
-		ragdollPhysics.Enabled = true;
-
-		if ( baseVictimRenderer != null )
-			ragdollPhysics.CopyBonesFrom( baseVictimRenderer, true );
-
-		// Wait for LOCAL physics to initialise BEFORE networking.
-		// NetworkSpawn() previously disconnected the bodies from the host's physics world
-		// (PhysicsGroup became null after spawn, so velocity writes had no effect).
-		// By waiting first, the local physics world is active and velocity takes hold.
-		// Only then do we NetworkSpawn so clients can see the already-moving ragdoll.
-		await GameTask.DelaySeconds( 0.05f );
-		if ( !ragdollGo.IsValid() ) return;
-
-		var mp = ragdollGo.Components.Get<ModelPhysics>();
-		if ( mp == null || mp.Bodies.Count == 0 ) return;
-
-		var pb0 = mp.Bodies[0].Component?.PhysicsBody;
-		var group = pb0?.PhysicsGroup;
-
-		if ( EnableTackleDebugLogs )
-			Log.Info( $"[Tackle] Pre-spawn | Bodies={mp.Bodies.Count} BodyType[0]={pb0?.BodyType} Group={group != null}" );
-
-		var launchDir = (tackleDir + Vector3.Up * 0.35f).Normal;
-		var launchVelocity = launchDir * TackleLaunchSpeed;
-
-		if ( group != null )
+		var c = playerClass?.CurrentClass;
+		var rate = c?.TackleChargeRampRate ?? 0f;
+		var maxBonus = c?.MaxTackleChargeBonus ?? 0f;
+		if ( rate <= 0f || maxBonus <= 0f )
 		{
-			group.Velocity = launchVelocity;
+			tackleChargeBonus = 0f;
+			return;
 		}
+
+		if ( speedBoost != null && speedBoost.IsAtChargeSpeed )
+			tackleChargeBonus = MathX.Clamp( tackleChargeBonus + rate * Time.Delta, 0f, maxBonus );
 		else
-		{
-			foreach ( var body in mp.Bodies )
-			{
-				var pb = body.Component?.PhysicsBody;
-				if ( pb != null ) pb.Velocity = launchVelocity;
-			}
-		}
-
-		if ( EnableTackleDebugLogs && pb0 != null )
-			Log.Info( $"[Tackle] After velocity | Group={group != null} Vel={pb0.Velocity}" );
-
-		// Tag every GameObject in the ragdoll hierarchy so the floor trace at stand-up time
-		// can exclude them. Without this the trace hits the ragdoll's own limbs lying on the
-		// floor and reports those as the floor surface — snapping the player to knee/arm height.
-		ragdollGo.Tags.Add( "ragdoll" );
-		foreach ( var body in mp.Bodies )
-			body.Component?.GameObject?.Tags.Add( "ragdoll" );
-
-		// Network the ragdoll now that it already has launch velocity.
-		ragdollGo.NetworkSpawn();
-		victim.ragdollObject = ragdollGo;
-	}
-
-	private async void HandleRagdollRecovery( PlayerTackle victim )
-	{
-		var classData = victim.playerClass?.CurrentClass;
-		var ragdollDuration = classData?.RagdollDuration ?? 2f;
-		var invincDuration = classData?.PostTackleInvincibilityDuration ?? 1f;
-
-		await GameTask.DelaySeconds( ragdollDuration );
-		if ( !victim.IsValid() ) return;
-
-		// Trace straight down from the ragdoll's pelvis to find the actual floor.
-		// ragdollObject.WorldPosition is the pelvis (IgnoreRoot=false) — waist height above the floor.
-		// Without this, the player stands up floating at pelvis height and falls in an idle animation
-		// until their controller finds the ground.
-		var ragdollPos = victim.ragdollObject.IsValid()
-			? victim.ragdollObject.WorldPosition
-			: victim.WorldPosition;
-
-		var tr = Scene.Trace
-			.Ray( ragdollPos + Vector3.Up * 30f, ragdollPos + Vector3.Down * 200f )
-			.WithoutTags( "ragdoll" )
-			.Run();
-
-		victim.NetStandUpPosition = tr.Hit ? tr.HitPosition : ragdollPos;
-
-		if ( victim.ragdollObject.IsValid() )
-			victim.ragdollObject.Destroy();
-		victim.ragdollObject = null;
-
-		victim.NetIsRagdolled = false;
-
-		victim.NetIsTackleImmune = true;
-		await GameTask.DelaySeconds( invincDuration );
-		if ( !victim.IsValid() ) return;
-
-		victim.NetIsTackleImmune = false;
+			tackleChargeBonus = 0f;
 	}
 
 	private void ApplyRagdollLocally()
