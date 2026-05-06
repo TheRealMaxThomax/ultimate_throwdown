@@ -17,7 +17,11 @@ public sealed class CatchUpSpeedBoost : Component
 	private PlayerClass playerClass;
 	private float forwardMoveTime;
 	private float nonHoldingSprintTime;
-	public bool IsAtChargeSpeed { get; private set; }
+
+	// Owner computes locally; host/other clients read replicated value for tackle checks, UI, etc.
+	private bool ownerAtChargeSpeed;
+	[Sync] private bool NetAtChargeSpeed { get; set; }
+	public bool IsAtChargeSpeed => Network.IsOwner ? ownerAtChargeSpeed : NetAtChargeSpeed;
 
 	protected override void OnStart()
 	{
@@ -36,7 +40,11 @@ public sealed class CatchUpSpeedBoost : Component
 			playerController = Components.Get<PlayerController>();
 
 		if ( !playerController.IsValid() )
+		{
+			ownerAtChargeSpeed = false;
+			NetAtChargeSpeed = false;
 			return;
+		}
 
 
 		if ( ballGrab is null )
@@ -52,7 +60,8 @@ public sealed class CatchUpSpeedBoost : Component
 		{
 			forwardMoveTime = 0f;
 			nonHoldingSprintTime = 0f;
-			IsAtChargeSpeed = false;
+			ownerAtChargeSpeed = false;
+			NetAtChargeSpeed = false;
 			var startSpeed = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
 			playerController.WalkSpeed = startSpeed;
 			playerController.RunSpeed = startSpeed;
@@ -73,6 +82,7 @@ public sealed class CatchUpSpeedBoost : Component
 
 		playerController.WalkSpeed = GetTargetSpeed( isHoldingBall, isMovingForward );
 		playerController.RunSpeed = playerController.WalkSpeed;
+		NetAtChargeSpeed = ownerAtChargeSpeed;
 	}
 
 	private float GetTargetSpeed( bool isHoldingBall, bool isMovingForward )
@@ -85,25 +95,25 @@ public sealed class CatchUpSpeedBoost : Component
 
 		if ( !isMovingForward )
 		{
-			IsAtChargeSpeed = false;
+			ownerAtChargeSpeed = false;
 			return startSpeed;
 		}
 
 		if ( forwardMoveTime < timeToSprint )
 		{
-			IsAtChargeSpeed = false;
+			ownerAtChargeSpeed = false;
 			return startSpeed;
 		}
 
 		if ( isHoldingBall )
 		{
-			IsAtChargeSpeed = false;
+			ownerAtChargeSpeed = false;
 			return sprintSpeed;
 		}
 
 		var catchUpDelay = MathF.Max( 0f, timeToCatchUp - timeToSprint );
 		var atCatchUp = nonHoldingSprintTime >= catchUpDelay;
-		IsAtChargeSpeed = atCatchUp;
+		ownerAtChargeSpeed = atCatchUp;
 		return atCatchUp ? catchUpSpeed : sprintSpeed;
 	}
 

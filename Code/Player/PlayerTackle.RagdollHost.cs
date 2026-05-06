@@ -11,10 +11,12 @@ public sealed partial class PlayerTackle
 		ragdollGo.WorldPosition = victim.WorldPosition + Vector3.Up * 10f;
 		ragdollGo.WorldRotation = victim.WorldRotation;
 
-		// Only copy the base body renderer (first one found).
-		// Copying clothing renderers too causes them to appear as a T-pose ghost — additional
-		// SkinnedModelRenderers on the ragdoll object aren't driven by ModelPhysics.
-		var baseVictimRenderer = victim.Components.Get<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants );
+		// Body = Dresser target when present (matches cosmetics); otherwise first skinned mesh.
+		var dresser = victim.Components.Get<Dresser>( FindMode.EverythingInSelfAndDescendants );
+		var baseVictimRenderer = dresser.IsValid() && dresser.BodyTarget.IsValid()
+			? dresser.BodyTarget
+			: victim.Components.Get<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants );
+
 		var primaryRenderer = ragdollGo.AddComponent<SkinnedModelRenderer>();
 		primaryRenderer.Model = baseVictimRenderer?.Model;
 
@@ -27,6 +29,8 @@ public sealed partial class PlayerTackle
 		if ( baseVictimRenderer != null )
 			ragdollPhysics.CopyBonesFrom( baseVictimRenderer, true );
 
+		if ( baseVictimRenderer != null )
+			AddVictimClothingToRagdoll( victim, ragdollGo, primaryRenderer, baseVictimRenderer );
 		// Wait for LOCAL physics to initialise BEFORE networking.
 		// NetworkSpawn() previously disconnected the bodies from the host's physics world
 		// (PhysicsGroup became null after spawn, so velocity writes had no effect).
@@ -71,6 +75,37 @@ public sealed partial class PlayerTackle
 		// Network the ragdoll now that it already has launch velocity.
 		ragdollGo.NetworkSpawn();
 		victim.ragdollObject = ragdollGo;
+	}
+
+	/// <summary>
+	/// Replicates the victim's extra skinned meshes (cosmetics) on the ragdoll by merging skinning to the physics body.
+	/// </summary>
+	private static void AddVictimClothingToRagdoll(
+		PlayerTackle victim,
+		GameObject ragdollRoot,
+		SkinnedModelRenderer ragdollBody,
+		SkinnedModelRenderer victimBody )
+	{
+		foreach ( var src in victim.Components.GetAll<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !src.IsValid() || src == victimBody || src.Model is null )
+				continue;
+
+			var pieceGo = new GameObject( true, src.GameObject.Name );
+			pieceGo.Parent = ragdollRoot;
+			pieceGo.LocalPosition = Vector3.Zero;
+			pieceGo.LocalRotation = Rotation.Identity;
+			pieceGo.LocalScale = 1f;
+			pieceGo.Tags.Add( "ragdoll" );
+
+			var dst = pieceGo.AddComponent<SkinnedModelRenderer>();
+			dst.CopyFrom( src );
+			dst.BoneMergeTarget = ragdollBody;
+			dst.UseAnimGraph = false;
+			dst.CreateBoneObjects = false;
+			dst.LodOverride = 0;
+			dst.Enabled = src.Enabled;
+		}
 	}
 
 	private async void HandleRagdollRecovery( PlayerTackle victim )

@@ -1,4 +1,5 @@
 using Sandbox;
+using System;
 using System.Collections.Generic;
 
 public sealed partial class PlayerTackle : Component
@@ -10,6 +11,10 @@ public sealed partial class PlayerTackle : Component
 	[Property] public float RagdollCameraDistance { get; set; } = 200f;
 	[Property] public float RagdollCameraHeight { get; set; } = 80f;
 	[Property] public bool EnableTackleDebugLogs { get; set; } = false;
+	/// <summary>Max allowed difference between owner-reported positions and host positions for tackle RPC (units). Beyond this, we reject as desync/cheat.</summary>
+	[Property] public float TackleRpcPositionSlop { get; set; } = 128f;
+	/// <summary>Extra multiplier on tackle radius when validating owner snapshots (latency compensation).</summary>
+	[Property] public float TackleRpcRadiusFudge { get; set; } = 1.12f;
 
 	// Host writes, all machines read
 	private bool isRagdolled;
@@ -22,6 +27,12 @@ public sealed partial class PlayerTackle : Component
 
 	private bool wasRagdolled;
 	private float tackleBlockedUntil;
+	private float netTackleBlockedUntil;
+	/// <summary>Host-authoritative; owners read this so remote tackle RPCs line up with cooldown.</summary>
+	[Sync( SyncFlags.FromHost )]
+	private float NetTackleBlockedUntil { get => netTackleBlockedUntil; set => netTackleBlockedUntil = value; }
+	/// <summary>Client-only throttle so we don't spam the host with tackle RPCs every frame.</summary>
+	private float nextRemoteTackleRequestAt;
 
 	// Host-only: Juggernaut-style tackle ramp (see ClassData.TackleChargeRampRate / MaxTackleChargeBonus)
 	private float tackleChargeBonus;
@@ -63,6 +74,12 @@ public sealed partial class PlayerTackle : Component
 				break;
 			}
 		}
+	}
+
+	private void ApplyTackleCooldownOnHost()
+	{
+		tackleBlockedUntil = Time.Now + TackleCooldown;
+		NetTackleBlockedUntil = tackleBlockedUntil;
 	}
 
 	protected override void OnUpdate()
@@ -111,6 +128,12 @@ public sealed partial class PlayerTackle : Component
 
 		if ( Networking.IsHost )
 			TryDetectAndApplyHostTackle();
+
+		// Remote owners: host often has near-zero Velocity for our pawn (movement runs locally),
+		// so host-only sphere checks never see a valid approach vector. Mirror BallThrow: detect
+		// locally and request the host using our horizontal move direction.
+		if ( Network.IsOwner && !Networking.IsHost )
+			TryOwnerRequestTackleOnHost();
 	}
 
 	private void TryDetectAndApplyHostTackle()
@@ -128,38 +151,174 @@ public sealed partial class PlayerTackle : Component
 			return;
 
 		var tackleRadius = playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f;
+		if ( !TryFindTackleVictim( Scene, this, WorldPosition, horizontalVelocity, tackleRadius, TackleDirectionThreshold, out var victim, out var tackleDir ) )
+			return;
 
-		foreach ( var candidate in Scene.GetAllComponents<PlayerTackle>() )
+		ApplyTackleCooldownOnHost();
+
+		if ( EnableTackleDebugLogs )
+			Log.Info( $"[Tackle] {GameObject.Name} → {victim.GameObject.Name} | Dir={tackleDir}" );
+
+		ExecuteTackle( victim, tackleDir );
+	}
+
+	private void TryOwnerRequestTackleOnHost()
+	{
+		if ( isRagdolled )
+			return;
+		// Match host cooldown (host rejects Rpc while tackleBlockedUntil is active).
+		if ( Time.Now < NetTackleBlockedUntil )
+			return;
+		if ( Time.Now < nextRemoteTackleRequestAt )
+			return;
+		if ( speedBoost == null || !speedBoost.IsAtChargeSpeed )
+			return;
+
+		var myVelocity = playerController?.Velocity ?? Vector3.Zero;
+		var horizontalVelocity = myVelocity.WithZ( 0f );
+		if ( horizontalVelocity.Length < 1f )
 		{
-			if ( candidate == this )
+			var forwardFlat = WorldRotation.Forward.WithZ( 0f );
+			if ( forwardFlat.Length < 0.001f )
+				return;
+			horizontalVelocity = forwardFlat.Normal;
+		}
+
+		var tackleRadius = playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f;
+		if ( !TryFindTackleVictim( Scene, this, WorldPosition, horizontalVelocity, tackleRadius, TackleDirectionThreshold, out var victim, out _ ) )
+			return;
+
+		var moveDir = horizontalVelocity.WithZ( 0f ).Normal;
+		var attackerPos = WorldPosition;
+		var victimPos = victim.WorldPosition;
+		nextRemoteTackleRequestAt = Time.Now + (TackleCooldown * 0.2f).Clamp( 0.05f, 0.25f );
+		RequestTackleApplyOnHost( victim.GameObject.Id, moveDir, attackerPos, victimPos );
+	}
+
+	[Rpc.Host]
+	private void RequestTackleApplyOnHost(
+		Guid victimRootId,
+		Vector3 horizontalMoveDirectionFromOwner,
+		Vector3 attackerWorldPosFromOwner,
+		Vector3 victimWorldPosFromOwner )
+	{
+		if ( Network.Owner is null || Rpc.Caller.SteamId != Network.Owner.SteamId )
+			return;
+		if ( isRagdolled )
+			return;
+		if ( Time.Now < tackleBlockedUntil )
+			return;
+		if ( speedBoost == null )
+			return;
+
+		var moveDir = horizontalMoveDirectionFromOwner.WithZ( 0f );
+		if ( moveDir.Length < 0.001f )
+			return;
+		moveDir = moveDir.Normal;
+
+		PlayerTackle victim = null;
+		foreach ( var t in Scene.GetAllComponents<PlayerTackle>() )
+		{
+			if ( t.GameObject.Id != victimRootId )
+				continue;
+			victim = t;
+			break;
+		}
+
+		if ( victim is null || victim == this || victim.GameObject == GameObject || victim.IsTackleImmune || victim.IsRagdolled )
+		{
+			if ( EnableTackleDebugLogs )
+				Log.Info( "[Tackle] Rpc reject: invalid victim (null/self/immune/ragdolled)" );
+			return;
+		}
+
+		var hostAttackerPos = WorldPosition;
+		var hostVictimPos = victim.WorldPosition;
+		if ( Vector3.DistanceBetween( attackerWorldPosFromOwner, hostAttackerPos ) > TackleRpcPositionSlop
+			|| Vector3.DistanceBetween( victimWorldPosFromOwner, hostVictimPos ) > TackleRpcPositionSlop )
+		{
+			if ( EnableTackleDebugLogs )
+				Log.Info( $"[Tackle] Rpc reject: position slop atk={Vector3.DistanceBetween( attackerWorldPosFromOwner, hostAttackerPos ):F0} vic={Vector3.DistanceBetween( victimWorldPosFromOwner, hostVictimPos ):F0}" );
+			return;
+		}
+
+		var tackleRadius = (playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f) * TackleRpcRadiusFudge;
+		var toVictimOwner = (victimWorldPosFromOwner - attackerWorldPosFromOwner).WithZ( 0f );
+		if ( toVictimOwner.Length < 0.001f )
+			return;
+
+		var distOwner = toVictimOwner.Length;
+		if ( distOwner > tackleRadius )
+		{
+			if ( EnableTackleDebugLogs )
+				Log.Info( $"[Tackle] Rpc reject: owner distance {distOwner:F0} > {tackleRadius:F0}" );
+			return;
+		}
+
+		if ( Vector3.Dot( moveDir, toVictimOwner.Normal ) < TackleDirectionThreshold )
+		{
+			if ( EnableTackleDebugLogs )
+				Log.Info( "[Tackle] Rpc reject: approach cone" );
+			return;
+		}
+
+		ApplyTackleCooldownOnHost();
+		var tackleDir = toVictimOwner.Normal;
+
+		if ( EnableTackleDebugLogs )
+			Log.Info( $"[Tackle] Rpc {GameObject.Name} → {victim.GameObject.Name} | Dir={tackleDir}" );
+
+		ExecuteTackle( victim, tackleDir );
+	}
+
+	/// <summary>Find one valid tackle target using a horizontal approach direction (world space).</summary>
+	private static bool TryFindTackleVictim(
+		Scene scene,
+		PlayerTackle attacker,
+		Vector3 attackerWorldPos,
+		Vector3 horizontalVelocity,
+		float tackleRadius,
+		float directionThreshold,
+		out PlayerTackle victim,
+		out Vector3 tackleDir )
+	{
+		victim = null;
+		tackleDir = default;
+
+		var hv = horizontalVelocity.WithZ( 0f );
+		if ( hv.Length < 1f )
+			return false;
+
+		var hvNorm = hv.Normal;
+
+		foreach ( var candidate in scene.GetAllComponents<PlayerTackle>() )
+		{
+			if ( candidate == attacker )
+				continue;
+			if ( candidate.GameObject == attacker.GameObject )
 				continue;
 			if ( candidate.IsTackleImmune )
 				continue;
 			if ( candidate.IsRagdolled )
 				continue;
 
-			var distance = Vector3.DistanceBetween( WorldPosition, candidate.WorldPosition );
+			var distance = Vector3.DistanceBetween( attackerWorldPos, candidate.WorldPosition );
 			if ( distance > tackleRadius )
 				continue;
 
-			var toVictim = (candidate.WorldPosition - WorldPosition).WithZ( 0f );
+			var toVictim = (candidate.WorldPosition - attackerWorldPos).WithZ( 0f );
 			if ( toVictim.Length < 0.001f )
 				continue;
 
-			var dot = Vector3.Dot( horizontalVelocity.Normal, toVictim.Normal );
-			if ( dot < TackleDirectionThreshold )
+			if ( Vector3.Dot( hvNorm, toVictim.Normal ) < directionThreshold )
 				continue;
 
-			tackleBlockedUntil = Time.Now + TackleCooldown;
-
-			var tackleDir = toVictim.Normal;
-
-			if ( EnableTackleDebugLogs )
-				Log.Info( $"[Tackle] {GameObject.Name} → {candidate.GameObject.Name} | Dir={tackleDir}" );
-
-			ExecuteTackle( candidate, tackleDir );
-			break;
+			victim = candidate;
+			tackleDir = toVictim.Normal;
+			return true;
 		}
+
+		return false;
 	}
 
 	private void ExecuteTackle( PlayerTackle victim, Vector3 tackleDir )
