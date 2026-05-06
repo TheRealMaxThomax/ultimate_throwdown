@@ -177,7 +177,7 @@ public sealed class PlayerTackle : Component
 	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 tackleDir )
 	{
 		var ragdollGo = new GameObject( true, "PlayerRagdoll" );
-		ragdollGo.WorldPosition = victim.WorldPosition;
+		ragdollGo.WorldPosition = victim.WorldPosition + Vector3.Up * 10f;
 		ragdollGo.WorldRotation = victim.WorldRotation;
 
 		// Only copy the base body renderer (first one found).
@@ -189,29 +189,52 @@ public sealed class PlayerTackle : Component
 
 		var ragdollPhysics = ragdollGo.AddComponent<ModelPhysics>();
 		ragdollPhysics.Renderer = primaryRenderer;
+		ragdollPhysics.MotionEnabled = true;
+		ragdollPhysics.IgnoreRoot = false;
 		ragdollPhysics.Enabled = true;
 
-		ragdollGo.NetworkSpawn();
-		victim.ragdollObject = ragdollGo;
+		if ( baseVictimRenderer != null )
+			ragdollPhysics.CopyBonesFrom( baseVictimRenderer, true );
 
-		// Brief delay for physics bodies to fully initialise before applying impulse
+		// Wait for LOCAL physics to initialise BEFORE networking.
+		// NetworkSpawn() previously disconnected the bodies from the host's physics world
+		// (PhysicsGroup became null after spawn, so velocity writes had no effect).
+		// By waiting first, the local physics world is active and velocity takes hold.
+		// Only then do we NetworkSpawn so clients can see the already-moving ragdoll.
 		await GameTask.DelaySeconds( 0.05f );
 		if ( !ragdollGo.IsValid() ) return;
 
-		// PhysicsGroup.Velocity sets velocity on all ragdoll bodies at once — the correct s&box API.
-		// Setting velocity on individual bodies via .Component.Velocity fights the constraint solver.
-		var launchDir = (tackleDir + Vector3.Up * 0.35f).Normal;
-		ragdollPhysics.PhysicsGroup.Velocity = launchDir * TackleLaunchSpeed;
+		var mp = ragdollGo.Components.Get<ModelPhysics>();
+		if ( mp == null || mp.Bodies.Count == 0 ) return;
+
+		var pb0 = mp.Bodies[0].Component?.PhysicsBody;
+		var group = pb0?.PhysicsGroup;
 
 		if ( EnableTackleDebugLogs )
+			Log.Info( $"[Tackle] Pre-spawn | Bodies={mp.Bodies.Count} BodyType[0]={pb0?.BodyType} Group={group != null}" );
+
+		var launchDir = (tackleDir + Vector3.Up * 0.35f).Normal;
+		var launchVelocity = launchDir * TackleLaunchSpeed;
+
+		if ( group != null )
 		{
-			Log.Info( $"[Tackle] Ragdoll spawned | Bodies={ragdollPhysics.Bodies.Count} | Launch={launchDir} × {TackleLaunchSpeed}" );
-			for ( int i = 0; i < ragdollPhysics.Bodies.Count; i++ )
+			group.Velocity = launchVelocity;
+		}
+		else
+		{
+			foreach ( var body in mp.Bodies )
 			{
-				var b = ragdollPhysics.Bodies[i];
-				Log.Info( $"[Ragdoll] Body[{i}] GameObject={b.Component?.GameObject?.Name} Pos={b.Component?.WorldPosition}" );
+				var pb = body.Component?.PhysicsBody;
+				if ( pb != null ) pb.Velocity = launchVelocity;
 			}
 		}
+
+		if ( EnableTackleDebugLogs && pb0 != null )
+			Log.Info( $"[Tackle] After velocity | Group={group != null} Vel={pb0.Velocity}" );
+
+		// Network the ragdoll now that it already has launch velocity.
+		ragdollGo.NetworkSpawn();
+		victim.ragdollObject = ragdollGo;
 	}
 
 	private async void HandleRagdollRecovery( PlayerTackle victim )
