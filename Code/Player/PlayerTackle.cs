@@ -198,13 +198,10 @@ public sealed class PlayerTackle : Component
 		await GameTask.DelaySeconds( 0.05f );
 		if ( !ragdollGo.IsValid() ) return;
 
-		// Set the same velocity on every body so the whole ragdoll flies as a unit.
-		// .Component.Velocity is the correct API for ModelPhysics.Body in s&box.
-		// All bodies at the same starting velocity avoids joint strain — they settle naturally as it falls.
+		// PhysicsGroup.Velocity sets velocity on all ragdoll bodies at once — the correct s&box API.
+		// Setting velocity on individual bodies via .Component.Velocity fights the constraint solver.
 		var launchDir = (tackleDir + Vector3.Up * 0.35f).Normal;
-		var launchVelocity = launchDir * TackleLaunchSpeed;
-		foreach ( var body in ragdollPhysics.Bodies )
-			body.Component.Velocity = launchVelocity;
+		ragdollPhysics.PhysicsGroup.Velocity = launchDir * TackleLaunchSpeed;
 
 		if ( EnableTackleDebugLogs )
 		{
