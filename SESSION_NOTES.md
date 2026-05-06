@@ -4,10 +4,10 @@ Use this file as persistent project memory between chats.
 Keep entries short, specific, and current.
 
 ## Project Snapshot
-- **Current Goal:** Tackle system — ragdoll launch working. Tune `TackleLaunchSpeed` and `TackleLaunchArc` on `PlayerTackle`. Remaining polish: camera lerp on stand-up, naked ragdoll (clothing excluded).
+- **Current Goal:** Tackle system — launch, mass ratio, Juggernaut charge ramp, stand-up floor trace, `RagdollClientFeel` for tackled client camera. Polish: stand-up camera lerp, naked ragdoll, tuning.
 - **Current Branch:** `feature/class-system` (pushed to origin).
-- **Build/Run Status:** Compiles clean. Grab/drop/throw works. Tackle detection, ragdoll visual, launch force, stand-up, invincibility window all working. Both screens see the ragdoll fly in a consistent direction.
-- **Last Updated:** 06/05/26 session 3 (tackle launch consistency + PhysicsGroup.Velocity fix)
+- **Build/Run Status:** Compiles clean. Tackle + networked ragdoll + `RagdollClientFeel` on player. 2-window test as needed after pulls.
+- **Last Updated:** 06/05/26 (RagdollClientFeel refactor + partial PlayerTackle.RagdollHost; mass/jugg tackle power in code)
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
