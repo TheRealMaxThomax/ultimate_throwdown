@@ -4,14 +4,14 @@ Use this file as persistent project memory between chats.
 Keep entries short, specific, and current.
 
 ## Project Snapshot
-- **Current Goal:** Tackle polish — launch tuning, camera lerp on stand-up, broader MP stress tests. Core tackle + ragdoll + cosmetics + grounded recovery shipped.
+- **Current Goal:** Tackle polish — launch tuning, broader MP stress tests. Ragdoll camera: free look + stand-up blend to `PlayerController` camera. Core tackle + ragdoll + cosmetics + grounded recovery shipped.
 - **Current Branch:** `feature/class-system` (pushed to origin).
 - **Build/Run Status:** Compiles clean. Client + host tackles; ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap.
-- **Last Updated:** 2026-06-06 (MP tackle RPC + cooldown sync + ragdoll cosmetics + early network spawn + grounded stand-up timer; SESSION_NOTES sync)
+- **Last Updated:** 2026-05-07 (ragdoll free look, stand-up camera blend `OnPreRender`, default blend 0.6s; `PlayerTackle` single-file; third-person `CameraOffset` X = 185 in editor)
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
-- `Code/Player/` — CatchUpSpeedBoost, PlayerCosmeticsSync, ClassData, PlayerClass, PlayerTackle, PlayerTackle.RagdollHost (partial), RagdollClientFeel
+- `Code/Player/` — CatchUpSpeedBoost, PlayerCosmeticsSync, ClassData, PlayerClass, PlayerTackle (tackle + host ragdoll spawn/recovery in one file), RagdollClientFeel
 - `Code/Network/` — GameNetworkManager
 - New systems get their own folder (e.g. `Code/Ultimates/`, `Code/UI/`)
 
@@ -88,6 +88,14 @@ Keep entries short, specific, and current.
   - Date: 2026-05-06
 - **Stand-up timing:** `RagdollDuration` = consecutive seconds **grounded and settled** (floor trace + pelvis speed); bouncing/jostling resets accum. `RagdollMaxDuration` = hard cap from tackle. Intentional: other players bumping the ragdoll can delay get-up until cap.
   - Date: 2026-06-06
+- **Ragdoll camera (owner):** While `NetIsRagdolled`, `Input.AnalogLook` applied to `PlayerController.EyeAngles` (controller disabled); main camera third-person orbit from `EyeAngles` + `RagdollCameraDistance` / `RagdollCameraHeight`. Preserves look for stand-up.
+  - Date: 2026-05-07
+- **Stand-up camera blend:** After ragdoll, `OnPreRender` lerps main camera from last ragdoll frame toward **that frame's `PlayerController` result** (read `activeCamera` before overwrite) so third-person math matches; smoothstep; `StandUpCameraBlendDuration` default **0.6s** on `PlayerTackle`.
+  - Date: 2026-05-07
+- **`PlayerTackle` single source file:** Ragdoll host helpers live in `PlayerTackle.cs` (merged from former partial) for reliable game compile.
+  - Date: 2026-05-07
+- **Third-person distance (editor):** `PlayerController` `CameraOffset` **X = 185** current tuning (was ~256; closer feels better for tackles/ball read).
+  - Date: 2026-05-07
 
 ## Constraints and Rules
 Only include constraints that are easy to forget and expensive to violate.
@@ -175,13 +183,15 @@ These are small gaps in existing code that must be filled before the planned sys
 - **Ragdoll visual** on both screens: separate `PlayerRagdoll` with base body + cosmetics (`BoneMergeTarget`); early `NetworkSpawn` to reduce invisible gap.
 - Player model hidden during ragdoll: `hiddenRenderers` cached and re-enforced every frame.
 - Camera follows ragdoll (`NetRagdollPosition` / `RagdollClientFeel` on owning client).
+- **Ragdoll owner camera:** free look (`EyeAngles` + third-person orbit via `RagdollCameraDistance` / `RagdollCameraHeight`).
+- **Stand-up camera:** `OnPreRender` blends from last ragdoll camera pose to `PlayerController`'s camera for the frame (`StandUpCameraBlendDuration`, default **0.6s**).
 - Stand-up: host waits for **grounded + settled** time (`RagdollDuration` consecutive) or **`RagdollMaxDuration`** cap; floor trace for `NetStandUpPosition`; invincibility after.
 - Post-tackle invincibility working.
 - `Bodies[0]` = pelvis; launch via **`ApplyImpulse`** (not `PhysicsGroup.Velocity`).
 
 ### What is still missing / known issues
 - **Launch force tuning:** `TackleLaunchSpeed` / `TackleLaunchArc` still dial-in (rough band ~400–800 per older notes).
-- **Camera snap on stand-up:** one-frame teleport when controller re-enables — lerp later.
+- **Stand-up animation:** optional future — get-up clip instead of instant pose; retime or replace camera blend when built.
 - **Stand-up hover** (limb trace): mitigated with `.WithoutTags("ragdoll")` on body parts.
 
 ### Scene setup that must be correct every session (recompile may drop some)
@@ -189,6 +199,7 @@ These are small gaps in existing code that must be filled before the planned sys
 - `RagdollClientFeel` on root player — smooths owning client's ragdoll camera/puppet (`InterpolationDelay`, `FollowSharpness`; optional tune)
 - `PlayerClass` on root player with Speedster/Sniper/Juggernaut `.cdata` asset assigned
 - `CatchUpSpeedBoost` on root player
+- **`PlayerController` third person:** `CameraOffset` **X = 185** (current feel tuning; editor-only)
 - **Do NOT add `ModelPhysics` to the player prefab** — it is no longer used on the player object. The ragdoll is a separately spawned object.
 - All three `.cdata` assets must have values set manually:
   - Movement: StartMoveSpeed=140, SprintMoveSpeed=220, CatchUpMoveSpeed=320, TimeToSprintSpeed=2, TimeToCatchUpSpeed=4
@@ -197,13 +208,14 @@ These are small gaps in existing code that must be filled before the planned sys
 
 ## Current Plan (Top 3)
 1. **Tune ragdoll launch** — `TackleLaunchSpeed` / `TackleLaunchArc`; try class-specific caps later.
-2. **Camera lerp on stand-up** — one-frame snap when controller re-enables.
-3. **Regression / stress** — grab/drop/throw + tackles multi-window.
+2. **Regression / stress** — grab/drop/throw + tackles multi-window (include new camera blend path).
+3. **Stand-up animation** (when ready) — coordinate with `StandUpCameraBlendDuration` / eye height.
 
 ---
 
 ## End-of-Session Handoff
-- **2026-06-06:** Ground-based ragdoll recovery (`RagdollDuration` = consecutive grounded+settled time; `RagdollMaxDuration` + trace/speed tunables in `ClassData`). SESSION_NOTES updated for MP tackle RPC, cosmetics ragdoll, early `NetworkSpawn`, naming canon.
+- **2026-05-07:** Ragdoll free look; stand-up camera smooth blend (`OnPreRender` toward `PlayerController` camera, default 0.6s); `PlayerTackle` TOC + merged single file; editor third-person `CameraOffset` X **185**. SESSION_NOTES sync.
+- **2026-06-06:** Ground-based ragdoll recovery (`RagdollDuration` = consecutive grounded+settled time; `RagdollMaxDuration` + trace/speed tunables in `ClassData`). SESSION_NOTES updated for MP tackle RPC, cosmetics ragdoll, early `NetworkSpawn`, merging decisions.
 - Earlier 06/05 history: separate host ragdoll GO, pelvis `ApplyImpulse`, `RagdollClientFeel`, stand-up floor trace `.WithoutTags("ragdoll")`, etc. (see bullets above).
 
 *(Older session logs below kept for archaeology.)*
@@ -444,7 +456,9 @@ Use these exact names unless explicitly changed in chat.
 - Class data resource: `ClassData`
 - Class data fields: `ClassName`, `Mass`, `CapsuleHeight`, `CapsuleRadius`, `ModelScale`, `TriggerSphereRadius`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `WalkTurnSpeed`, `RunTurnSpeed`, `ChargeTurnSpeed`, `MomentumMultiplier`, `ThrowPower`, `DodgeCooldown`, `DodgeDistance`, `DodgeInvincibilityWindow`, `RagdollDuration` (grounded+settled consecutive seconds before stand), `RagdollMaxDuration`, `RagdollGroundSpeedMax`, `RagdollGroundTraceDown`, `RagdollGroundTraceUp`, `PostTackleInvincibilityDuration`, `BallLaunchForceOnTackle`, `BallPickupLockoutAfterTackle`, `TackleChargeRampRate`, `MaxTackleChargeBonus`, `IgnoreWeaponSpeedPenalty`, `WeaponSwingSpeedPenaltyDuration`
 - Tackle system component: `PlayerTackle`
-- Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `TackleLaunchArc`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`, `TackleRpcPositionSlop`, `TackleRpcRadiusFudge`, `RagdollPhysicsInitDelay`
+- Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `TackleLaunchArc`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`, `TackleRpcPositionSlop`, `TackleRpcRadiusFudge`, `RagdollPhysicsInitDelay`, `StandUpCameraBlendDuration`
+- Stand-up camera blend internals: `lastRagdollCameraPos`, `lastRagdollCameraRot`, `standUpCameraBlendFromPos`, `standUpCameraBlendFromRot`, `standUpCameraBlendStartTime`
+- Editor (not code): `PlayerController` third-person `CameraOffset` (current X **185**)
 - Tackle synced properties: `NetIsRagdolled`, `NetRagdollPosition`, `NetStandUpPosition`, `NetIsTackleImmune`, `NetTackleBlockedUntil` (host-authored cooldown end time for tackle RPC alignment)
 - Tackle host-only fields: `ragdollObject`; tackle RPC throttle `nextRemoteTackleRequestAt`; cooldown `tackleBlockedUntil` + synced `NetTackleBlockedUntil` / `netTackleBlockedUntil`
 - Tackle renderer cache: `hiddenRenderers` (list of SkinnedModelRenderers hidden during ragdoll)

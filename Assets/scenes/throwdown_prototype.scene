@@ -445,6 +445,7 @@
           "OnComponentUpdate": null,
           "RagdollCameraDistance": 200,
           "RagdollCameraHeight": 80,
+          "RagdollPhysicsInitDelay": 0.05,
           "TackleCooldown": 1,
           "TackleDirectionThreshold": 0.5,
           "TackleLaunchArc": 0.6,
@@ -2581,17 +2582,17 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
         }
       },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
         "DisableClientRecording": false
       },
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
         }
       }
     }

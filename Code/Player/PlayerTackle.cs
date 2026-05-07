@@ -2,7 +2,19 @@ using Sandbox;
 using System;
 using System.Collections.Generic;
 
-public sealed partial class PlayerTackle : Component
+// PlayerTackle — quick map (editor Outline or Ctrl+F the symbol name)
+//   Inspector properties ........ top of class
+//   Sync / net state ............ isRagdolled, NetRagdollPosition, NetStandUpPosition, cooldowns
+//   OnStart / OnUpdate .......... camera ref, ragdoll transitions, owner camera + free look
+//   Host detection .............. TryDetectAndApplyHostTackle, ApplyTackleCooldownOnHost
+//   Client → host ............... TryOwnerRequestTackleOnHost, RequestTackleApplyOnHost
+//   Victim pick ................. TryFindTackleVictim
+//   Hit + ball .................. ExecuteTackle
+//   Ragdoll (host only) ......... SpawnRagdollObject, AddVictimClothingToRagdoll, HandleRagdollRecovery, IsRagdollGroundedAndSettled
+//   Juggernaut ramp ............. UpdateTackleChargeBonus
+//   Local down / up ............. ApplyRagdollLocally, StandUpLocally
+//   Stand-up camera blend ....... OnPreRender (lerp last ragdoll cam -> PlayerController camera this frame)
+public sealed class PlayerTackle : Component
 {
 	[Property] public float TackleDirectionThreshold { get; set; } = 0.5f;
 	[Property] public float TackleCooldown { get; set; } = 1f;
@@ -17,6 +29,8 @@ public sealed partial class PlayerTackle : Component
 	[Property] public float TackleRpcRadiusFudge { get; set; } = 1.12f;
 	/// <summary>Host: seconds to wait after networking the ragdoll before ApplyImpulse (lets local physics bodies exist). Too low can weaken launch; too high leaves a visible stall before flight.</summary>
 	[Property] public float RagdollPhysicsInitDelay { get; set; } = 0.05f;
+	/// <summary>Seconds to ease main camera from ragdoll orbit to normal third-person after stand-up. 0 = hand off immediately.</summary>
+	[Property] public float StandUpCameraBlendDuration { get; set; } = 0.6f;
 
 	// Host writes, all machines read
 	private bool isRagdolled;
@@ -39,9 +53,6 @@ public sealed partial class PlayerTackle : Component
 	// Host-only: Juggernaut-style tackle ramp (see ClassData.TackleChargeRampRate / MaxTackleChargeBonus)
 	private float tackleChargeBonus;
 
-	// Camera state (owning machine only)
-	private Vector3 ragdollCameraOffset;
-
 	// Host-only: the spawned ragdoll physics object
 	private GameObject ragdollObject;
 
@@ -55,6 +66,14 @@ public sealed partial class PlayerTackle : Component
 	private PlayerClass playerClass;
 	private PlayerController playerController;
 	private CameraComponent activeCamera;
+
+	// Last ragdoll orbit camera (owner); used as blend start when standing up
+	private Vector3 lastRagdollCameraPos;
+	private Rotation lastRagdollCameraRot;
+	private Vector3 standUpCameraBlendFromPos;
+	private Rotation standUpCameraBlendFromRot;
+	/// <summary>&lt; 0 = not blending. Otherwise Time.Now when stand-up blend started.</summary>
+	private float standUpCameraBlendStartTime = -1f;
 
 	public bool IsTackleImmune => isTackleImmune;
 	public bool IsRagdolled => isRagdolled;
@@ -112,11 +131,26 @@ public sealed partial class PlayerTackle : Component
 			if ( Networking.IsHost )
 				WorldPosition = NetRagdollPosition;
 
+			// Free look while down: PlayerController is disabled, so apply look here and keep EyeAngles
+			// in sync for stand-up. Camera uses the same angles (third-person orbit).
+			if ( playerController.IsValid() )
+			{
+				playerController.EyeAngles += Input.AnalogLook;
+				var look = playerController.EyeAngles;
+				look.pitch = MathX.Clamp( look.pitch, -89f, 89f );
+				playerController.EyeAngles = look;
+			}
+
 			if ( activeCamera.IsValid() )
 			{
-				activeCamera.WorldPosition = WorldPosition + ragdollCameraOffset;
-				var toPlayerCenter = (WorldPosition + Vector3.Up * 36f - activeCamera.WorldPosition).Normal;
-				activeCamera.WorldRotation = Rotation.LookAt( toPlayerCenter, Vector3.Up );
+				var lookRot = playerController.IsValid()
+					? playerController.EyeAngles.ToRotation()
+					: WorldRotation;
+				var orbit = -lookRot.Forward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
+				activeCamera.WorldPosition = WorldPosition + orbit;
+				activeCamera.WorldRotation = lookRot;
+				lastRagdollCameraPos = activeCamera.WorldPosition;
+				lastRagdollCameraRot = activeCamera.WorldRotation;
 			}
 		}
 
@@ -136,6 +170,30 @@ public sealed partial class PlayerTackle : Component
 		// locally and request the host using our horizontal move direction.
 		if ( Network.IsOwner && !Networking.IsHost )
 			TryOwnerRequestTackleOnHost();
+	}
+
+	protected override void OnPreRender()
+	{
+		// After all updates, PlayerController has already placed the camera. Lerp toward that exact
+		// transform so we match its third-person math (CameraOffset, collision, etc.) — avoids a snap at t=1.
+		if ( IsProxy || isRagdolled )
+			return;
+		if ( !activeCamera.IsValid() )
+			return;
+		if ( standUpCameraBlendStartTime < 0f )
+			return;
+
+		var duration = StandUpCameraBlendDuration <= 0.0001f ? 0.0001f : StandUpCameraBlendDuration;
+		var elapsed = Time.Now - standUpCameraBlendStartTime;
+		var tLin = MathX.Clamp( elapsed / duration, 0f, 1f );
+		var t = tLin * tLin * (3f - 2f * tLin );
+		if ( tLin >= 1f )
+			standUpCameraBlendStartTime = -1f;
+
+		var toPos = activeCamera.WorldPosition;
+		var toRot = activeCamera.WorldRotation;
+		activeCamera.WorldPosition = Vector3.Lerp( standUpCameraBlendFromPos, toPos, t );
+		activeCamera.WorldRotation = Rotation.Slerp( standUpCameraBlendFromRot, toRot, t );
 	}
 
 	private void TryDetectAndApplyHostTackle()
@@ -375,6 +433,210 @@ public sealed partial class PlayerTackle : Component
 		HandleRagdollRecovery( victim );
 	}
 
+	// Spawns a host-owned physics ragdoll at the victim's position.
+	// NetworkSpawn makes it visible on all clients automatically.
+	// Physics runs on the host without client transform ownership conflicts.
+	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 tackleDir, float effectiveLaunchSpeed )
+	{
+		var ragdollGo = new GameObject( true, "PlayerRagdoll" );
+		ragdollGo.WorldPosition = victim.WorldPosition + Vector3.Up * 10f;
+		ragdollGo.WorldRotation = victim.WorldRotation;
+
+		// Body = Dresser target when present (matches cosmetics); otherwise first skinned mesh.
+		var dresser = victim.Components.Get<Dresser>( FindMode.EverythingInSelfAndDescendants );
+		var baseVictimRenderer = dresser.IsValid() && dresser.BodyTarget.IsValid()
+			? dresser.BodyTarget
+			: victim.Components.Get<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants );
+
+		var primaryRenderer = ragdollGo.AddComponent<SkinnedModelRenderer>();
+		primaryRenderer.Model = baseVictimRenderer?.Model;
+
+		var ragdollPhysics = ragdollGo.AddComponent<ModelPhysics>();
+		ragdollPhysics.Renderer = primaryRenderer;
+		ragdollPhysics.MotionEnabled = true;
+		ragdollPhysics.IgnoreRoot = false;
+		ragdollPhysics.Enabled = true;
+
+		if ( baseVictimRenderer != null )
+			ragdollPhysics.CopyBonesFrom( baseVictimRenderer, true );
+
+		if ( baseVictimRenderer != null )
+			AddVictimClothingToRagdoll( victim, ragdollGo, primaryRenderer, baseVictimRenderer );
+
+		// Network as soon as the mesh exists so we don't sit in a hole where the player is hidden
+		// (NetIsRagdolled) but the ragdoll object hasn't replicated yet. Impulse is applied after
+		// a short host delay so physics bodies exist (see RagdollPhysicsInitDelay).
+		ragdollGo.Tags.Add( "ragdoll" );
+		victim.ragdollObject = ragdollGo;
+		ragdollGo.NetworkSpawn();
+
+		var initDelay = RagdollPhysicsInitDelay.Clamp( 0.01f, 0.25f );
+		await GameTask.DelaySeconds( initDelay );
+		if ( !ragdollGo.IsValid() )
+			return;
+
+		var mp = ragdollGo.Components.Get<ModelPhysics>();
+		if ( mp == null || mp.Bodies.Count == 0 )
+			return;
+
+		var pb0 = mp.Bodies[0].Component?.PhysicsBody;
+		var group = pb0?.PhysicsGroup;
+
+		if ( EnableTackleDebugLogs )
+			Log.Info( $"[Tackle] Post-network impulse | Bodies={mp.Bodies.Count} BodyType[0]={pb0?.BodyType} Group={group != null}" );
+
+		var launchDir = (tackleDir + Vector3.Up * TackleLaunchArc).Normal;
+		var launchVelocity = launchDir * effectiveLaunchSpeed;
+
+		// Pelvis-only Velocity = launchVelocity killed travel distance: pelvis mass is a small
+		// fraction of the whole ragdoll, so linear momentum was tiny and the solver drained it
+		// through joints. Applying one impulse M×v at the pelvis (≈ whole-body COM) matches
+		// total momentum of "every body at launchVelocity" while joints can still flex limbs
+		// relative to the core during flight.
+		var totalMass = mp.Mass;
+		if ( pb0 != null && totalMass > 0f )
+			pb0.ApplyImpulse( launchVelocity * totalMass );
+
+		if ( EnableTackleDebugLogs && pb0 != null )
+			Log.Info( $"[Tackle] After velocity | Group={group != null} Vel={pb0.Velocity}" );
+
+		// Tag every physics body for stand-up floor traces.
+		foreach ( var body in mp.Bodies )
+			body.Component?.GameObject?.Tags.Add( "ragdoll" );
+	}
+
+	/// <summary>
+	/// Replicates the victim's extra skinned meshes (cosmetics) on the ragdoll by merging skinning to the physics body.
+	/// </summary>
+	private static void AddVictimClothingToRagdoll(
+		PlayerTackle victim,
+		GameObject ragdollRoot,
+		SkinnedModelRenderer ragdollBody,
+		SkinnedModelRenderer victimBody )
+	{
+		foreach ( var src in victim.Components.GetAll<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !src.IsValid() || src == victimBody || src.Model is null )
+				continue;
+
+			var pieceGo = new GameObject( true, src.GameObject.Name );
+			pieceGo.Parent = ragdollRoot;
+			pieceGo.LocalPosition = Vector3.Zero;
+			pieceGo.LocalRotation = Rotation.Identity;
+			pieceGo.LocalScale = 1f;
+			pieceGo.Tags.Add( "ragdoll" );
+
+			var dst = pieceGo.AddComponent<SkinnedModelRenderer>();
+			dst.CopyFrom( src );
+			dst.BoneMergeTarget = ragdollBody;
+			dst.UseAnimGraph = false;
+			dst.CreateBoneObjects = false;
+			dst.LodOverride = 0;
+			dst.Enabled = src.Enabled;
+		}
+	}
+
+	private async void HandleRagdollRecovery( PlayerTackle victim )
+	{
+		var classData = victim.playerClass?.CurrentClass;
+		var downTimeAfterGrounded = classData?.RagdollDuration ?? 2f;
+		var maxTotalRagdoll = classData?.RagdollMaxDuration ?? 8f;
+		var groundSpeedMax = classData?.RagdollGroundSpeedMax ?? 160f;
+		var groundTraceDown = classData?.RagdollGroundTraceDown ?? 120f;
+		var groundTraceUp = classData?.RagdollGroundTraceUp ?? 24f;
+		var invincDuration = classData?.PostTackleInvincibilityDuration ?? 1f;
+
+		var scene = victim.Scene;
+		var started = Time.Now;
+		var groundedAccum = 0f;
+		const float pollSeconds = 0.05f;
+
+		// SpawnRagdollObject is async; wait briefly so ragdollObject exists on the host.
+		while ( victim.IsValid() && !victim.ragdollObject.IsValid() && Time.Now - started < 2f )
+			await GameTask.DelaySeconds( pollSeconds );
+
+		while ( victim.IsValid() )
+		{
+			if ( Time.Now - started >= maxTotalRagdoll )
+				break;
+
+			var ragdoll = victim.ragdollObject;
+			if ( !ragdoll.IsValid() )
+				break;
+
+			if ( IsRagdollGroundedAndSettled( ragdoll, scene, groundTraceUp, groundTraceDown, groundSpeedMax ) )
+				groundedAccum += pollSeconds;
+			else
+				groundedAccum = 0f;
+
+			if ( groundedAccum >= downTimeAfterGrounded )
+				break;
+
+			await GameTask.DelaySeconds( pollSeconds );
+		}
+
+		if ( !victim.IsValid() )
+			return;
+
+		// Trace straight down from the ragdoll's pelvis to find the actual floor.
+		// ragdollObject.WorldPosition is the pelvis (IgnoreRoot=false) — waist height above the floor.
+		// Without this, the player stands up floating at pelvis height and falls in an idle animation
+		// until their controller finds the ground.
+		var ragdollPos = victim.ragdollObject.IsValid()
+			? victim.ragdollObject.WorldPosition
+			: victim.WorldPosition;
+
+		var tr = scene.Trace
+			.Ray( ragdollPos + Vector3.Up * 30f, ragdollPos + Vector3.Down * 200f )
+			.WithoutTags( "ragdoll" )
+			.Run();
+
+		victim.NetStandUpPosition = tr.Hit ? tr.HitPosition : ragdollPos;
+
+		if ( victim.ragdollObject.IsValid() )
+			victim.ragdollObject.Destroy();
+		victim.ragdollObject = null;
+
+		victim.NetIsRagdolled = false;
+
+		victim.NetIsTackleImmune = true;
+		await GameTask.DelaySeconds( invincDuration );
+		if ( !victim.IsValid() )
+			return;
+
+		victim.NetIsTackleImmune = false;
+	}
+
+	/// <summary>Pelvis near floor (trace) and not still moving fast from flight or bounce.</summary>
+	private static bool IsRagdollGroundedAndSettled(
+		GameObject ragdollRoot,
+		Scene scene,
+		float traceUp,
+		float traceDown,
+		float maxPelvisSpeed )
+	{
+		if ( !ragdollRoot.IsValid() )
+			return false;
+
+		var pos = ragdollRoot.WorldPosition;
+		var tr = scene.Trace
+			.Ray( pos + Vector3.Up * traceUp, pos + Vector3.Down * traceDown )
+			.WithoutTags( "ragdoll" )
+			.Run();
+		if ( !tr.Hit )
+			return false;
+
+		var mp = ragdollRoot.Components.Get<ModelPhysics>();
+		if ( mp == null || mp.Bodies.Count == 0 )
+			return false;
+
+		var pelvisBody = mp.Bodies[0].Component?.PhysicsBody;
+		if ( pelvisBody == null )
+			return false;
+
+		return pelvisBody.Velocity.Length <= maxPelvisSpeed;
+	}
+
 	private void UpdateTackleChargeBonus()
 	{
 		var c = playerClass?.CurrentClass;
@@ -396,12 +658,7 @@ public sealed partial class PlayerTackle : Component
 	{
 		Log.Info( $"[Tackle] ApplyRagdollLocally on {GameObject.Name} | IsProxy={IsProxy}" );
 
-		if ( !IsProxy )
-		{
-			var playerForward = WorldRotation.Forward.WithZ( 0f );
-			if ( playerForward.LengthSquared > 0.001f ) playerForward = playerForward.Normal;
-			ragdollCameraOffset = -playerForward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
-		}
+		standUpCameraBlendStartTime = -1f;
 
 		// Cache all renderers at tackle time — cosmetics are loaded by now, unlike at OnStart
 		hiddenRenderers.Clear();
@@ -436,6 +693,15 @@ public sealed partial class PlayerTackle : Component
 		disabledColliders.Clear();
 
 		if ( playerController.IsValid() ) playerController.Enabled = true;
+
+		if ( !IsProxy && StandUpCameraBlendDuration > 0.001f && activeCamera.IsValid() )
+		{
+			standUpCameraBlendFromPos = lastRagdollCameraPos;
+			standUpCameraBlendFromRot = lastRagdollCameraRot;
+			standUpCameraBlendStartTime = Time.Now;
+		}
+		else
+			standUpCameraBlendStartTime = -1f;
 
 		Log.Info( $"[Tackle] StandUpLocally on {GameObject.Name} | IsProxy={IsProxy}" );
 	}
