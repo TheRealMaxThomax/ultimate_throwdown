@@ -7,7 +7,7 @@ Keep entries short, specific, and current.
 - **Current Goal:** Tackle polish — launch tuning, broader MP stress tests. Ragdoll camera: free look + stand-up blend to `PlayerController` camera. Core tackle + ragdoll + cosmetics + grounded recovery shipped.
 - **Current Branch:** `feature/class-system` (pushed to origin).
 - **Build/Run Status:** Compiles clean. Client + host tackles; ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap.
-- **Last Updated:** 2026-05-07 (ragdoll free look, stand-up camera blend `OnPreRender`, default blend 0.6s; `PlayerTackle` single-file; third-person `CameraOffset` X = 185 in editor)
+- **Last Updated:** 2026-05-08 (tackle **whiff penalty** design — inner threaten + short memory; not implemented in code yet)
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
@@ -96,6 +96,99 @@ Keep entries short, specific, and current.
   - Date: 2026-05-07
 - **Third-person distance (editor):** `PlayerController` `CameraOffset` **X = 185** current tuning (was ~256; closer feels better for tackles/ball read).
   - Date: 2026-05-07
+- **Ball and weapon are mutually exclusive — one or the other.** Ball carriers cannot hold a weapon; simplifies tackle/chase edge cases and avoids weapon+ball clipping.
+  - Date: 2026-05-07
+- **Weapon hold penalty (non-exempt classes):** While holding a weapon, **cap both** movement knobs to **Juggernaut’s** `TimeToCatchUpSpeed` **and** `CatchUpMoveSpeed` (same ramp **and** same charge top speed as Jugg). **Juggernaut** uses `IgnoreWeaponSpeedPenalty` / baseline — no double tax; **relative** advantage is that armed Speedster/Sniper no longer outpace armed Jugg at charge.
+  - Date: 2026-05-07
+- **Weapon swing penalty:** **One speed tier down**, same mapping as **dodge** (charge→run, run→walk, walk→walk + swing effects/cooldowns). **Not** “hard snap to walk for N seconds” as the primary rule (ClassData `WeaponSwingSpeedPenaltyDuration` may be repurposed or layered — see Weapons section).
+  - Date: 2026-05-07
+- **Armed player touches ball (auto-grab):** **Host-authoritative** sequence: **drop / strip weapon first**, then normal **grab** path — avoids weapon+ball **clipping** / jank. If grab fails (pickup blocked), define whether weapon is restored or stays dropped (prefer **atomic swap only on success** to avoid stuck empty-handed).
+  - Date: 2026-05-07
+- **Tackle whiff:** use **inner threaten radius** (fraction of `TriggerSphereRadius`) **+ short memory** so **dodge out / fail after real pressure** still applies attacker penalty (e.g. sprint strip); outer-sphere-only + bad angle is insufficient — see **Tackle whiff penalty** section.
+  - Date: 2026-05-08
+
+## Movement / dodge / camera v1 (design)
+Locked **design + starting tuning** for charge-time camera, dodge, and how they interact with tackle. **Not all implemented** — numbers are playtest anchors.
+
+### Charge / camera
+- **At charge speed:** mild **look / yaw damp** (enough to kill **snap 180°** re-tackles; corners and map flow still playable). Final scale is engine-specific — try a **~0.65–0.8×** effective-turn band in playtest, then tune.
+- **Lateral readjust while charging:** **dodge** drops to **running** (tier down + cooldown) as the intentional “I need strafe / correction” escape — not relying on harsh full-map turn punishment alone.
+
+### Re-enter charge (after dodge from charge)
+- **~2.0 s** before player can **re-enter charge** (tackles stay **charge-only**, so no legal tackle until then anyway). Tune band **~1.2–2.5 s** if pacing shifts.
+
+### Dodge behaviour
+| From | After dodge |
+|------|----------------|
+| Charge | Run |
+| Run | Walk |
+| Walk | Walk (no extra tier — **shove + short tackle-only iframe + cooldown** only) |
+| Ball carrier (capped at run) | Walk |
+
+- **Lateral shove:** medium–strong; **starting band ~200–260** in editor — **rescale** once world units vs `TriggerSphereRadius` are confirmed.
+- **Tackle-only iframe:** **~140 ms** start (**120–160 ms** band); **short**, paired with **bigger shove** (not long generic invuln).
+- **Throw charge:** **resets on dodge** for v1 (movement charge is separate; Sniper / passives may carve exceptions later).
+
+### Cooldowns
+- **Baseline dodge cooldown:** **~3.5 s**.
+- **Ball carrier:** **slightly quicker** — **~3.0 s** (−0.5 s) or **~85–90%** of baseline. Compensates for **walk** after dodge without encouraging infinite stall; narrow or remove the gap if stalling dominates tests.
+
+### 1v1 / asymmetry (tuning target)
+- **Carrier dodges first** → **walk**; attacker may stay **faster** — intentional **resource** trade. **Attacker** still avoids “free second tackle” if **tackle = charge-only** + **re-charge-after-dodge** holds.
+- **Master feel check:** **~2–4 s** time-to-contact on **open ground** after carrier dodge (adjust shove, walk-with-ball, charge top speed, cooldowns **one lever at a time**).
+
+### One-liner
+**Charge = mild commitment (turn damp) + dodge = tier down + shove + short tackle buffer + cooldown (carrier slightly shorter CD) + re-charge gate after charge-tier dodge + throw charge clears on dodge; tackle eligibility stays charge-only.**
+
+## Tackle whiff penalty (design — not implemented)
+Attacker **miss tax** so “stay on charge and try again” after a real exchange isn’t free — especially if the ball carrier **burned dodge**. Charge-time look tuning alone was not enough.
+
+### Why not “definition A” only
+**A** = valid tackle target somewhere inside full **`TriggerSphereRadius`**, but approach cone fails. If the victim **dodges out** of the sphere, there is often **no one in range** anymore → **no** whiff under strict A → attacker stays on **charge** and can try again immediately. Rewards **dodge** too little.
+
+### Chosen approach: inner threaten + short memory
+- **Outer sphere** (existing): `TriggerSphereRadius` — when a tackle **can** connect (`TryFindTackleVictim` logic).
+- **Inner threaten zone** (new knob): smaller horizontal distance (e.g. **fraction of** `TriggerSphereRadius`, tune ~**0.5–0.75×**). Means “**actually on**” the runner, not grazing the outer rim.
+- While **at charge** and a **valid victim** is inside **inner** zone → set **armed / threatening** state (host-authoritative).
+- **Short memory** (~**0.1–0.2 s**): if threatening then **fails** without a successful tackle — victim **dodges** out, attacker peels off, **bad angle** never converts — apply **whiff penalty** (e.g. **drop to sprint** / strip catch-up tier via `CatchUpSpeedBoost` timers; exact hook TBD).
+
+Throttle so grazing the outer ring doesn’t spam penalties every frame.
+
+### Skill expression
+- **Carrier:** **Late**, well-timed dodge when attacker is already **inner** — more likely to force attacker miss tax; **early** dodge while attacker only in **outer** ring — attacker can **adjust**, defender may **waste** dodge.
+- **Attacker:** don’t **telegraph** inner-zone entry; shape approach so dodge is wasted or tackle still lands.
+
+### Implementation notes (when built)
+- Host-owned truth for threaten + whiff outcome; align with existing tackle RPC / cooldown patterns.
+- Optional later: pair with **Juggernaut** ramp reset on whiff.
+
+## Weapons (design — future implementation)
+Host-authoritative when gameplay outcomes matter; **not built yet**. Aligns with movement/dodge tier rules above.
+
+### Carry rules
+- **Ball XOR weapon:** cannot carry **both**; ball carrier has **no** weapon.
+- **Touch free ball while armed:** **strip weapon → grab ball** (same auto-grab concept as today, extended). Order on host avoids physics clipping between weapon mesh/colliders and ball.
+
+### Hold penalty (weapon equipped, off ball)
+- **Non-Jugg classes:** use **Juggernaut’s** `TimeToCatchUpSpeed` **and** `CatchUpMoveSpeed` while holding — **ramp and top charge speed** both match Jugg (“everyone fights at Jugg’s armed weight class”).
+- **Juggernaut:** `IgnoreWeaponSpeedPenalty = true` (or equivalent) — **no extra** hold penalty beyond their normal slow curve; advantage is **comparative** vs other classes who were scaled **down** to Jugg.
+
+### Swing / attack
+- **Speed tier:** **drop one tier** — **same table as dodge** (charge→run, run→walk, walk remains walk).
+- **`WeaponSwingSpeedPenaltyDuration` in `ClassData`:** name predates this rule; **repurpose or remove** when implementing — e.g. optional lockout before re-entering charge, overlap with weapon CD, or delete if tier-only is enough. Do **not** assume “force walk for N seconds” unless playtests add it back as a layer.
+- **Throw charge after weapon swing:** **TBD** in code; consider clearing throw windup on swing for parity with **dodge clears throw** (v1).
+
+### One-use / durability (existing intent)
+- **Ranged / explosive:** consumed on use.
+- **Melee:** only breaks on **successful hit** (per earlier design).
+
+### Future: **Weapons specialist** class (melee-first roster)
+- **Not Sniper:** Sniper stays **throw / ball** fantasy; specialist is **melee weapon** identity — low conceptual overlap if most weapons are melee.
+- **Passive options (pick one per match, like other classes):** e.g. **lighter weapon tax** — faster ramp with weapon, higher top with weapon, or **both** (justify with tradeoffs).
+- **Tradeoff:** **weaker tackles** vs other bruisers — **peak power with weapon equipped**, not equal tackle threat when disarmed. Tune so tackles are **weaker**, not **useless**.
+
+### Sniper note (throw, not weapons roster)
+- Throw-charge / dodge exceptions stay **Sniper-only**; do not fold throw passives into weapons specialist.
 
 ## Constraints and Rules
 Only include constraints that are easy to forget and expensive to violate.
@@ -190,6 +283,7 @@ These are small gaps in existing code that must be filled before the planned sys
 - `Bodies[0]` = pelvis; launch via **`ApplyImpulse`** (not `PhysicsGroup.Velocity`).
 
 ### What is still missing / known issues
+- **Tackle whiff penalty:** inner threaten + short memory (design in SESSION_NOTES); **not** in code yet.
 - **Launch force tuning:** `TackleLaunchSpeed` / `TackleLaunchArc` still dial-in (rough band ~400–800 per older notes).
 - **Stand-up animation:** optional future — get-up clip instead of instant pose; retime or replace camera blend when built.
 - **Stand-up hover** (limb trace): mitigated with `.WithoutTags("ragdoll")` on body parts.
@@ -295,8 +389,8 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 | `RagdollDuration` | float | Seconds down after being tackled (default 2s) |
 | `TackleChargeRampRate` | float | Juggernaut passive: bonus multiplier per second at charge speed |
 | `MaxTackleChargeBonus` | float | Juggernaut passive: cap on the ramp bonus |
-| `IgnoreWeaponSpeedPenalty` | bool | If true, class ignores weapon-hold speed slowdown |
-| `WeaponSwingSpeedPenaltyDuration` | float | Seconds reset to walking speed after any weapon swing |
+| `IgnoreWeaponSpeedPenalty` | bool | If true, class ignores weapon-hold speed slowdown (intended **Juggernaut** while weapon system exists) |
+| `WeaponSwingSpeedPenaltyDuration` | float | Legacy field name — **weapon swing = tier drop** like dodge (see **Weapons (design)**); repurpose or remove on implementation |
 
 **Global (not in ClassData):**
 - `TackleLaunchSpeed` — single force tuning knob on `PlayerTackle`, not per-class. Class multipliers applied on top when class system is built.
@@ -311,8 +405,8 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 - Class size affects model scale, capsule dimensions, and trigger sphere radius — all live in `ClassData`.
 - `CatchUpSpeedBoost` will need to read from `ClassData` instead of its own inspector properties when this is built. Ask before modifying it.
 - `BallThrow` force will need to read from `ClassData` (`ThrowPower`). Ask before modifying it.
-- Weapon system is future work. `IgnoreWeaponSpeedPenalty` and `WeaponSwingSpeedPenaltyDuration` are in ClassData now so the per-class tuning is ready when weapons get built.
-- Weapon rules: holding a weapon forces all classes to Juggernaut's `TimeToCatchUpSpeed` (unless `IgnoreWeaponSpeedPenalty = true`). Any weapon swing resets speed to walking speed for `WeaponSwingSpeedPenaltyDuration` seconds. Weapons are one-use: ranged/explosive consumed on use; melee only breaks on a successful hit.
+- Weapon system is future work — see **Weapons (design — future implementation)** for locked notes (`IgnoreWeaponSpeedPenalty`, tier-drop swing, ball XOR weapon, armed auto-grab sequence, specialist class sketch).
+- **Summary:** Hold weapon ⇒ **both** Juggernaut `TimeToCatchUpSpeed` **and** `CatchUpMoveSpeed` for non-exempt classes. Swing ⇒ **one tier down** (same as dodge), not primary “walk for N seconds.” Ball **or** weapon only; armed contact with free ball ⇒ **strip weapon then grab** on host. One-use: ranged/explosive consumed on use; melee breaks on successful hit.
 - Passives and ults are designed (see below) but not being built yet. They will be selectable at match/round start.
 
 ---
