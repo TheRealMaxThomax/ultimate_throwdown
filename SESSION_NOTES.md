@@ -4,14 +4,14 @@ Use this file as persistent project memory between chats.
 Keep entries short, specific, and current.
 
 ## Project Snapshot
-- **Current Goal:** Tackle polish — launch tuning, broader MP stress tests. Ragdoll camera: free look + stand-up blend to `PlayerController` camera. Core tackle + ragdoll + cosmetics + grounded recovery shipped.
+- **Current Goal:** Tackle + movement polish — launch tuning, broader MP stress tests. Ragdoll camera: free look + stand-up blend to `PlayerController` camera. **Dodge shipped** (double-tap strafe, host RPC, iframe, tier penalties); tackle whiff (inner threaten) still future.
 - **Current Branch:** `feature/class-system` (pushed to origin).
-- **Build/Run Status:** Compiles clean. Client + host tackles; ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap.
-- **Last Updated:** 2026-05-08 (tackle **whiff penalty** design — inner threaten + short memory; not implemented in code yet)
+- **Build/Run Status:** Compiles clean. Client + host tackles + dodge shove (`Rigidbody` velocity add); ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap.
+- **Last Updated:** 2026-05-08 (dodge implemented; `ClassData` + `PlayerDodge` merged into compiled files — see Important Decisions)
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
-- `Code/Player/` — CatchUpSpeedBoost, PlayerCosmeticsSync, ClassData, PlayerClass, PlayerTackle (tackle + host ragdoll spawn/recovery in one file), RagdollClientFeel
+- `Code/Player/` — `CatchUpSpeedBoost.cs` (also defines **`PlayerDodge`** component at file bottom — s&box compile quirk avoided separate `PlayerDodge.cs`). `PlayerClass.cs` (also defines **`ClassData`** `[GameResource]` — avoid separate `ClassData.cs`). PlayerCosmeticsSync, PlayerTackle, RagdollClientFeel
 - `Code/Network/` — GameNetworkManager
 - New systems get their own folder (e.g. `Code/Ultimates/`, `Code/UI/`)
 
@@ -106,6 +106,16 @@ Keep entries short, specific, and current.
   - Date: 2026-05-07
 - **Tackle whiff:** use **inner threaten radius** (fraction of `TriggerSphereRadius`) **+ short memory** so **dodge out / fail after real pressure** still applies attacker penalty (e.g. sprint strip); outer-sphere-only + bad angle is insufficient — see **Tackle whiff penalty** section.
   - Date: 2026-05-08
+- **Dodge vs tackle whiff (implementation):** Build **`PlayerDodge`** so it **composes** with **inner threaten + short memory** (not a separate silo). Host owns threaten + whiff outcome; `PlayerDodge` exposes **iframe / `IsDodging`** (and synced fields) so tackles can **nullify on iframe** while whiff tax still keys off **“threatening then failed without a hit”** (dodge-out is one failure mode). **Speedster passive** reuses the **same inner + threaten** signal for reward tiering — see **Tackle whiff penalty** and **Passives**.
+  - Date: 2026-05-08
+- **Dodge input:** **Double-tap A** → dodge **left**; **double-tap D** → dodge **right** (no separate dodge button). Double-tap max interval is a **tunable** inspector value (start ~**200–350 ms**; tune vs accidental triggers).
+  - Date: 2026-05-08
+- **Throw charge + dodge:** **Sniper only** may dodge while **charging throw**; **other classes** cannot dodge at all until throw charge ends. (How Sniper’s throw charge interacts with dodge — cancel vs carry — **TBD** when implementing.)
+  - Date: 2026-05-08
+- **Codegen / compile layout:** **`ClassData`** and **`PlayerDodge`** are defined **`PlayerClass.cs`** and **`CatchUpSpeedBoost.cs`** (file tails) — restoring standalone **`ClassData.cs` / `PlayerDodge.cs` caused **`CS0246`** in-editor for this repo. Prefer keeping them merged until toolchain is verified.
+  - Date: 2026-05-08
+- **Dodge / whiff / tackle balance (north star):** Expect **heavy playtest tuning** (dodge cadence, inner threaten, memory, whiff strength, carrier walk-after-dodge, charge-only tackles). **Goals:** (1) A well-timed dodge **can** force a real whiff / miss tax — **not** spammable “I win” against every charge. (2) Good attackers should still **connect** often enough that tackles feel **fair and readable**, not hopeless. (3) **Ball carriers** must **not** be able to **chain-dodge** their way to a goal as the default plan — juking the whole team should be **rare, high-skill**, not reliable. (4) For **most** players and situations, **progression should favor throwing** (pass / advance) over **infinite run-and-dodge** carry. Use inner vs outer dodge, cooldowns, post-dodge walk tier, whiff tax, and field geometry together — **one lever at a time** in sessions.
+  - Date: 2026-05-08
 
 ## Movement / dodge / camera v1 (design)
 Locked **design + starting tuning** for charge-time camera, dodge, and how they interact with tackle. **Not all implemented** — numbers are playtest anchors.
@@ -127,7 +137,8 @@ Locked **design + starting tuning** for charge-time camera, dodge, and how they 
 
 - **Lateral shove:** medium–strong; **starting band ~200–260** in editor — **rescale** once world units vs `TriggerSphereRadius` are confirmed.
 - **Tackle-only iframe:** **~140 ms** start (**120–160 ms** band); **short**, paired with **bigger shove** (not long generic invuln).
-- **Throw charge:** **resets on dodge** for v1 (movement charge is separate; Sniper / passives may carve exceptions later).
+- **Input:** **Double-tap A** = dodge **left**; **double-tap D** = dodge **right**. Use a **max interval** between taps (tunable; see Important Decisions).
+- **Throw charge:** **Non-Sniper:** cannot dodge while charging throw. **Sniper:** may dodge while charging; whether that **cancels** windup vs **preserves** charge is **TBD**. **On any successful dodge,** clear throw charge/windup if still active unless Sniper-preserves-charge rules say otherwise once designed.
 
 ### Cooldowns
 - **Baseline dodge cooldown:** **~3.5 s**.
@@ -137,8 +148,16 @@ Locked **design + starting tuning** for charge-time camera, dodge, and how they 
 - **Carrier dodges first** → **walk**; attacker may stay **faster** — intentional **resource** trade. **Attacker** still avoids “free second tackle” if **tackle = charge-only** + **re-charge-after-dodge** holds.
 - **Master feel check:** **~2–4 s** time-to-contact on **open ground** after carrier dodge (adjust shove, walk-with-ball, charge top speed, cooldowns **one lever at a time**).
 
+### Balance intent — dodge vs tackle vs scoring (ongoing tune)
+This block is **design intent**, not starting numbers — revisit after dodge + whiff ship.
+
+- **Dodge causing whiffs** should reward **timing and reads** (inner-pressure, baiting chargers). It should **not** make “dodge on cooldown repeat” the easy answer to every closing defender.
+- **Tackles** should stay **viable**: attackers who close well should **land** often enough that defense is about **angles and teamwork**, not only praying the carrier misclicks.
+- **Ball carrier dribble fantasy:** Outrunning **multiple** defenders by **only** dodge juke → **possible for exceptional plays**, **not** the normal way to march the field. Throwing/passing stays the **pressure valve** when multiple defenders converge.
+- **Levers** (combine, don’t max one knob alone): dodge CD (including carrier tweak), iframe length, lateral shove, inner threaten fraction, memory window, whiff attacker penalty strength, walk-with-ball after dodge, re-charge gate, tackle cone/radius.
+
 ### One-liner
-**Charge = mild commitment (turn damp) + dodge = tier down + shove + short tackle buffer + cooldown (carrier slightly shorter CD) + re-charge gate after charge-tier dodge + throw charge clears on dodge; tackle eligibility stays charge-only.**
+**Charge = mild commitment (turn damp) + dodge (double-tap A/D) = tier down + shove + short tackle buffer + cooldown (carrier slightly shorter CD) + re-charge gate after charge-tier dodge; **Sniper** may dodge during throw charge, **others** cannot; tackle eligibility stays charge-only; whiff tax (inner threaten + memory) stays a separate host path from iframe.**
 
 ## Tackle whiff penalty (design — not implemented)
 Attacker **miss tax** so “stay on charge and try again” after a real exchange isn’t free — especially if the ball carrier **burned dodge**. Charge-time look tuning alone was not enough.
@@ -151,6 +170,7 @@ Attacker **miss tax** so “stay on charge and try again” after a real exchang
 - **Inner threaten zone** (new knob): smaller horizontal distance (e.g. **fraction of** `TriggerSphereRadius`, tune ~**0.5–0.75×**). Means “**actually on**” the runner, not grazing the outer rim.
 - While **at charge** and a **valid victim** is inside **inner** zone → set **armed / threatening** state (host-authoritative).
 - **Short memory** (~**0.1–0.2 s**): if threatening then **fails** without a successful tackle — victim **dodges** out, attacker peels off, **bad angle** never converts — apply **whiff penalty** (e.g. **drop to sprint** / strip catch-up tier via `CatchUpSpeedBoost` timers; exact hook TBD).
+- **Cross-use — Speedster passive:** a **short speed boost** and/or **run-speed floor** after a dodge **nullifies** a tackle can use the **same inner + threaten state** on the host (no second ad-hoc radius). Optional tier: **inner-pressure** dodge = full passive; **outer-only** = smaller buff or none — lines up with “late dodge” skill expression above.
 
 Throttle so grazing the outer ring doesn’t spam penalties every frame.
 
@@ -160,7 +180,13 @@ Throttle so grazing the outer ring doesn’t spam penalties every frame.
 
 ### Implementation notes (when built)
 - Host-owned truth for threaten + whiff outcome; align with existing tackle RPC / cooldown patterns.
+- **`PlayerDodge` integration:** Whiff logic is **not** “iframe only.” Iframe handles **hit nullification**; **threaten + memory** handles **attacker miss tax** when pressure was real and no tackle landed (including victim **dodge out**). Keep both paths host-visible and synced where needed.
 - Optional later: pair with **Juggernaut** ramp reset on whiff.
+
+### Playtest reminder (once player dodge exists in-game)
+**Reminder — stop and retune:** after dodge is in, **you (or the next session)** should revisit tackle pressure and **deliberately adjust at least one** of **`TackleDirectionThreshold`** (approach cone), **inner threaten zone** (fraction of `TriggerSphereRadius` or separate radius), or the **hybrid** path (outer ring + short memory). Real dodge timing shifts how often inner vs outer exchanges happen; don’t leave cone + inner + memory at pre-dodge guesses.
+
+**Scoring / macro feel:** If carriers can **consistently** dodge-stall to goal in scrims, bias tuning toward **stronger whiff tax**, **longer dodge CD with ball**, **tighter inner threaten for passive rewards**, or **weaker chain-dodge** (post-dodge walk / fewer escape vectors) — see **Important Decisions** and **Balance intent — dodge vs tackle vs scoring**.
 
 ## Weapons (design — future implementation)
 Host-authoritative when gameplay outcomes matter; **not built yet**. Aligns with movement/dodge tier rules above.
@@ -273,6 +299,7 @@ These are small gaps in existing code that must be filled before the planned sys
 
 ### What works
 - Tackle detection: **host** uses local velocity; **client owners** request via RPC with snapshots (charge speed synced from owner).
+- **Dodge:** Double-tap strafe (actions `left`/`right` by default); host RPC; **`PlayerDodge`** on player; shove via **`Rigidbody.Velocity`**; tackle iframe **`IsImmuneToTackle`**; **`BallThrow.NetIsChargingThrow`** + Sniper `ClassName` gate; ramp / recharge block in **`CatchUpSpeedBoost`**.
 - **Ragdoll visual** on both screens: separate `PlayerRagdoll` with base body + cosmetics (`BoneMergeTarget`); early `NetworkSpawn` to reduce invisible gap.
 - Player model hidden during ragdoll: `hiddenRenderers` cached and re-enforced every frame.
 - Camera follows ragdoll (`NetRagdollPosition` / `RagdollClientFeel` on owning client).
@@ -290,6 +317,7 @@ These are small gaps in existing code that must be filled before the planned sys
 
 ### Scene setup that must be correct every session (recompile may drop some)
 - `PlayerTackle` on root player object (gets dropped on recompile — check every session)
+- **`PlayerDodge` on root player** (double-tap dodge; `ShoveVelocityMultiplier` + strafe action names)
 - `RagdollClientFeel` on root player — smooths owning client's ragdoll camera/puppet (`InterpolationDelay`, `FollowSharpness`; optional tune)
 - `PlayerClass` on root player with Speedster/Sniper/Juggernaut `.cdata` asset assigned
 - `CatchUpSpeedBoost` on root player
@@ -298,17 +326,18 @@ These are small gaps in existing code that must be filled before the planned sys
 - All three `.cdata` assets must have values set manually:
   - Movement: StartMoveSpeed=140, SprintMoveSpeed=220, CatchUpMoveSpeed=320, TimeToSprintSpeed=2, TimeToCatchUpSpeed=4
   - Tackle: TriggerSphereRadius=40, **RagdollDuration** (= seconds grounded+settled before stand), **RagdollMaxDuration**, **RagdollGroundSpeedMax**, **RagdollGroundTraceDown**, **RagdollGroundTraceUp**, PostTackleInvincibilityDuration=1, BallLaunchForceOnTackle=500, BallPickupLockoutAfterTackle=1.5 (open each `.cdata` in editor for new fields / defaults)
+  - Dodge: **DodgeCooldown**, **DodgeDistance** (default in type **260**; old assets may still read **200**), **DodgeInvincibilityWindow** (type default **0.14** s; assets may still hold **0.3**)
   - Mass: Mass=80 (same placeholder for all three for now)
 
 ## Current Plan (Top 3)
-1. **Tune ragdoll launch** — `TackleLaunchSpeed` / `TackleLaunchArc`; try class-specific caps later.
-2. **Regression / stress** — grab/drop/throw + tackles multi-window (include new camera blend path).
-3. **Stand-up animation** (when ready) — coordinate with `StandUpCameraBlendDuration` / eye height.
+1. **MP regression** — dodge + grab/drop/throw + tackles (2-window), note any desync on dodge apply.
+2. **Tune ragdoll launch** — `TackleLaunchSpeed` / `TackleLaunchArc`; try class-specific caps later.
+3. **Tackle whiff** (when ready) — inner threaten + memory; then **stand-up animation** / camera blend coordination.
 
 ---
 
 ## End-of-Session Handoff
-- **2026-05-07:** Ragdoll free look; stand-up camera smooth blend (`OnPreRender` toward `PlayerController` camera, default 0.6s); `PlayerTackle` TOC + merged single file; editor third-person `CameraOffset` X **185**. SESSION_NOTES sync.
+- **2026-05-08:** **`PlayerDodge`** implemented (merged into **`CatchUpSpeedBoost.cs`**). **`ClassData`** merged into **`PlayerClass.cs`** (fix editor **`CS0246`**). **`BallThrow`** owner-only updates + **`NetIsChargingThrow`**. Dodge shove **`Rigidbody.Velocity`** add; **`DodgeDistance` / iframe / multiplier** tuning. SESSION_NOTES + commit.
 - **2026-06-06:** Ground-based ragdoll recovery (`RagdollDuration` = consecutive grounded+settled time; `RagdollMaxDuration` + trace/speed tunables in `ClassData`). SESSION_NOTES updated for MP tackle RPC, cosmetics ragdoll, early `NetworkSpawn`, merging decisions.
 - Earlier 06/05 history: separate host ragdoll GO, pelvis `ApplyImpulse`, `RagdollClientFeel`, stand-up floor trace `.WithoutTags("ragdoll")`, etc. (see bullets above).
 
@@ -363,7 +392,7 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 | Sniper | Middle | Middle | Middle ramp | Faster charge, higher force |
 | Juggernaut | Heaviest | Biggest | Slowest ramp | Default |
 
-**`ClassData` fields (s&box `[GameResource]`):**
+**`ClassData` fields (s&box `[GameResource]`):** *(C# type lives in `Code/Player/PlayerClass.cs` — not `ClassData.cs`.)*
 
 | Field | Type | Notes |
 |---|---|---|
@@ -411,13 +440,14 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 
 ---
 
-### Dodge Mechanic (Planned, Not Built Yet)
+### Dodge Mechanic (**implemented** — tune in `.cdata` + `PlayerDodge` inspector)
 
-- Players can dodge left or right on input.
-- Has a cooldown.
-- Lives in its own component: `PlayerDodge`.
-- Must expose `public bool IsDodging` so the tackle system can query it on the host.
-- Passives interact with dodge state — build `PlayerDodge` as a standalone system before wiring any passive logic.
+- **Input:** **Double-tap** strafe **left/right** (`PlayerDodge` defaults `LeftStrafeAction` / `RightStrafeAction` → project actions e.g. `left`/`right`; A/D follows user keybinds for those actions). **`DoubleTapMaxInterval`** on component.
+- **Host:** `[Rpc.Host]` validates caller, cooldown, throw-charge vs **Sniper** `ClassName`, syncs iframe / penalties / dodge apply id. **Owning client:** consumable shove = **`Rigidbody.Velocity` += lateral × (`ClassData.DodgeDistance` × **`ShoveVelocityMultiplier`**)**, clamp caps in code (~6000).
+- **`BallThrow`:** **`NetIsChargingThrow`** for host validation; **`ClearThrowChargeLocal()`** when dodge clears windup (Sniper dodge-while-charge rules per design).
+- **`CatchUpSpeedBoost`:** Applies ramp pulse + **`SyncedBlockCatchUpUntil`** recharge gate after charge-tier dodge.
+- **`PlayerTackle`:** Skips victim while **`PlayerDodge.IsImmuneToTackle`**.
+- **Not built:** **Tackle whiff** inner threaten + memory; Speedster dodge passive payouts (hooks: `IsDodging`, iframe timing).
 
 ---
 
@@ -426,7 +456,7 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 Selectable per class at match/round start.
 
 **Speedster**
-- *Passive:* Short speed boost on successfully dodging a tackle. Detection: when host fires a tackle attempt and victim's `IsDodging` is true â†’ tackle is nullified â†’ trigger speed boost. If `IsDodging` is false â†’ normal tackle applies.
+- *Passive:* **Successful dodge** vs a tackle — host attempt would connect, victim **`IsDodging`** (iframe) → nullify hit → grant **short speed boost** and/or **keep them at running speed** (floor so the read isn’t punished with walk-tier after burn). See **Tackle whiff penalty → inner threaten**: reuse that **inner** distance + threaten flag to tier reward (**inner-pressure** dodge = full passive; **outer-only** = lighter or no proc — one tuned knob for both whiff tax and Speedster payoff).
 - *Ult:* Lightning dash. Long-distance charge in a fixed direction. Charge-up time required. **Facing direction is snapshotted at the moment the charge begins — player cannot adjust aim during charge-up.** On contact with a player, delivers a powerful tackle.
 
 **Sniper**
@@ -540,6 +570,7 @@ Use these exact names unless explicitly changed in chat.
 - Throw properties in `BallThrow`: `ThrowAction`, `ThrowForce`, `ThrowUpForce`, `ThrowStartOffset`, `PickupDelayAfterThrow`, `ThrowDirectionSource`
 - Charge tuning properties in `BallThrow`: `MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`
 - Charge-state public getter in `BallThrow`: `IsChargingThrow`
+- Charge-state sync field (inspector-exposed internals): **`NetIsChargingThrow`**; **`ClearThrowChargeLocal()`** on owner clears windup
 - Catch-up movement properties in `CatchUpSpeedBoost`: `ForwardAction`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `MinForwardInput`; charge-speed sync: `NetAtChargeSpeed` (owner → others), public `IsAtChargeSpeed`
 - Throw charge bar property in `ThrowChargeBar`: `ChargeBarOffset`
 - Core release method in `BallGrab`: `ReleaseHeldBall()`
@@ -547,7 +578,7 @@ Use these exact names unless explicitly changed in chat.
 - Pickup lockout method in `BallGrab`: `BlockPickupForSeconds(float seconds)`
 - Cosmetics sync component: `PlayerCosmeticsSync`
 - Cosmetics sync properties: `FirstApplyDelay`, `RetryInterval`, `MaxApplyAttempts`, `LockHighestLodAfterApply`, `EnableDebugLogs`
-- Class data resource: `ClassData`
+- Class data resource: `ClassData` (type declared in **`PlayerClass.cs`**)
 - Class data fields: `ClassName`, `Mass`, `CapsuleHeight`, `CapsuleRadius`, `ModelScale`, `TriggerSphereRadius`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `WalkTurnSpeed`, `RunTurnSpeed`, `ChargeTurnSpeed`, `MomentumMultiplier`, `ThrowPower`, `DodgeCooldown`, `DodgeDistance`, `DodgeInvincibilityWindow`, `RagdollDuration` (grounded+settled consecutive seconds before stand), `RagdollMaxDuration`, `RagdollGroundSpeedMax`, `RagdollGroundTraceDown`, `RagdollGroundTraceUp`, `PostTackleInvincibilityDuration`, `BallLaunchForceOnTackle`, `BallPickupLockoutAfterTackle`, `TackleChargeRampRate`, `MaxTackleChargeBonus`, `IgnoreWeaponSpeedPenalty`, `WeaponSwingSpeedPenaltyDuration`
 - Tackle system component: `PlayerTackle`
 - Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `TackleLaunchArc`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`, `TackleRpcPositionSlop`, `TackleRpcRadiusFudge`, `RagdollPhysicsInitDelay`, `StandUpCameraBlendDuration`
@@ -560,8 +591,8 @@ Use these exact names unless explicitly changed in chat.
 - Tackle public getters: `IsRagdolled`, `IsTackleImmune`, `SyncedRagdollPelvisPosition`
 - Tackled-player client feel component: `RagdollClientFeel` (same GO as `PlayerTackle`; owning client)
 - Ragdoll snapshot feel properties in `RagdollClientFeel`: `InterpolationDelay`, `MaxSnapshots`, `FollowSharpness`
-- Dodge component (planned): `PlayerDodge`
-- Dodge state public getter (planned): `IsDodging` on `PlayerDodge`
+- Dodge component **`PlayerDodge`** (`Code/Player/CatchUpSpeedBoost.cs` tail): `LeftStrafeAction`, `RightStrafeAction`, `DoubleTapMaxInterval`, `CarrierDodgeCooldownFactor`, `RechargeBlockedAfterChargeDodge`, `ShoveVelocityMultiplier`, `EnableDodgeDebugLogs`
+- Dodge getters: `IsImmuneToTackle`, `IsDodging`, `SyncedBlockCatchUpUntil`, `LatestPenaltyKind`, `DodgeApplySequence`
 - Juggernaut passive ClassData fields: `TackleChargeRampRate`, `MaxTackleChargeBonus`
 
 ## Next Chat Kickoff

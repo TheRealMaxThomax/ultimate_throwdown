@@ -19,9 +19,11 @@ public sealed class BallThrow : Component
 	private PlayerClass playerClass;
 	private Rigidbody playerBody;
 	private bool isChargingThrow;
+	/// <summary> Owner writes; host reads for dodge validation. </summary>
+	[Sync] private bool NetIsChargingThrow { get; set; }
 	private Vector3 lockedChargePosition;
 	private float throwChargeStartedAt;
-	public bool IsChargingThrow => isChargingThrow;
+	public bool IsChargingThrow => Network.IsOwner ? isChargingThrow : NetIsChargingThrow;
 
 	protected override void OnStart()
 	{
@@ -35,10 +37,13 @@ public sealed class BallThrow : Component
 	{
 		if ( ballGrab is null )
 			return;
+		if ( !Network.IsOwner )
+			return;
 
 		if ( !ballGrab.IsHolding )
 		{
 			isChargingThrow = false;
+			NetIsChargingThrow = false;
 			throwChargeBar?.Hide();
 			return;
 		}
@@ -52,6 +57,7 @@ public sealed class BallThrow : Component
 		{
 			var chargeLerp = GetThrowChargeLerp();
 			isChargingThrow = false;
+			NetIsChargingThrow = false;
 			throwChargeBar?.Hide();
 			var directionSource = ThrowDirectionSource.IsValid() ? ThrowDirectionSource : GameObject;
 			var throwDirectionWorld = directionSource.WorldRotation.Forward;
@@ -74,6 +80,7 @@ public sealed class BallThrow : Component
 	private void StartThrowCharge()
 	{
 		isChargingThrow = true;
+		NetIsChargingThrow = true;
 		throwChargeStartedAt = Time.Now;
 		lockedChargePosition = WorldPosition;
 		throwChargeBar?.Show();
@@ -119,6 +126,14 @@ public sealed class BallThrow : Component
 		{
 			Log.Info( $"[NetDebug] Host applied throw. Speed={releasedBallBody.Velocity.Length}" );
 		}
+	}
+
+	/// <summary> Owning client: cancel windup without throwing (e.g. approved dodge). </summary>
+	public void ClearThrowChargeLocal()
+	{
+		isChargingThrow = false;
+		NetIsChargingThrow = false;
+		throwChargeBar?.Hide();
 	}
 
 	private float GetThrowChargeLerp()

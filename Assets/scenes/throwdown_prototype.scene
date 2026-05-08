@@ -143,7 +143,7 @@
           "BodyMass": 500,
           "BodyRadius": 16,
           "BrakePower": 1,
-          "CameraOffset": "256,0,12",
+          "CameraOffset": "185,0,12",
           "ColliderObject": {
             "_type": "gameobject",
             "go": "b7da39a4-527b-454b-8cbd-171f8a0ced09"
@@ -418,6 +418,11 @@
           "__enabled": true,
           "Flags": 0,
           "CatchUpMoveSpeed": 320,
+          "ChargeLookCompensatePreferencesSensitivity": true,
+          "ChargeLookSensitivityMax": 0.2,
+          "ChargeLookSensitivityMultiplier": 1,
+          "ChargeUnifiedLookScale": 0.6,
+          "ChargeYawMaxDegreesPerSecond": 130,
           "ForwardAction": "forward",
           "MinForwardInput": 0.1,
           "OnComponentDestroy": null,
@@ -446,6 +451,7 @@
           "RagdollCameraDistance": 200,
           "RagdollCameraHeight": 80,
           "RagdollPhysicsInitDelay": 0.05,
+          "StandUpCameraBlendDuration": 0.6,
           "TackleCooldown": 1,
           "TackleDirectionThreshold": 0.5,
           "TackleLaunchArc": 0.6,
@@ -467,6 +473,25 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null
+        },
+        {
+          "__type": "PlayerDodge",
+          "__guid": "37ff4a6d-7876-427c-8897-81fc4de0bf1f",
+          "__enabled": true,
+          "Flags": 0,
+          "CarrierDodgeCooldownFactor": 0.88,
+          "DoubleTapMaxInterval": 0.28,
+          "EnableDodgeDebugLogs": false,
+          "LeftStrafeAction": "left",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RechargeBlockedAfterChargeDodge": 2,
+          "RightStrafeAction": "right",
+          "ShoveVelocityMultiplier": 6.5
         }
       ],
       "Children": [
@@ -2582,6 +2607,11 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
+        }
+      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "8c035cde-983d-4850-b765-d33dcac0ded2"
@@ -2589,11 +2619,6 @@
       },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
         "DisableClientRecording": false
-      },
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
       }
     }
   },

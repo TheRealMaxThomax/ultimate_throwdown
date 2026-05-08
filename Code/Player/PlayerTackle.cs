@@ -285,7 +285,8 @@ public sealed class PlayerTackle : Component
 			break;
 		}
 
-		if ( victim is null || victim == this || victim.GameObject == GameObject || victim.IsTackleImmune || victim.IsRagdolled )
+		if ( victim is null || victim == this || victim.GameObject == GameObject || victim.IsTackleImmune || victim.IsRagdolled
+			|| victim.Components.Get<PlayerDodge>() is { IsImmuneToTackle: true } )
 		{
 			if ( EnableTackleDebugLogs )
 				Log.Info( "[Tackle] Rpc reject: invalid victim (null/self/immune/ragdolled)" );
@@ -358,6 +359,8 @@ public sealed class PlayerTackle : Component
 			if ( candidate.GameObject == attacker.GameObject )
 				continue;
 			if ( candidate.IsTackleImmune )
+				continue;
+			if ( candidate.Components.Get<PlayerDodge>() is { IsImmuneToTackle: true } )
 				continue;
 			if ( candidate.IsRagdolled )
 				continue;
