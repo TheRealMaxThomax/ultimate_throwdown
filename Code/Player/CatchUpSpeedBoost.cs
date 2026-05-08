@@ -519,12 +519,33 @@ public sealed class PlayerDodge : Component
 		if ( !playerBody.IsValid() )
 			return;
 
-		var flatForward = WorldRotation.Forward.WithZ( 0 );
-		if ( flatForward.Length < 0.001f )
-			flatForward = Vector3.Forward;
-		var flatForwardN = flatForward.Normal;
-		var right = Vector3.Cross( Vector3.Up, flatForwardN ).Normal;
-		var lateral = right * directionSign;
+		// EyeAngles drive third-person steering; WorldRotation can lag on spawn. Use same ToRotation() as ragdoll camera / view.
+		// Strafe axis = Right (not Cross(Up, Forward)) so it matches input even if yaw/pitch convention differs from FromYaw.
+		var pc = Components.Get<PlayerController>( FindMode.EverythingInSelfAndDescendants );
+		Vector3 lateral;
+		if ( pc.IsValid() )
+		{
+			var lateralFlat = pc.EyeAngles.ToRotation().Right.WithZ( 0 );
+			if ( lateralFlat.Length < 0.001f )
+			{
+				var ff = WorldRotation.Forward.WithZ( 0 );
+				if ( ff.Length < 0.001f )
+					ff = Vector3.Forward;
+				lateralFlat = Vector3.Cross( Vector3.Up, ff.Normal ).Normal;
+			}
+			else
+				lateralFlat = lateralFlat.Normal;
+
+			lateral = lateralFlat * directionSign;
+		}
+		else
+		{
+			var flatForward = WorldRotation.Forward.WithZ( 0 );
+			if ( flatForward.Length < 0.001f )
+				flatForward = Vector3.Forward;
+			var flatForwardN = flatForward.Normal;
+			lateral = Vector3.Cross( Vector3.Up, flatForwardN ).Normal * directionSign;
+		}
 		var add = lateral * (dodgeDistanceStat * ShoveVelocityMultiplier).Clamp( 0f, 6000f );
 		var v = playerBody.Velocity;
 		playerBody.Velocity = v + add;

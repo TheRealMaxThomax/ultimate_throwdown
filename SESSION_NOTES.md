@@ -7,7 +7,7 @@ Keep entries short, specific, and current.
 - **Current Goal:** Tackle + movement polish — launch tuning, broader MP stress tests. Ragdoll camera: free look + stand-up blend to `PlayerController` camera. **Dodge shipped** (double-tap strafe, host RPC, iframe, tier penalties); tackle whiff (inner threaten) still future.
 - **Current Branch:** `feature/class-system` (pushed to origin).
 - **Build/Run Status:** Compiles clean. Client + host tackles + dodge shove (`Rigidbody` velocity add); ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap.
-- **Last Updated:** 2026-05-08 (dodge implemented; `ClassData` + `PlayerDodge` merged into compiled files — see Important Decisions)
+- **Last Updated:** 2026-05-08 (dodge **lateral shove** uses `PlayerController` view: `EyeAngles.ToRotation().Right` flattened to XY, not `WorldRotation` / `Rotation.FromYaw` — fixes dead/wrong dodge on spawn and at odd yaws; `Get` uses `FindMode.EverythingInSelfAndDescendants`)
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
@@ -113,6 +113,8 @@ Keep entries short, specific, and current.
 - **Throw charge + dodge:** **Sniper only** may dodge while **charging throw**; **other classes** cannot dodge at all until throw charge ends. (How Sniper’s throw charge interacts with dodge — cancel vs carry — **TBD** when implementing.)
   - Date: 2026-05-08
 - **Codegen / compile layout:** **`ClassData`** and **`PlayerDodge`** are defined **`PlayerClass.cs`** and **`CatchUpSpeedBoost.cs`** (file tails) — restoring standalone **`ClassData.cs` / `PlayerDodge.cs` caused **`CS0246`** in-editor for this repo. Prefer keeping them merged until toolchain is verified.
+  - Date: 2026-05-08
+- **Dodge shove direction (owner `ApplyShoveVelocity`):** Use **`pc.EyeAngles.ToRotation().Right.WithZ(0)`** (normalized) for lateral impulse, same basis as ragdoll camera (`ToRotation()`), not **`GameObject.WorldRotation.Forward`** nor **`Rotation.FromYaw(EyeAngles.yaw).Forward`**. Body rotation can lag eye on join; `FromYaw` alone did not match engine angle convention and broke or zeroed shove. **`PlayerController`** via **`Components.Get<PlayerController>( FindMode.EverythingInSelfAndDescendants )`**. If flattened `Right` collapses (extreme pitch), fall back to **`Cross(Up, WorldRotation.Forward)`** as before.
   - Date: 2026-05-08
 - **Dodge / whiff / tackle balance (north star):** Expect **heavy playtest tuning** (dodge cadence, inner threaten, memory, whiff strength, carrier walk-after-dodge, charge-only tackles). **Goals:** (1) A well-timed dodge **can** force a real whiff / miss tax — **not** spammable “I win” against every charge. (2) Good attackers should still **connect** often enough that tackles feel **fair and readable**, not hopeless. (3) **Ball carriers** must **not** be able to **chain-dodge** their way to a goal as the default plan — juking the whole team should be **rare, high-skill**, not reliable. (4) For **most** players and situations, **progression should favor throwing** (pass / advance) over **infinite run-and-dodge** carry. Use inner vs outer dodge, cooldowns, post-dodge walk tier, whiff tax, and field geometry together — **one lever at a time** in sessions.
   - Date: 2026-05-08
@@ -337,6 +339,7 @@ These are small gaps in existing code that must be filled before the planned sys
 ---
 
 ## End-of-Session Handoff
+- **2026-05-08 (later):** Dodge shove direction fix in **`PlayerDodge.ApplyShoveVelocity`**: lateral from **`EyeAngles.ToRotation().Right`** + **`FindMode.EverythingInSelfAndDescendants`** for `PlayerController`; spawn / yaw alignment bugs resolved. SESSION_NOTES + commit + push.
 - **2026-05-08:** **`PlayerDodge`** implemented (merged into **`CatchUpSpeedBoost.cs`**). **`ClassData`** merged into **`PlayerClass.cs`** (fix editor **`CS0246`**). **`BallThrow`** owner-only updates + **`NetIsChargingThrow`**. Dodge shove **`Rigidbody.Velocity`** add; **`DodgeDistance` / iframe / multiplier** tuning. SESSION_NOTES + commit.
 - **2026-06-06:** Ground-based ragdoll recovery (`RagdollDuration` = consecutive grounded+settled time; `RagdollMaxDuration` + trace/speed tunables in `ClassData`). SESSION_NOTES updated for MP tackle RPC, cosmetics ragdoll, early `NetworkSpawn`, merging decisions.
 - Earlier 06/05 history: separate host ragdoll GO, pelvis `ApplyImpulse`, `RagdollClientFeel`, stand-up floor trace `.WithoutTags("ragdoll")`, etc. (see bullets above).
@@ -443,7 +446,7 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 ### Dodge Mechanic (**implemented** — tune in `.cdata` + `PlayerDodge` inspector)
 
 - **Input:** **Double-tap** strafe **left/right** (`PlayerDodge` defaults `LeftStrafeAction` / `RightStrafeAction` → project actions e.g. `left`/`right`; A/D follows user keybinds for those actions). **`DoubleTapMaxInterval`** on component.
-- **Host:** `[Rpc.Host]` validates caller, cooldown, throw-charge vs **Sniper** `ClassName`, syncs iframe / penalties / dodge apply id. **Owning client:** consumable shove = **`Rigidbody.Velocity` += lateral × (`ClassData.DodgeDistance` × **`ShoveVelocityMultiplier`**)**, clamp caps in code (~6000).
+- **Host:** `[Rpc.Host]` validates caller, cooldown, throw-charge vs **Sniper** `ClassName`, syncs iframe / penalties / dodge apply id. **Owning client:** consumable shove = **`Rigidbody.Velocity` += lateral × (`ClassData.DodgeDistance` × **`ShoveVelocityMultiplier`**)**, clamp caps in code (~6000). **Lateral** = flattened **`EyeAngles.ToRotation().Right`** (view-relative strafe), not pawn `WorldRotation` (see Important Decisions).
 - **`BallThrow`:** **`NetIsChargingThrow`** for host validation; **`ClearThrowChargeLocal()`** when dodge clears windup (Sniper dodge-while-charge rules per design).
 - **`CatchUpSpeedBoost`:** Applies ramp pulse + **`SyncedBlockCatchUpUntil`** recharge gate after charge-tier dodge.
 - **`PlayerTackle`:** Skips victim while **`PlayerDodge.IsImmuneToTackle`**.
