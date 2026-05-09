@@ -25,11 +25,11 @@ public sealed class BallGrab : Component
 	private bool warnedAboutDuplicateMainBallName;
 	private bool isHolding;
 	[Sync( SyncFlags.FromHost )] private bool NetIsHolding { get => isHolding; set => isHolding = value; }
+	[Sync( SyncFlags.FromHost )] private float NetPickupBlockedRemain { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetHeldBallWorldPosition { get; set; }
 	[Sync( SyncFlags.FromHost )] private Rotation NetHeldBallWorldRotation { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetHeldBallLinearVelocity { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetHeldBallAngularVelocity { get; set; }
-	private float pickupBlockedUntilTime;
 	private float nextAutoGrabAttemptAt;
 	private float dropperNoPushUntilTime;
 	private float dropInheritedSpeed;
@@ -49,6 +49,11 @@ public sealed class BallGrab : Component
 
 	protected override void OnUpdate()
 	{
+		if ( Networking.IsHost && NetPickupBlockedRemain > 0f )
+		{
+			NetPickupBlockedRemain = MathF.Max( 0f, NetPickupBlockedRemain - Time.Delta );
+		}
+
 		if ( !isHolding )
 		{
 			localDropPending = false;
@@ -100,8 +105,8 @@ public sealed class BallGrab : Component
 			return;
 
 		// Auto-grab: entering grab range picks up the ball automatically.
-		// Rate-limited to avoid RPC spam; host validates and ignores if already held.
-		if ( !isHolding && inRange && Time.Now >= pickupBlockedUntilTime && Time.Now >= nextAutoGrabAttemptAt )
+		// Rate-limited to avoid RPC spam; host validates and ignores if already held elsewhere.
+		if ( !isHolding && inRange && PlayerAllowsBallPickup() && !IsMainBallHeldByAnyone() && NetPickupBlockedRemain <= 0f && Time.Now >= nextAutoGrabAttemptAt )
 		{
 			RequestPickUpBallOnHost();
 			nextAutoGrabAttemptAt = Time.Now + 0.1f;
@@ -138,6 +143,30 @@ public sealed class BallGrab : Component
 		}
 
 		ballObject = firstMatch;
+	}
+
+	/// <summary>Returns true when any player's BallGrab is holding our main ball (synced/host state).</summary>
+	private bool IsMainBallHeldByAnyone()
+	{
+		if ( !ballObject.IsValid() )
+			return false;
+
+		foreach ( var grab in Scene.GetAllComponents<BallGrab>() )
+		{
+			if ( !grab.IsHolding )
+				continue;
+
+			var held = grab.HeldBall;
+			if ( held.IsValid() && held == ballObject )
+				return true;
+		}
+
+		return false;
+	}
+
+	private bool PlayerAllowsBallPickup()
+	{
+		return Components.Get<PlayerTackle>() is not { IsRagdolled: true };
 	}
 
 	private void PickUpBall()
@@ -194,7 +223,13 @@ public sealed class BallGrab : Component
 		if ( !ballObject.IsValid() || isHolding )
 			return;
 
-		if ( Time.Now < pickupBlockedUntilTime )
+		if ( IsMainBallHeldByAnyone() )
+			return;
+
+		if ( !PlayerAllowsBallPickup() )
+			return;
+
+		if ( NetPickupBlockedRemain > 0f )
 			return;
 
 		PickUpBall();
@@ -386,7 +421,10 @@ public sealed class BallGrab : Component
 
 	public void BlockPickupForSeconds( float seconds )
 	{
-		pickupBlockedUntilTime = Time.Now + seconds;
+		if ( seconds <= 0f )
+			return;
+
+		NetPickupBlockedRemain = MathF.Max( NetPickupBlockedRemain, seconds );
 	}
 
 	private void ResetHoldingState()

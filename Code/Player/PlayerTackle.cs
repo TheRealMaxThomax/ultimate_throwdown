@@ -20,6 +20,8 @@ public sealed class PlayerTackle : Component
 	[Property] public float TackleCooldown { get; set; } = 1f;
 	[Property] public float TackleLaunchSpeed { get; set; } = 600f;
 	[Property] public float TackleLaunchArc { get; set; } = 0.35f; // upward blend vs flat tackleDir for ragdoll + tackled ball knock-off
+	/// <summary>Host: attacker cannot auto-grab the ball for this long after tackling someone who was holding it (stops instant vacuum after knock-off). 0 = no lockout.</summary>
+	[Property] public float AttackerPickupLockoutAfterCarrierTackle { get; set; } = 0.45f;
 	[Property] public float RagdollCameraDistance { get; set; } = 200f;
 	[Property] public float RagdollCameraHeight { get; set; } = 80f;
 	[Property] public bool EnableTackleDebugLogs { get; set; } = false;
@@ -417,6 +419,12 @@ public sealed class PlayerTackle : Component
 				}
 
 				victimBallGrab.BlockPickupForSeconds( ballLockout );
+			}
+
+			var attackerGrab = Components.Get<BallGrab>();
+			if ( attackerGrab.IsValid() && AttackerPickupLockoutAfterCarrierTackle > 0f )
+			{
+				attackerGrab.BlockPickupForSeconds( AttackerPickupLockoutAfterCarrierTackle );
 			}
 		}
 
