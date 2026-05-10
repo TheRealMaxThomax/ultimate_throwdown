@@ -5,7 +5,7 @@
   "Ident": "ultimate_throwdown",
   "Schema": 1,
   "IncludeSourceFiles": false,
-  "Resources": null,
+  "Resources": "*",
   "PackageReferences": [],
   "EditorReferences": null,
   "Mounts": null,
@@ -17,6 +17,8 @@
     "GameNetworkType": "Multiplayer",
     "MapSelect": "Unrestricted",
     "MapList": [
+      "testing_map",
+      "local.ultimate_throwdown.testing_map",
       "facepunch.flatgrass"
     ],
     "RankType": "None",

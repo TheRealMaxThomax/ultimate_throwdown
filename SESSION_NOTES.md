@@ -5,15 +5,24 @@ Keep entries short, specific, and current.
 
 ## Project Snapshot
 - **Current Goal:** Tackle + movement polish — launch tuning, broader MP stress tests. Ragdoll camera: free look + stand-up blend to `PlayerController` camera. **Dodge shipped** (double-tap strafe, host RPC, iframe, tier penalties); tackle whiff (inner threaten) still future.
-- **Current Branch:** `feature/class-system` (pushed to origin).
-- **Build/Run Status:** Compiles clean. Client + host tackles + dodge shove (`Rigidbody` velocity add); ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap.
-- **Last Updated:** 2026-05-10 — ClassData **removed** unused `WalkTurnSpeed` / `RunTurnSpeed` / `ChargeTurnSpeed`; universal charge yaw stays on **`CatchUpSpeedBoost.ChargeYawMaxDegreesPerSecond`**. **`PlayerTackle`:** ragdoll orbit + stand-up **MainCamera** only when **`this.Network.IsOwner`** (scene `practice_npc` dummies no longer hijack host view). Tag **`practice_npc`** on victim root → post-ragdoll stand uses **pre-tackle position + `EyeAngles`** (synced `NetPracticeNpcStandEyeAngles`); humans unchanged (floor trace stand-up). Rpc validate uses **`this.Network.Owner`**.
+- **Current Branch:** **`main`** — routine **commit + push** to **`main`**; use short-lived feature branches only when a change needs isolation.
+- **Build/Run Status:** Compiles clean. Client + host tackles + dodge shove (`Rigidbody` velocity add); ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap. Hammer **`testing_map`** mounts at Play via **`StartupMapBootstrap`** / **`MapInstance`** (**`ultimate_throwdown.sbproj`** **`Resources`: `*`**).
+- **Last Updated:** 2026-05-11 — **Git:** routine commit/push on **`main`**. **Tackle:** horizontal **`EyeAngles`** approach cone; **`NetTackleStripRampId`** + **`CatchUpSpeedBoost`** strips **charge → sprint** on successful hit. **Practice NPCs:** **`StartupMapBootstrap`** sets **`Rigidbody` X/Y/Z lock** on tag **`practice_npc`** (no slide). **Undecided** § tackle hit stop. *(2026-05-10 and earlier: ClassData turn-field removal, ragdoll **`IsOwner`** camera, NPC stand pose, Hammer **`testing_map`** / `.sbproj` `Resources` — still in file below.)*
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
 - `Code/Player/` — `CatchUpSpeedBoost.cs` (also defines **`PlayerDodge`** component at file bottom — s&box compile quirk avoided separate `PlayerDodge.cs`). `PlayerClass.cs` (also defines **`ClassData`** `[GameResource]` — avoid separate `ClassData.cs`). PlayerCosmeticsSync, PlayerTackle, RagdollClientFeel
 - `Code/Network/` — GameNetworkManager
+- `Code/Map/` — **`StartupMapBootstrap.cs`** (host spawns **`MapInstance`** for **`testing_map`** if scene has none)
 - New systems get their own folder (e.g. `Code/Ultimates/`, `Code/UI/`)
+
+## Hammer map (`testing_map`)
+- **Edit:** **`Assets/Maps/testing_map.vmap`** → compile → **`testing_map.vpk`** / `.los` (don’t author on `.vpk`).
+- **Play mounts map because:** **`StartupMapBootstrap`** (`Code/Map/StartupMapBootstrap.cs`) creates **`MapInstance`** with **`MapName` = `testing_map`**. **`Metadata.MapList` in `.sbproj` alone does not load geometry into Play** for this project.
+- **Critical `.sbproj`:** **`"Resources": "*"`** — without it, **`maps/testing_map.vpk`** may not ship → **`Failed to mount vpk`**. **`MapList`** includes **`testing_map`** and **`facepunch.flatgrass`** (ids are logical strings, not filenames).
+- **Scene:** Optional **`MapInstance`** on **`throwdown_prototype`** with same **`MapName`** for editor preview; **remove/disable duplicate grass floor** when Hammer floor is authoritative.
+- **Arena prototype:** **Roof removed**, **`light_environment`** sun primary — sealed interior + local floods cost hours for marginal readability vs directional silhouettes; revisit roof/interior later.
+- **Compile:** **`light_environment` brightness** / bake-driven mood → use **`full`** when **`entities-only`** leaves brightness “stuck wrong.” **Quirk:** after compile, **viewport sometimes black until Stop → Play** refreshes the loaded map.
 
 ## Important Decisions
 - **Keep `BallGrab` as the source of truth for hold state.**
@@ -265,6 +274,7 @@ Treat these as mandatory implementation rules for all new gameplay features.
 ## Collaboration Preferences
 - Experience level: Beginner (new to development).
 - Communication style: Explain steps in simple language, avoid jargon where possible, and include quick "what/why" context for commands and changes.
+- **Git:** Default integration branch is **`main`** — commit and push session / gameplay work to **`main`** unless intentionally isolating on a short-lived branch.
 - Reminder: If naming confusion/repeated renames starts happening, propose expanding Naming Canon (especially before team size or system count grows).
 
 ## Prerequisites for Planned Systems
@@ -279,6 +289,8 @@ These are small gaps in existing code that must be filled before the planned sys
 **Convention:** For anything deferred (design, exploits, tuning forks): add **one short bullet** with enough context to decide later; **delete it** once resolved—keeps “what’s undecided?” scans in one place (`SESSION_NOTES.md` § Undecided).
 
 - **Forward + backward together:** cancelling movement still lets charge ramp build; might be cool fake-out or too strong hidden tech without UI/tell—later choose fix ramp vs ship with readability.
+- **Closed-roof arena:** revisit sealed stadium lighting vs **open roof + sun** prototype once gameplay baseline is stable (see Known Issues **`testing_map`** silhouette note).
+- **Tackle hit stop:** optional local-only juice vs relying on post-tackle sprint tier; defer until tackle feel is otherwise locked.
 
 ## Known Issues / Risks
 - [x] Anti-dribble / passive push resolved via auto-grab on contact.
@@ -305,6 +317,7 @@ These are small gaps in existing code that must be filled before the planned sys
   - Impact: Auto-grab + cleanup touches several files; one clean 2-window pass recommended.
   - Owner: Max
   - Next action: Fresh host + client session, test grab/drop/throw/auto-grab, confirm no regressions.
+- [ ] **`testing_map`:** Sealed interior made **projected caster silhouettes** on Hammer floor/walls hard to read (player + ball); **open roof + `light_environment`** workaround for now — revisit interior-only lighting / **`r.shadows.*`** / minimal Facepunch repro if this persists on closed arenas.
 
 ## Current Tackle Status (Resume Here Next Chat)
 
@@ -335,6 +348,8 @@ These are small gaps in existing code that must be filled before the planned sys
 - **`PlayerController` third person:** `CameraOffset` **X = 185** (current feel tuning; editor-only)
 - **Do NOT add `ModelPhysics` to the player prefab** — it is no longer used on the player object. The ragdoll is a separately spawned object.
 - **`practice_npc` (tag on root):** on dummy **roots** used for tackle / ClassData tests only — restores **pre-tackle** position + **EyeAngles** after ragdoll; **never** on real spawned players.
+- **`MapInstance`** (optional): **`MapName`** **`testing_map`** — aligns scene preview with compiled arena; **`StartupMapBootstrap`** skips spawning if one already exists.
+- When Hammer floor is in use: **disable/remove** old **scene grass plane** (avoid double floor / z-fight).
 - All three `.cdata` assets must have values set manually:
   - Movement: StartMoveSpeed=140, SprintMoveSpeed=220, CatchUpMoveSpeed=320, TimeToSprintSpeed=2, TimeToCatchUpSpeed=4
   - Tackle: TriggerSphereRadius=40, **RagdollDuration** (= seconds grounded+settled before stand), **RagdollMaxDuration**, **RagdollGroundSpeedMax**, **RagdollGroundTraceDown**, **RagdollGroundTraceUp**, PostTackleInvincibilityDuration=1, BallLaunchForceOnTackle=500, BallPickupLockoutAfterTackle=1.5 (open each `.cdata` in editor for new fields / defaults)
@@ -342,13 +357,14 @@ These are small gaps in existing code that must be filled before the planned sys
   - Mass: Mass=80 (same placeholder for all three for now)
 
 ## Current Plan (Top 3)
-1. **MP regression** — dodge + grab/drop/throw + tackles (2-window), note any desync on dodge apply.
+1. **MP regression** — dodge + grab/drop/throw + tackles on **`testing_map`** (2-window), note any desync on dodge apply.
 2. **Tune ragdoll launch** — `TackleLaunchSpeed` / `TackleLaunchArc`; try class-specific caps later.
 3. **Tackle whiff** (when ready) — inner threaten + memory; then **stand-up animation** / camera blend coordination.
 
 ---
 
 ## End-of-Session Handoff
+- **2026-05-10 (Hammer / arena):** Added **`Assets/Maps/testing_map.vmap`** pipeline: **`Code/Map/StartupMapBootstrap.cs`** mounts **`MapInstance`** with **`MapName` `testing_map`**; **`ultimate_throwdown.sbproj`** **`"Resources": "*"`** so **`maps/testing_map.vpk`** ships; **`MapList`** updated. Concrete/`AmbientCG` workflow noted; interior lighting time sink → **roof removed**, **`light_environment`** sun; **`full`** compile when brightness bake stuck vs **`entities-only`**; **viewport black-until-Stop→Play** after compile. Optional scene **`MapInstance`** + remove duplicate grass floor when aligned.
 - **2026-05-10:** **`practice_npc`** root tag + **`NetPracticeNpcStandEyeAngles`** for dummy stand pose after tackle; ragdoll **MainCamera / AnalogLook / stand-up blend** gated on **`this.Network.IsOwner`** (fixes host camera following NPC ragdolls). **`ClassData`** / `.cdata` dropped unused turn-speed fields; charge yaw unchanged (**`CatchUpSpeedBoost.ChargeYawMaxDegreesPerSecond`**). **`BallGrab`** pickup block replicated via **`NetPickupBlockedRemain`**; attacker carrier-tackle **`AttackerPickupLockoutAfterCarrierTackle`** → **`BlockPickupForSeconds`**. Disambiguated **`this.Network.Owner` / `IsOwner`** where needed. SESSION_NOTES + commit + push.
 - **2026-05-08 (later):** Dodge shove direction fix in **`PlayerDodge.ApplyShoveVelocity`**: lateral from **`EyeAngles.ToRotation().Right`** + **`FindMode.EverythingInSelfAndDescendants`** for `PlayerController`; spawn / yaw alignment bugs resolved. SESSION_NOTES + commit + push.
 - **2026-05-08:** **`PlayerDodge`** implemented (merged into **`CatchUpSpeedBoost.cs`**). **`ClassData`** merged into **`PlayerClass.cs`** (fix editor **`CS0246`**). **`BallThrow`** owner-only updates + **`NetIsChargingThrow`**. Dodge shove **`Rigidbody.Velocity`** add; **`DodgeDistance` / iframe / multiplier** tuning. SESSION_NOTES + commit.
@@ -609,6 +625,10 @@ Use these exact names unless explicitly changed in chat.
 - Dodge component **`PlayerDodge`** (`Code/Player/CatchUpSpeedBoost.cs` tail): `LeftStrafeAction`, `RightStrafeAction`, `DoubleTapMaxInterval`, `CarrierDodgeCooldownFactor`, `RechargeBlockedAfterChargeDodge`, `ShoveVelocityMultiplier`, `EnableDodgeDebugLogs`
 - Dodge getters: `IsImmuneToTackle`, `IsDodging`, `SyncedBlockCatchUpUntil`, `LatestPenaltyKind`, `DodgeApplySequence`
 - Juggernaut passive ClassData fields: `TackleChargeRampRate`, `MaxTackleChargeBonus`
+- Hammer bootstrap: **`StartupMapBootstrap`** (`Code/Map/StartupMapBootstrap.cs`) — implements **`ISceneStartup`**, spawns **`MapInstance`** if missing
+- Map runtime component: **`MapInstance`** — **`MapName`** for this project: **`testing_map`** (basename; not `local.…` triple id on **`MapName`** when loading package-local map)
+- Hammer source asset: **`Assets/Maps/testing_map.vmap`**; compiled outputs **`testing_map.vpk`**, **`testing_map.los`**
+- Game project package maps (`.sbproj`): **`Resources`** should include compiled maps (**`*`** current choice); **`Metadata.MapList`** lists playable map ids
 
 ## Next Chat Kickoff
 Paste this at the start of a new session:

@@ -33,6 +33,7 @@ public sealed class CatchUpSpeedBoost : Component
 	private PlayerTackle playerTackle;
 	private PlayerDodge playerDodge;
 	private int dodgeRampApplySeqHandled;
+	private int tackleRampStripSeqHandled;
 	private float forwardMoveTime;
 	private float nonHoldingSprintTime;
 
@@ -67,6 +68,8 @@ public sealed class CatchUpSpeedBoost : Component
 		playerClass = Components.Get<PlayerClass>();
 		playerDodge = Components.Get<PlayerDodge>();
 		dodgeRampApplySeqHandled = playerDodge?.DodgeApplySequence ?? 0;
+		playerTackle = Components.Get<PlayerTackle>();
+		tackleRampStripSeqHandled = playerTackle?.TackleStripRampSequence ?? 0;
 		if ( playerController.IsValid() )
 		{
 			var y = playerController.EyeAngles.yaw;
@@ -100,6 +103,7 @@ public sealed class CatchUpSpeedBoost : Component
 			playerDodge = Components.Get<PlayerDodge>();
 
 		ApplySyncedDodgeRampPulse();
+		ApplySyncedTackleStripPulse();
 
 		var isHoldingBall = ballGrab?.IsHolding ?? false;
 		var isChargingThrow = ballThrow?.IsChargingThrow ?? false;
@@ -278,6 +282,19 @@ public sealed class CatchUpSpeedBoost : Component
 				nonHoldingSprintTime = 0f;
 				break;
 		}
+	}
+
+	/// <summary>Host bumps tackle strip counter on hit; owner resets charge tier like dodge <c>StripChargeKeepSprint</c>.</summary>
+	private void ApplySyncedTackleStripPulse()
+	{
+		playerTackle ??= Components.Get<PlayerTackle>();
+		if ( playerTackle == null )
+			return;
+		var seq = playerTackle.TackleStripRampSequence;
+		if ( seq == tackleRampStripSeqHandled )
+			return;
+		tackleRampStripSeqHandled = seq;
+		nonHoldingSprintTime = 0f;
 	}
 }
 

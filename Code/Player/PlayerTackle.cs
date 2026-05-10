@@ -4,11 +4,11 @@ using System.Collections.Generic;
 
 // PlayerTackle — quick map (editor Outline or Ctrl+F the symbol name)
 //   Inspector properties ........ top of class
-//   Sync / net state ............ isRagdolled, NetRagdollPosition, NetStandUpPosition, cooldowns
+//   Sync / net state ............ isRagdolled, NetRagdollPosition, NetStandUpPosition, tackle strip ramp id, cooldowns
 //   OnStart / OnUpdate .......... camera ref, ragdoll transitions, owner camera + free look
 //   Host detection .............. TryDetectAndApplyHostTackle, ApplyTackleCooldownOnHost
 //   Client → host ............... TryOwnerRequestTackleOnHost, RequestTackleApplyOnHost
-//   Victim pick ................. TryFindTackleVictim
+//   Victim pick ................. TryFindTackleVictim (cone vs horizontal view forward, not velocity)
 //   Hit + ball .................. ExecuteTackle
 //   Ragdoll (host only) ......... SpawnRagdollObject, AddVictimClothingToRagdoll, HandleRagdollRecovery, IsRagdollGroundedAndSettled
 //   Juggernaut ramp ............. UpdateTackleChargeBonus
@@ -18,6 +18,7 @@ public sealed class PlayerTackle : Component
 {
 	private const string PracticeNpcTag = "practice_npc";
 
+	/// <summary>Min dot product between horizontal <see cref="PlayerController.EyeAngles"/> forward and direction to victim (1 = straight at them).</summary>
 	[Property] public float TackleDirectionThreshold { get; set; } = 0.5f;
 	[Property] public float TackleCooldown { get; set; } = 1f;
 	[Property] public float TackleLaunchSpeed { get; set; } = 600f;
@@ -58,6 +59,10 @@ public sealed class PlayerTackle : Component
 	/// <summary>Host-authoritative; owners read this so remote tackle RPCs line up with cooldown.</summary>
 	[Sync( SyncFlags.FromHost )]
 	private float NetTackleBlockedUntil { get => netTackleBlockedUntil; set => netTackleBlockedUntil = value; }
+	/// <summary>Increments on host when this pawn lands a tackle; owning <see cref="CatchUpSpeedBoost"/> resets charge ramp (drop to sprint tier).</summary>
+	private int netTackleStripRampId;
+	[Sync( SyncFlags.FromHost )]
+	private int NetTackleStripRampId { get => netTackleStripRampId; set => netTackleStripRampId = value; }
 	/// <summary>Client-only throttle so we don't spam the host with tackle RPCs every frame.</summary>
 	private float nextRemoteTackleRequestAt;
 
@@ -88,6 +93,8 @@ public sealed class PlayerTackle : Component
 
 	public bool IsTackleImmune => isTackleImmune;
 	public bool IsRagdolled => isRagdolled;
+	/// <summary>Host bumps after successful tackles; <see cref="CatchUpSpeedBoost"/> consumes changes to strip charge speed.</summary>
+	public int TackleStripRampSequence => netTackleStripRampId;
 
 	// Pelvis world position synced from host; RagdollClientFeel reads this on owning clients
 	public Vector3 SyncedRagdollPelvisPosition => NetRagdollPosition;
@@ -224,8 +231,12 @@ public sealed class PlayerTackle : Component
 		if ( horizontalVelocity.Length < 1f )
 			return;
 
+		var approachDir = GetHorizontalTackleApproachDirection();
+		if ( approachDir.Length < 0.001f )
+			return;
+
 		var tackleRadius = playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f;
-		if ( !TryFindTackleVictim( Scene, this, WorldPosition, horizontalVelocity, tackleRadius, TackleDirectionThreshold, out var victim, out var tackleDir ) )
+		if ( !TryFindTackleVictim( Scene, this, WorldPosition, approachDir, tackleRadius, TackleDirectionThreshold, out var victim, out var tackleDir ) )
 			return;
 
 		ApplyTackleCooldownOnHost();
@@ -251,28 +262,26 @@ public sealed class PlayerTackle : Component
 		var myVelocity = playerController?.Velocity ?? Vector3.Zero;
 		var horizontalVelocity = myVelocity.WithZ( 0f );
 		if ( horizontalVelocity.Length < 1f )
-		{
-			var forwardFlat = WorldRotation.Forward.WithZ( 0f );
-			if ( forwardFlat.Length < 0.001f )
-				return;
-			horizontalVelocity = forwardFlat.Normal;
-		}
-
-		var tackleRadius = playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f;
-		if ( !TryFindTackleVictim( Scene, this, WorldPosition, horizontalVelocity, tackleRadius, TackleDirectionThreshold, out var victim, out _ ) )
 			return;
 
-		var moveDir = horizontalVelocity.WithZ( 0f ).Normal;
+		var approachDir = GetHorizontalTackleApproachDirection();
+		if ( approachDir.Length < 0.001f )
+			return;
+
+		var tackleRadius = playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f;
+		if ( !TryFindTackleVictim( Scene, this, WorldPosition, approachDir, tackleRadius, TackleDirectionThreshold, out var victim, out _ ) )
+			return;
+
 		var attackerPos = WorldPosition;
 		var victimPos = victim.WorldPosition;
 		nextRemoteTackleRequestAt = Time.Now + (TackleCooldown * 0.2f).Clamp( 0.05f, 0.25f );
-		RequestTackleApplyOnHost( victim.GameObject.Id, moveDir, attackerPos, victimPos );
+		RequestTackleApplyOnHost( victim.GameObject.Id, approachDir, attackerPos, victimPos );
 	}
 
 	[Rpc.Host]
 	private void RequestTackleApplyOnHost(
 		Guid victimRootId,
-		Vector3 horizontalMoveDirectionFromOwner,
+		Vector3 horizontalApproachDirectionFromOwner,
 		Vector3 attackerWorldPosFromOwner,
 		Vector3 victimWorldPosFromOwner )
 	{
@@ -285,7 +294,7 @@ public sealed class PlayerTackle : Component
 		if ( speedBoost == null )
 			return;
 
-		var moveDir = horizontalMoveDirectionFromOwner.WithZ( 0f );
+		var moveDir = horizontalApproachDirectionFromOwner.WithZ( 0f );
 		if ( moveDir.Length < 0.001f )
 			return;
 		moveDir = moveDir.Normal;
@@ -346,12 +355,29 @@ public sealed class PlayerTackle : Component
 		ExecuteTackle( victim, tackleDir );
 	}
 
-	/// <summary>Find one valid tackle target using a horizontal approach direction (world space).</summary>
+	/// <summary>Horizontal view-forward for tackle cone; same basis as dodge shove (EyeAngles, not velocity).</summary>
+	private Vector3 GetHorizontalTackleApproachDirection()
+	{
+		if ( playerController is null )
+			return default;
+
+		var fwd = playerController.EyeAngles.ToRotation().Forward.WithZ( 0f );
+		if ( fwd.Length >= 0.001f )
+			return fwd.Normal;
+
+		var right = playerController.EyeAngles.ToRotation().Right.WithZ( 0f );
+		if ( right.Length >= 0.001f )
+			return right.Normal;
+
+		return default;
+	}
+
+	/// <summary>Find one valid tackle target using a horizontal approach direction in world space (unit-ish vector; normalized inside).</summary>
 	private static bool TryFindTackleVictim(
 		Scene scene,
 		PlayerTackle attacker,
 		Vector3 attackerWorldPos,
-		Vector3 horizontalVelocity,
+		Vector3 horizontalApproachDirection,
 		float tackleRadius,
 		float directionThreshold,
 		out PlayerTackle victim,
@@ -360,8 +386,8 @@ public sealed class PlayerTackle : Component
 		victim = null;
 		tackleDir = default;
 
-		var hv = horizontalVelocity.WithZ( 0f );
-		if ( hv.Length < 1f )
+		var hv = horizontalApproachDirection.WithZ( 0f );
+		if ( hv.Length < 0.001f )
 			return false;
 
 		var hvNorm = hv.Normal;
@@ -400,6 +426,9 @@ public sealed class PlayerTackle : Component
 
 	private void ExecuteTackle( PlayerTackle victim, Vector3 tackleDir )
 	{
+		if ( Networking.IsHost )
+			NetTackleStripRampId++;
+
 		CapturePracticeNpcPreTacklePoseIfTagged( victim );
 
 		var attackerMass = playerClass?.CurrentClass?.Mass ?? 80f;
