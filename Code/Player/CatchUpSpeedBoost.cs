@@ -3,7 +3,8 @@ using System;
 
 public sealed class CatchUpSpeedBoost : Component
 {
-	[Property] public string ForwardAction { get; set; } = "forward";
+	/// <summary> Must match Input action name (<c>Input.config</c> uses <c>Forward</c>).</summary>
+	[Property] public string ForwardAction { get; set; } = "Forward";
 	[Property] public float StartMoveSpeed { get; set; } = 140f;
 	[Property] public float SprintMoveSpeed { get; set; } = 220f;
 	[Property] public float CatchUpMoveSpeed { get; set; } = 320f;
@@ -37,6 +38,16 @@ public sealed class CatchUpSpeedBoost : Component
 	private float forwardMoveTime;
 	private float nonHoldingSprintTime;
 
+	/// <summary>Eased toward tier target each frame — <see cref="ClassData.MomentumMultiplier"/> slows the cap blend slightly when &gt;1.</summary>
+	private float smoothedMoveSpeedCap;
+
+	/// <summary>Snapshot from prefab’s <see cref="PlayerController"/> before we multiply by <see cref="ClassData.MomentumMultiplier"/>.</summary>
+	private float baselineAccelerationTime = 0.2f;
+
+	private float baselineDeaccelerationTime = 0.2f;
+
+	private bool baselineControllerTimesCaptured;
+
 	// Charge look damp: snapshot user's LookSensitivity when damp starts; restore when it ends (so options / inspector changes apply when not charging).
 	private bool chargeLookDampActive;
 	private float chargeLookUserBaseline = 1f;
@@ -53,6 +64,29 @@ public sealed class CatchUpSpeedBoost : Component
 		while ( d < -180f )
 			d += 360f;
 		return d;
+	}
+
+	/// <summary>
+	/// Charge ramp needs real forward input: discrete <see cref="ForwardAction"/> on keyboard/M+K holds W.
+	/// <see cref="Input.AnalogMove"/> axes are unreliable for WASD-only strafe (mapping can bleed into wrong components), so analog stick is gated on <see cref="Input.UsingController"/>.
+	/// </summary>
+	private bool IsForwardIntentForChargeRamp()
+	{
+		// Prefer configured action; compat for old inspector value "forward" vs Input.config "Forward".
+		if ( Input.Down( ForwardAction ) )
+			return true;
+		if ( ForwardAction.Equals( "forward", StringComparison.OrdinalIgnoreCase ) && Input.Down( "Forward" ) )
+			return true;
+
+		if ( !Input.UsingController )
+			return false;
+
+		var move = Input.AnalogMove.WithZ( 0f );
+		if ( move.LengthSquared < MinForwardInput * MinForwardInput )
+			return false;
+		if ( move.y <= MinForwardInput )
+			return false;
+		return move.y >= MathF.Abs( move.x );
 	}
 
 	// Owner computes locally; host/other clients read replicated value for tackle checks, UI, etc.
@@ -75,6 +109,7 @@ public sealed class CatchUpSpeedBoost : Component
 			var y = playerController.EyeAngles.yaw;
 			chargeYawSmoothedDegrees = y;
 			chargeYawCommitTargetDegrees = y;
+			smoothedMoveSpeedCap = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
 		}
 	}
 
@@ -94,6 +129,7 @@ public sealed class CatchUpSpeedBoost : Component
 			return;
 		}
 
+		TryCaptureBaselineControllerTimes();
 
 		if ( ballGrab is null )
 			ballGrab = Components.Get<BallGrab>();
@@ -107,7 +143,7 @@ public sealed class CatchUpSpeedBoost : Component
 
 		var isHoldingBall = ballGrab?.IsHolding ?? false;
 		var isChargingThrow = ballThrow?.IsChargingThrow ?? false;
-		var isMovingForward = Input.Down( ForwardAction ) || Input.AnalogMove.y > MinForwardInput;
+		var isMovingForward = IsForwardIntentForChargeRamp();
 
 		if ( isChargingThrow )
 		{
@@ -116,8 +152,10 @@ public sealed class CatchUpSpeedBoost : Component
 			ownerAtChargeSpeed = false;
 			NetAtChargeSpeed = false;
 			var startSpeed = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
+			smoothedMoveSpeedCap = startSpeed;
 			playerController.WalkSpeed = startSpeed;
 			playerController.RunSpeed = startSpeed;
+			ResetPlayerControllerMomentumTimesToBaseline();
 			ApplyChargeLookDamp( atChargeSpeed: false );
 			return;
 		}
@@ -140,10 +178,54 @@ public sealed class CatchUpSpeedBoost : Component
 		else
 			nonHoldingSprintTime = 0f;
 
-		playerController.WalkSpeed = GetTargetSpeed( isHoldingBall, isMovingForward );
-		playerController.RunSpeed = playerController.WalkSpeed;
+		var targetMoveCap = GetTargetSpeed( isHoldingBall, isMovingForward );
+		BlendMoveSpeedCapTowardTarget( targetMoveCap );
+		playerController.WalkSpeed = smoothedMoveSpeedCap;
+		playerController.RunSpeed = smoothedMoveSpeedCap;
+		ApplyMomentumTimesToPlayerController();
 		NetAtChargeSpeed = ownerAtChargeSpeed;
 		ApplyChargeLookDamp( ownerAtChargeSpeed );
+	}
+
+	private void TryCaptureBaselineControllerTimes()
+	{
+		if ( baselineControllerTimesCaptured || !playerController.IsValid() )
+			return;
+
+		baselineAccelerationTime = MathF.Max( playerController.AccelerationTime, 0.04f );
+		baselineDeaccelerationTime = MathF.Max( playerController.DeaccelerationTime, 0.04f );
+		baselineControllerTimesCaptured = true;
+	}
+
+	/// <summary> Engine times (seconds toward requested speed): baseline × multiplier — main source of noticeable “mass” alongside cap easing. </summary>
+	private void ApplyMomentumTimesToPlayerController()
+	{
+		var mult = ClassStat( playerClass?.CurrentClass?.MomentumMultiplier, 1f );
+		mult = mult.Clamp( 0.35f, 2.75f );
+		playerController.AccelerationTime = baselineAccelerationTime * mult;
+		playerController.DeaccelerationTime = baselineDeaccelerationTime * mult;
+	}
+
+	private void ResetPlayerControllerMomentumTimesToBaseline()
+	{
+		playerController.AccelerationTime = baselineAccelerationTime;
+		playerController.DeaccelerationTime = baselineDeaccelerationTime;
+	}
+
+	/// <summary>
+	/// <see cref="ClassData.MomentumMultiplier"/>: <b>1</b> = prefab baseline; <b>&gt;1</b> slower accel/decel + slower cap ease; <b>&lt;1</b> snappier.
+	/// Tackle tier still comes from <see cref="GetTargetSpeed"/>; only movement response is weighted.
+	/// </summary>
+	private void BlendMoveSpeedCapTowardTarget( float targetCap )
+	{
+		var mult = ClassStat( playerClass?.CurrentClass?.MomentumMultiplier, 1f );
+		mult = mult.Clamp( 0.35f, 2.75f );
+		// Seconds time-constant toward cap; scales with mult so 0.8 vs 1.3 is clearly different.
+		var tau = 0.28f * mult;
+		var alpha = 1f - MathF.Exp( -Time.Delta / MathF.Max( tau, 0.03f ) );
+		smoothedMoveSpeedCap += (targetCap - smoothedMoveSpeedCap) * alpha;
+		if ( MathF.Abs( targetCap - smoothedMoveSpeedCap ) < 0.75f )
+			smoothedMoveSpeedCap = targetCap;
 	}
 
 	/// <summary> After PlayerController integrates look: slew yaw toward commit target at max deg/sec. Commit stores last full wish while look input is active so brief flicks still complete after input ends. </summary>

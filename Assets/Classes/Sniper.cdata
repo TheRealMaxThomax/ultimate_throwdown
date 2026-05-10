@@ -1,6 +1,6 @@
 {
   "ClassName": "Sniper",
-  "Mass": 80,
+  "Mass": 82,
   "CapsuleHeight": 72,
   "CapsuleRadius": 16,
   "ModelScale": 1,
@@ -12,7 +12,7 @@
   "MomentumMultiplier": 1,
   "ThrowPower": 1,
   "DodgeCooldown": 3.5,
-  "DodgeDistance": 260,
+  "DodgeDistance": 175,
   "DodgeInvincibilityWindow": 0.14,
   "TriggerSphereRadius": 40,
   "RagdollDuration": 2,

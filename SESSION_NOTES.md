@@ -7,7 +7,7 @@ Keep entries short, specific, and current.
 - **Current Goal:** Tackle + movement polish — launch tuning, broader MP stress tests. Ragdoll camera: free look + stand-up blend to `PlayerController` camera. **Dodge shipped** (double-tap strafe, host RPC, iframe, tier penalties); tackle whiff (inner threaten) still future.
 - **Current Branch:** **`main`** — routine **commit + push** to **`main`**; use short-lived feature branches only when a change needs isolation.
 - **Build/Run Status:** Compiles clean. Client + host tackles + dodge shove (`Rigidbody` velocity add); ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap. Hammer **`testing_map`** mounts at Play via **`StartupMapBootstrap`** / **`MapInstance`** (**`ultimate_throwdown.sbproj`** **`Resources`: `*`**).
-- **Last Updated:** 2026-05-11 — **Git:** routine commit/push on **`main`**. **Tackle:** horizontal **`EyeAngles`** approach cone; **`NetTackleStripRampId`** + **`CatchUpSpeedBoost`** strips **charge → sprint** on successful hit. **Practice NPCs:** **`StartupMapBootstrap`** sets **`Rigidbody` X/Y/Z lock** on tag **`practice_npc`** (no slide). **Undecided** § tackle hit stop. *(2026-05-10 and earlier: ClassData turn-field removal, ragdoll **`IsOwner`** camera, NPC stand pose, Hammer **`testing_map`** / `.sbproj` `Resources` — still in file below.)*
+- **Last Updated:** 2026-05-10 — **`PlayerClass`** applies **ClassData** **`CapsuleHeight`** / **`CapsuleRadius`** → **`PlayerController`** body + **`ModelScale`** on skin roots (short retry for cosmetics); **`PlayerTackle`** ragdoll root matches victim **`ModelScale`**. **`CatchUpSpeedBoost`:** **`MomentumMultiplier`** scales prefab-snapshotted **`AccelerationTime`** / **`DeaccelerationTime`** (+ eased walk/run cap toward tier); throw charge resets accel times to baseline; tackle tier **`IsAtChargeSpeed`** still instant ramp. Forward intent for charge ramp: **`Forward`** action + keyboard vs controller analog path. *(Earlier 2026-05-11 line: tackle strip, practice NPC locks, etc. — still in file below.)*
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
@@ -130,6 +130,8 @@ Keep entries short, specific, and current.
 - **Ragdoll MainCamera + stand-up blend only for `this.Network.IsOwner`:** scene dummies (often `!IsProxy` on host) shared the same MainCamera as the real player; **`practice_npc`** or any non-owned ragdoll must not drive orbit/blend. **`this.Network.IsOwner`** gates free-look camera, `OnPreRender` blend start, and Rpc uses **`this.Network.Owner`** for clarity.
   - Date: 2026-05-10
 - **`practice_npc` tagged roots (victim):** after tackle ragdoll recovery, stand at **snapshot** pre-tackle **`WorldPosition`** + **`PlayerController.EyeAngles`** (human pawns still use **floor trace** `NetStandUpPosition`). For ClassData / whiff lane testing; do **not** tag real players.
+  - Date: 2026-05-10
+- **`ClassData.MomentumMultiplier` via `CatchUpSpeedBoost`:** Snapshots prefab **`PlayerController.AccelerationTime`** / **`DeaccelerationTime`** once; owner applies **`baseline × multiplier`** each frame (**`>1`** slower to speed up/down, **`<1`** snappier). Smoothes walk/run **cap** toward tier target separately; **`IsAtChargeSpeed`** / tackle eligibility stay on **instant** ramp (`GetTargetSpeed`). **`BallThrow`** charge clears movement by resetting accel times to baseline on that path.
   - Date: 2026-05-10
 
 ## Movement / dodge / camera v1 (design)
@@ -281,6 +283,7 @@ Treat these as mandatory implementation rules for all new gameplay features.
 These are small gaps in existing code that must be filled before the planned systems can be built. Do not build these proactively — add them at the time they're needed.
 
 - [x] `CatchUpSpeedBoost` needs a `public bool IsAtChargeSpeed { get; private set; }` getter so the tackle system can check if the attacker qualifies.
+- [x] `ClassData` **`MomentumMultiplier`** applied in **`CatchUpSpeedBoost`** (scales **`PlayerController.AccelerationTime`** / **`DeaccelerationTime`** + smoothed cap).
 - [ ] `CatchUpSpeedBoost` speed/timing properties need to be driven from `ClassData` instead of inspector values.
 - [ ] `BallThrow` force and charge timing need to accept per-class multipliers from `ClassData`.
 - [ ] Player capsule size (height/radius) needs to be set from `ClassData.ModelScale` when class system is built.
@@ -364,6 +367,7 @@ These are small gaps in existing code that must be filled before the planned sys
 ---
 
 ## End-of-Session Handoff
+- **2026-05-10:** **`PlayerClass`** applies **ClassData** capsule + **`ModelScale`** (**`PlayerController.BodyHeight`/`BodyRadius`** + skin roots; retry window for cosmetics); **`PlayerTackle`** ragdoll **`LocalScale`** uses victim **`ModelScale`**. **`CatchUpSpeedBoost`:** **`MomentumMultiplier`** × **`AccelerationTime`**/**`DeaccelerationTime`** (snapshot) + smoothed cap to tier; throw charge resets accel to baseline; **`Forward`** action casing + strafe/charge ramp (**`UsingController`** analog path). SESSION_NOTES checklist + commit + push.
 - **2026-05-10 (Hammer / arena):** Added **`Assets/Maps/testing_map.vmap`** pipeline: **`Code/Map/StartupMapBootstrap.cs`** mounts **`MapInstance`** with **`MapName` `testing_map`**; **`ultimate_throwdown.sbproj`** **`"Resources": "*"`** so **`maps/testing_map.vpk`** ships; **`MapList`** updated. Concrete/`AmbientCG` workflow noted; interior lighting time sink → **roof removed**, **`light_environment`** sun; **`full`** compile when brightness bake stuck vs **`entities-only`**; **viewport black-until-Stop→Play** after compile. Optional scene **`MapInstance`** + remove duplicate grass floor when aligned.
 - **2026-05-10:** **`practice_npc`** root tag + **`NetPracticeNpcStandEyeAngles`** for dummy stand pose after tackle; ragdoll **MainCamera / AnalogLook / stand-up blend** gated on **`this.Network.IsOwner`** (fixes host camera following NPC ragdolls). **`ClassData`** / `.cdata` dropped unused turn-speed fields; charge yaw unchanged (**`CatchUpSpeedBoost.ChargeYawMaxDegreesPerSecond`**). **`BallGrab`** pickup block replicated via **`NetPickupBlockedRemain`**; attacker carrier-tackle **`AttackerPickupLockoutAfterCarrierTackle`** → **`BlockPickupForSeconds`**. Disambiguated **`this.Network.Owner` / `IsOwner`** where needed. SESSION_NOTES + commit + push.
 - **2026-05-08 (later):** Dodge shove direction fix in **`PlayerDodge.ApplyShoveVelocity`**: lateral from **`EyeAngles.ToRotation().Right`** + **`FindMode.EverythingInSelfAndDescendants`** for `PlayerController`; spawn / yaw alignment bugs resolved. SESSION_NOTES + commit + push.
@@ -437,7 +441,7 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 | `CatchUpMoveSpeed` | float | Replaces hardcoded value in `CatchUpSpeedBoost` |
 | `TimeToSprintSpeed` | float | Speedster lowest, Juggernaut highest |
 | `TimeToCatchUpSpeed` | float | Speedster lowest, Juggernaut highest |
-| `MomentumMultiplier` | float | How much momentum carries on direction change/stop |
+| `MomentumMultiplier` | float | **`CatchUpSpeedBoost`:** × snapshotted **`PlayerController.AccelerationTime`** / **`DeaccelerationTime`** + eased walk/run cap (**1** baseline, **>1** heavier, **<1** snappier); tackles still use instant ramp tier |
 | `ThrowPower` | float | Sniper > 1.0, others 1.0 |
 | `DodgeCooldown` | float | Cooldown between dodges |
 | `DodgeDistance` | float | How far a dodge travels |

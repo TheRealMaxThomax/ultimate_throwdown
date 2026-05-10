@@ -512,6 +512,11 @@ public sealed class PlayerTackle : Component
 		ragdollGo.WorldPosition = victim.WorldPosition + Vector3.Up * 10f;
 		ragdollGo.WorldRotation = victim.WorldRotation;
 
+		var modelScale = victim.playerClass?.CurrentClass?.ModelScale ?? 1f;
+		if ( modelScale <= 0f )
+			modelScale = 1f;
+		ragdollGo.LocalScale = Vector3.One * modelScale;
+
 		// Body = Dresser target when present (matches cosmetics); otherwise first skinned mesh.
 		var dresser = victim.Components.Get<Dresser>( FindMode.EverythingInSelfAndDescendants );
 		var baseVictimRenderer = dresser.IsValid() && dresser.BodyTarget.IsValid()

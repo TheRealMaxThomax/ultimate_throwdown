@@ -1,8 +1,91 @@
 using Sandbox;
+using System.Collections.Generic;
 
 public sealed class PlayerClass : Component
 {
 	[Property] public ClassData CurrentClass { get; set; }
+
+	/// <summary> Re-apply <see cref="ClassData.ModelScale"/> for a few seconds so clothing added after start still picks up scale. </summary>
+	[Property] public float ModelScaleRetrySeconds { get; set; } = 3f;
+
+	private float modelScaleRetryUntil;
+
+	protected override void OnStart()
+	{
+		modelScaleRetryUntil = Time.Now + ModelScaleRetrySeconds;
+		ApplyClassCapsule();
+		ApplyClassModelScale();
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( CurrentClass is null )
+			return;
+
+		if ( Time.Now <= modelScaleRetryUntil )
+			ApplyClassModelScale();
+	}
+
+	/// <summary> Pushes <see cref="ClassData.CapsuleHeight"/> / <see cref="ClassData.CapsuleRadius"/> onto <see cref="PlayerController.BodyHeight"/> / <see cref="PlayerController.BodyRadius"/>. </summary>
+	private void ApplyClassCapsule()
+	{
+		var data = CurrentClass;
+		if ( data is null )
+			return;
+
+		var pc = Components.Get<PlayerController>();
+		if ( !pc.IsValid() )
+			return;
+
+		pc.BodyHeight = data.CapsuleHeight;
+		pc.BodyRadius = data.CapsuleRadius;
+	}
+
+	/// <summary> Uniform scale on each independent skinned-mesh root under this player (body + separate clothing roots). </summary>
+	private void ApplyClassModelScale()
+	{
+		var data = CurrentClass;
+		if ( data is null )
+			return;
+
+		var s = data.ModelScale;
+		if ( s <= 0f )
+			s = 1f;
+
+		var uniformScale = Vector3.One * s;
+		var roots = new HashSet<GameObject>();
+
+		foreach ( var smr in Components.GetAll<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !smr.IsValid() )
+				continue;
+
+			var rootGo = FindSkinnedHierarchyRoot( smr );
+			if ( rootGo.IsValid() )
+				roots.Add( rootGo );
+		}
+
+		foreach ( var go in roots )
+			go.LocalScale = uniformScale;
+	}
+
+	/// <summary> Highest <see cref="SkinnedModelRenderer"/> in the parent chain before the player root, so child clothing does not get its own uniform (avoids double scale). </summary>
+	private GameObject FindSkinnedHierarchyRoot( SkinnedModelRenderer smr )
+	{
+		var top = smr;
+		var go = smr.GameObject;
+
+		while ( go.Parent is { } p && p != GameObject )
+		{
+			var parentSmr = p.Components.Get<SkinnedModelRenderer>();
+			if ( parentSmr.IsValid() )
+				top = parentSmr;
+
+			go = p;
+		}
+
+		return top.GameObject;
+	}
 }
 
 [GameResource( "Class Data", "cdata", "Player class statistics for Ultimate Throwdown" )]
@@ -14,12 +97,15 @@ public class ClassData : GameResource
 	[Property, Group( "Physics" )]
 	public float Mass { get; set; } = 80f;
 
+	/// <summary>Applied to <see cref="PlayerController.BodyHeight"/> via <see cref="PlayerClass"/> on start.</summary>
 	[Property, Group( "Capsule" )]
 	public float CapsuleHeight { get; set; } = 72f;
 
+	/// <summary>Applied to <see cref="PlayerController.BodyRadius"/> via <see cref="PlayerClass"/> on start.</summary>
 	[Property, Group( "Capsule" )]
 	public float CapsuleRadius { get; set; } = 16f;
 
+	/// <summary>Uniform local scale on avatar <see cref="SkinnedModelRenderer"/> roots via <see cref="PlayerClass"/> (retried briefly for late cosmetics).</summary>
 	[Property, Group( "Capsule" )]
 	public float ModelScale { get; set; } = 1f;
 
@@ -38,6 +124,7 @@ public class ClassData : GameResource
 	[Property, Group( "Movement" )]
 	public float TimeToCatchUpSpeed { get; set; } = 4f;
 
+	/// <summary>Scales <see cref="PlayerController.AccelerationTime"/> / <see cref="PlayerController.DeaccelerationTime"/> (from prefab snapshot) plus move-cap easing: <b>1</b> baseline; <b>&gt;1</b> heavier; <b>&lt;1</b> snappier.</summary>
 	[Property, Group( "Movement" )]
 	public float MomentumMultiplier { get; set; } = 1f;
 
