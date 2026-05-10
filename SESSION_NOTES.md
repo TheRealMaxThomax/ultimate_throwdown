@@ -7,7 +7,7 @@ Keep entries short, specific, and current.
 - **Current Goal:** Tackle + movement polish — launch tuning, broader MP stress tests. Ragdoll camera: free look + stand-up blend to `PlayerController` camera. **Dodge shipped** (double-tap strafe, host RPC, iframe, tier penalties); tackle whiff (inner threaten) still future.
 - **Current Branch:** `feature/class-system` (pushed to origin).
 - **Build/Run Status:** Compiles clean. Client + host tackles + dodge shove (`Rigidbody` velocity add); ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap.
-- **Last Updated:** 2026-05-08 (dodge **lateral shove** uses `PlayerController` view: `EyeAngles.ToRotation().Right` flattened to XY, not `WorldRotation` / `Rotation.FromYaw` — fixes dead/wrong dodge on spawn and at odd yaws; `Get` uses `FindMode.EverythingInSelfAndDescendants`)
+- **Last Updated:** 2026-05-10 — ClassData **removed** unused `WalkTurnSpeed` / `RunTurnSpeed` / `ChargeTurnSpeed`; universal charge yaw stays on **`CatchUpSpeedBoost.ChargeYawMaxDegreesPerSecond`**. **`PlayerTackle`:** ragdoll orbit + stand-up **MainCamera** only when **`this.Network.IsOwner`** (scene `practice_npc` dummies no longer hijack host view). Tag **`practice_npc`** on victim root → post-ragdoll stand uses **pre-tackle position + `EyeAngles`** (synced `NetPracticeNpcStandEyeAngles`); humans unchanged (floor trace stand-up). Rpc validate uses **`this.Network.Owner`**.
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
@@ -118,6 +118,10 @@ Keep entries short, specific, and current.
   - Date: 2026-05-08
 - **Dodge / whiff / tackle balance (north star):** Expect **heavy playtest tuning** (dodge cadence, inner threaten, memory, whiff strength, carrier walk-after-dodge, charge-only tackles). **Goals:** (1) A well-timed dodge **can** force a real whiff / miss tax — **not** spammable “I win” against every charge. (2) Good attackers should still **connect** often enough that tackles feel **fair and readable**, not hopeless. (3) **Ball carriers** must **not** be able to **chain-dodge** their way to a goal as the default plan — juking the whole team should be **rare, high-skill**, not reliable. (4) For **most** players and situations, **progression should favor throwing** (pass / advance) over **infinite run-and-dodge** carry. Use inner vs outer dodge, cooldowns, post-dodge walk tier, whiff tax, and field geometry together — **one lever at a time** in sessions.
   - Date: 2026-05-08
+- **Ragdoll MainCamera + stand-up blend only for `this.Network.IsOwner`:** scene dummies (often `!IsProxy` on host) shared the same MainCamera as the real player; **`practice_npc`** or any non-owned ragdoll must not drive orbit/blend. **`this.Network.IsOwner`** gates free-look camera, `OnPreRender` blend start, and Rpc uses **`this.Network.Owner`** for clarity.
+  - Date: 2026-05-10
+- **`practice_npc` tagged roots (victim):** after tackle ragdoll recovery, stand at **snapshot** pre-tackle **`WorldPosition`** + **`PlayerController.EyeAngles`** (human pawns still use **floor trace** `NetStandUpPosition`). For ClassData / whiff lane testing; do **not** tag real players.
+  - Date: 2026-05-10
 
 ## Movement / dodge / camera v1 (design)
 Locked **design + starting tuning** for charge-time camera, dodge, and how they interact with tackle. **Not all implemented** — numbers are playtest anchors.
@@ -271,6 +275,11 @@ These are small gaps in existing code that must be filled before the planned sys
 - [ ] `BallThrow` force and charge timing need to accept per-class multipliers from `ClassData`.
 - [ ] Player capsule size (height/radius) needs to be set from `ClassData.ModelScale` when class system is built.
 
+## Undecided (revisit later)
+**Convention:** For anything deferred (design, exploits, tuning forks): add **one short bullet** with enough context to decide later; **delete it** once resolved—keeps “what’s undecided?” scans in one place (`SESSION_NOTES.md` § Undecided).
+
+- **Forward + backward together:** cancelling movement still lets charge ramp build; might be cool fake-out or too strong hidden tech without UI/tell—later choose fix ramp vs ship with readability.
+
 ## Known Issues / Risks
 - [x] Anti-dribble / passive push resolved via auto-grab on contact.
   - Decided: body-push is too complex to make consistent across host/client. Auto-grab is the EF Throwdown compromise and fits the game design.
@@ -305,9 +314,9 @@ These are small gaps in existing code that must be filled before the planned sys
 - **Ragdoll visual** on both screens: separate `PlayerRagdoll` with base body + cosmetics (`BoneMergeTarget`); early `NetworkSpawn` to reduce invisible gap.
 - Player model hidden during ragdoll: `hiddenRenderers` cached and re-enforced every frame.
 - Camera follows ragdoll (`NetRagdollPosition` / `RagdollClientFeel` on owning client).
-- **Ragdoll owner camera:** free look (`EyeAngles` + third-person orbit via `RagdollCameraDistance` / `RagdollCameraHeight`).
+- **Ragdoll owner camera:** free look (`EyeAngles` + third-person orbit via `RagdollCameraDistance` / `RagdollCameraHeight`) **only when `this.Network.IsOwner`** (single shared MainCamera).
 - **Stand-up camera:** `OnPreRender` blends from last ragdoll camera pose to `PlayerController`'s camera for the frame (`StandUpCameraBlendDuration`, default **0.6s**).
-- Stand-up: host waits for **grounded + settled** time (`RagdollDuration` consecutive) or **`RagdollMaxDuration`** cap; floor trace for `NetStandUpPosition`; invincibility after.
+- Stand-up: host waits for **grounded + settled** time (`RagdollDuration` consecutive) or **`RagdollMaxDuration`** cap; floor trace for `NetStandUpPosition` **unless** victim root has tag **`practice_npc`** (then **`NetStandUpPosition`** + **`NetPracticeNpcStandEyeAngles`** restore pre-tackle snapshot); invincibility after.
 - Post-tackle invincibility working.
 - `Bodies[0]` = pelvis; launch via **`ApplyImpulse`** (not `PhysicsGroup.Velocity`).
 
@@ -325,6 +334,7 @@ These are small gaps in existing code that must be filled before the planned sys
 - `CatchUpSpeedBoost` on root player
 - **`PlayerController` third person:** `CameraOffset` **X = 185** (current feel tuning; editor-only)
 - **Do NOT add `ModelPhysics` to the player prefab** — it is no longer used on the player object. The ragdoll is a separately spawned object.
+- **`practice_npc` (tag on root):** on dummy **roots** used for tackle / ClassData tests only — restores **pre-tackle** position + **EyeAngles** after ragdoll; **never** on real spawned players.
 - All three `.cdata` assets must have values set manually:
   - Movement: StartMoveSpeed=140, SprintMoveSpeed=220, CatchUpMoveSpeed=320, TimeToSprintSpeed=2, TimeToCatchUpSpeed=4
   - Tackle: TriggerSphereRadius=40, **RagdollDuration** (= seconds grounded+settled before stand), **RagdollMaxDuration**, **RagdollGroundSpeedMax**, **RagdollGroundTraceDown**, **RagdollGroundTraceUp**, PostTackleInvincibilityDuration=1, BallLaunchForceOnTackle=500, BallPickupLockoutAfterTackle=1.5 (open each `.cdata` in editor for new fields / defaults)
@@ -339,6 +349,7 @@ These are small gaps in existing code that must be filled before the planned sys
 ---
 
 ## End-of-Session Handoff
+- **2026-05-10:** **`practice_npc`** root tag + **`NetPracticeNpcStandEyeAngles`** for dummy stand pose after tackle; ragdoll **MainCamera / AnalogLook / stand-up blend** gated on **`this.Network.IsOwner`** (fixes host camera following NPC ragdolls). **`ClassData`** / `.cdata` dropped unused turn-speed fields; charge yaw unchanged (**`CatchUpSpeedBoost.ChargeYawMaxDegreesPerSecond`**). **`BallGrab`** pickup block replicated via **`NetPickupBlockedRemain`**; attacker carrier-tackle **`AttackerPickupLockoutAfterCarrierTackle`** → **`BlockPickupForSeconds`**. Disambiguated **`this.Network.Owner` / `IsOwner`** where needed. SESSION_NOTES + commit + push.
 - **2026-05-08 (later):** Dodge shove direction fix in **`PlayerDodge.ApplyShoveVelocity`**: lateral from **`EyeAngles.ToRotation().Right`** + **`FindMode.EverythingInSelfAndDescendants`** for `PlayerController`; spawn / yaw alignment bugs resolved. SESSION_NOTES + commit + push.
 - **2026-05-08:** **`PlayerDodge`** implemented (merged into **`CatchUpSpeedBoost.cs`**). **`ClassData`** merged into **`PlayerClass.cs`** (fix editor **`CS0246`**). **`BallThrow`** owner-only updates + **`NetIsChargingThrow`**. Dodge shove **`Rigidbody.Velocity`** add; **`DodgeDistance` / iframe / multiplier** tuning. SESSION_NOTES + commit.
 - **2026-06-06:** Ground-based ragdoll recovery (`RagdollDuration` = consecutive grounded+settled time; `RagdollMaxDuration` + trace/speed tunables in `ClassData`). SESSION_NOTES updated for MP tackle RPC, cosmetics ragdoll, early `NetworkSpawn`, merging decisions.
@@ -410,9 +421,6 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 | `CatchUpMoveSpeed` | float | Replaces hardcoded value in `CatchUpSpeedBoost` |
 | `TimeToSprintSpeed` | float | Speedster lowest, Juggernaut highest |
 | `TimeToCatchUpSpeed` | float | Speedster lowest, Juggernaut highest |
-| `WalkTurnSpeed` | float | Turn rate while walking |
-| `RunTurnSpeed` | float | Turn rate while sprinting |
-| `ChargeTurnSpeed` | float | Turn rate at charge speed |
 | `MomentumMultiplier` | float | How much momentum carries on direction change/stop |
 | `ThrowPower` | float | Sniper > 1.0, others 1.0 |
 | `DodgeCooldown` | float | Cooldown between dodges |
@@ -426,11 +434,13 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 
 **Global (not in ClassData):**
 - `TackleLaunchSpeed` — single force tuning knob on `PlayerTackle`, not per-class. Class multipliers applied on top when class system is built.
+- **Universal charge yaw** — **`CatchUpSpeedBoost.ChargeYawMaxDegreesPerSecond`** on each player (same knob for every class unless you revisit per-class tuning later).
 
 **Explicitly removed:**
 - `ThrowChargeSpeedMultiplier` — dropped; Sniper's identity is `ThrowPower` + dodge-while-charging passive
 - `MaxSpeed`, `Acceleration` — dropped; keeping three-tier speed system (`StartMoveSpeed`/`SprintMoveSpeed`/`CatchUpMoveSpeed`)
 - `WeaponMissSpeedPenalty` — renamed to `WeaponSwingSpeedPenaltyDuration` (penalty applies on all swings, not miss-only)
+- `WalkTurnSpeed`, `RunTurnSpeed`, `ChargeTurnSpeed` — dropped 2026-05-10: rotation while walk/run stays default **mouse / look sensitivity** via `PlayerController`; **charging** yaw cap is universal **`CatchUpSpeedBoost.ChargeYawMaxDegreesPerSecond`** (same for every class).
 
 **Notes:**
 - `Mass` is gameplay-only. `PlayerController` is a character controller with no physics mass. The tackle formula uses this float directly.
@@ -562,7 +572,7 @@ Use these exact names unless explicitly changed in chat.
 - Internal ball references in `BallGrab`: `ballObject`, `ballOriginalParent`, `ballCollidersToRestore`, `ballBodiesToRestore`
 - Multiplayer manager component: `GameNetworkManager`
 - Network manager properties: `PlayerTemplateName`, `DisableTemplateOnStart`
-- Sync property in `BallGrab`: `NetIsHolding`
+- Sync property in `BallGrab`: `NetIsHolding`; host countdown sync: **`NetPickupBlockedRemain`** (`FromHost`, extends with `MathF.Max` in `BlockPickupForSeconds`)
 - Host-synced ball transform properties in `BallGrab`: `NetHeldBallWorldPosition`, `NetHeldBallWorldRotation`
 - Host-synced ball velocity properties in `BallGrab`: `NetHeldBallLinearVelocity`, `NetHeldBallAngularVelocity`
 - Client-read synced ball transform getters in `BallGrab`: `SyncedBallWorldPosition`, `SyncedBallWorldRotation`
@@ -582,12 +592,14 @@ Use these exact names unless explicitly changed in chat.
 - Cosmetics sync component: `PlayerCosmeticsSync`
 - Cosmetics sync properties: `FirstApplyDelay`, `RetryInterval`, `MaxApplyAttempts`, `LockHighestLodAfterApply`, `EnableDebugLogs`
 - Class data resource: `ClassData` (type declared in **`PlayerClass.cs`**)
-- Class data fields: `ClassName`, `Mass`, `CapsuleHeight`, `CapsuleRadius`, `ModelScale`, `TriggerSphereRadius`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `WalkTurnSpeed`, `RunTurnSpeed`, `ChargeTurnSpeed`, `MomentumMultiplier`, `ThrowPower`, `DodgeCooldown`, `DodgeDistance`, `DodgeInvincibilityWindow`, `RagdollDuration` (grounded+settled consecutive seconds before stand), `RagdollMaxDuration`, `RagdollGroundSpeedMax`, `RagdollGroundTraceDown`, `RagdollGroundTraceUp`, `PostTackleInvincibilityDuration`, `BallLaunchForceOnTackle`, `BallPickupLockoutAfterTackle`, `TackleChargeRampRate`, `MaxTackleChargeBonus`, `IgnoreWeaponSpeedPenalty`, `WeaponSwingSpeedPenaltyDuration`
+- Class data fields: `ClassName`, `Mass`, `CapsuleHeight`, `CapsuleRadius`, `ModelScale`, `TriggerSphereRadius`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `MomentumMultiplier`, `ThrowPower`, `DodgeCooldown`, `DodgeDistance`, `DodgeInvincibilityWindow`, `RagdollDuration` (grounded+settled consecutive seconds before stand), `RagdollMaxDuration`, `RagdollGroundSpeedMax`, `RagdollGroundTraceDown`, `RagdollGroundTraceUp`, `PostTackleInvincibilityDuration`, `BallLaunchForceOnTackle`, `BallPickupLockoutAfterTackle`, `TackleChargeRampRate`, `MaxTackleChargeBonus`, `IgnoreWeaponSpeedPenalty`, `WeaponSwingSpeedPenaltyDuration` *(no walk/run/charge turn fields — see Explicitly Removed)*
 - Tackle system component: `PlayerTackle`
-- Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `TackleLaunchArc`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`, `TackleRpcPositionSlop`, `TackleRpcRadiusFudge`, `RagdollPhysicsInitDelay`, `StandUpCameraBlendDuration`
+- Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `TackleLaunchArc`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`, `TackleRpcPositionSlop`, `TackleRpcRadiusFudge`, `RagdollPhysicsInitDelay`, `StandUpCameraBlendDuration`, **`AttackerPickupLockoutAfterCarrierTackle`**
 - Stand-up camera blend internals: `lastRagdollCameraPos`, `lastRagdollCameraRot`, `standUpCameraBlendFromPos`, `standUpCameraBlendFromRot`, `standUpCameraBlendStartTime`
 - Editor (not code): `PlayerController` third-person `CameraOffset` (current X **185**)
-- Tackle synced properties: `NetIsRagdolled`, `NetRagdollPosition`, `NetStandUpPosition`, `NetIsTackleImmune`, `NetTackleBlockedUntil` (host-authored cooldown end time for tackle RPC alignment)
+- Tackle synced properties: `NetIsRagdolled`, `NetRagdollPosition`, `NetStandUpPosition`, **`NetPracticeNpcStandEyeAngles`** (`FromHost`; **`practice_npc`** stand facing only), `NetIsTackleImmune`, `NetTackleBlockedUntil` (host-authored cooldown end time for tackle RPC alignment)
+- Tag constant in `PlayerTackle`: **`PracticeNpcTag`** = **`practice_npc`**
+- Tackle practice-dummy internals (non-synced unless noted): `practiceNpcPreTackleCaptured`, `practiceNpcPreTackleWorldPosition`, `practiceNpcPreTackleEyeAngles`; helper **`CapturePracticeNpcPreTacklePoseIfTagged`**
 - Tackle host-only fields: `ragdollObject`; tackle RPC throttle `nextRemoteTackleRequestAt`; cooldown `tackleBlockedUntil` + synced `NetTackleBlockedUntil` / `netTackleBlockedUntil`
 - Tackle renderer cache: `hiddenRenderers` (list of SkinnedModelRenderers hidden during ragdoll)
 - Tackle collider cache: `disabledColliders` (list of Colliders disabled during ragdoll, re-enabled on stand-up)

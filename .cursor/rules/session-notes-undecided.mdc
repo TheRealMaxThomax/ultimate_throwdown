@@ -1,0 +1,12 @@
+---
+description: Track deferred design in SESSION_NOTES Undecided; answer open-question audits from there
+alwaysApply: true
+---
+
+# SESSION_NOTES — Undecided list
+
+When a design choice, mechanic, exploit stance, or tuning fork is **left open** without resolving it, **add one short bullet** under `## Undecided (revisit later)` in `SESSION_NOTES.md` (minimal context so a future chat can weigh options).
+
+When the user asks what is **undecided**, **open**, or pending a product decision—and when doing a purposeful audit of unresolved questions—**read `SESSION_NOTES.md`** and summarize that section first, then broaden only if asked (for example Prerequisites `[ ]`, Known Issues `[ ]`, or staged design elsewhere in the same file).
+
+**Remove** Undecided bullets once the matter is settled or shipped.

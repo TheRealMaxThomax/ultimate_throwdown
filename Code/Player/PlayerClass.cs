@@ -39,15 +39,6 @@ public class ClassData : GameResource
 	public float TimeToCatchUpSpeed { get; set; } = 4f;
 
 	[Property, Group( "Movement" )]
-	public float WalkTurnSpeed { get; set; } = 10f;
-
-	[Property, Group( "Movement" )]
-	public float RunTurnSpeed { get; set; } = 8f;
-
-	[Property, Group( "Movement" )]
-	public float ChargeTurnSpeed { get; set; } = 5f;
-
-	[Property, Group( "Movement" )]
 	public float MomentumMultiplier { get; set; } = 1f;
 
 	[Property, Group( "Throw" )]

@@ -1,0 +1,21 @@
+---
+description: When to use @sbox docs for s&box API questions
+alwaysApply: true
+---
+# Use @sbox Docs for s&box API Questions
+
+When something in s&box is not behaving as expected — unexpected API results, physics not responding, component methods missing, or uncertain about the correct API — **stop and check the indexed docs before guessing**.
+
+## Rule
+
+- Before suggesting any s&box-specific API call you are not certain about, tell the user: "Let me check the s&box docs — include `@sbox docs` in your next message so I can look this up."
+- Do not guess at s&box APIs from general C#/Unity/Godot knowledge. s&box has its own component model and physics API that differs from other engines.
+- If you already tried an API and it didn't work, always reach for `@sbox docs` before attempting a second guess.
+
+## Common areas where docs are needed
+
+- `ModelPhysics` / ragdoll body velocity and impulse
+- `PhysicsGroup` / `PhysicsBody` methods
+- `NetworkSpawn` / `[Sync]` / networking patterns
+- `PlayerController` internals (capsule, collision)
+- Any unfamiliar component property or method

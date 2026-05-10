@@ -16,6 +16,8 @@ using System.Collections.Generic;
 //   Stand-up camera blend ....... OnPreRender (lerp last ragdoll cam -> PlayerController camera this frame)
 public sealed class PlayerTackle : Component
 {
+	private const string PracticeNpcTag = "practice_npc";
+
 	[Property] public float TackleDirectionThreshold { get; set; } = 0.5f;
 	[Property] public float TackleCooldown { get; set; } = 1f;
 	[Property] public float TackleLaunchSpeed { get; set; } = 600f;
@@ -39,9 +41,16 @@ public sealed class PlayerTackle : Component
 	[Sync( SyncFlags.FromHost )] private bool NetIsRagdolled { get => isRagdolled; set => isRagdolled = value; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetRagdollPosition { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetStandUpPosition { get; set; }
+	/// <summary>Used only for <see cref="PracticeNpcTag"/> dummies: eye angles to restore after stand-up (host sets with pre-tackle snapshot).</summary>
+	[Sync( SyncFlags.FromHost )] private Angles NetPracticeNpcStandEyeAngles { get; set; }
 
 	private bool isTackleImmune;
 	[Sync( SyncFlags.FromHost )] private bool NetIsTackleImmune { get => isTackleImmune; set => isTackleImmune = value; }
+
+	/// <summary>Host: practice NPC pre-tackle pose for snap-back respawn after ragdoll.</summary>
+	private bool practiceNpcPreTackleCaptured;
+	private Vector3 practiceNpcPreTackleWorldPosition;
+	private Angles practiceNpcPreTackleEyeAngles;
 
 	private bool wasRagdolled;
 	private float tackleBlockedUntil;
@@ -82,7 +91,6 @@ public sealed class PlayerTackle : Component
 
 	// Pelvis world position synced from host; RagdollClientFeel reads this on owning clients
 	public Vector3 SyncedRagdollPelvisPosition => NetRagdollPosition;
-
 	protected override void OnStart()
 	{
 		speedBoost = Components.Get<CatchUpSpeedBoost>();
@@ -127,32 +135,36 @@ public sealed class PlayerTackle : Component
 			foreach ( var r in hiddenRenderers )
 				if ( r.IsValid() ) r.Enabled = false;
 
-		// Owner: host snaps to simulated pelvis; owning client smoothing is handled by RagdollClientFeel
+		// Ragdoll root: host snaps to pelvis; owning client smoothing is handled by RagdollClientFeel.
+		// MainCamera orbit + AnalogLook apply only when this networked object IsOwner — scene NPCs share one MainCamera and must not hijack the player's view when tackled.
 		if ( isRagdolled && !IsProxy )
 		{
 			if ( Networking.IsHost )
 				WorldPosition = NetRagdollPosition;
 
-			// Free look while down: PlayerController is disabled, so apply look here and keep EyeAngles
-			// in sync for stand-up. Camera uses the same angles (third-person orbit).
-			if ( playerController.IsValid() )
+			if ( this.Network.IsOwner )
 			{
-				playerController.EyeAngles += Input.AnalogLook;
-				var look = playerController.EyeAngles;
-				look.pitch = MathX.Clamp( look.pitch, -89f, 89f );
-				playerController.EyeAngles = look;
-			}
+				// Free look while down: PlayerController is disabled, so apply look here and keep EyeAngles
+				// in sync for stand-up. Camera uses the same angles (third-person orbit).
+				if ( playerController.IsValid() )
+				{
+					playerController.EyeAngles += Input.AnalogLook;
+					var look = playerController.EyeAngles;
+					look.pitch = MathX.Clamp( look.pitch, -89f, 89f );
+					playerController.EyeAngles = look;
+				}
 
-			if ( activeCamera.IsValid() )
-			{
-				var lookRot = playerController.IsValid()
-					? playerController.EyeAngles.ToRotation()
-					: WorldRotation;
-				var orbit = -lookRot.Forward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
-				activeCamera.WorldPosition = WorldPosition + orbit;
-				activeCamera.WorldRotation = lookRot;
-				lastRagdollCameraPos = activeCamera.WorldPosition;
-				lastRagdollCameraRot = activeCamera.WorldRotation;
+				if ( activeCamera.IsValid() )
+				{
+					var lookRot = playerController.IsValid()
+						? playerController.EyeAngles.ToRotation()
+						: WorldRotation;
+					var orbit = -lookRot.Forward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
+					activeCamera.WorldPosition = WorldPosition + orbit;
+					activeCamera.WorldRotation = lookRot;
+					lastRagdollCameraPos = activeCamera.WorldPosition;
+					lastRagdollCameraRot = activeCamera.WorldRotation;
+				}
 			}
 		}
 
@@ -170,7 +182,7 @@ public sealed class PlayerTackle : Component
 		// Remote owners: host often has near-zero Velocity for our pawn (movement runs locally),
 		// so host-only sphere checks never see a valid approach vector. Mirror BallThrow: detect
 		// locally and request the host using our horizontal move direction.
-		if ( Network.IsOwner && !Networking.IsHost )
+		if ( this.Network.IsOwner && !Networking.IsHost )
 			TryOwnerRequestTackleOnHost();
 	}
 
@@ -178,7 +190,7 @@ public sealed class PlayerTackle : Component
 	{
 		// After all updates, PlayerController has already placed the camera. Lerp toward that exact
 		// transform so we match its third-person math (CameraOffset, collision, etc.) — avoids a snap at t=1.
-		if ( IsProxy || isRagdolled )
+		if ( isRagdolled || !this.Network.IsOwner )
 			return;
 		if ( !activeCamera.IsValid() )
 			return;
@@ -264,7 +276,7 @@ public sealed class PlayerTackle : Component
 		Vector3 attackerWorldPosFromOwner,
 		Vector3 victimWorldPosFromOwner )
 	{
-		if ( Network.Owner is null || Rpc.Caller.SteamId != Network.Owner.SteamId )
+		if ( this.Network.Owner is null || Rpc.Caller.SteamId != this.Network.Owner.SteamId )
 			return;
 		if ( isRagdolled )
 			return;
@@ -388,6 +400,8 @@ public sealed class PlayerTackle : Component
 
 	private void ExecuteTackle( PlayerTackle victim, Vector3 tackleDir )
 	{
+		CapturePracticeNpcPreTacklePoseIfTagged( victim );
+
 		var attackerMass = playerClass?.CurrentClass?.Mass ?? 80f;
 		var victimMass = victim.playerClass?.CurrentClass?.Mass ?? 80f;
 		if ( attackerMass <= 0f ) attackerMass = 80f;
@@ -442,6 +456,22 @@ public sealed class PlayerTackle : Component
 
 		SpawnRagdollObject( victim, tackleDir, effectiveLaunchSpeed );
 		HandleRagdollRecovery( victim );
+	}
+
+	private static void CapturePracticeNpcPreTacklePoseIfTagged( PlayerTackle victim )
+	{
+		if ( !victim.GameObject.Tags.Has( PracticeNpcTag ) )
+		{
+			victim.practiceNpcPreTackleCaptured = false;
+			return;
+		}
+
+		victim.practiceNpcPreTackleWorldPosition = victim.WorldPosition;
+		var pc = victim.playerController;
+		if ( pc is null || !pc.IsValid() )
+			pc = victim.Components.Get<PlayerController>();
+		victim.practiceNpcPreTackleEyeAngles = pc.IsValid() ? pc.EyeAngles : default;
+		victim.practiceNpcPreTackleCaptured = true;
 	}
 
 	// Spawns a host-owned physics ragdoll at the victim's position.
@@ -597,12 +627,21 @@ public sealed class PlayerTackle : Component
 			? victim.ragdollObject.WorldPosition
 			: victim.WorldPosition;
 
-		var tr = scene.Trace
-			.Ray( ragdollPos + Vector3.Up * 30f, ragdollPos + Vector3.Down * 200f )
-			.WithoutTags( "ragdoll" )
-			.Run();
+		if ( victim.GameObject.Tags.Has( PracticeNpcTag ) && victim.practiceNpcPreTackleCaptured )
+		{
+			victim.NetStandUpPosition = victim.practiceNpcPreTackleWorldPosition;
+			victim.NetPracticeNpcStandEyeAngles = victim.practiceNpcPreTackleEyeAngles;
+			victim.practiceNpcPreTackleCaptured = false;
+		}
+		else
+		{
+			var tr = scene.Trace
+				.Ray( ragdollPos + Vector3.Up * 30f, ragdollPos + Vector3.Down * 200f )
+				.WithoutTags( "ragdoll" )
+				.Run();
 
-		victim.NetStandUpPosition = tr.Hit ? tr.HitPosition : ragdollPos;
+			victim.NetStandUpPosition = tr.Hit ? tr.HitPosition : ragdollPos;
+		}
 
 		if ( victim.ragdollObject.IsValid() )
 			victim.ragdollObject.Destroy();
@@ -695,6 +734,9 @@ public sealed class PlayerTackle : Component
 		if ( !IsProxy )
 			WorldPosition = NetStandUpPosition;
 
+		if ( GameObject.Tags.Has( PracticeNpcTag ) && playerController.IsValid() )
+			playerController.EyeAngles = NetPracticeNpcStandEyeAngles;
+
 		foreach ( var r in hiddenRenderers )
 			if ( r.IsValid() ) r.Enabled = true;
 		hiddenRenderers.Clear();
@@ -705,7 +747,7 @@ public sealed class PlayerTackle : Component
 
 		if ( playerController.IsValid() ) playerController.Enabled = true;
 
-		if ( !IsProxy && StandUpCameraBlendDuration > 0.001f && activeCamera.IsValid() )
+		if ( this.Network.IsOwner && StandUpCameraBlendDuration > 0.001f && activeCamera.IsValid() )
 		{
 			standUpCameraBlendFromPos = lastRagdollCameraPos;
 			standUpCameraBlendFromRot = lastRagdollCameraRot;
