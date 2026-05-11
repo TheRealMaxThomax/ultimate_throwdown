@@ -5,7 +5,7 @@
   "Ident": "ultimate_throwdown",
   "Schema": 1,
   "IncludeSourceFiles": false,
-  "Resources": "*",
+  "Resources": null,
   "PackageReferences": [],
   "EditorReferences": null,
   "Mounts": null,
