@@ -13,7 +13,6 @@ public sealed class StartupMapBootstrap : GameObjectSystem<StartupMapBootstrap>,
 	/// <summary>
 	/// Base map name only — resolves to <c>maps/testing_map.*</c> inside this game package. Using
 	/// <c>local.ultimate_throwdown.testing_map</c> made the loader look for <c>maps/local.ultimate_throwdown</c>.
-	/// Ensure ultimate_throwdown.sbproj sets <c>"Resources": "*"</c> so compiled maps ship with the game (otherwise VPK mount fails).
 	/// </summary>
 	private const string StartupMapId = "testing_map";
 
@@ -28,33 +27,33 @@ public sealed class StartupMapBootstrap : GameObjectSystem<StartupMapBootstrap>,
 
 	void ISceneStartup.OnHostInitialize()
 	{
-		var mapAlreadyInScene = false;
-		foreach ( var existing in Scene.GetAllComponents<MapInstance>() )
-		{
-			if ( existing.IsValid() )
-			{
-				mapAlreadyInScene = true;
-				break;
-			}
-		}
-
-		if ( !mapAlreadyInScene )
-		{
-			var root = new GameObject( true, "StartupMapInstance" );
-			var map = root.AddComponent<MapInstance>();
-			map.MapName = StartupMapId;
-			map.EnableCollision = true;
-			map.UseMapFromLaunch = false;
-
-			Log.Info( $"[StartupMapBootstrap] Loading map '{StartupMapId}' via MapInstance." );
-		}
-
+		EnsureStartupMapLoaded();
 		ApplyPracticeNpcRigidbodyLocks();
 	}
 
 	void ISceneStartup.OnClientInitialize()
 	{
+		// Do not spawn <see cref="MapInstance"/> here — on join it can pull a large dependency set over the wire and hit
+		// <c>Connection.AssembleChunk</c> (&quot;Chunk total … exceeds 1024 limit&quot;) when combined with tight resource packaging.
 		ApplyPracticeNpcRigidbodyLocks();
+	}
+
+	/// <summary> Idempotent: one <see cref="MapInstance"/> per scene (host / listen server).</summary>
+	private void EnsureStartupMapLoaded()
+	{
+		foreach ( var existing in Scene.GetAllComponents<MapInstance>() )
+		{
+			if ( existing.IsValid() )
+				return;
+		}
+
+		var root = new GameObject( true, "StartupMapInstance" );
+		var map = root.AddComponent<MapInstance>();
+		map.MapName = StartupMapId;
+		map.EnableCollision = true;
+		map.UseMapFromLaunch = false;
+
+		Log.Info( $"[StartupMapBootstrap] Loading map '{StartupMapId}' via MapInstance." );
 	}
 
 	/// <summary>

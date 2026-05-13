@@ -53,13 +53,20 @@
           "Flags": 0,
           "DisableTemplateOnStart": true,
           "EnableNetDebugLogs": false,
+          "JoinSpawnSpacing": 64,
+          "LockPlayerModelLodInPreRender": true,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "PlayerTemplateName": "Player"
+          "PlayerTemplateName": "Player",
+          "PlayerTemplateRoot": {
+            "_type": "gameobject",
+            "go": "8d430dd2-b7e0-40eb-8f6f-ea76a9c25d57"
+          },
+          "SpawnPoint": null
         }
       ],
       "Children": []
@@ -405,6 +412,7 @@
           "__enabled": true,
           "Flags": 0,
           "CurrentClass": "classes/speedster.cdata",
+          "ModelScaleRetrySeconds": 3,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -2709,6 +2717,7 @@
           "__enabled": true,
           "Flags": 0,
           "CurrentClass": "classes/speedster.cdata",
+          "ModelScaleRetrySeconds": 3,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -5013,6 +5022,7 @@
           "__enabled": true,
           "Flags": 0,
           "CurrentClass": "classes/sniper.cdata",
+          "ModelScaleRetrySeconds": 3,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -7317,6 +7327,7 @@
           "__enabled": true,
           "Flags": 0,
           "CurrentClass": "classes/juggernaut.cdata",
+          "ModelScaleRetrySeconds": 3,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -9493,6 +9504,11 @@
       },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
         "DisableClientRecording": false
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "b2813d63-4a51-4d27-9857-41cfa3c83775"
+        }
       }
     }
   },

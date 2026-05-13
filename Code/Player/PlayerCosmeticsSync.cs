@@ -27,6 +27,10 @@ public sealed class PlayerCosmeticsSync : Component
 
 	protected override void OnUpdate()
 	{
+		// LodOverride resets from view / distance / clothing / ragdoll re-enable — re-apply every frame (pale LOD flicker).
+		if ( LockHighestLodAfterApply )
+			ApplyStableLodOverrides();
+
 		if ( appliedSuccessfully || applying )
 			return;
 
@@ -57,6 +61,13 @@ public sealed class PlayerCosmeticsSync : Component
 		}
 
 		_ = TryApplyCosmeticsAsync( ownerConnection );
+	}
+
+	/// <summary> View-dependent LOD can update after <c>OnUpdate</c> — lock again before draw (host + local owner).</summary>
+	protected override void OnPreRender()
+	{
+		if ( LockHighestLodAfterApply )
+			ApplyStableLodOverrides();
 	}
 
 	private bool EnsureBodyTarget()
@@ -135,13 +146,6 @@ public sealed class PlayerCosmeticsSync : Component
 
 	private void ApplyStableLodOverrides()
 	{
-		foreach ( var renderer in Components.GetAll<ModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
-		{
-			if ( !renderer.IsValid() )
-				continue;
-
-			// Keep player body/clothing visuals stable across distance/camera angle changes.
-			renderer.LodOverride = 0;
-		}
+		CitizenAvatarLod.ApplyUnderRoot( GameObject );
 	}
 }

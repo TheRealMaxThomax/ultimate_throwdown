@@ -3,24 +3,48 @@ using System.Collections.Generic;
 
 public sealed class GameNetworkManager : Component, Component.INetworkListener
 {
+	/// <summary> Fallback: first scene object with this exact <see cref="GameObject.Name"/> is the clone source, unless <see cref="PlayerTemplateRoot"/> is set. </summary>
 	[Property] public string PlayerTemplateName { get; set; } = "Player";
+
+	/// <summary> If set, used as the player prefab to clone — avoids grabbing the wrong <see cref="GameObject"/> when multiple exist. Wire it in the inspector. </summary>
+	[Property] public GameObject PlayerTemplateRoot { get; set; }
+
+	/// <summary> If set, this object&apos;s <see cref="GameObject.WorldTransform"/> is the spawn pose; otherwise the template&apos;s transform at startup is snapped. </summary>
+	[Property] public GameObject SpawnPoint { get; set; }
+
+	/// <summary> Each joining connection spawns this many units along the spawn point&apos;s local +X so players don&apos;t stack (0 = same spot). </summary>
+	[Property] public float JoinSpawnSpacing { get; set; } = 64f;
+
 	[Property] public bool DisableTemplateOnStart { get; set; } = true;
 	[Property] public bool EnableNetDebugLogs { get; set; } = false;
+	/// <summary> Forces LOD0 on all citizen-like avatars in this scene (host + client). Uses late <see cref="CitizenAvatarLodSystem"/> plus this component&apos;s <c>OnPreRender</c>; avoids <c>OnUpdate</c> where proxy LOD can still change later in the frame.</summary>
+	[Property] public bool LockPlayerModelLodInPreRender { get; set; } = true;
 
 	private readonly Dictionary<long, GameObject> spawnedPlayersBySteamId = new();
 	private GameObject playerTemplate;
+	private Transform designSpawnTransform;
+	private bool designSpawnCaptured;
 	private float nextEnsurePlayersAt;
 
 	protected override void OnStart()
 	{
 		EnsureTemplateFound();
+		CaptureDesignSpawnTransform();
 		if ( EnableNetDebugLogs )
 		{
-			Log.Info( $"[NetDebug] GameNetworkManager.OnStart host ready. TemplateValid={playerTemplate.IsValid()}" );
+			Log.Info( $"[NetDebug] GameNetworkManager.OnStart IsHost={Networking.IsHost} TemplateValid={playerTemplate.IsValid()} SpawnCaptured={designSpawnCaptured}" );
 		}
 
 		EnsurePlayersForActiveConnections();
 		nextEnsurePlayersAt = Time.Now + 1f;
+		CitizenAvatarLod.SceneWideLockEnabled = LockPlayerModelLodInPreRender;
+	}
+
+	/// <summary> Scene-wide LOD lock so <b>this</b> machine renders citizens at highest LOD (covers proxies + NPCs without cosmetics on root).</summary>
+	protected override void OnPreRender()
+	{
+		if ( LockPlayerModelLodInPreRender )
+			CitizenAvatarLod.ApplyToWholeScene( Scene );
 	}
 
 	protected override void OnUpdate()
@@ -42,6 +66,9 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 	public void OnDisconnected( Connection connection )
 	{
+		if ( !Networking.IsHost )
+			return;
+
 		var steamId = (long)connection.SteamId;
 		if ( !spawnedPlayersBySteamId.TryGetValue( steamId, out var player ) )
 			return;
@@ -63,6 +90,14 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		if ( playerTemplate.IsValid() )
 			return;
 
+		if ( PlayerTemplateRoot.IsValid() )
+		{
+			playerTemplate = PlayerTemplateRoot;
+			if ( EnableNetDebugLogs )
+				Log.Info( "[NetDebug] Using PlayerTemplateRoot reference." );
+			return;
+		}
+
 		foreach ( var go in Scene.GetAllObjects( true ) )
 		{
 			if ( go.Name != PlayerTemplateName )
@@ -78,15 +113,39 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		}
 		else if ( EnableNetDebugLogs )
 		{
-			Log.Info( $"[NetDebug] Found player template '{playerTemplate.Name}'." );
+			Log.Info( $"[NetDebug] Found player template '{playerTemplate.Name}' by name." );
+		}
+	}
+
+	private void CaptureDesignSpawnTransform()
+	{
+		if ( designSpawnCaptured )
+			return;
+
+		if ( SpawnPoint.IsValid() )
+		{
+			designSpawnTransform = SpawnPoint.WorldTransform;
+			designSpawnCaptured = true;
+			return;
+		}
+
+		if ( playerTemplate.IsValid() )
+		{
+			designSpawnTransform = playerTemplate.WorldTransform;
+			designSpawnCaptured = true;
 		}
 	}
 
 	private void EnsurePlayersForActiveConnections()
 	{
+		if ( !Networking.IsHost )
+			return;
+
 		EnsureTemplateFound();
 		if ( !playerTemplate.IsValid() )
 			return;
+
+		CaptureDesignSpawnTransform();
 
 		if ( EnableNetDebugLogs )
 		{
@@ -109,8 +168,6 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 			SpawnPlayerForConnectionIfMissing( connection );
 		}
 
-		// Fallback: in some editor-host scenarios the local connection can be missing
-		// from the active list early. Try local explicitly so host always gets a pawn.
 		var local = Connection.Local;
 		if ( local is not null )
 		{
@@ -125,15 +182,29 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 	private void SpawnPlayerForConnectionIfMissing( Connection connection )
 	{
+		if ( !Networking.IsHost )
+			return;
+
 		EnsureTemplateFound();
 		if ( !playerTemplate.IsValid() )
 			return;
+
+		CaptureDesignSpawnTransform();
+		if ( !designSpawnCaptured )
+		{
+			Log.Warning( "[GameNetworkManager] No spawn transform (set SpawnPoint or fix Player template)." );
+			return;
+		}
 
 		var steamId = (long)connection.SteamId;
 		if ( spawnedPlayersBySteamId.TryGetValue( steamId, out var existingPlayer ) && existingPlayer.IsValid() )
 			return;
 
-		var player = playerTemplate.Clone( playerTemplate.WorldTransform );
+		var slotIndex = spawnedPlayersBySteamId.Count;
+		var t = designSpawnTransform;
+		t.Position += t.Rotation * Vector3.Right * (slotIndex * JoinSpawnSpacing);
+
+		var player = playerTemplate.Clone( t );
 		player.Name = $"Player_{connection.DisplayName}";
 		player.Enabled = true;
 		player.NetworkSpawn( connection );
@@ -151,7 +222,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 		if ( EnableNetDebugLogs )
 		{
-			Log.Info( $"[NetDebug] Spawned player for {connection.DisplayName} ({connection.SteamId})." );
+			Log.Info( $"[NetDebug] Spawned player for {connection.DisplayName} ({connection.SteamId}) at {t.Position} slot={slotIndex}." );
 		}
 	}
 
