@@ -62,7 +62,10 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "PlayerTemplateName": "Player",
-          "PlayerTemplateRoot": null,
+          "PlayerTemplateRoot": {
+            "_type": "gameobject",
+            "go": "8d430dd2-b7e0-40eb-8f6f-ea76a9c25d57"
+          },
           "SpawnPoint": null
         }
       ],

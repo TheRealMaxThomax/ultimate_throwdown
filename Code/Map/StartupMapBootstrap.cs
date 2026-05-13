@@ -33,8 +33,10 @@ public sealed class StartupMapBootstrap : GameObjectSystem<StartupMapBootstrap>,
 
 	void ISceneStartup.OnClientInitialize()
 	{
-		// Do not spawn <see cref="MapInstance"/> here — on join it can pull a large dependency set over the wire and hit
-		// <c>Connection.AssembleChunk</c> (&quot;Chunk total … exceeds 1024 limit&quot;) when combined with tight resource packaging.
+		// Clients need the same <see cref="MapInstance"/> as host or lighting/geometry won’t match (often much brighter fallback).
+		// With <c>Resources: null</c> in .sbproj this is usually fine; if join logs <c>AssembleChunk</c> / 1024 errors, revert client load
+		// or shrink packaged deps — see SESSION_NOTES CRITICAL.
+		EnsureStartupMapLoaded();
 		ApplyPracticeNpcRigidbodyLocks();
 	}
 
