@@ -17,6 +17,8 @@ code/Properties/*
 *.generated.*
 *.*_c
 !*.shader_c
+# Compiled texture caches (regenerate in editor; keeps repo and clones small)
+*.vtex_c
 *.los
 *.vpk
 *launchSettings.json
