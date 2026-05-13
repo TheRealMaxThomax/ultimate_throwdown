@@ -1,6 +1,8 @@
 using Sandbox;
-using Sandbox.Diagnostics;
 
+/// <summary>
+/// Throw wind-up indicator (owner only). Replace with Razor/CodePen-derived HUD when ready.
+/// </summary>
 public sealed class ThrowChargeBar : Component
 {
 	[Property] public Vector3 ChargeBarOffset { get; set; } = new( 0f, 0f, 70f );
@@ -31,7 +33,7 @@ public sealed class ThrowChargeBar : Component
 		if ( !isVisible )
 			return;
 
-		var displayPosition = Transform.Position + ChargeBarOffset;
+		var displayPosition = GameObject.WorldPosition + ChargeBarOffset;
 		DebugOverlay.Text( displayPosition, BuildChargeBarText() );
 	}
 

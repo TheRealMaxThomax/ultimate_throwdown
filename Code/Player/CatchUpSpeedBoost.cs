@@ -1,15 +1,18 @@
 using Sandbox;
 using System;
 
+/// <summary>
+/// Walk / sprint / charge tiers: when <see cref="PlayerClass.CurrentClass"/> is set, tier speeds and ramp durations read from that <see cref="ClassData"/> asset; “Fallback” inspector fields apply only if no class is assigned (or for quick tests).
+/// </summary>
 public sealed class CatchUpSpeedBoost : Component
 {
 	/// <summary> Must match Input action name (<c>Input.config</c> uses <c>Forward</c>).</summary>
-	[Property] public string ForwardAction { get; set; } = "Forward";
-	[Property] public float StartMoveSpeed { get; set; } = 140f;
-	[Property] public float SprintMoveSpeed { get; set; } = 220f;
-	[Property] public float CatchUpMoveSpeed { get; set; } = 320f;
-	[Property] public float TimeToSprintSpeed { get; set; } = 2.0f;
-	[Property] public float TimeToCatchUpSpeed { get; set; } = 4.0f;
+	[Property, Group( "Fallback (no class .cdata)" )] public string ForwardAction { get; set; } = "Forward";
+	[Property, Group( "Fallback (no class .cdata)" )] public float StartMoveSpeed { get; set; } = 140f;
+	[Property, Group( "Fallback (no class .cdata)" )] public float SprintMoveSpeed { get; set; } = 220f;
+	[Property, Group( "Fallback (no class .cdata)" )] public float CatchUpMoveSpeed { get; set; } = 320f;
+	[Property, Group( "Fallback (no class .cdata)" )] public float TimeToSprintSpeed { get; set; } = 2.0f;
+	[Property, Group( "Fallback (no class .cdata)" )] public float TimeToCatchUpSpeed { get; set; } = 4.0f;
 	[Property] public float MinForwardInput { get; set; } = 0.1f;
 
 	/// <summary> Extra fraction applied to charge look (both compensation and legacy modes). </summary>
@@ -151,10 +154,10 @@ public sealed class CatchUpSpeedBoost : Component
 			nonHoldingSprintTime = 0f;
 			ownerAtChargeSpeed = false;
 			NetAtChargeSpeed = false;
-			var startSpeed = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
-			smoothedMoveSpeedCap = startSpeed;
-			playerController.WalkSpeed = startSpeed;
-			playerController.RunSpeed = startSpeed;
+			// Zero locomotion caps so wind-up reads as stationary (BallThrow clears AnalogMove / freezes non-Sniper body).
+			smoothedMoveSpeedCap = 0f;
+			playerController.WalkSpeed = 0f;
+			playerController.RunSpeed = 0f;
 			ResetPlayerControllerMomentumTimesToBaseline();
 			ApplyChargeLookDamp( atChargeSpeed: false );
 			return;
@@ -313,7 +316,24 @@ public sealed class CatchUpSpeedBoost : Component
 		var sprintSpeed = ClassStat( playerClass?.CurrentClass?.SprintMoveSpeed, SprintMoveSpeed );
 		var catchUpSpeed = ClassStat( playerClass?.CurrentClass?.CatchUpMoveSpeed, CatchUpMoveSpeed );
 		var timeToSprint = ClassStat( playerClass?.CurrentClass?.TimeToSprintSpeed, TimeToSprintSpeed );
-		var timeToCatchUp = ClassStat( playerClass?.CurrentClass?.TimeToCatchUpSpeed, TimeToCatchUpSpeed );
+
+		playerTackle ??= Components.Get<PlayerTackle>();
+		var cd = playerClass?.CurrentClass;
+		var timeToCatchUpBase = ClassStat( cd?.TimeToCatchUpSpeed, TimeToCatchUpSpeed );
+		var ragSlow = cd != null && cd.TimeToCatchUpSpeedAfterRagdoll > 0f && playerTackle is { IsPostRagdollSlowCatchUpRampActive: true };
+		var atkSlow = cd != null && cd.TimeToCatchUpSpeedAfterAttack > 0f && playerTackle is { IsPostAttackSlowCatchUpRampActive: true };
+		float timeToCatchUp;
+		if ( ragSlow || atkSlow )
+		{
+			var sub = timeToSprint;
+			if ( ragSlow )
+				sub = MathF.Max( sub, MathF.Max( cd.TimeToCatchUpSpeedAfterRagdoll, timeToSprint ) );
+			if ( atkSlow )
+				sub = MathF.Max( sub, MathF.Max( cd.TimeToCatchUpSpeedAfterAttack, timeToSprint ) );
+			timeToCatchUp = sub;
+		}
+		else
+			timeToCatchUp = timeToCatchUpBase;
 
 		if ( !isMovingForward )
 		{
@@ -380,7 +400,7 @@ public sealed class CatchUpSpeedBoost : Component
 	}
 }
 
-/// <summary> Double-tap strafe dodge: host-validated iframe, cooldown, and tier penalties. </summary>
+/// <summary> Double-tap strafe dodge: host-validated iframe, cooldown, and tier penalties. Non-Sniper cannot dodge while charging a throw; Sniper can dodge anytime and keeps throw charge when dodging during charge (<see cref="RequestDodgeOnHostRpc"/>).</summary>
 public sealed class PlayerDodge : Component
 {
 	public enum DodgePenaltyKind : byte
@@ -575,6 +595,11 @@ public sealed class PlayerDodge : Component
 		var baseCd = classData?.DodgeCooldown ?? 3.5f;
 		var iframe = classData?.DodgeInvincibilityWindow ?? 0.14f;
 		var dist = classData?.DodgeDistance ?? 260f;
+		if ( chargingThrow )
+		{
+			var mul = Math.Clamp( classData?.ThrowChargeDodgeDistanceMultiplier ?? 1f, 0.25f, 3f );
+			dist *= mul;
+		}
 
 		var holdingBall = ballGrab?.IsHolding ?? false;
 		var cdMul = holdingBall ? CarrierDodgeCooldownFactor : 1f;

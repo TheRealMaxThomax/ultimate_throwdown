@@ -7,21 +7,21 @@ Keep entries short, specific, and current.
 
 - **Symptom:** Logs flood with **`Chunk total … exceeds 1024 limit`**, **`System.IO.InvalidDataException`**, stack under **`Sandbox.Connection.AssembleChunk`** / **`OnRawPacketReceived`** / **`NetworkSystem.Tick`**. Clients can fail to stay connected.
 - **Cause A — `.sbproj` resource packing:** **`"Resources": "*"` in `ultimate_throwdown.sbproj`** forces the game to ship/sync a very large resource set. That has triggered this chunk failure in practice. **`"Resources": null`** is the **known-good default for this repo** unless you deliberately use a **small, explicit** resource list **and** verify join in **multi-instance MP** after any change.
-- **Cause B — client map bootstrap:** **`StartupMapBootstrap` must not spawn `MapInstance` in `OnClientInitialize`** for this project. Doing so (especially alongside heavy or shifting packaging) can pull a **large dependency graph** over the network and contribute to the same chunk blow-up. **Hammer map load stays in `OnHostInitialize` only** (listen host / dedicated). Joining clients are **not** mounting the full map via this bootstrap unless a future design proves sync-safe.
+- **Cause B — client map bootstrap (current vs old note):** **`StartupMapBootstrap` now calls `EnsureStartupMapLoaded()` on the host and on joining clients** (`OnHostInitialize` + `OnClientInitialize`) so everyone mounts **`testing_map`** and host/client lighting matches. **Older text** said “host only” to avoid stacking **client map** on top of **`"Resources": "*"`** (huge sync). The **main** join breaker in practice was **`Resources: *`** + oversize assets; **`Resources: null`** stays mandatory. **Re-test 2-window join** after bootstrap/packaging changes — if **`AssembleChunk` / 1024** comes back, revert client map load or shrink packaged deps first.
 - **For agents:** If the user asks to flip **only** `Resources` (or one setting), **do not** also change `StartupMapBootstrap`, `GameNetworkManager`, or unrelated files “while you’re there.” **Do not** recommend **`Resources`: `"*"`** as a casual fix for map mount or pale avatars without calling out this chunk risk.
-- **Pale / lighting on clients** vs **chunk-safe defaults** is a **product tradeoff** — solve lighting/cosmetics with approaches that do not require “ship everything + client full map mount” unless explicitly agreed and tested.
+- **Pale / lighting on clients:** with **client `MapInstance`** enabled, mismatch should mostly be **packaging/compile** issues, not “client never saw the map.” **`Resources: *`** and missing textures remain separate risks.
 
 ## Project Snapshot
 - **Current Goal:** Tackle + movement polish — launch tuning, broader MP stress tests. Ragdoll camera: free look + stand-up blend to `PlayerController` camera. **Dodge shipped** (double-tap strafe, host RPC, iframe, tier penalties); tackle whiff (inner threaten) still future.
 - **Current Branch:** **`main`** — routine **commit + push** to **`main`**; use short-lived feature branches only when a change needs isolation.
-- **Build/Run Status:** Compiles clean. Client + host tackles + dodge shove (`Rigidbody` velocity add); ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap. Hammer **`testing_map`** mounts at Play on **host** via **`StartupMapBootstrap`** / **`MapInstance`**; **`ultimate_throwdown.sbproj`** keeps **`"Resources": null`** to avoid **`AssembleChunk` / 1024** client sync failures (see **CRITICAL** section above).
-- **Last Updated:** 2026-05-11 — **`SESSION_NOTES`** **CRITICAL** block: MP **`AssembleChunk` / 1024** — keep **`Resources: null`**; **no** client **`MapInstance`** in bootstrap. *Earlier 2026-05-10:* **`PlayerClass`** applies **ClassData** **`CapsuleHeight`** / **`CapsuleRadius`** → **`PlayerController`** body + **`ModelScale`** on skin roots (short retry for cosmetics); **`PlayerTackle`** ragdoll root matches victim **`ModelScale`**. **`CatchUpSpeedBoost`:** **`MomentumMultiplier`** scales prefab-snapshotted **`AccelerationTime`** / **`DeaccelerationTime`** (+ eased walk/run cap toward tier); throw charge resets accel times to baseline; tackle tier **`IsAtChargeSpeed`** still instant ramp. Forward intent for charge ramp: **`Forward`** action + keyboard vs controller analog path. *(Earlier 2026-05-11 line: tackle strip, practice NPC locks, etc. — still in file below.)*
+- **Build/Run Status:** Compiles clean. Client + host tackles + dodge shove (`Rigidbody` velocity add); ragdoll visible early (`NetworkSpawn` before impulse delay); clothing on ragdoll via `BoneMergeTarget`; stand-up after grounded+settled time with `RagdollMaxDuration` cap. Hammer **`testing_map`** mounts via **`StartupMapBootstrap`** / **`MapInstance`** on **host and clients**; **`ultimate_throwdown.sbproj`** keeps **`"Resources": null`** to avoid **`AssembleChunk` / 1024** client sync failures (see **CRITICAL** section above).
+- **Last Updated:** 2026-05-13 — **CRITICAL** Cause B **corrected:** client map mount **on** in **`StartupMapBootstrap`**; **`Resources: null`** still non‑negotiable; **`Resources: *`** was the main historical chunk failure mode. *Earlier 2026-05-10:* **`PlayerClass`** applies **ClassData** **`CapsuleHeight`** / **`CapsuleRadius`** → **`PlayerController`** body + **`ModelScale`** on skin roots (short retry for cosmetics); **`PlayerTackle`** ragdoll root matches victim **`ModelScale`**. **`CatchUpSpeedBoost`:** **`MomentumMultiplier`** scales prefab-snapshotted **`AccelerationTime`** / **`DeaccelerationTime`** (+ eased walk/run cap toward tier); throw charge resets accel times to baseline; tackle tier **`IsAtChargeSpeed`** still instant ramp. Forward intent for charge ramp: **`Forward`** action + keyboard vs controller analog path. *(Earlier 2026-05-11 line: tackle strip, practice NPC locks, etc. — still in file below.)*
 
 ## Code Folder Structure
 - `Code/Ball/` — BallGrab, BallThrow, BallClientFeel, ThrowChargeBar
 - `Code/Player/` — `CatchUpSpeedBoost.cs` (also defines **`PlayerDodge`** component at file bottom — s&box compile quirk avoided separate `PlayerDodge.cs`). `PlayerClass.cs` (also defines **`ClassData`** `[GameResource]` — avoid separate `ClassData.cs`). PlayerCosmeticsSync, PlayerTackle, RagdollClientFeel
 - `Code/Network/` — GameNetworkManager
-- `Code/Map/` — **`StartupMapBootstrap.cs`** (host-only: spawns **`MapInstance`** for **`testing_map`** if scene has none — **not** on joining clients; see **CRITICAL**)
+- `Code/Map/` — **`StartupMapBootstrap.cs`** (host + client: spawns **`MapInstance`** for **`testing_map`** if scene has none; see **CRITICAL** for chunk / **`Resources`** caveats)
 - New systems get their own folder (e.g. `Code/Ultimates/`, `Code/UI/`)
 
 ## Hammer map (`testing_map`)
@@ -292,8 +292,8 @@ These are small gaps in existing code that must be filled before the planned sys
 
 - [x] `CatchUpSpeedBoost` needs a `public bool IsAtChargeSpeed { get; private set; }` getter so the tackle system can check if the attacker qualifies.
 - [x] `ClassData` **`MomentumMultiplier`** applied in **`CatchUpSpeedBoost`** (scales **`PlayerController.AccelerationTime`** / **`DeaccelerationTime`** + smoothed cap).
-- [ ] `CatchUpSpeedBoost` speed/timing properties need to be driven from `ClassData` instead of inspector values.
-- [ ] `BallThrow` force and charge timing need to accept per-class multipliers from `ClassData`.
+- [x] `CatchUpSpeedBoost` speed/timing properties need to be driven from `ClassData` instead of inspector values. *(Runtime uses `ClassData` movement fields when `PlayerClass.CurrentClass` is set; inspector “Fallback (no class .cdata)” knobs remain for unset class / quick tests — 2026-05-13.)*
+- [x] `BallThrow` force and charge timing need to accept per-class multipliers from `ClassData`. *(`ThrowPower` scales applied velocity; `ThrowChargeSpeedScale` on `ClassData` scales charge progress vs prefab `BallThrow` min/max windows — 2026-05-13.)*
 - [ ] Player capsule size (height/radius) needs to be set from `ClassData.ModelScale` when class system is built.
 
 ## Undecided (revisit later)
@@ -448,9 +448,12 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 | `SprintMoveSpeed` | float | Replaces hardcoded value in `CatchUpSpeedBoost` |
 | `CatchUpMoveSpeed` | float | Replaces hardcoded value in `CatchUpSpeedBoost` |
 | `TimeToSprintSpeed` | float | Speedster lowest, Juggernaut highest |
-| `TimeToCatchUpSpeed` | float | Speedster lowest, Juggernaut highest |
+| `TimeToCatchUpSpeed` | float | Seconds to reach charge tier (from forward intent); ladder uses delay `TimeToCatchUpSpeed - TimeToSprintSpeed` in sprint without ball |
+| `TimeToCatchUpSpeedAfterRagdoll` | float | 0 = off; tackled player **after ragdoll stand-up** for `PostRagdollCatchUpRampDuration`: use instead of `TimeToCatchUpSpeed` for sprint→charge (≥ `TimeToSprintSpeed`) |
+| `TimeToCatchUpSpeedAfterAttack` | float | 0 = off; tackler **after landing a tackle** for `PostAttackCatchUpRampDuration`: same substitution on the attacker. If both this and `TimeToCatchUpSpeedAfterRagdoll` windows apply, `CatchUpSpeedBoost` uses the stricter (longer) time. |
 | `MomentumMultiplier` | float | **`CatchUpSpeedBoost`:** × snapshotted **`PlayerController.AccelerationTime`** / **`DeaccelerationTime`** + eased walk/run cap (**1** baseline, **>1** heavier, **<1** snappier); tackles still use instant ramp tier |
-| `ThrowPower` | float | Sniper > 1.0, others 1.0 |
+| `ThrowPower` | float | Scales throw impulse; Sniper > 1.0, others 1.0 |
+| `ThrowChargeSpeedScale` | float | **>1** = faster full charge within prefab `BallThrow` min/max hold window; **1** default |
 | `DodgeCooldown` | float | Cooldown between dodges |
 | `DodgeDistance` | float | How far a dodge travels |
 | `DodgeInvincibilityWindow` | float | Invincibility frames during dodge |
@@ -465,7 +468,7 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 - **Universal charge yaw** — **`CatchUpSpeedBoost.ChargeYawMaxDegreesPerSecond`** on each player (same knob for every class unless you revisit per-class tuning later).
 
 **Explicitly removed:**
-- `ThrowChargeSpeedMultiplier` — dropped; Sniper's identity is `ThrowPower` + dodge-while-charging passive
+- `ThrowChargeSpeedMultiplier` — dropped; Sniper's identity is **`ThrowPower`** + **`ThrowChargeSpeedScale`** (`ClassData`) + dodge-while-charging passive
 - `MaxSpeed`, `Acceleration` — dropped; keeping three-tier speed system (`StartMoveSpeed`/`SprintMoveSpeed`/`CatchUpMoveSpeed`)
 - `WeaponMissSpeedPenalty` — renamed to `WeaponSwingSpeedPenaltyDuration` (penalty applies on all swings, not miss-only)
 - `WalkTurnSpeed`, `RunTurnSpeed`, `ChargeTurnSpeed` — dropped 2026-05-10: rotation while walk/run stays default **mouse / look sensitivity** via `PlayerController`; **charging** yaw cap is universal **`CatchUpSpeedBoost.ChargeYawMaxDegreesPerSecond`** (same for every class).
@@ -473,8 +476,8 @@ Three player classes. **All player stats read from `ClassData` — never hardcod
 **Notes:**
 - `Mass` is gameplay-only. `PlayerController` is a character controller with no physics mass. The tackle formula uses this float directly.
 - Class size affects model scale, capsule dimensions, and trigger sphere radius — all live in `ClassData`.
-- `CatchUpSpeedBoost` will need to read from `ClassData` instead of its own inspector properties when this is built. Ask before modifying it.
-- `BallThrow` force will need to read from `ClassData` (`ThrowPower`). Ask before modifying it.
+- `CatchUpSpeedBoost` uses **`ClassData`** walk/sprint/charge speeds and ramp durations when **`PlayerClass.CurrentClass`** is set; inspector **Fallback (no class .cdata)** values apply if no class resource.
+- `BallThrow` uses **`ClassData.ThrowPower`** and **`ClassData.ThrowChargeSpeedScale`** (with prefab **`BallThrow`** min/max charge times as the base window).
 - Weapon system is future work — see **Weapons (design — future implementation)** for locked notes (`IgnoreWeaponSpeedPenalty`, tier-drop swing, ball XOR weapon, armed auto-grab sequence, specialist class sketch).
 - **Summary:** Hold weapon ⇒ **both** Juggernaut `TimeToCatchUpSpeed` **and** `CatchUpMoveSpeed` for non-exempt classes. Swing ⇒ **one tier down** (same as dodge), not primary “walk for N seconds.” Ball **or** weapon only; armed contact with free ball ⇒ **strip weapon then grab** on host. One-use: ranged/explosive consumed on use; melee breaks on successful hit.
 - Passives and ults are designed (see below) but not being built yet. They will be selectable at match/round start.
@@ -620,24 +623,24 @@ Use these exact names unless explicitly changed in chat.
 - Cosmetics sync component: `PlayerCosmeticsSync`
 - Cosmetics sync properties: `FirstApplyDelay`, `RetryInterval`, `MaxApplyAttempts`, `LockHighestLodAfterApply`, `EnableDebugLogs`
 - Class data resource: `ClassData` (type declared in **`PlayerClass.cs`**)
-- Class data fields: `ClassName`, `Mass`, `CapsuleHeight`, `CapsuleRadius`, `ModelScale`, `TriggerSphereRadius`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, `MomentumMultiplier`, `ThrowPower`, `DodgeCooldown`, `DodgeDistance`, `DodgeInvincibilityWindow`, `RagdollDuration` (grounded+settled consecutive seconds before stand), `RagdollMaxDuration`, `RagdollGroundSpeedMax`, `RagdollGroundTraceDown`, `RagdollGroundTraceUp`, `PostTackleInvincibilityDuration`, `BallLaunchForceOnTackle`, `BallPickupLockoutAfterTackle`, `TackleChargeRampRate`, `MaxTackleChargeBonus`, `IgnoreWeaponSpeedPenalty`, `WeaponSwingSpeedPenaltyDuration` *(no walk/run/charge turn fields — see Explicitly Removed)*
+- Class data fields: `ClassName`, `Mass`, `CapsuleHeight`, `CapsuleRadius`, `ModelScale`, `TriggerSphereRadius`, `StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`, **`TimeToCatchUpSpeedAfterRagdoll`**, **`TimeToCatchUpSpeedAfterAttack`**, `MomentumMultiplier`, `ThrowPower`, `ThrowChargeSpeedScale`, `DodgeCooldown`, `DodgeDistance`, `DodgeInvincibilityWindow`, `RagdollDuration` (grounded+settled consecutive seconds before stand), `RagdollMaxDuration`, `RagdollGroundSpeedMax`, `RagdollGroundTraceDown`, `RagdollGroundTraceUp`, `PostTackleInvincibilityDuration`, `BallLaunchForceOnTackle`, `BallPickupLockoutAfterTackle`, `TackleChargeRampRate`, `MaxTackleChargeBonus`, `IgnoreWeaponSpeedPenalty`, `WeaponSwingSpeedPenaltyDuration` *(no walk/run/charge turn fields — see Explicitly Removed)*
 - Tackle system component: `PlayerTackle`
-- Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `TackleLaunchArc`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`, `TackleRpcPositionSlop`, `TackleRpcRadiusFudge`, `RagdollPhysicsInitDelay`, `StandUpCameraBlendDuration`, **`AttackerPickupLockoutAfterCarrierTackle`**
+- Tackle inspector properties: `TackleDirectionThreshold`, `TackleCooldown`, `TackleLaunchSpeed`, `TackleLaunchArc`, `RagdollCameraDistance`, `RagdollCameraHeight`, `EnableTackleDebugLogs`, `TackleRpcPositionSlop`, `TackleRpcRadiusFudge`, `RagdollPhysicsInitDelay`, `StandUpCameraBlendDuration`, **`PostRagdollCatchUpRampDuration`**, **`PostAttackCatchUpRampDuration`**, **`AttackerPickupLockoutAfterCarrierTackle`**
 - Stand-up camera blend internals: `lastRagdollCameraPos`, `lastRagdollCameraRot`, `standUpCameraBlendFromPos`, `standUpCameraBlendFromRot`, `standUpCameraBlendStartTime`
 - Editor (not code): `PlayerController` third-person `CameraOffset` (current X **185**)
-- Tackle synced properties: `NetIsRagdolled`, `NetRagdollPosition`, `NetStandUpPosition`, **`NetPracticeNpcStandEyeAngles`** (`FromHost`; **`practice_npc`** stand facing only), `NetIsTackleImmune`, `NetTackleBlockedUntil` (host-authored cooldown end time for tackle RPC alignment)
+- Tackle synced properties: `NetIsRagdolled`, `NetRagdollPosition`, `NetStandUpPosition`, **`NetPracticeNpcStandEyeAngles`** (`FromHost`; **`practice_npc`** stand facing only), `NetIsTackleImmune`, `NetTackleBlockedUntil` (host-authored cooldown end time for tackle RPC alignment), **`NetPostRagdollSlowCatchUpUntil`**, **`NetPostAttackSlowCatchUpUntil`** (host-authored windows for substituted catch-up ladder time)
 - Tag constant in `PlayerTackle`: **`PracticeNpcTag`** = **`practice_npc`**
 - Tackle practice-dummy internals (non-synced unless noted): `practiceNpcPreTackleCaptured`, `practiceNpcPreTackleWorldPosition`, `practiceNpcPreTackleEyeAngles`; helper **`CapturePracticeNpcPreTacklePoseIfTagged`**
 - Tackle host-only fields: `ragdollObject`; tackle RPC throttle `nextRemoteTackleRequestAt`; cooldown `tackleBlockedUntil` + synced `NetTackleBlockedUntil` / `netTackleBlockedUntil`
 - Tackle renderer cache: `hiddenRenderers` (list of SkinnedModelRenderers hidden during ragdoll)
 - Tackle collider cache: `disabledColliders` (list of Colliders disabled during ragdoll, re-enabled on stand-up)
-- Tackle public getters: `IsRagdolled`, `IsTackleImmune`, `SyncedRagdollPelvisPosition`
+- Tackle public getters: `IsRagdolled`, `IsTackleImmune`, `SyncedRagdollPelvisPosition`, `TackleStripRampSequence`, `IsPostRagdollSlowCatchUpRampActive`, `IsPostAttackSlowCatchUpRampActive`
 - Tackled-player client feel component: `RagdollClientFeel` (same GO as `PlayerTackle`; owning client)
 - Ragdoll snapshot feel properties in `RagdollClientFeel`: `InterpolationDelay`, `MaxSnapshots`, `FollowSharpness`
 - Dodge component **`PlayerDodge`** (`Code/Player/CatchUpSpeedBoost.cs` tail): `LeftStrafeAction`, `RightStrafeAction`, `DoubleTapMaxInterval`, `CarrierDodgeCooldownFactor`, `RechargeBlockedAfterChargeDodge`, `ShoveVelocityMultiplier`, `EnableDodgeDebugLogs`
 - Dodge getters: `IsImmuneToTackle`, `IsDodging`, `SyncedBlockCatchUpUntil`, `LatestPenaltyKind`, `DodgeApplySequence`
 - Juggernaut passive ClassData fields: `TackleChargeRampRate`, `MaxTackleChargeBonus`
-- Hammer bootstrap: **`StartupMapBootstrap`** (`Code/Map/StartupMapBootstrap.cs`) — implements **`ISceneStartup`**, spawns **`MapInstance`** if missing (**`OnHostInitialize` only** — do not add to **`OnClientInitialize`**; see **CRITICAL — MP chunk limit**)
+- Hammer bootstrap: **`StartupMapBootstrap`** (`Code/Map/StartupMapBootstrap.cs`) — implements **`ISceneStartup`**, spawns **`MapInstance`** if missing on **host and client** (`OnHostInitialize` + **`OnClientInitialize`**); see **CRITICAL — MP chunk limit** / **`Resources: null`**
 - Map runtime component: **`MapInstance`** — **`MapName`** for this project: **`testing_map`** (basename; not `local.…` triple id on **`MapName`** when loading package-local map)
 - Hammer source asset: **`Assets/Maps/testing_map.vmap`**; compiled outputs **`testing_map.vpk`**, **`testing_map.los`**
 - Game project `.sbproj`: **`"Resources": null`** for stable MP (chunk limit); **`Metadata.MapList`** lists playable map ids. Do **not** use **`"*"`** without explicit multi-instance testing — see **CRITICAL** at top.

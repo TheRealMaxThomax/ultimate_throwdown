@@ -6,6 +6,12 @@ public static class CitizenAvatarLod
 	/// <summary> Toggled from <see cref="GameNetworkManager"/> so one inspector flag disables every scene-wide pass.</summary>
 	public static bool SceneWideLockEnabled { get; set; } = true;
 
+	/// <summary>
+	/// When <c>false</c>, skips <see cref="SkinnedModelRenderer"/> pieces that use <see cref="SkinnedModelRenderer.BoneMergeTarget"/> — old workaround that avoided material flashes on clothing.
+	/// When <c>true</c> (default), those meshes get <see cref="ModelRenderer.LodOverride"/> too; citizen body extras (e.g. arms) often merge to the torso and stayed on low LOD when skipped ("pale" skin).
+	/// </summary>
+	public static bool ApplyLodLockToBoneMergedSkinnedMeshes { get; set; } = true;
+
 	/// <summary> Matches <see cref="PlayerTackle"/> / map bootstrap.</summary>
 	public const string PracticeNpcTag = "practice_npc";
 
@@ -25,14 +31,15 @@ public static class CitizenAvatarLod
 
 	public static void ApplyUnderRoot( GameObject root )
 	{
-		// Citizen clothing uses bonemerge + engine "LOD sync" (children follow the body's LOD). Forcing LodOverride on
-		// merged child meshes fights that and can flash the wrong material (reads as pale) when the camera/body turns.
 		foreach ( var renderer in root.Components.GetAll<ModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
 		{
 			if ( !renderer.IsValid() )
 				continue;
 
-			if ( renderer is SkinnedModelRenderer skinned && skinned.BoneMergeTarget.IsValid() )
+			var skipMerged = !ApplyLodLockToBoneMergedSkinnedMeshes
+			                   && renderer is SkinnedModelRenderer skinned
+			                   && skinned.BoneMergeTarget.IsValid();
+			if ( skipMerged )
 				continue;
 
 			renderer.LodOverride = 0;
@@ -57,14 +64,20 @@ public static class CitizenAvatarLod
 
 /// <summary>
 /// Runs citizen LOD lock at a <b>defined</b> pipeline point. Component <c>OnPreRender</c> order between GameObjects is not guaranteed;
-/// a late FinishUpdate-stage listener plus <see cref="GameNetworkManager"/>&apos;s <c>OnPreRender</c> pass (same helper) covers host/client proxy LOD.
+/// registering the same scene pass during the Interpolation stage (after bone work) can help joining clients keep citizen LOD0 consistent.
 /// </summary>
 public sealed class CitizenAvatarLodSystem : GameObjectSystem<CitizenAvatarLodSystem>
 {
 	public CitizenAvatarLodSystem( Scene scene )
 		: base( scene )
 	{
+		Listen( Stage.Interpolation, 10_000, OnInterpolation, nameof( CitizenAvatarLodSystem ) + ".Interpolation" );
 		Listen( Stage.FinishUpdate, 1000, OnFinishUpdate, nameof( CitizenAvatarLodSystem ) );
+	}
+
+	private void OnInterpolation()
+	{
+		CitizenAvatarLod.ApplyToWholeScene( Scene );
 	}
 
 	private void OnFinishUpdate()

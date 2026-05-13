@@ -1,5 +1,9 @@
 using Sandbox;
+using System;
 
+/// <summary>
+/// Hold-to-charge throw on the owner. When <see cref="PlayerClass.CurrentClass"/> is set, <see cref="ClassData.ThrowPower"/> scales applied forces and <see cref="ClassData.ThrowChargeSpeedScale"/> scales how fast charge reaches full within the prefab min/max time window.
+/// </summary>
 public sealed class BallThrow : Component
 {
 	[Property] public string ThrowAction { get; set; } = "attack1";
@@ -66,13 +70,16 @@ public sealed class BallThrow : Component
 
 		if ( isChargingThrow )
 		{
-			// Keep aiming active, but freeze movement while charging.
+			// Block locomotion input for everyone; non-Sniper also snaps position / clears physics velocity each frame.
+			// Sniper keeps dodge specialty: lateral dodge impulse must survive this tick (see PlayerDodge).
 			Input.AnalogMove = Vector3.Zero;
-			WorldPosition = lockedChargePosition;
-			if ( playerBody.IsValid() )
+			if ( !IsSniperClass() )
 			{
-				playerBody.Velocity = Vector3.Zero;
+				WorldPosition = lockedChargePosition;
+				if ( playerBody.IsValid() )
+					playerBody.Velocity = Vector3.Zero;
 			}
+
 			throwChargeBar?.SetCharge( GetThrowChargeLerp() );
 		}
 	}
@@ -136,9 +143,16 @@ public sealed class BallThrow : Component
 		throwChargeBar?.Hide();
 	}
 
+	private bool IsSniperClass()
+	{
+		var name = playerClass?.CurrentClass?.ClassName;
+		return name != null && name.Equals( "Sniper", StringComparison.OrdinalIgnoreCase );
+	}
+
 	private float GetThrowChargeLerp()
 	{
-		var chargeHeldSeconds = Time.Now - throwChargeStartedAt;
+		var chargeScale = MathF.Max( 0.05f, playerClass?.CurrentClass?.ThrowChargeSpeedScale ?? 1f );
+		var chargeHeldSeconds = (Time.Now - throwChargeStartedAt) * chargeScale;
 		var clampedChargeSeconds = chargeHeldSeconds.Clamp( MinThrowChargeTime, MaxThrowChargeTime );
 		return MaxThrowChargeTime <= MinThrowChargeTime
 			? 1f

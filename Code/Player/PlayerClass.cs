@@ -124,6 +124,14 @@ public class ClassData : GameResource
 	[Property, Group( "Movement" )]
 	public float TimeToCatchUpSpeed { get; set; } = 4f;
 
+	/// <summary>After ragdoll stand-up, for <see cref="PlayerTackle.PostRagdollCatchUpRampDuration"/> seconds replace <see cref="TimeToCatchUpSpeed"/> for sprint→charge ramp (usually ≥ TimeToSprintSpeed). 0 disables.</summary>
+	[Property, Group( "Movement" )]
+	public float TimeToCatchUpSpeedAfterRagdoll { get; set; } = 0f;
+
+	/// <summary>After this class <b>lands</b> a tackle, for <see cref="PlayerTackle.PostAttackCatchUpRampDuration"/> seconds replace <see cref="TimeToCatchUpSpeed"/> for sprint→charge ramp on the attacker. 0 disables.</summary>
+	[Property, Group( "Movement" )]
+	public float TimeToCatchUpSpeedAfterAttack { get; set; } = 0f;
+
 	/// <summary>Scales <see cref="PlayerController.AccelerationTime"/> / <see cref="PlayerController.DeaccelerationTime"/> (from prefab snapshot) plus move-cap easing: <b>1</b> baseline; <b>&gt;1</b> heavier; <b>&lt;1</b> snappier.</summary>
 	[Property, Group( "Movement" )]
 	public float MomentumMultiplier { get; set; } = 1f;
@@ -131,11 +139,21 @@ public class ClassData : GameResource
 	[Property, Group( "Throw" )]
 	public float ThrowPower { get; set; } = 1f;
 
+	/// <summary>
+	/// Multiplier on real-time throw charge progress (&gt;1 = reaches full charge sooner). Base window still comes from prefab <see cref="BallThrow"/>.
+	/// </summary>
+	[Property, Group( "Throw" )]
+	public float ThrowChargeSpeedScale { get; set; } = 1f;
+
 	[Property, Group( "Dodge" )]
 	public float DodgeCooldown { get; set; } = 3f;
 
 	[Property, Group( "Dodge" )]
 	public float DodgeDistance { get; set; } = 260f;
+
+	/// <summary>Multiplies <see cref="DodgeDistance"/> when dodging during throw wind-up (<see cref="BallThrow.IsChargingThrow"/>). Intended for Sniper (others keep <b>1</b>; non-Snipers cannot dodge while charging).</summary>
+	[Property, Group( "Dodge" )]
+	public float ThrowChargeDodgeDistanceMultiplier { get; set; } = 1f;
 
 	/// <summary>Tackle-only invulnerability after dodge (seconds). Keep small — dodge is mostly the shove; SESSION_NOTES band ~0.12–0.16.</summary>
 	[Property, Group( "Dodge" )]

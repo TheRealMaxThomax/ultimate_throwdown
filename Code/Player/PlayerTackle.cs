@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 // PlayerTackle — quick map (editor Outline or Ctrl+F the symbol name)
 //   Inspector properties ........ top of class
-//   Sync / net state ............ isRagdolled, NetRagdollPosition, NetStandUpPosition, tackle strip ramp id, cooldowns
+//   Sync / net state ............ isRagdolled, ragdoll/attack slow-catch windows, tackle strip id, cooldowns
 //   OnStart / OnUpdate .......... camera ref, ragdoll transitions, owner camera + free look
 //   Host detection .............. TryDetectAndApplyHostTackle, ApplyTackleCooldownOnHost
 //   Client → host ............... TryOwnerRequestTackleOnHost, RequestTackleApplyOnHost
@@ -36,6 +36,10 @@ public sealed class PlayerTackle : Component
 	[Property] public float RagdollPhysicsInitDelay { get; set; } = 0.05f;
 	/// <summary>Seconds to ease main camera from ragdoll orbit to normal third-person after stand-up. 0 = hand off immediately.</summary>
 	[Property] public float StandUpCameraBlendDuration { get; set; } = 0.6f;
+	/// <summary>Host: after stand-up from ragdoll, for this many seconds use <see cref="ClassData.TimeToCatchUpSpeedAfterRagdoll"/> for charge ramp when that value &gt; 0.</summary>
+	[Property] public float PostRagdollCatchUpRampDuration { get; set; } = 5f;
+	/// <summary>Host: after this pawn <b>lands</b> a tackle, for this many seconds use <see cref="ClassData.TimeToCatchUpSpeedAfterAttack"/> for charge ramp when that value &gt; 0.</summary>
+	[Property] public float PostAttackCatchUpRampDuration { get; set; } = 5f;
 
 	// Host writes, all machines read
 	private bool isRagdolled;
@@ -63,7 +67,18 @@ public sealed class PlayerTackle : Component
 	private int netTackleStripRampId;
 	[Sync( SyncFlags.FromHost )]
 	private int NetTackleStripRampId { get => netTackleStripRampId; set => netTackleStripRampId = value; }
-	/// <summary>Client-only throttle so we don't spam the host with tackle RPCs every frame.</summary>
+
+	/// <summary>Host-authored; replicated. After ragdoll stand-up: sprint→charge uses <see cref="ClassData.TimeToCatchUpSpeedAfterRagdoll"/>.</summary>
+	private float netPostRagdollSlowCatchUpUntil;
+	[Sync( SyncFlags.FromHost )]
+	private float NetPostRagdollSlowCatchUpUntil { get => netPostRagdollSlowCatchUpUntil; set => netPostRagdollSlowCatchUpUntil = value; }
+
+	/// <summary>Host-authored; replicated. After landing a tackle: sprint→charge uses <see cref="ClassData.TimeToCatchUpSpeedAfterAttack"/>.</summary>
+	private float netPostAttackSlowCatchUpUntil;
+	[Sync( SyncFlags.FromHost )]
+	private float NetPostAttackSlowCatchUpUntil { get => netPostAttackSlowCatchUpUntil; set => netPostAttackSlowCatchUpUntil = value; }
+
+	/// <summary> Client-only throttle so we don't spam the host with tackle RPCs every frame.</summary>
 	private float nextRemoteTackleRequestAt;
 
 	// Host-only: Juggernaut-style tackle ramp (see ClassData.TackleChargeRampRate / MaxTackleChargeBonus)
@@ -95,6 +110,8 @@ public sealed class PlayerTackle : Component
 	public bool IsRagdolled => isRagdolled;
 	/// <summary>Host bumps after successful tackles; <see cref="CatchUpSpeedBoost"/> consumes changes to strip charge speed.</summary>
 	public int TackleStripRampSequence => netTackleStripRampId;
+	public bool IsPostRagdollSlowCatchUpRampActive => netPostRagdollSlowCatchUpUntil > 0f && Time.Now < netPostRagdollSlowCatchUpUntil;
+	public bool IsPostAttackSlowCatchUpRampActive => netPostAttackSlowCatchUpUntil > 0f && Time.Now < netPostAttackSlowCatchUpUntil;
 
 	// Pelvis world position synced from host; RagdollClientFeel reads this on owning clients
 	public Vector3 SyncedRagdollPelvisPosition => NetRagdollPosition;
@@ -427,7 +444,15 @@ public sealed class PlayerTackle : Component
 	private void ExecuteTackle( PlayerTackle victim, Vector3 tackleDir )
 	{
 		if ( Networking.IsHost )
+		{
 			NetTackleStripRampId++;
+			var atkClass = playerClass?.CurrentClass;
+			var atkSlow = atkClass?.TimeToCatchUpSpeedAfterAttack ?? 0f;
+			if ( atkSlow > 0f && PostAttackCatchUpRampDuration > 0f )
+				NetPostAttackSlowCatchUpUntil = Time.Now + PostAttackCatchUpRampDuration;
+			else
+				NetPostAttackSlowCatchUpUntil = 0f;
+		}
 
 		CapturePracticeNpcPreTacklePoseIfTagged( victim );
 
@@ -481,6 +506,12 @@ public sealed class PlayerTackle : Component
 
 		// Seed position before enabling ragdoll so owner doesn't snap to Vector3.Zero
 		victim.NetRagdollPosition = victim.WorldPosition;
+		if ( Networking.IsHost )
+		{
+			victim.NetPostRagdollSlowCatchUpUntil = 0f;
+			victim.NetPostAttackSlowCatchUpUntil = 0f;
+		}
+
 		victim.NetIsRagdolled = true;
 
 		SpawnRagdollObject( victim, tackleDir, effectiveLaunchSpeed );
@@ -680,6 +711,15 @@ public sealed class PlayerTackle : Component
 		if ( victim.ragdollObject.IsValid() )
 			victim.ragdollObject.Destroy();
 		victim.ragdollObject = null;
+
+		var ragdollSlowCatch = victim.playerClass?.CurrentClass?.TimeToCatchUpSpeedAfterRagdoll ?? 0f;
+		if ( Networking.IsHost )
+		{
+			if ( ragdollSlowCatch > 0f && victim.PostRagdollCatchUpRampDuration > 0f )
+				victim.NetPostRagdollSlowCatchUpUntil = Time.Now + victim.PostRagdollCatchUpRampDuration;
+			else
+				victim.NetPostRagdollSlowCatchUpUntil = 0f;
+		}
 
 		victim.NetIsRagdolled = false;
 

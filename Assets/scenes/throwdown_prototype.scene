@@ -54,6 +54,7 @@
           "DisableTemplateOnStart": true,
           "EnableNetDebugLogs": false,
           "JoinSpawnSpacing": 64,
+          "LockBoneMergedSkinnedMeshLod": false,
           "LockPlayerModelLodInPreRender": true,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -352,7 +353,7 @@
           "__enabled": true,
           "Flags": 0,
           "EnableNetDebugLogs": false,
-          "MaxThrowChargeTime": 2,
+          "MaxThrowChargeTime": 3,
           "MinThrowChargeTime": 0.05,
           "MinThrowForceMultiplier": 0.35,
           "MinThrowUpForceMultiplier": 0.6,
@@ -368,9 +369,9 @@
             "_type": "gameobject",
             "go": "03fb8c2b-12ff-4603-b732-f45a66e7fd6a"
           },
-          "ThrowForce": 1200,
+          "ThrowForce": 1000,
           "ThrowStartOffset": 40,
-          "ThrowUpForce": 120
+          "ThrowUpForce": 150
         },
         {
           "__type": "BallClientFeel",
@@ -411,7 +412,7 @@
           "__guid": "a13a8635-d347-4439-8c09-f5de73d612c3",
           "__enabled": true,
           "Flags": 0,
-          "CurrentClass": "classes/speedster.cdata",
+          "CurrentClass": "classes/juggernaut.cdata",
           "ModelScaleRetrySeconds": 3,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -450,21 +451,23 @@
           "__enabled": true,
           "Flags": 0,
           "AttackerPickupLockoutAfterCarrierTackle": 0.45,
-          "EnableTackleDebugLogs": true,
+          "EnableTackleDebugLogs": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "PostAttackCatchUpRampDuration": 5,
+          "PostRagdollCatchUpRampDuration": 5,
           "RagdollCameraDistance": 200,
           "RagdollCameraHeight": 80,
           "RagdollPhysicsInitDelay": 0.05,
           "StandUpCameraBlendDuration": 0.6,
           "TackleCooldown": 1,
-          "TackleDirectionThreshold": 0.5,
-          "TackleLaunchArc": 0.6,
-          "TackleLaunchSpeed": 600,
+          "TackleDirectionThreshold": 0.95,
+          "TackleLaunchArc": 1,
+          "TackleLaunchSpeed": 500,
           "TackleRpcPositionSlop": 128,
           "TackleRpcRadiusFudge": 1.12
         },
@@ -2762,6 +2765,8 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "PostAttackCatchUpRampDuration": 5,
+          "PostRagdollCatchUpRampDuration": 5,
           "RagdollCameraDistance": 200,
           "RagdollCameraHeight": 80,
           "RagdollPhysicsInitDelay": 0.05,
@@ -5067,6 +5072,8 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "PostAttackCatchUpRampDuration": 5,
+          "PostRagdollCatchUpRampDuration": 5,
           "RagdollCameraDistance": 200,
           "RagdollCameraHeight": 80,
           "RagdollPhysicsInitDelay": 0.05,
@@ -7372,6 +7379,8 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
+          "PostAttackCatchUpRampDuration": 5,
+          "PostRagdollCatchUpRampDuration": 5,
           "RagdollCameraDistance": 200,
           "RagdollCameraHeight": 80,
           "RagdollPhysicsInitDelay": 0.05,
@@ -9416,7 +9425,7 @@
           "Flags": 0,
           "Center": "0,0,0",
           "ColliderFlags": 0,
-          "Elasticity": 0.7955801,
+          "Elasticity": 0.75,
           "Friction": 0.35911602,
           "IsTrigger": false,
           "OnComponentDestroy": null,
@@ -9430,7 +9439,7 @@
           "OnTriggerEnter": null,
           "OnTriggerExit": null,
           "Radius": 32,
-          "RollingResistance": 0.06629834,
+          "RollingResistance": 0.2,
           "Static": false,
           "Surface": null,
           "SurfaceVelocity": "0,0,0"
@@ -9497,17 +9506,17 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
-      },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
         "DisableClientRecording": false
       },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "b2813d63-4a51-4d27-9857-41cfa3c83775"
+        }
+      },
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
         }
       }
     }

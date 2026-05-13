@@ -11,8 +11,7 @@ public sealed class StartupMapBootstrap : GameObjectSystem<StartupMapBootstrap>,
 	private const string PracticeNpcTag = "practice_npc";
 
 	/// <summary>
-	/// Base map name only — resolves to <c>maps/testing_map.*</c> inside this game package. Using
-	/// <c>local.ultimate_throwdown.testing_map</c> made the loader look for <c>maps/local.ultimate_throwdown</c>.
+	/// Base map name — resolves to <c>maps/testing_map.*</c> in this package. Use dotted ids (e.g. <c>facepunch.flatgrass</c>) for Facepunch maps.
 	/// </summary>
 	private const string StartupMapId = "testing_map";
 
