@@ -1,85 +1,85 @@
 # Game art style
 
-Simple plan for maps like **Turf Wars** (and future maps).
+Pick **Style A** or **Style B** for a map. Don’t mix unless you’ve tested one style first.
 
 ---
 
-## The look
+# Style A — Textured
 
-- **Blocky** models (simple shapes — no fancy sculpting).
-- **Four shared materials** on almost everything (see below).
-- **Night** lighting with lamp cones shining down.
-- **Retro filter** on the main game camera.
-- **Signs** you draw in Inkscape — that’s where personality comes from.
+Simple blocky models + a few photo textures. Night lighting. Inkscape signs.
 
-Not flat cartoon colours. Not realistic high-poly models.
+## Build with
 
----
+- **Hammer** — road, buildings, roofs, cone lights  
+- **Blender** — pumps, cars, bins, vending (basic shapes, reuse on other maps)
 
-## Where you build what
+## Four materials (make once, use everywhere)
 
-- **Hammer** — road, buildings, roofs, lights.
-- **Blender** — pumps, cars, bins, vending machines (basic shapes). Make once, reuse on other maps.
+1. Asphalt — road  
+2. Concrete — walls, pavement, bins  
+3. Metal — pumps, poles, cars (or flat dark grey)  
+4. Plastic / glass — vending front (can glow at night)
 
----
+Signs = Inkscape PNG on a flat board (not a fifth texture download).
 
-## Four materials (use these everywhere)
+**Rule:** Same four materials on every prop. No new texture per object.
 
-Make each **once** in the editor. Put every prop in one of these buckets:
+## Textures
 
-1. **Asphalt** — road  
-2. **Concrete** — walls, pavement, bins  
-3. **Metal** — pumps, poles, cars (or plain dark grey with no texture)  
-4. **Plastic / glass** — vending machine front (can glow at night)
+[ambientcg.com](https://ambientcg.com) — Asphalt + Concrete, **1K**, **Color**, **PNG**. Metal optional.
 
-**Signs** — separate. Inkscape PNG on a flat board. Not a fifth texture pack.
+## Turf Wars order
 
-**Rule:** Don’t download a new texture for every object. Same four looks, many objects.
-
----
-
-## Where to get textures
-
-**Start here:** [ambientcg.com](https://ambientcg.com) (free, CC0)
-
-- Download **Asphalt** and **Concrete** — size **1K**, file **Color**, format **PNG**.
-- Metal: same from AmbientCG **or** skip and use flat grey in the editor.
-
-**Only if metal looks too realistic later:** swap metal for one small texture from itch.io or OpenGameArt (still one metal for the whole game).
-
-**Optional:** open the PNG in GIMP, make it smaller (512) or slightly darker. Not required for v1.
-
----
-
-## Simple props (good enough)
-
-- Pump = cylinder + box  
-- Car = box + wheels (or one free low-poly car, painted with **metal**)  
-- Vending machine = box, glowing front  
-- Lamp post = pole + **cone light** in Hammer pointing down  
-
----
-
-## Turf Wars — build in this order
-
-1. Road + two station areas (Hammer)  
+1. Road + two stations (Hammer)  
 2. Four materials + night lights  
-3. Two Inkscape signs  
-4. Pump, bin, vending (Blender)  
-5. Cars / traffic (when the layout is fun)
+3. Two signs  
+4. Props (Blender)  
+5. Cars later  
+
+## Quick test
+
+Road + lamp + pump + sign. Night. Too shiny → duller metal, no bumpy maps on small props.
 
 ---
 
-## Quick test (one evening)
+# Style B — Colour palette
 
-Road corner + one lamp + one pump + one sign + retro camera. Play at night.
+Simple blocky models + flat colours from one palette. Night lighting. Inkscape signs.
 
-If it feels good, keep going. If too shiny/real, use flatter metal and fewer bumpy texture maps.
+## Build with
+
+- **Hammer** — road, buildings, roofs, cone lights  
+- **Blender** — pumps, cars, bins, vending (basic shapes, reuse on other maps)
+
+## Palette (pick once)
+
+12–24 colours — [Lospec](https://lospec.com) or your own.
+
+- Dark — road  
+- Mid — buildings, bins  
+- Light — pumps, poles  
+- Accent — cars, vending glow, sign trim  
+
+Signs = Inkscape PNG on a flat board.
+
+**Rule:** Only colours from your palette. No random colour per prop.
+
+## Textures
+
+None needed. Solid colours in the editor.
+
+## Turf Wars order
+
+1. Road + two stations (Hammer)  
+2. Palette materials + night lights  
+3. Two signs  
+4. Props (Blender)  
+5. Cars later  
+
+## Quick test
+
+Dark road + grey pump + sign + lamp. Night. Too flat → brighter sign, warmer lamp, one accent colour.
 
 ---
 
-## Remember
-
-**Many simple objects. Four materials. Your signs. Night lights. Retro camera.**
-
-More detail (maps, multiplayer): `SESSION_NOTES.md`
+Maps / multiplayer: `SESSION_NOTES.md`
