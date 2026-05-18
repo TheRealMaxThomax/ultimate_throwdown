@@ -467,6 +467,8 @@ public sealed class PlayerDodge : Component
 
 	public bool IsImmuneToTackle => Time.Now < netTackleIframeUntil;
 	public bool IsDodging => Time.Now < netDodgeMovementUntil;
+	/// <summary> Seconds until host-synced dodge cooldown ends (0 = ready). </summary>
+	public float DodgeCooldownRemaining => MathF.Max( 0f, netNextDodgeAllowedAfter - Time.Now );
 
 	public DodgePenaltyKind LatestPenaltyKind => (DodgePenaltyKind)netPenaltyKindByte;
 	public int DodgeApplySequence => netDodgeApplyId;

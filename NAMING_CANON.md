@@ -34,8 +34,16 @@
 | `PlayerCosmeticsSync` | Outfits / avatar look only |
 
 **Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `RagdollPhysicsInitDelay`  
-**Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`  
+**Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
 **Tag for test dummies only:** `practice_npc`
+
+---
+
+## UI (`Code/UI/`)
+
+| Name | Job |
+|------|-----|
+| `DodgeCooldownHud` | Placeholder dodge cooldown timer (owner HUD) |
 
 ---
 
