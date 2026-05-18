@@ -144,12 +144,17 @@
           "__guid": "77637316-8f50-4652-b4e1-717c02a0a599",
           "__enabled": true,
           "Flags": 0,
+          "BallSpawn": {
+            "_type": "gameobject",
+            "go": "fce8be08-b616-4dbf-8939-afe69c962115"
+          },
           "DebugForceGoalAction": "DebugForceGoal",
           "EnableDebugForceGoal": true,
           "EnableMatchDebugLogs": true,
           "GoalCelebrationSeconds": 5,
           "IntermissionSeconds": 20,
           "MatchDurationSeconds": 600,
+          "NetworkManager": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -9950,7 +9955,7 @@
           "Flags": 0,
           "BoxSize": "250,500,200",
           "DefendingTeam": 1,
-          "EnableGoalZoneDebugLogs": true,
+          "EnableGoalZoneDebugLogs": false,
           "GizmoColor": "1,0,0,0.5",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -9986,7 +9991,7 @@
           "Flags": 0,
           "BoxSize": "250,500,200",
           "DefendingTeam": 0,
-          "EnableGoalZoneDebugLogs": true,
+          "EnableGoalZoneDebugLogs": false,
           "GizmoColor": "0.26667,0,1,0.5",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -9997,6 +10002,24 @@
           "ScoreDwellSeconds": 0.35
         }
       ],
+      "Children": []
+    },
+    {
+      "__guid": "fce8be08-b616-4dbf-8939-afe69c962115",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "BallSpawn",
+      "Position": "260.97226,33.3901558,279.803009",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [],
       "Children": []
     }
   ],
@@ -10020,17 +10043,17 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "b2813d63-4a51-4d27-9857-41cfa3c83775"
-        }
-      },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
         "DisableClientRecording": false
       },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
+        }
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "b2813d63-4a51-4d27-9857-41cfa3c83775"
         }
       }
     }

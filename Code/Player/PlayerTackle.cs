@@ -113,6 +113,18 @@ public sealed class PlayerTackle : Component
 	public bool IsPostRagdollSlowCatchUpRampActive => netPostRagdollSlowCatchUpUntil > 0f && Time.Now < netPostRagdollSlowCatchUpUntil;
 	public bool IsPostAttackSlowCatchUpRampActive => netPostAttackSlowCatchUpUntil > 0f && Time.Now < netPostAttackSlowCatchUpUntil;
 
+	/// <summary> Host: end ragdoll immediately (match reset). Skips post-tackle invincibility. </summary>
+	public void ForceStandUpFromHost()
+	{
+		if ( !Networking.IsHost || !isRagdolled )
+			return;
+
+		NetStandUpPosition = ComputeStandUpPositionFromRagdoll();
+		DestroyRagdollObjectOnHost();
+		NetPostRagdollSlowCatchUpUntil = 0f;
+		NetIsRagdolled = false;
+	}
+
 	// Pelvis world position synced from host; RagdollClientFeel reads this on owning clients
 	public Vector3 SyncedRagdollPelvisPosition => NetRagdollPosition;
 	protected override void OnStart()
@@ -200,14 +212,20 @@ public sealed class PlayerTackle : Component
 				UpdateTackleChargeBonus();
 		}
 
-		if ( Networking.IsHost )
+		if ( Networking.IsHost && IsMatchGameplayInputAllowed() )
 			TryDetectAndApplyHostTackle();
 
 		// Remote owners: host often has near-zero Velocity for our pawn (movement runs locally),
 		// so host-only sphere checks never see a valid approach vector. Mirror BallThrow: detect
 		// locally and request the host using our horizontal move direction.
-		if ( this.Network.IsOwner && !Networking.IsHost )
+		if ( this.Network.IsOwner && !Networking.IsHost && IsMatchGameplayInputAllowed() )
 			TryOwnerRequestTackleOnHost();
+	}
+
+	private bool IsMatchGameplayInputAllowed()
+	{
+		var team = Components.Get<PlayerTeam>();
+		return team is null || team.IsMatchGameplayInputAllowed;
 	}
 
 	protected override void OnPreRender()
@@ -658,10 +676,10 @@ public sealed class PlayerTackle : Component
 		const float pollSeconds = 0.05f;
 
 		// SpawnRagdollObject is async; wait briefly so ragdollObject exists on the host.
-		while ( victim.IsValid() && !victim.ragdollObject.IsValid() && Time.Now - started < 2f )
+		while ( victim.IsValid() && victim.IsRagdolled && !victim.ragdollObject.IsValid() && Time.Now - started < 2f )
 			await GameTask.DelaySeconds( pollSeconds );
 
-		while ( victim.IsValid() )
+		while ( victim.IsValid() && victim.IsRagdolled )
 		{
 			if ( Time.Now - started >= maxTotalRagdoll )
 				break;
@@ -681,7 +699,7 @@ public sealed class PlayerTackle : Component
 			await GameTask.DelaySeconds( pollSeconds );
 		}
 
-		if ( !victim.IsValid() )
+		if ( !victim.IsValid() || !victim.IsRagdolled )
 			return;
 
 		// Trace straight down from the ragdoll's pelvis to find the actual floor.
@@ -700,17 +718,10 @@ public sealed class PlayerTackle : Component
 		}
 		else
 		{
-			var tr = scene.Trace
-				.Ray( ragdollPos + Vector3.Up * 30f, ragdollPos + Vector3.Down * 200f )
-				.WithoutTags( "ragdoll" )
-				.Run();
-
-			victim.NetStandUpPosition = tr.Hit ? tr.HitPosition : ragdollPos;
+			victim.NetStandUpPosition = TraceStandUpPosition( scene, ragdollPos );
 		}
 
-		if ( victim.ragdollObject.IsValid() )
-			victim.ragdollObject.Destroy();
-		victim.ragdollObject = null;
+		victim.DestroyRagdollObjectOnHost();
 
 		var ragdollSlowCatch = victim.playerClass?.CurrentClass?.TimeToCatchUpSpeedAfterRagdoll ?? 0f;
 		if ( Networking.IsHost )
@@ -776,6 +787,35 @@ public sealed class PlayerTackle : Component
 			tackleChargeBonus = MathX.Clamp( tackleChargeBonus + rate * Time.Delta, 0f, maxBonus );
 		else
 			tackleChargeBonus = 0f;
+	}
+
+	private Vector3 ComputeStandUpPositionFromRagdoll()
+	{
+		if ( GameObject.Tags.Has( PracticeNpcTag ) && practiceNpcPreTackleCaptured )
+		{
+			practiceNpcPreTackleCaptured = false;
+			return practiceNpcPreTackleWorldPosition;
+		}
+
+		var ragdollPos = ragdollObject.IsValid() ? ragdollObject.WorldPosition : WorldPosition;
+		return TraceStandUpPosition( Scene, ragdollPos );
+	}
+
+	private static Vector3 TraceStandUpPosition( Scene scene, Vector3 ragdollPos )
+	{
+		var tr = scene.Trace
+			.Ray( ragdollPos + Vector3.Up * 30f, ragdollPos + Vector3.Down * 200f )
+			.WithoutTags( "ragdoll" )
+			.Run();
+
+		return tr.Hit ? tr.HitPosition : ragdollPos;
+	}
+
+	private void DestroyRagdollObjectOnHost()
+	{
+		if ( ragdollObject.IsValid() )
+			ragdollObject.Destroy();
+		ragdollObject = null;
 	}
 
 	private void ApplyRagdollLocally()

@@ -44,6 +44,12 @@ public sealed class BallThrow : Component
 		if ( !Network.IsOwner )
 			return;
 
+		if ( !IsMatchGameplayInputAllowed() )
+		{
+			ClearThrowChargeLocal();
+			return;
+		}
+
 		if ( !ballGrab.IsHolding )
 		{
 			isChargingThrow = false;
@@ -97,6 +103,9 @@ public sealed class BallThrow : Component
 	[Rpc.Host]
 	private void RequestThrowHeldBallOnHost( float chargeLerp, Vector3 throwDirectionFromCaller )
 	{
+		if ( !IsMatchGameplayInputAllowed() )
+			return;
+
 		if ( EnableNetDebugLogs )
 		{
 			Log.Info( $"[NetDebug] Host throw request received. Caller={Rpc.Caller.DisplayName} IsHolding={(ballGrab?.IsHolding ?? false)} Charge={chargeLerp}" );
@@ -141,6 +150,12 @@ public sealed class BallThrow : Component
 		isChargingThrow = false;
 		NetIsChargingThrow = false;
 		throwChargeBar?.Hide();
+	}
+
+	private bool IsMatchGameplayInputAllowed()
+	{
+		var team = Components.Get<PlayerTeam>();
+		return team is null || team.IsMatchGameplayInputAllowed;
 	}
 
 	private bool IsSniperClass()

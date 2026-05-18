@@ -19,6 +19,12 @@ public sealed class MatchDirector : Component
 
 	[Property] public bool EnableMatchDebugLogs { get; set; } = false;
 
+	/// <summary> Center kickoff empty — wire in editor. Ball teleports here on round reset. </summary>
+	[Property] public GameObject BallSpawn { get; set; }
+
+	/// <summary> If unset, first <see cref="GameNetworkManager"/> in the scene is used for spawn teleports. </summary>
+	[Property] public GameNetworkManager NetworkManager { get; set; }
+
 	[Sync( SyncFlags.FromHost )] public int NetPhase { get; set; }
 	[Sync( SyncFlags.FromHost )] public int NetTeam0RoundWins { get; set; }
 	[Sync( SyncFlags.FromHost )] public int NetTeam1RoundWins { get; set; }
@@ -130,6 +136,7 @@ public sealed class MatchDirector : Component
 		NetLastGoalScoringTeamId = NoTeam;
 		NetIsOvertime = false;
 		NetMatchWinnerTeamId = NoTeam;
+		PushMatchPhaseToPlayers();
 	}
 
 	private void TickMatchTimer()
@@ -195,6 +202,7 @@ public sealed class MatchDirector : Component
 	{
 		NetPhase = (int)MatchPhase.GoalCelebration;
 		NetPhaseTimeRemaining = GoalCelebrationSeconds;
+		PushMatchPhaseToPlayers();
 
 		var teamName = ResolveTeamDisplayName( scoringTeamId );
 		LogMatch( $"GOAL — {teamName} scored. Celebration {GoalCelebrationSeconds:0}s." );
@@ -202,15 +210,116 @@ public sealed class MatchDirector : Component
 
 	private void OnGoalCelebrationEnded()
 	{
-		// Slice 4: teleport players, ball reset, force ragdoll stand-up.
-		LogMatch( "Celebration ended — reset (stub until slice 4)." );
+		PerformRoundReset();
+		LogMatch( "Celebration ended — round reset complete." );
 		BeginIntermission();
+	}
+
+	/// <summary> Host only: stand ragdolls, release ball, teleport players and ball, block pickup for intermission. </summary>
+	private void PerformRoundReset()
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		foreach ( var tackle in Scene.GetAllComponents<PlayerTackle>() )
+		{
+			if ( tackle.IsValid() )
+				tackle.ForceStandUpFromHost();
+		}
+
+		foreach ( var grab in Scene.GetAllComponents<BallGrab>() )
+		{
+			if ( !grab.IsValid() || !grab.IsHolding )
+				continue;
+
+			grab.ReleaseHeldBall();
+		}
+
+		ResetBallToSpawn();
+
+		var networkManager = ResolveNetworkManager();
+		networkManager?.ApplyRoundResetToAllPlayers( IntermissionSeconds );
+
+		var pickupBlockSeconds = IntermissionSeconds;
+		foreach ( var grab in Scene.GetAllComponents<BallGrab>() )
+		{
+			if ( grab.IsValid() )
+				grab.BlockPickupForSeconds( pickupBlockSeconds );
+		}
+	}
+
+	private void ResetBallToSpawn()
+	{
+		if ( !BallSpawn.IsValid() )
+		{
+			Log.Warning( "[Match] BallSpawn is not set — ball was not teleported for round reset." );
+			return;
+		}
+
+		var ball = FindMainBallObject();
+		if ( !ball.IsValid() )
+		{
+			Log.Warning( "[Match] Could not find main ball for round reset." );
+			return;
+		}
+
+		var spawnTransform = WithoutScale( BallSpawn.WorldTransform );
+		spawnTransform.Position = GameNetworkManager.SnapPositionToGround( Scene, spawnTransform.Position );
+		ball.WorldPosition = spawnTransform.Position;
+		ball.WorldRotation = spawnTransform.Rotation;
+
+		foreach ( var body in ball.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !body.IsValid() )
+				continue;
+
+			body.Velocity = Vector3.Zero;
+			body.AngularVelocity = Vector3.Zero;
+		}
+	}
+
+	private GameObject FindMainBallObject()
+	{
+		foreach ( var grab in Scene.GetAllComponents<BallGrab>() )
+		{
+			if ( grab.MainBall.IsValid() )
+				return grab.MainBall;
+		}
+
+		foreach ( var go in Scene.GetAllObjects( true ) )
+		{
+			if ( go.Name == "main_ball" )
+				return go;
+		}
+
+		return null;
+	}
+
+	private GameNetworkManager ResolveNetworkManager()
+	{
+		if ( NetworkManager.IsValid() )
+			return NetworkManager;
+
+		foreach ( var go in Scene.GetAllObjects( true ) )
+		{
+			var manager = go.Components.Get<GameNetworkManager>();
+			if ( manager.IsValid() )
+				return manager;
+		}
+
+		return null;
+	}
+
+	private static Transform WithoutScale( Transform t )
+	{
+		return new Transform( t.Position, t.Rotation, 1f );
 	}
 
 	private void BeginIntermission()
 	{
 		NetPhase = (int)MatchPhase.Intermission;
 		NetPhaseTimeRemaining = IntermissionSeconds;
+		PushMatchPhaseToPlayers();
 		LogMatch( $"Intermission {IntermissionSeconds:0}s." );
 	}
 
@@ -218,6 +327,7 @@ public sealed class MatchDirector : Component
 	{
 		NetPhase = (int)MatchPhase.Playing;
 		NetPhaseTimeRemaining = 0f;
+		PushMatchPhaseToPlayers();
 		LogMatch( "Round resumed — Playing." );
 	}
 
@@ -227,9 +337,22 @@ public sealed class MatchDirector : Component
 		NetPhase = (int)MatchPhase.MatchOver;
 		NetPhaseTimeRemaining = 0f;
 		NetMatchTimeRemaining = 0f;
+		PushMatchPhaseToPlayers();
 
 		var teamName = ResolveTeamDisplayName( winningTeamId );
 		LogMatch( $"Match over — {teamName} wins ({reason}). Score {NetTeam0RoundWins}-{NetTeam1RoundWins}." );
+	}
+
+	/// <summary> MatchDirector lives on local scene objects — phase must be copied onto networked players for clients. </summary>
+	private void PushMatchPhaseToPlayers()
+	{
+		foreach ( var playerTeam in Scene.GetAllComponents<PlayerTeam>() )
+		{
+			if ( !playerTeam.GameObject.Network.Active )
+				continue;
+
+			playerTeam.NetMatchPhase = NetPhase;
+		}
 	}
 
 	private string ResolveTeamDisplayName( int teamId )

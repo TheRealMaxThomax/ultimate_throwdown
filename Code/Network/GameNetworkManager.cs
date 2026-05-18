@@ -245,6 +245,9 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 		spawnedPlayersBySteamId[steamId] = player;
 
+		SyncMatchPhaseToPlayer( player );
+		ApplyMidMatchSpawnRules( player );
+
 		if ( DisableTemplateOnStart && playerTemplate.IsValid() && playerTemplate.Enabled )
 		{
 			playerTemplate.Enabled = false;
@@ -306,16 +309,99 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		return Game.Random.Int( 0, MatchTeamIds.TeamCount - 1 );
 	}
 
+	/// <summary> Host: replicate a grounded team-spawn reset to every active player (all peers apply via <see cref="PlayerTeam"/>). </summary>
+	public void ApplyRoundResetToAllPlayers( float pickupBlockSeconds )
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		foreach ( var player in spawnedPlayersBySteamId.Values )
+		{
+			if ( !player.IsValid() )
+				continue;
+
+			ApplyRoundResetToPlayer( player, pickupBlockSeconds );
+		}
+	}
+
+	/// <summary> Host: set synced reset pose + bump sequence so owner and proxies teleport locally. </summary>
+	public void ApplyRoundResetToPlayer( GameObject player, float pickupBlockSeconds )
+	{
+		if ( !Networking.IsHost || !player.IsValid() )
+			return;
+
+		var playerTeam = player.Components.Get<PlayerTeam>();
+		if ( !playerTeam.IsValid() || !MatchTeamIds.IsValid( playerTeam.TeamId ) )
+			return;
+
+		var t = GetGroundedSpawnTransformForTeam( playerTeam.TeamId );
+		playerTeam.NetRoundResetPosition = t.Position;
+		playerTeam.NetRoundResetRotation = t.Rotation;
+		playerTeam.NetRoundResetSequence++;
+		playerTeam.ApplyRoundResetTransform();
+
+		var ballGrab = player.Components.Get<BallGrab>();
+		if ( ballGrab.IsValid() )
+			ballGrab.BlockPickupForSeconds( pickupBlockSeconds );
+	}
+
+	private void SyncMatchPhaseToPlayer( GameObject player )
+	{
+		if ( !Networking.IsHost || !player.IsValid() )
+			return;
+
+		var director = MatchDirector.FindInScene( Scene );
+		var playerTeam = player.Components.Get<PlayerTeam>();
+		if ( !director.IsValid() || !playerTeam.IsValid() )
+			return;
+
+		playerTeam.NetMatchPhase = director.NetPhase;
+	}
+
+	private Transform GetGroundedSpawnTransformForTeam( int teamId ) => GetSpawnTransformForTeam( teamId, 0 );
+
+	public static Vector3 SnapPositionToGround( Scene scene, Vector3 origin )
+	{
+		var tr = scene.Trace
+			.Ray( origin + Vector3.Up * 30f, origin + Vector3.Down * 200f )
+			.WithoutTags( "ragdoll" )
+			.Run();
+
+		return tr.Hit ? tr.HitPosition : origin;
+	}
+
+	private void ApplyMidMatchSpawnRules( GameObject player )
+	{
+		if ( !Networking.IsHost || !player.IsValid() )
+			return;
+
+		var director = MatchDirector.FindInScene( Scene );
+		if ( !director.IsValid() )
+			return;
+
+		if ( director.CurrentPhase != MatchPhase.Intermission )
+			return;
+
+		var ballGrab = player.Components.Get<BallGrab>();
+		if ( ballGrab.IsValid() && director.NetPhaseTimeRemaining > 0f )
+			ballGrab.BlockPickupForSeconds( director.NetPhaseTimeRemaining );
+	}
+
 	private Transform GetSpawnTransformForTeam( int teamId, int teamSlotIndex )
 	{
 		var spawnList = teamId == MatchTeamIds.Team0 ? Team0Spawns : Team1Spawns;
 		var freePoint = PickFreeSpawnPoint( spawnList, teamId );
+		Transform t;
 		if ( freePoint.IsValid() )
-			return WithoutScale( freePoint.WorldTransform );
+			t = WithoutScale( freePoint.WorldTransform );
+		else
+		{
+			var singleSpawn = teamId == MatchTeamIds.Team0 ? Team0Spawn : Team1Spawn;
+			t = singleSpawn.IsValid() ? WithoutScale( singleSpawn.WorldTransform ) : designSpawnTransform;
+			t.Position += t.Rotation * Vector3.Right * (teamSlotIndex * JoinSpawnSpacing);
+		}
 
-		var singleSpawn = teamId == MatchTeamIds.Team0 ? Team0Spawn : Team1Spawn;
-		var t = singleSpawn.IsValid() ? WithoutScale( singleSpawn.WorldTransform ) : designSpawnTransform;
-		t.Position += t.Rotation * Vector3.Right * (teamSlotIndex * JoinSpawnSpacing);
+		t.Position = SnapPositionToGround( Scene, t.Position );
 		return t;
 	}
 

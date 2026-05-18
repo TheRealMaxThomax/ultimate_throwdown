@@ -198,6 +198,12 @@ public sealed class CatchUpSpeedBoost : Component
 
 		TryCaptureBaselineControllerTimes();
 
+		if ( !IsMatchGameplayInputAllowed() )
+		{
+			ApplyFrozenMovement();
+			return;
+		}
+
 		if ( ballGrab is null )
 			ballGrab = Components.Get<BallGrab>();
 		if ( ballThrow is null )
@@ -252,6 +258,30 @@ public sealed class CatchUpSpeedBoost : Component
 		ApplyMomentumTimesToPlayerController();
 		NetAtChargeSpeed = ownerAtChargeSpeed;
 		ApplyChargeLookDamp( ownerAtChargeSpeed );
+	}
+
+	private bool IsMatchGameplayInputAllowed()
+	{
+		var team = Components.Get<PlayerTeam>();
+		return team is null || team.IsMatchGameplayInputAllowed;
+	}
+
+	private void ApplyFrozenMovement()
+	{
+		forwardMoveTime = 0f;
+		nonHoldingSprintTime = 0f;
+		ownerAtChargeSpeed = false;
+		NetAtChargeSpeed = false;
+		smoothedMoveSpeedCap = 0f;
+		playerController.WalkSpeed = 0f;
+		playerController.RunSpeed = 0f;
+		ResetPlayerControllerMomentumTimesToBaseline();
+		ApplyChargeLookDamp( atChargeSpeed: false );
+		Input.AnalogMove = Vector3.Zero;
+
+		var body = Components.Get<Rigidbody>();
+		if ( body.IsValid() )
+			body.Velocity = Vector3.Zero;
 	}
 
 	private void TryCaptureBaselineControllerTimes()
@@ -566,6 +596,9 @@ public sealed class PlayerDodge : Component
 		if ( !Network.IsOwner )
 			return;
 
+		if ( !IsMatchGameplayInputAllowed() )
+			return;
+
 		playerTackle ??= Components.Get<PlayerTackle>();
 		if ( playerTackle is { IsRagdolled: true } )
 			return;
@@ -628,6 +661,9 @@ public sealed class PlayerDodge : Component
 		directionSign = directionSign < 0 ? -1 : 1;
 
 		if ( Network.Owner is null || Rpc.Caller.SteamId != Network.Owner.SteamId )
+			return;
+
+		if ( !IsMatchGameplayInputAllowed() )
 			return;
 
 		ballGrab ??= Components.Get<BallGrab>();
@@ -751,5 +787,11 @@ public sealed class PlayerDodge : Component
 	{
 		var name = playerClass?.CurrentClass?.ClassName;
 		return name != null && name.Equals( "Sniper", StringComparison.OrdinalIgnoreCase );
+	}
+
+	private bool IsMatchGameplayInputAllowed()
+	{
+		var team = Components.Get<PlayerTeam>();
+		return team is null || team.IsMatchGameplayInputAllowed;
 	}
 }

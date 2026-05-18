@@ -80,7 +80,7 @@ public sealed class BallGrab : Component
 			return;
 		}
 
-		if ( isHolding && Input.Pressed( InteractAction ) )
+		if ( isHolding && Input.Pressed( InteractAction ) && IsMatchGameplayInputAllowed() )
 		{
 			localDropPending = true;
 			var localVelocity = (Components.Get<PlayerController>()?.Velocity ?? Vector3.Zero) * DropVelocityScale;
@@ -106,7 +106,7 @@ public sealed class BallGrab : Component
 
 		// Auto-grab: entering grab range picks up the ball automatically.
 		// Rate-limited to avoid RPC spam; host validates and ignores if already held elsewhere.
-		if ( !isHolding && inRange && PlayerAllowsBallPickup() && !IsMainBallHeldByAnyone() && NetPickupBlockedRemain <= 0f && Time.Now >= nextAutoGrabAttemptAt )
+		if ( !isHolding && inRange && IsMatchGameplayInputAllowed() && PlayerAllowsBallPickup() && !IsMainBallHeldByAnyone() && NetPickupBlockedRemain <= 0f && Time.Now >= nextAutoGrabAttemptAt )
 		{
 			RequestPickUpBallOnHost();
 			nextAutoGrabAttemptAt = Time.Now + 0.1f;
@@ -211,6 +211,9 @@ public sealed class BallGrab : Component
 	[Rpc.Host]
 	private void RequestPickUpBallOnHost()
 	{
+		if ( !IsMatchGameplayInputAllowed() )
+			return;
+
 		var hostDistanceToBall = ballObject.IsValid()
 			? Vector3.DistanceBetween( WorldPosition, ballObject.WorldPosition )
 			: -1f;
@@ -243,6 +246,9 @@ public sealed class BallGrab : Component
 	[Rpc.Host]
 	private void RequestDropBallOnHost( Vector3 playerVelocity )
 	{
+		if ( !IsMatchGameplayInputAllowed() )
+			return;
+
 		if ( EnableNetDebugLogs )
 		{
 			Log.Info( $"[NetDebug] Host drop request received. Caller={Rpc.Caller.DisplayName} IsHolding={isHolding}" );
@@ -425,6 +431,12 @@ public sealed class BallGrab : Component
 			return;
 
 		NetPickupBlockedRemain = MathF.Max( NetPickupBlockedRemain, seconds );
+	}
+
+	private bool IsMatchGameplayInputAllowed()
+	{
+		var team = Components.Get<PlayerTeam>();
+		return team is null || team.IsMatchGameplayInputAllowed;
 	}
 
 	private void ResetHoldingState()
