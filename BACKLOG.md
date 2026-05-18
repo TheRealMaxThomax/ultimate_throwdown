@@ -32,6 +32,7 @@ Keep items short and clear.
 - [ ] Add sound effects for pickup/drop/throw.
 
 ## Done
+- [x] **MP tackle launch parity** — impulse before `NetworkSpawn`, body poll, owner Juggernaut bonus in client tackle RPC (`PlayerTackle`).
 - [x] **Enemy team outlines** — `Highlight` on camera, `PlayerEnemyOutline`, `RagdollEnemyOutline` (copies prefab `HighlightOutline`, `NetVictimTeamId` for clients).
 - [x] **Match flow slice 6** — `MatchOverHud`, 10s match-over celebration, host `1` rematch, `SnapBallToGround`, `NetMatchWinnerTeamId` sync.
 - [x] Match flow slices 1–5 (teams, director, goals, reset/freeze, HUD).

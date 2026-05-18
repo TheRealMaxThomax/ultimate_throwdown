@@ -10,7 +10,7 @@
 
 - **Ball:** `BallGrab` owns hold state; `BallThrow` is separate. Online = host approves grab/drop/throw.
 - **No kicking / no body-push:** Auto-grab when you touch the ball (like Extreme Football Throwdown). Pushing the ball on all clients was too unreliable.
-- **Tackle:** Don’t ragdoll the player object — spawn a **host-owned ragdoll** object. Launch with **pelvis impulse** after a short delay. Disable victim collider **immediately** on host.
+- **Tackle:** Don’t ragdoll the player object — spawn a **host-owned ragdoll** object. Host applies **pelvis `ApplyImpulse`**, then **`NetworkSpawn`** (poll until bodies exist). Disable victim collider **immediately** on host. Client tackles send owner charge bonus in RPC.
 - **Dodge:** Double-tap strafe; shove uses look direction (`EyeAngles`), not body rotation.
 - **Cosmetics:** Own component; don’t mix with spawn logic. Use `CreateFromConnection(..., false)` for other players’ clothes.
 - **Classes:** Stats in `.cdata` / `ClassData` in `PlayerClass.cs` — don’t split into extra files (caused compile errors before).
@@ -26,7 +26,8 @@
 - **2026-04-29** — Host RPC for ball actions; scene `throwdown_prototype` + `GameNetworkManager`.
 - **2026-04-30** — `PlayerCosmeticsSync` separate; clothing API `removeUnowned=false`; LOD lock after apply.
 - **2026-05-04** — Auto-grab; no kick; composition not “god object”; drop uses player facing.
-- **2026-05-06** — Tackle direction toward victim; pelvis `ApplyImpulse`; disable capsule immediately; separate ragdoll GO; `NetworkSpawn` before impulse; ragdoll clothing via `BoneMergeTarget`; client tackle RPC.
+- **2026-05-06** — Tackle direction toward victim; pelvis `ApplyImpulse`; disable capsule immediately; separate ragdoll GO; ragdoll clothing via `BoneMergeTarget`; client tackle RPC.
+- **2026-05-18** — MP launch parity: poll bodies → impulse → `NetworkSpawn` (not spawn-then-fixed-delay). Owner `ownerTackleChargeBonus` in `RequestTackleApplyOnHost`. **Don’t** use `StartAsleep` or collision-sound mute without explicit wake — zero launch.
 - **2026-05-07** — Ragdoll camera + stand-up blend; ball XOR weapon (future); weapon speed penalties (future).
 - **2026-05-08** — Dodge + whiff design linked; dodge shove from `EyeAngles.ToRotation().Right`; `PlayerDodge` in `CatchUpSpeedBoost.cs`.
 - **2026-05-10** — `practice_npc` tag; `Network.IsOwner` for camera; momentum multiplier; forward intent for charge.
@@ -40,11 +41,21 @@
 
 **Don’t** put `ModelPhysics` on the **player prefab** for tackles — the client owns that object and fights the physics.
 
-**Do:** Host spawns `PlayerRagdoll` with `ModelPhysics`, `NetworkSpawn()`, hide player mesh, sync position for camera.
+**Do:** Host spawns local `PlayerRagdoll` with `ModelPhysics`, hide player mesh, sync pelvis for camera (`NetRagdollPosition` / `RagdollClientFeel` on victim owner).
 
-**Launch:** Wait `RagdollPhysicsInitDelay` (~0.05s), then `ApplyImpulse` on pelvis (`Bodies[0]`). `PhysicsGroup.Velocity` was unreliable on spawned ragdolls.
+**Launch (current):**
+1. `CopyBonesFrom` victim renderer.
+2. Poll up to `RagdollPhysicsInitDelay` (default **0.08s**) until `Bodies.Count > 0`.
+3. `ApplyImpulse` on pelvis (`Bodies[0]`) — `launchVelocity * mp.Mass` (not `PhysicsGroup.Velocity`).
+4. **`NetworkSpawn()` after impulse** so clients don’t see a stationary ragdoll then a late launch.
+
+**Client attacker:** `RequestTackleApplyOnHost` sends owner positions + `ownerTackleChargeBonus` (Juggernaut ramp mirror). Host uses `max(hostBonus, ownerBonus)`. Validate hit on **owner** snapshot only — extra host charge/distance gates feel laggy.
+
+**Dead ends (2026-05-18):** `StartAsleep = true` before impulse → no launch. Muting `EnableCollisionSounds` alone was fine in theory but shipped with sleep; reverted both.
 
 **Stand-up trace:** Exclude colliders tagged `ragdoll` so limbs don’t count as floor.
+
+**Symptom: client tackle much shorter than host** — usually was spawn-then-delay-then-impulse + weak host-side Juggernaut bonus, not `TackleLaunchSpeed` alone.
 
 ---
 

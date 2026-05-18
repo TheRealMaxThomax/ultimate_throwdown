@@ -81,7 +81,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **One script, one job** — e.g. `BallGrab` = “who holds the ball”, `BallThrow` = “throwing”.
 - **Walk into the ball = pick it up.** No kick button.
 - **Online: the host is the referee** — clients request; host decides.
-- **Tackles:** Only at full charge speed. Separate **ragdoll object** spawned on host.
+- **Tackles:** Only at full charge speed. Host spawns **ragdoll object**; clients **request** via RPC. Launch = pelvis `ApplyImpulse` on host **before** `NetworkSpawn` (poll `RagdollPhysicsInitDelay` max). Juggernaut bonus: owner mirror sent in RPC so client tackles aren’t weaker.
 - **Dodge:** Double-tap A or D. Tackle iframe only.
 - **Crouch:** Disabled — do not rebind `Duck` without re-enabling intentionally.
 - **Test dummies:** Tag `practice_npc` on **dummies only**.
@@ -96,10 +96,21 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 1. Start Play (host).
 2. Network menu → **Join via new instance** (second window = client).
-3. Check both windows: grab, throw, tackle, dodge, **enemy red outlines** (standing + ragdoll, both directions), **goals, reset, intermission, match over, rematch, HUD**.
+3. Check both windows: grab, throw, tackle (**host→client and client→host**, similar launch distance), dodge, **enemy red outlines** (standing + ragdoll, both directions), **goals, reset, intermission, match over, rematch, HUD**.
 4. Spam actions once to probe desync.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
+
+**Client tackle looks short or late?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Ragdoll (technical)”. Don’t re-add `StartAsleep` or mute collision sounds without waking bodies — broke launch (2026-05-18).
+
+---
+
+## Multiplayer gotcha (tackles)
+
+- Physics and impulse are **host-only** on `PlayerRagdoll`.
+- Remote attacker: `TryOwnerRequestTackleOnHost` → `RequestTackleApplyOnHost` (owner positions + `ownerTackleChargeBonus`).
+- **Do not** require extra host-side charge/distance gates on the RPC — `NetAtChargeSpeed` / host positions lag and tackles feel late.
+- Rare: impact sound spam at tackle start (client → host); left alone — not worth breaking launch.
 
 ---
 
@@ -158,6 +169,7 @@ Read SESSION_NOTES.md. Match flow slices 1–6 are done (MATCH_FLOW_PLAN.md). Do
 
 ## Recent session notes
 
+- **2026-05-18:** MP tackle parity — impulse before `NetworkSpawn` + body poll; owner `ownerTackleChargeBonus` in RPC; reverted `StartAsleep` / collision-sound mute (killed launch).
 - **2026-05-18:** Enemy team outlines — `Highlight` on camera, `PlayerEnemyOutline` + ragdoll copy via `RagdollEnemyOutline` / `NetVictimTeamId` (2-window MP).
 - **2026-05-18:** Match flow **slice 6** — match over celebration, `MatchOverHud`, host **`1`** rematch, ball ground snap fix.
 - **2026-05-18:** Match flow slices 4–5 shipped (reset/MP freeze, HUD + `M.SS` clock); OT setup = reset + intermission; crouch disabled.

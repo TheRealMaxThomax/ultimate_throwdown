@@ -26,6 +26,11 @@ Run this quick checklist before committing gameplay changes.
 - [ ] After tackle: **red outline on ragdoll** on host **and** client (both tackle directions).
 - [ ] Ragdoll outline matches standing player outline (same `HighlightOutline` settings on prefab).
 
+## Tackle (2 windows)
+- [ ] Host tackles client: ragdoll launches immediately; distance feels normal.
+- [ ] Client tackles host: same — no long “frozen ragdoll then launch” beat; distance similar to host tackle (same spot / class).
+- [ ] Juggernaut at charge: client and host tackles feel similarly strong (not weak client hits).
+
 ## Core Ball Loop
 - [ ] Can approach the ball and see prompt text.
 - [ ] Can pick up ball using `InteractAction`.

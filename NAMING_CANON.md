@@ -62,7 +62,7 @@
 
 **Often-used on `RagdollEnemyOutline`:** `NetVictimTeamId` (synced), `ConfigureFromVictim()` (host, before network spawn)
 
-**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `RagdollPhysicsInitDelay` (spawns ragdoll + `RagdollEnemyOutline`)  
+**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `RagdollPhysicsInitDelay` (max poll for bodies → impulse → `NetworkSpawn` + `RagdollEnemyOutline`); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg)  
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
 **Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`  
 **Tag for test dummies only:** `practice_npc`

@@ -98,6 +98,8 @@ Think of three gears:
 - Victim stands up after on ground and settled, or after a max time
 - Brief invincibility after getting up
 
+**Multiplayer (built):** Host applies pelvis impulse on a local ragdoll, then `NetworkSpawn` (poll `RagdollPhysicsInitDelay` for bodies). Remote attacker RPC includes **owner Juggernaut charge bonus** so launch power matches what the client had. See [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → Ragdoll (technical).
+
 **Launch tuning:** `TackleLaunchSpeed` and `TackleLaunchArc` on `PlayerTackle` — try values in the **400–800** range in playtests.
 
 **Heavier vs lighter class:** Tackle power uses mass ratio (from `.cdata` `Mass` field).

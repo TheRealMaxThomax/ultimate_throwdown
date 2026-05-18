@@ -2,6 +2,8 @@
 
 **RESOLVED — 06/05/26 session 4. See SESSION_NOTES.md for final API decisions.**
 
+**Current MP flow (2026-05-18):** Poll for bodies → `ApplyImpulse` on host → `NetworkSpawn`. Details in [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → Ragdoll (technical). Old “spawn then fixed delay then impulse” caused client tackles to look shorter/late.
+
 Root cause: `TackleLaunchSpeed` was set to 150 in the inspector. At that speed the ragdoll only travels ~35 units which looks like it collapses in place. At 600 it visibly flies. Physics was working the whole time.
 
 Secondary fixes made during this session (all kept):
