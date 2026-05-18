@@ -17,6 +17,12 @@
 | Tackle + ragdoll | Built (launch strength still tuning) |
 | Dodge (double-tap strafe) | Built |
 | Tackle whiff (miss penalty) | **Deferred** — not building unless playtests need it |
+| Teams + team spawns (balance on join) | **Built** — see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) |
+| Match phases (celebration / intermission / timer / OT) | **Built** — `MatchDirector`; reset after goal **not yet** |
+| Goal zones + dwell scoring | **Built** — `GoalZone`; own-goal impossible by `DefendingTeam` |
+| Post-goal reset (teleport, ball center) | **Not built** (slice 4) |
+| Match HUD (score, banner, countdown) | **Not built** (slice 5) |
+| Match over + rematch | **Not built** (slice 6) |
 | Weapons | **Not built** |
 | Class passives / ults | **Not built** (stats in `.cdata` mostly are) |
 
@@ -135,3 +141,14 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 **Juggernaut:** Stronger tackle while at charge (partially in); ult = AOE knockdown stomp.
 
 For exact field names on `ClassData`, see [`NAMING_CANON.md`](NAMING_CANON.md).
+
+---
+
+## Match flow (summary)
+
+Full spec: [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md).
+
+- **Round win:** carrier holds ball in opponent `GoalZone` for ~0.35s.
+- **Match win:** first to **5** round wins, or OT golden goal if timer ends tied.
+- **After goal:** 5s celebration (move freely) → reset → 20s intermission (freeze except camera) → resume. Timer **paused** during celebration + intermission.
+- **Teams:** ids `0`/`1`; display names per map; balance on join.

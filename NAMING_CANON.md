@@ -29,11 +29,13 @@
 | `MatchTeamIds` | Constants `Team0` / `Team1` (ids `0` / `1`) |
 | `MatchDirector` | Phase state machine, round wins, match timer, debug force goal |
 | `MatchPhase` | Enum: `Playing`, `GoalCelebration`, `Intermission`, `MatchOver` |
-| `GoalZone` | *(planned)* Defended goal volume + scoring dwell |
+| `GoalZone` | Defended goal volume + host dwell scoring (`DefendingTeam`, `ScoreDwellSeconds`) |
 
 **Often-used on `PlayerTeam`:** `TeamId` (synced, host-assigned)
 
-**Often-used on `MatchDirector`:** `CurrentPhase`, `IsGameplayInputAllowed`, `RegisterGoal()`, `NetTeam0RoundWins`, `NetTeam1RoundWins`, `NetMatchTimeRemaining`, `NetPhaseTimeRemaining`, `NetIsOvertime`, `EnableDebugForceGoal`, `DebugForceGoalAction` (`DebugForceGoal` → F9 in `Input.config`)
+**Often-used on `MatchDirector`:** `CurrentPhase`, `IsGameplayInputAllowed`, `RegisterGoal()`, `HostRequestRematch()`, `NetTeam0RoundWins`, `NetTeam1RoundWins`, `NetMatchTimeRemaining`, `NetPhaseTimeRemaining`, `NetLastGoalScoringTeamId`, `NetIsOvertime`, `EnableDebugForceGoal`, `DebugForceGoalAction` (`DebugForceGoal` → `,` in `Input.config`)
+
+**Often-used on `GoalZone`:** `DefendingTeam`, `BoxSize`, `ScoreDwellSeconds`, `EnableGoalZoneDebugLogs`
 
 ---
 
@@ -63,6 +65,10 @@
 |------|-----|
 | `DodgeCooldownHud` | Placeholder dodge cooldown timer (owner HUD) |
 | `MovementRampHud` | Placeholder walk / sprint / charge ramp bar (owner HUD) |
+| `MatchScoreHud` | *(planned)* Round wins top bar |
+| `GoalBannerHud` | *(planned)* "TEAM A SCORED!" during celebration |
+| `IntermissionHud` | *(planned)* Intermission countdown |
+| `MatchOverHud` | *(planned)* Winner + rematch |
 
 ---
 

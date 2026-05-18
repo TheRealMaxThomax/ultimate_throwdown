@@ -14,16 +14,18 @@
 
 ## Right now
 
-**Goal:** Polish tackles and movement; test multiplayer more. Dodge works.
+**Goal:** Finish match flow — reset after goals, HUD, match over/rematch. Slices 1–3 (teams, phases, real scoring) are **in**.
 
-**Tackle whiff:** **Not adding now** — charge yaw + dodge tiers are enough unless playtests say otherwise. If we add it later: **carrier keeps sprint** on a committed miss, not attacker → sprint. Details → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md).
+**Match flow detail:** [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) — full plan + what’s done vs slice 4–6.
 
-**Works today:** Pick up / drop / throw ball; auto-grab when you walk into the ball; tackles and ragdolls in multiplayer; dodge (double-tap left/right strafe).
+**Works today:** Ball grab/throw; tackles/ragdolls; dodge; **team assign + team spawns**; **`MatchDirector`** phases (celebration/intermission/timer/OT); **real goals** via `GoalZone` (hold ball in opponent zone ~0.35s). **Not yet:** teleport/ball reset after goal, input freeze in intermission, score HUD, rematch UI.
 
-**Next up (in order):**
-1. Playtest multiplayer in **two game windows** (host + join).
-2. Tune how hard tackles launch people (`TackleLaunchSpeed` in the editor).
-3. Later: nicer stand-up animation.
+**Next up (match flow, in order):**
+1. **Slice 4** — reset (teleport to spawns, ball to `BallSpawn`, force stand ragdolls, freeze input in intermission).
+2. **Slice 5** — HUD (round score, goal banner, intermission countdown).
+3. **Slice 6** — match over + host rematch same map.
+
+**Still later:** Tackle tuning, longer MP playtests, tackle whiff deferred → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md).
 
 **Git:** Work on branch `main`, commit when a chunk of work is done.
 
@@ -52,9 +54,10 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | `Code/Ball/` | Ball pickup, throw, charge bar, smooth ball on clients |
 | `Code/Player/` | Movement speed, dodge, tackle, class stats, cosmetics |
 | `Code/Network/` | Spawning players when people join |
+| `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig`, team/match flow |
 | `Code/Map/` | Loads `testing_map` when the game starts |
 
-**Scene you play in:** `scenes/throwdown_prototype.scene` (must have `GameNetworkManager`).
+**Scene you play in:** `scenes/throwdown_prototype.scene` (must have `GameNetworkManager` + `MatchDirector` + two `GoalZone`s).
 
 **Important:** AI should **not** edit `.scene` files for you — you wire components in the s&box editor. AI edits `.cs` scripts when you ask.
 
@@ -86,6 +89,13 @@ More detail on past choices → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHI
 ---
 
 ## Editor checklist (after scripts recompile)
+
+**Match flow (scene root / manager object):**
+- `GameNetworkManager` — `PlayerTemplateRoot`, `Team0Spawns` / `Team1Spawns` (6 each), optional `MatchConfig`
+- `MatchDirector` — `Enable Match Debug Logs`; debug goal via `DebugForceGoal` (`,` key) until removed
+- `MapMatchConfig` — Team A / Team B display names
+- Two **`GoalZone`** objects — opposite `Defending Team` (0 and 1), `Box Size` tuned to goal mouth
+- **`BallSpawn`** empty at center — wire when slice 4 lands (not required yet)
 
 On the **player** object, confirm these components exist:
 
@@ -126,12 +136,13 @@ Also:
 
 Paste at the start of a new chat:
 
-`Read SESSION_NOTES.md first. Continue from “Next up”. Only open other doc files if the task needs them.`
+`Read SESSION_NOTES.md and MATCH_FLOW_PLAN.md first. Continue from “Next up”. Only open other doc files if the task needs them.`
 
 **Undecided list:** When we postpone a design choice, add one short bullet under **Open decisions**; remove it when we decide.
 
 ## Recent session notes
 
+- **2026-05-18:** Match flow slices 1–3 shipped (teams/spawns, `MatchDirector`, `GoalZone` scoring); slice 4+ in [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md).
 - **2026-05-18:** Tackle whiff deferred (carrier-sprint shape if needed later); docs split into smaller files.
 - **2026-05-13:** Map loads on clients too; keep `Resources: null`.
 - **2026-05-08:** Dodge added (double-tap strafe).

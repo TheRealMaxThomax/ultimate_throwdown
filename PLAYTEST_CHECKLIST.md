@@ -10,6 +10,13 @@ Run this quick checklist before committing gameplay changes.
 - [ ] If reconnect is needed, use `reconnect` in the second window console.
 - [ ] If needed, manual join fallback is `connect local` in second window console.
 
+## Match Flow (after match-flow changes)
+- [ ] Pick up ball and score in **opponent** `GoalZone` (~0.35s dwell) — `[Match] GOAL` in console.
+- [ ] Enter **own** defended zone with ball — no goal.
+- [ ] After goal: 5s celebration → (slice 4+) teleport + ball reset → 20s intermission frozen except camera → play resumes.
+- [ ] Round wins increment; first to 5 → match over (slice 6+ rematch UI).
+- [ ] Debug: `,` (`DebugForceGoal`) still triggers goal on host when enabled.
+
 ## Core Ball Loop
 - [ ] Can approach the ball and see prompt text.
 - [ ] Can pick up ball using `InteractAction`.

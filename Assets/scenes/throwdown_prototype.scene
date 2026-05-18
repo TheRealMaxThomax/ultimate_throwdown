@@ -9776,7 +9776,7 @@
       "__guid": "8c8ab952-c29c-4e53-88c3-08f81a351980",
       "__version": 2,
       "Flags": 0,
-      "Name": "TeamSpawnsA",
+      "Name": "TeamSpawnsB",
       "Position": "-1116.89038,39.9997635,351.259399",
       "Rotation": "0,0,0,1",
       "Scale": "5,10,4",
@@ -9926,6 +9926,78 @@
           "Children": []
         }
       ]
+    },
+    {
+      "__guid": "f9a4912d-2269-47e7-b4c1-cdd5218bed85",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "GoalZoneA",
+      "Position": "-1118.97571,39.9819565,350.680145",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "GoalZone",
+          "__guid": "39e61ba9-84b8-4148-a4e5-af4b44874bd5",
+          "__enabled": true,
+          "Flags": 0,
+          "BoxSize": "250,500,200",
+          "DefendingTeam": 1,
+          "EnableGoalZoneDebugLogs": true,
+          "GizmoColor": "1,0,0,0.5",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "ScoreDwellSeconds": 0.35
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "b2f55c01-88a5-4a9d-9c69-3f458657f894",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "GoalZoneB",
+      "Position": "1696.59875,39.9819565,350.680145",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "GoalZone",
+          "__guid": "5dda029f-2470-4abd-95c1-809e51f47ed5",
+          "__enabled": true,
+          "Flags": 0,
+          "BoxSize": "250,500,200",
+          "DefendingTeam": 0,
+          "EnableGoalZoneDebugLogs": true,
+          "GizmoColor": "0.26667,0,1,0.5",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "ScoreDwellSeconds": 0.35
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
