@@ -10,12 +10,15 @@ Run this quick checklist before committing gameplay changes.
 - [ ] If reconnect is needed, use `reconnect` in the second window console.
 - [ ] If needed, manual join fallback is `connect local` in second window console.
 
-## Match Flow (after match-flow changes)
-- [ ] Pick up ball and score in **opponent** `GoalZone` (~0.35s dwell) — `[Match] GOAL` in console.
-- [ ] Enter **own** defended zone with ball — no goal.
-- [ ] After goal: 5s celebration → (slice 4+) teleport + ball reset → 20s intermission frozen except camera → play resumes.
-- [ ] Round wins increment; first to 5 → match over (slice 6+ rematch UI).
-- [ ] Debug: `,` (`DebugForceGoal`) still triggers goal on host when enabled.
+## Match Flow
+- [ ] Score in **opponent** `GoalZone` (~0.35s dwell) — goal banner + score HUD update (both windows).
+- [ ] **Own** defended zone — no goal.
+- [ ] After goal: 5s celebration (can move) → teleport + ball center → 20s intermission frozen except camera → play resumes (host **and** client).
+- [ ] Match clock `10.00` → `9.59`… while playing; pauses during celebration/intermission.
+- [ ] Tied at 0:00 → **OVERTIME** on clock → reset + 20s intermission → golden-goal round.
+- [ ] Round wins increment; first to 5 → `MatchOver` phase (slice 6: rematch UI not built yet).
+- [ ] Debug: `,` (`DebugForceGoal`) triggers goal on host when enabled.
+- [ ] Ctrl / crouch does nothing (`PlayerDisableCrouch`).
 
 ## Core Ball Loop
 - [ ] Can approach the ball and see prompt text.

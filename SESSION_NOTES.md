@@ -6,6 +6,7 @@
 | File | Open when… |
 |------|------------|
 | **This file** | Every session — current goal, checklist, don’t-break rules |
+| [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) | Match flow slices, networking gotchas, slice 6 tasks |
 | [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) | Tuning dodge/tackle, or planning weapons / classes |
 | [`NAMING_CANON.md`](NAMING_CANON.md) | Exact script/property names — agents read this automatically when adding/renaming under `Code/` |
 | [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) | Something broke before and you want the long “why we did it” story |
@@ -14,16 +15,21 @@
 
 ## Right now
 
-**Goal:** Finish match flow — reset after goals, HUD, match over/rematch. Slices 1–3 (teams, phases, real scoring) are **in**.
+**Goal:** **Slice 6 only** — match over screen + host rematch. Match flow slices 1–5 are **in** and playtested (2-window MP).
 
-**Match flow detail:** [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) — full plan + what’s done vs slice 4–6.
+**Match flow detail:** [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md)
 
-**Works today:** Ball grab/throw; tackles/ragdolls; dodge; **team assign + team spawns**; **`MatchDirector`** phases (celebration/intermission/timer/OT); **real goals** via `GoalZone` (hold ball in opponent zone ~0.35s). **Not yet:** teleport/ball reset after goal, input freeze in intermission, score HUD, rematch UI.
+**Works today:**
+- Ball grab/throw; tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
+- **Teams + spawns** (balance on join, ground-snapped spawns)
+- **`MatchDirector`** — phases, 10:00 match clock (`M.SS`), celebration / intermission, **OVERTIME** (tied at 0:00 → reset + 20s intermission, then golden goal)
+- **`GoalZone`** dwell scoring
+- **Post-goal reset** — teleport to spawns, ball to `BallSpawn`, ragdoll stand-up, 20s freeze (camera free)
+- **Match HUD** on scene **`MatchHud`** root — score, clock, goal banner, intermission countdown
 
-**Next up (match flow, in order):**
-1. **Slice 4** — reset (teleport to spawns, ball to `BallSpawn`, force stand ragdolls, freeze input in intermission).
-2. **Slice 5** — HUD (round score, goal banner, intermission countdown).
-3. **Slice 6** — match over + host rematch same map.
+**Not yet:** `MatchOverHud`, working `HostRequestRematch()`, remove debug force-goal before ship.
+
+**Next up:** **Slice 6** — match over UI + rematch (reuse slice 4 reset).
 
 **Still later:** Tackle tuning, longer MP playtests, tackle whiff deferred → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md).
 
@@ -52,66 +58,71 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | Folder | What’s in it |
 |--------|----------------|
 | `Code/Ball/` | Ball pickup, throw, charge bar, smooth ball on clients |
-| `Code/Player/` | Movement speed, dodge, tackle, class stats, cosmetics |
+| `Code/Player/` | Movement, dodge, tackle, team, class, cosmetics, **no crouch** |
 | `Code/Network/` | Spawning players when people join |
-| `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig`, team/match flow |
+| `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig` |
+| `Code/UI/` | Match HUD + placeholder owner HUDs (dodge/ramp) |
 | `Code/Map/` | Loads `testing_map` when the game starts |
 
-**Scene you play in:** `scenes/throwdown_prototype.scene` (must have `GameNetworkManager` + `MatchDirector` + two `GoalZone`s).
+**Scene you play in:** `scenes/throwdown_prototype.scene`
 
-**Important:** AI should **not** edit `.scene` files for you — you wire components in the s&box editor. AI edits `.cs` scripts when you ask.
+**Important:** AI should **not** edit `.scene` files unless you ask — you wire components in the s&box editor.
+
+---
+
+## Multiplayer gotcha (match flow)
+
+`MatchDirector` is on **Main Camera** — each machine has its own copy. **Clients do not** use it for freeze/HUD/score.
+
+**Authoritative on clients:** synced fields on **`PlayerTeam`** (on each network-spawned player). Host pushes via `MatchDirector.PushMatchHudStateToPlayers()`.
 
 ---
 
 ## How the game is put together (simple rules)
 
 - **One script, one job** — e.g. `BallGrab` = “who holds the ball”, `BallThrow` = “throwing”.
-- **Walk into the ball = pick it up.** No kick button. No pushing the ball with your body (too hard to sync online).
-- **Online: the host is the referee** — clients ask (“I want to throw”); host decides and tells everyone the result.
-- **Tackles:** Only at full charge speed. Host spawns a **separate ragdoll object** (not physics on the player prefab).
-- **Dodge:** Double-tap A or D (strafe left/right). Short invincibility vs tackles only. Carrier drops to walk after dodge; charge yaw slows a charger’s re-aim for a second pass.
-- **Test dummies:** Tag `practice_npc` on **dummies only**, never on real players.
-- **Weapons later:** You’ll hold ball **or** weapon, not both (not implemented yet).
+- **Walk into the ball = pick it up.** No kick button.
+- **Online: the host is the referee** — clients request; host decides.
+- **Tackles:** Only at full charge speed. Separate **ragdoll object** spawned on host.
+- **Dodge:** Double-tap A or D. Tackle iframe only.
+- **Crouch:** Disabled — do not rebind `Duck` without re-enabling intentionally.
+- **Test dummies:** Tag `practice_npc` on **dummies only**.
+- **Weapons later:** Ball **or** weapon, not both (not implemented).
 
-More detail on past choices → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
+More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 ---
 
 ## Multiplayer testing (do this after network changes)
 
 1. Start Play (host).
-2. Use the network menu → **Join via new instance** (second window = client).
-3. Check both windows see the same thing: grab, drop, throw, tackle, dodge.
-4. Try spamming actions once to see if anything desyncs.
+2. Network menu → **Join via new instance** (second window = client).
+3. Check both windows: grab, throw, tackle, dodge, **goals, reset, intermission freeze, HUD**.
+4. Spam actions once to probe desync.
 
-**Ball feels jittery on client only?** See the fix steps in [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
+**Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
 
 ---
 
-## Editor checklist (after scripts recompile)
+## Editor checklist
 
-**Match flow (scene root / manager object):**
-- `GameNetworkManager` — `PlayerTemplateRoot`, `Team0Spawns` / `Team1Spawns` (6 each), optional `MatchConfig`
-- `MatchDirector` — `Enable Match Debug Logs`; debug goal via `DebugForceGoal` (`,` key) until removed
-- `MapMatchConfig` — Team A / Team B display names
-- Two **`GoalZone`** objects — opposite `Defending Team` (0 and 1), `Box Size` tuned to goal mouth
-- **`BallSpawn`** empty at center — wire when slice 4 lands (not required yet)
+**Main Camera (manager):**
+- `GameNetworkManager` — `PlayerTemplateRoot`, `Team0Spawns` / `Team1Spawns` (6 each)
+- `MatchDirector` — `BallSpawn` wired; `Enable Match Debug Logs` optional; remove `EnableDebugForceGoal` before ship
+- `MapMatchConfig` — team display names
 
-On the **player** object, confirm these components exist:
+**`MatchHud` empty (scene UI root):**
+- `MatchScoreHud`, `MatchClockHud`, `GoalBannerHud`, `IntermissionHud`
 
-- `PlayerTackle`
-- `PlayerDodge`
-- `RagdollClientFeel`
-- `PlayerClass` (with a `.cdata` file assigned)
-- `CatchUpSpeedBoost`
+**Map:**
+- Two **`GoalZone`** — opposite `Defending Team`, tuned `Box Size`
+- **`BallSpawn`** at center → wired on `MatchDirector`
 
-Also:
-
-- `PlayerController` → third-person camera distance **X = 185**
-- **Do not** add `ModelPhysics` on the player (ragdoll is spawned separately)
-- Optional: `MapInstance` with map name `testing_map`; remove duplicate grass floor if using Hammer floor
-
-**Class data (`.cdata`):** If numbers feel wrong, open Speedster / Sniper / Juggernaut assets and check movement speeds (140 / 220 / 320) and dodge distance **260**, iframe **0.14 s**.
+**Player prefab:**
+- `PlayerTeam` (auto at spawn), `PlayerTackle`, `PlayerDodge`, `RagdollClientFeel`, `PlayerClass`, `CatchUpSpeedBoost`
+- **`PlayerDisableCrouch`** (also auto-added at network spawn — add on prefab for scene NPCs)
+- `DodgeCooldownHud`, `MovementRampHud`, `ThrowChargeBar` (owner HUD)
+- `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
 
 ---
 
@@ -125,10 +136,10 @@ Also:
 
 ## Known issues
 
-- [ ] Throw strength still needs playtest tuning (`ThrowForce`, etc. in inspector)
-- [ ] While charging a throw, walk/run animations can play even though you can’t move
+- [ ] Throw strength still needs playtest tuning
+- [ ] Walk/run animations while charging throw (can’t move)
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
-- [ ] Closed indoor map was hard to read; using open roof for now
+- [ ] Match over is phase-only today — no rematch UI until slice 6
 
 ---
 
@@ -136,14 +147,18 @@ Also:
 
 Paste at the start of a new chat:
 
-`Read SESSION_NOTES.md and MATCH_FLOW_PLAN.md first. Continue from “Next up”. Only open other doc files if the task needs them.`
+```
+Read SESSION_NOTES.md and MATCH_FLOW_PLAN.md. Continue from slice 6 (match over + rematch). Do not edit .scene files unless I ask.
+```
 
-**Undecided list:** When we postpone a design choice, add one short bullet under **Open decisions**; remove it when we decide.
+**Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
+
+---
 
 ## Recent session notes
 
-- **2026-05-18:** Match flow slices 1–3 shipped (teams/spawns, `MatchDirector`, `GoalZone` scoring); slice 4+ in [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md).
-- **2026-05-18:** Tackle whiff deferred (carrier-sprint shape if needed later); docs split into smaller files.
-- **2026-05-13:** Map loads on clients too; keep `Resources: null`.
-- **2026-05-08:** Dodge added (double-tap strafe).
+- **2026-05-18:** Match flow slices 4–5 shipped (reset/MP freeze, HUD + `M.SS` clock); OT setup = reset + intermission; crouch disabled.
+- **2026-05-18:** Match flow slices 1–3 (teams, `MatchDirector`, `GoalZone`).
+- **2026-05-18:** Tackle whiff deferred; docs split.
+- **2026-05-13:** Map on clients; keep `Resources: null`.
 - Older log → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).

@@ -9,10 +9,11 @@ public sealed class MatchDirector : Component
 	[Property] public float MatchDurationSeconds { get; set; } = 600f;
 	[Property] public float GoalCelebrationSeconds { get; set; } = 5f;
 	[Property] public float IntermissionSeconds { get; set; } = 20f;
+	[Property] public float MatchOverCelebrationSeconds { get; set; } = 10f;
 	[Property] public int RoundWinsToWinMatch { get; set; } = 5;
 
 	/// <summary> DEBUG: remove or gate before shipping — simulates a goal for testing without <see cref="GoalZone"/>. </summary>
-	[Property] public bool EnableDebugForceGoal { get; set; } = true;
+	[Property] public bool EnableDebugForceGoal { get; set; } = false;
 
 	/// <summary> DEBUG: input action from <c>Input.config</c> (default F9). Host only. </summary>
 	[Property] public string DebugForceGoalAction { get; set; } = "DebugForceGoal";
@@ -36,9 +37,10 @@ public sealed class MatchDirector : Component
 
 	public MatchPhase CurrentPhase => (MatchPhase)NetPhase;
 
-	/// <summary> Movement, ball, tackle, etc. Slice 4+ will consult this. Celebration still allows movement. </summary>
+	/// <summary> Movement, ball, tackle, etc. Goal + match-over celebration allow movement. </summary>
 	public bool IsGameplayInputAllowed =>
-		CurrentPhase is MatchPhase.Playing or MatchPhase.GoalCelebration;
+		CurrentPhase is MatchPhase.Playing or MatchPhase.GoalCelebration
+		|| (CurrentPhase == MatchPhase.MatchOver && NetPhaseTimeRemaining > 0f);
 
 	/// <summary> Camera look is always allowed during intermission / match over. </summary>
 	public bool IsCameraInputAllowed => true;
@@ -117,12 +119,16 @@ public sealed class MatchDirector : Component
 		BeginGoalCelebration( scoringTeamId );
 	}
 
-	/// <summary> Slice 6 — host rematch same map. </summary>
+	/// <summary> Slice 6 — host rematch same map (Playing + fresh score/timer + round reset). </summary>
 	public void HostRequestRematch()
 	{
 		if ( !Networking.IsHost )
 			return;
 
+		if ( CurrentPhase != MatchPhase.MatchOver || NetPhaseTimeRemaining > 0f )
+			return;
+
+		PerformRoundReset( 0f );
 		ResetMatchState();
 		LogMatch( "Rematch started." );
 	}
@@ -184,7 +190,7 @@ public sealed class MatchDirector : Component
 		NetIsOvertime = true;
 		NetMatchTimeRemaining = 0f;
 		LogMatch( "Match timer expired — tied round wins. OVERTIME: reset + intermission, then next goal wins." );
-		PerformRoundReset();
+		PerformRoundReset( IntermissionSeconds );
 		LogMatch( "OVERTIME reset complete." );
 		BeginIntermission();
 	}
@@ -221,13 +227,13 @@ public sealed class MatchDirector : Component
 
 	private void OnGoalCelebrationEnded()
 	{
-		PerformRoundReset();
+		PerformRoundReset( IntermissionSeconds );
 		LogMatch( "Celebration ended — round reset complete." );
 		BeginIntermission();
 	}
 
-	/// <summary> Host only: stand ragdolls, release ball, teleport players and ball, block pickup for intermission. </summary>
-	private void PerformRoundReset()
+	/// <summary> Host only: stand ragdolls, release ball, teleport players and ball; optional pickup block (intermission). </summary>
+	private void PerformRoundReset( float pickupBlockSeconds )
 	{
 		if ( !Networking.IsHost )
 			return;
@@ -249,9 +255,8 @@ public sealed class MatchDirector : Component
 		ResetBallToSpawn();
 
 		var networkManager = ResolveNetworkManager();
-		networkManager?.ApplyRoundResetToAllPlayers( IntermissionSeconds );
+		networkManager?.ApplyRoundResetToAllPlayers( pickupBlockSeconds );
 
-		var pickupBlockSeconds = IntermissionSeconds;
 		foreach ( var grab in Scene.GetAllComponents<BallGrab>() )
 		{
 			if ( grab.IsValid() )
@@ -275,7 +280,7 @@ public sealed class MatchDirector : Component
 		}
 
 		var spawnTransform = WithoutScale( BallSpawn.WorldTransform );
-		spawnTransform.Position = GameNetworkManager.SnapPositionToGround( Scene, spawnTransform.Position );
+		spawnTransform.Position = GameNetworkManager.SnapBallToGround( Scene, ball, spawnTransform.Position );
 		ball.WorldPosition = spawnTransform.Position;
 		ball.WorldRotation = spawnTransform.Rotation;
 
@@ -349,12 +354,12 @@ public sealed class MatchDirector : Component
 	{
 		NetMatchWinnerTeamId = winningTeamId;
 		NetPhase = (int)MatchPhase.MatchOver;
-		NetPhaseTimeRemaining = 0f;
+		NetPhaseTimeRemaining = MatchOverCelebrationSeconds;
 		NetMatchTimeRemaining = 0f;
 		PushMatchHudStateToPlayers();
 
 		var teamName = ResolveTeamDisplayName( winningTeamId );
-		LogMatch( $"Match over — {teamName} wins ({reason}). Score {NetTeam0RoundWins}-{NetTeam1RoundWins}." );
+		LogMatch( $"Match over — {teamName} wins ({reason}). Score {NetTeam0RoundWins}-{NetTeam1RoundWins}. Celebration {MatchOverCelebrationSeconds:0}s." );
 	}
 
 	/// <summary> MatchDirector lives on local scene objects — HUD + phase must be copied onto networked players for clients. </summary>
@@ -375,6 +380,7 @@ public sealed class MatchDirector : Component
 			playerTeam.NetPhaseTimeRemaining = NetPhaseTimeRemaining;
 			playerTeam.NetLastGoalScoringTeamId = NetLastGoalScoringTeamId;
 			playerTeam.NetIsOvertime = NetIsOvertime;
+			playerTeam.NetMatchWinnerTeamId = NetMatchWinnerTeamId;
 		}
 	}
 

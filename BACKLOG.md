@@ -4,17 +4,18 @@ Use this file to track ideas, bugs, and next milestones.
 Keep items short and clear.
 
 ## Current Milestone
-- Make core grab/drop/throw loop feel good and stable.
+- **Match flow slice 6:** `MatchOverHud` + working `HostRequestRematch()`. Slices 1–5 shipped (see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md)).
 
 ## TODO (Next Up)
-- [ ] Run extended 2-window multiplayer stress pass (15-20 min): pickup/drop/throw spam + jump-drop edge cases.
+- [ ] **Slice 6** — match over UI + host rematch; remove `EnableDebugForceGoal` before calling match flow shipped.
+- [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, HUD sync.
 - [ ] Improve free-ball client feel to better match host while keeping shared position consistency.
 - [ ] Tune `BallClientFeel` values (`FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`) with repeatable multiplayer push tests.
 - [ ] Tune `ThrowForce`, `ThrowUpForce`, and `ThrowStartOffset`.
 - [ ] Tune charged throw values (`MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`).
 - [ ] Tune movement ramp values (`StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`).
-- [ ] Decide next loop piece: scoring / reset (no separate pass/catch — charged throw = pass, walk-in `BallGrab` = catch).
-- [ ] HUD timing decision: keep temporary debug charge bar until throw feel is stable for a few sessions, then build proper HUD charge panel.
+- [ ] Match HUD: replace placeholder draw with styled UI when art pass is ready (slice 5 placeholders work).
+- [ ] HUD timing decision: keep temporary debug charge bar until throw feel is stable, then build proper throw charge panel.
 
 ## Bugs / Issues
 - [ ] While charging throw, movement is locked but walk/run animations still play in place.

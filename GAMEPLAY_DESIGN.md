@@ -18,11 +18,13 @@
 | Dodge (double-tap strafe) | Built |
 | Tackle whiff (miss penalty) | **Deferred** — not building unless playtests need it |
 | Teams + team spawns (balance on join) | **Built** — see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) |
-| Match phases (celebration / intermission / timer / OT) | **Built** — `MatchDirector`; reset after goal **not yet** |
+| Match phases (celebration / intermission / timer / OT) | **Built** — `MatchDirector` |
 | Goal zones + dwell scoring | **Built** — `GoalZone`; own-goal impossible by `DefendingTeam` |
-| Post-goal reset (teleport, ball center) | **Not built** (slice 4) |
-| Match HUD (score, banner, countdown) | **Not built** (slice 5) |
-| Match over + rematch | **Not built** (slice 6) |
+| Post-goal reset (teleport, ball center, intermission freeze) | **Built** (slice 4); MP via `PlayerTeam` sync |
+| OVERTIME setup (tied timer → reset + intermission) | **Built** — `BeginOvertimeSetup()` |
+| Match HUD (score, clock, banner, countdown) | **Built** (slice 5) — placeholder draw on `MatchHud` root |
+| Match over + rematch UI | **Not built** (slice 6) |
+| Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives / ults | **Not built** (stats in `.cdata` mostly are) |
 
@@ -149,6 +151,8 @@ For exact field names on `ClassData`, see [`NAMING_CANON.md`](NAMING_CANON.md).
 Full spec: [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md).
 
 - **Round win:** carrier holds ball in opponent `GoalZone` for ~0.35s.
-- **Match win:** first to **5** round wins, or OT golden goal if timer ends tied.
+- **Match win:** first to **5** round wins, or OT golden goal if timer ends tied on round wins.
 - **After goal:** 5s celebration (move freely) → reset → 20s intermission (freeze except camera) → resume. Timer **paused** during celebration + intermission.
+- **OVERTIME:** tied at 0:00 → reset + 20s intermission (no celebration) → golden-goal `Playing`; clock shows **OVERTIME**.
+- **HUD:** score + `M.SS` clock + goal banner + intermission countdown on scene `MatchHud` root (reads `PlayerTeam` sync).
 - **Teams:** ids `0`/`1`; display names per map; balance on join.

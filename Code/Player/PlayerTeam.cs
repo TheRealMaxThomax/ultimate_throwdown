@@ -41,14 +41,18 @@ public sealed class PlayerTeam : Component
 	[Sync( SyncFlags.FromHost )]
 	public bool NetIsOvertime { get; set; }
 
+	[Sync( SyncFlags.FromHost )]
+	public int NetMatchWinnerTeamId { get; set; } = MatchDirector.NoTeam;
+
 	public bool IsTeam0 => TeamId == 0;
 	public bool IsTeam1 => TeamId == 1;
 
 	public MatchPhase SyncedMatchPhase => (MatchPhase)NetMatchPhase;
 
-	/// <summary> Movement / ball / tackle allowed when Playing or celebrating a goal. </summary>
+	/// <summary> Movement / ball / tackle allowed when Playing, goal celebration, or match-over celebration. </summary>
 	public bool IsMatchGameplayInputAllowed =>
-		SyncedMatchPhase is MatchPhase.Playing or MatchPhase.GoalCelebration;
+		SyncedMatchPhase is MatchPhase.Playing or MatchPhase.GoalCelebration
+		|| (SyncedMatchPhase == MatchPhase.MatchOver && NetPhaseTimeRemaining > 0f);
 
 	private int lastAppliedRoundResetSequence;
 

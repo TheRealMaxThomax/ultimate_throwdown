@@ -5,7 +5,7 @@ This is the simple process to follow each time you work on the game.
 ## 1) Start of Session
 - Pull latest changes:
   - `git pull`
-- Read `SESSION_NOTES.md` (start here). Open the other doc files only when you need design detail, exact names, or an old fix recipe.
+- Read `SESSION_NOTES.md` (start here). For match flow work, also skim `MATCH_FLOW_PLAN.md`. Open other docs only when you need design detail, exact names, or an old fix recipe.
 - Confirm startup scene is correct:
   - `scenes/throwdown_prototype.scene`
 - Pick one small goal for this session (example: tune throw force).

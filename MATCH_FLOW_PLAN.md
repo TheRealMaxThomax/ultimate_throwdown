@@ -29,7 +29,7 @@ Paste:
 
 ## TL;DR (full match when complete)
 
-Hold ball in opponent `GoalZone` ~0.35s → goal → +1 round win → **5s celebration** (move on field) → **reset** (teleport + ball center) → **20s intermission** (freeze except camera) → `Playing`. First to **5** round wins. **10 min** timer (paused in celebration + intermission). Tie at time → **OVERTIME** golden goal. Match over → host **rematch same map** (map vote later).
+Hold ball in opponent `GoalZone` ~0.35s → goal → +1 round win → **5s celebration** (move on field) → **reset** (teleport + ball center) → **20s intermission** (freeze except camera) → `Playing`. First to **5** round wins. **10 min** timer (paused in celebration + intermission; HUD `10.00` → `9.59`…). Tie at 0:00 → **OVERTIME** (reset + 20s intermission, then golden goal). Match over → host **rematch same map** (slice 6; map vote later).
 
 ---
 
@@ -66,7 +66,9 @@ Hold ball in opponent `GoalZone` ~0.35s → goal → +1 round win → **5s celeb
 - `Enable Debug Force Goal` + action `DebugForceGoal` in `ProjectSettings/Input.config` (bound to **`,`** — F9 is eaten by editor).
 - Host only; random team per press.
 
-**Verified:** `,` drives celebration → intermission → `Playing`; 5 round wins → `MatchOver`; timer tie → OVERTIME → next goal ends match.
+**Verified:** `,` drives celebration → intermission → `Playing`; 5 round wins → `MatchOver`.
+
+**OVERTIME (tied at 0:00, equal round wins):** `BeginOvertimeSetup()` — full round reset + 20s intermission (no celebration) → `Playing` with `NetIsOvertime`; clock shows **OVERTIME**; next goal ends match.
 
 ---
 
@@ -192,7 +194,7 @@ Hold ball in opponent `GoalZone` ~0.35s → goal → +1 round win → **5s celeb
 | **Round** | Valid goal → +1 round win for scoring team |
 | **Match** | First to **5** round wins |
 | **Match timer** | **600s**, paused in celebration + intermission; HUD shows `M.SS` |
-| **OVERTIME** | Timer expires tied → clock shows `OVERTIME`; next goal wins match |
+| **OVERTIME** | Timer expires tied (equal round wins) → reset + 20s intermission → clock shows `OVERTIME`; next goal wins match |
 
 ## Phase timeline
 
@@ -202,6 +204,10 @@ Playing
   → Reset                  // teleport + ball center
   → Intermission (20s)     // freeze except camera; countdown HUD
   → Playing
+
+Tied at match timer 0:00 (equal round wins)
+  → Reset + Intermission (20s)   // BeginOvertimeSetup — no celebration
+  → Playing (OVERTIME)           // golden goal
 ```
 
 ## Scoring rules

@@ -1,3 +1,4 @@
+using System;
 using Sandbox;
 using System.Collections.Generic;
 
@@ -240,6 +241,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 		var playerTeam = player.Components.GetOrCreate<PlayerTeam>();
 		playerTeam.TeamId = teamId;
+		player.Components.GetOrCreate<PlayerDisableCrouch>();
 
 		player.NetworkSpawn( connection );
 
@@ -362,18 +364,60 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		playerTeam.NetPhaseTimeRemaining = director.NetPhaseTimeRemaining;
 		playerTeam.NetLastGoalScoringTeamId = director.NetLastGoalScoringTeamId;
 		playerTeam.NetIsOvertime = director.NetIsOvertime;
+		playerTeam.NetMatchWinnerTeamId = director.NetMatchWinnerTeamId;
 	}
 
 	private Transform GetGroundedSpawnTransformForTeam( int teamId ) => GetSpawnTransformForTeam( teamId, 0 );
 
-	public static Vector3 SnapPositionToGround( Scene scene, Vector3 origin )
+	public static Vector3 SnapPositionToGround( Scene scene, Vector3 origin, GameObject ignore = null )
 	{
-		var tr = scene.Trace
+		var trace = scene.Trace
 			.Ray( origin + Vector3.Up * 30f, origin + Vector3.Down * 200f )
-			.WithoutTags( "ragdoll" )
-			.Run();
+			.WithoutTags( "ragdoll" );
 
+		if ( ignore.IsValid() )
+			trace = trace.IgnoreGameObjectHierarchy( ignore );
+
+		var tr = trace.Run();
 		return tr.Hit ? tr.HitPosition : origin;
+	}
+
+	/// <summary> Ground trace + lift so a ball pivot (center) rests on the surface, not half-buried. </summary>
+	public static Vector3 SnapBallToGround( Scene scene, GameObject ball, Vector3 origin )
+	{
+		var ground = SnapPositionToGround( scene, origin, ball );
+		return ground + Vector3.Up * GetBallGroundClearance( ball );
+	}
+
+	/// <summary> World-space distance from ball pivot to the bottom of its sphere collider(s). </summary>
+	public static float GetBallGroundClearance( GameObject ball )
+	{
+		const float fallbackRadius = 13f;
+		const float slack = 2f;
+
+		if ( !ball.IsValid() )
+			return fallbackRadius + slack;
+
+		var maxClearance = 0f;
+		var scale = ball.WorldTransform.Scale;
+		var uniformScale = MathF.Max( scale.x, MathF.Max( scale.y, scale.z ) );
+
+		foreach ( var sphere in ball.Components.GetAll<SphereCollider>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !sphere.IsValid() || !sphere.Enabled )
+				continue;
+
+			var worldCenter = ball.WorldTransform.PointToWorld( sphere.Center );
+			var worldRadius = sphere.Radius * uniformScale;
+			var bottomZ = worldCenter.z - worldRadius;
+			var clearance = ball.WorldPosition.z - bottomZ;
+			maxClearance = MathF.Max( maxClearance, clearance );
+		}
+
+		if ( maxClearance <= 0f )
+			maxClearance = fallbackRadius;
+
+		return maxClearance + slack;
 	}
 
 	private void ApplyMidMatchSpawnRules( GameObject player )
