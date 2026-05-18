@@ -20,7 +20,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 	/// <summary> Forces LOD0 on all citizen-like avatars in this scene (host + client). Uses late <see cref="CitizenAvatarLodSystem"/> plus this component&apos;s <c>OnPreRender</c>; avoids <c>OnUpdate</c> where proxy LOD can still change later in the frame.</summary>
 	[Property] public bool LockPlayerModelLodInPreRender { get; set; } = true;
 	/// <summary> Bone-merged citizen pieces (often arms / body chunks) skipped LOD lock caused pale low-detail skin; disable if clothing flashes wrong materials again.</summary>
-	[Property] public bool LockBoneMergedSkinnedMeshLod { get; set; } = true;
+	[Property] public bool LockBoneMergedSkinnedMeshLod { get; set; } = false;
 
 	private readonly Dictionary<long, GameObject> spawnedPlayersBySteamId = new();
 	private GameObject playerTemplate;

@@ -13,8 +13,8 @@ public enum MovementRampTier : byte
 /// </summary>
 public sealed class CatchUpSpeedBoost : Component
 {
-	/// <summary> Must match Input action name (<c>Input.config</c> uses <c>Forward</c>).</summary>
-	[Property, Group( "Fallback (no class .cdata)" )] public string ForwardAction { get; set; } = "Forward";
+	/// <summary> Must match Input action name (<c>Input.config</c> uses <c>Forward</c>; scene uses lowercase <c>forward</c>).</summary>
+	[Property, Group( "Fallback (no class .cdata)" )] public string ForwardAction { get; set; } = "forward";
 	[Property, Group( "Fallback (no class .cdata)" )] public float StartMoveSpeed { get; set; } = 140f;
 	[Property, Group( "Fallback (no class .cdata)" )] public float SprintMoveSpeed { get; set; } = 220f;
 	[Property, Group( "Fallback (no class .cdata)" )] public float CatchUpMoveSpeed { get; set; } = 320f;

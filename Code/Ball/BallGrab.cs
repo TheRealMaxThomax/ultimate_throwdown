@@ -6,14 +6,14 @@ public sealed class BallGrab : Component
 {
 	[Property] public GameObject MainBall { get; set; }
 	[Property] public string MainBallName { get; set; } = "main_ball";
-	[Property] public float InteractDistance { get; set; } = 120f;
+	[Property] public float InteractDistance { get; set; } = 45f;
 	[Property] public string InteractAction { get; set; } = "use";
-	[Property] public float PickupDelayAfterDrop { get; set; } = 0.25f;
+	[Property] public float PickupDelayAfterDrop { get; set; } = 0.75f;
 	[Property] public float DropperNoPushWindow { get; set; } = 0.75f;
 	[Property] public float DropperNoPushRadius { get; set; } = 90f;
 	[Property] public float DropperMaxHorizontalSpeed { get; set; } = 60f;
 	[Property] public GameObject HoldAnchor { get; set; }
-	[Property] public float DropSideOffset { get; set; } = 50f;
+	[Property] public float DropSideOffset { get; set; } = 25f;
 	[Property, Range( 0f, 2f )] public float DropVelocityScale { get; set; } = 0.5f;
 	[Property] public string PromptText { get; set; } = "Pick Up With E";
 	[Property] public bool EnableNetDebugLogs { get; set; } = false;

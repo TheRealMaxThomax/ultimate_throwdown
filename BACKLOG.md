@@ -13,8 +13,7 @@ Keep items short and clear.
 - [ ] Tune `ThrowForce`, `ThrowUpForce`, and `ThrowStartOffset`.
 - [ ] Tune charged throw values (`MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`).
 - [ ] Tune movement ramp values (`StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`).
-- [ ] Decide if throw cooldown is needed.
-- [ ] Decide next loop piece: scoring/reset or pass/catch.
+- [ ] Decide next loop piece: scoring / reset (no separate pass/catch — charged throw = pass, walk-in `BallGrab` = catch).
 - [ ] HUD timing decision: keep temporary debug charge bar until throw feel is stable for a few sessions, then build proper HUD charge panel.
 
 ## Bugs / Issues
@@ -30,9 +29,9 @@ Keep items short and clear.
 - [ ] Add animation hooks for hold/throw.
 - [ ] Add catch-up sprint animation (head slightly down, arm up, charging posture) for the non-ball-carrier catch-up state.
 - [ ] Add sound effects for pickup/drop/throw.
-- [ ] Add UI feedback for throw cooldown (if added).
 
 ## Done
+- [x] No throw cooldown — only existing `PickupDelayAfterThrow` / drop lockouts gate re-grab.
 - [x] Split throw logic into `BallThrow`.
 - [x] Keep hold-state source of truth in `BallGrab`.
 - [x] Add pickup lockout after throw.

@@ -7,13 +7,13 @@ using System;
 public sealed class BallThrow : Component
 {
 	[Property] public string ThrowAction { get; set; } = "attack1";
-	[Property] public float ThrowForce { get; set; } = 1200f;
-	[Property] public float ThrowUpForce { get; set; } = 120f;
+	[Property] public float ThrowForce { get; set; } = 1000f;
+	[Property] public float ThrowUpForce { get; set; } = 150f;
 	[Property] public float ThrowStartOffset { get; set; } = 40f;
 	[Property] public float PickupDelayAfterThrow { get; set; } = 0.25f;
 	[Property] public GameObject ThrowDirectionSource { get; set; }
 	[Property] public float MinThrowChargeTime { get; set; } = 0.05f;
-	[Property] public float MaxThrowChargeTime { get; set; } = 2.0f;
+	[Property] public float MaxThrowChargeTime { get; set; } = 3f;
 	[Property] public float MinThrowForceMultiplier { get; set; } = 0.35f;
 	[Property] public float MinThrowUpForceMultiplier { get; set; } = 0.6f;
 	[Property] public bool EnableNetDebugLogs { get; set; } = false;

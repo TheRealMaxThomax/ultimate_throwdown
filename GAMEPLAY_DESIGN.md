@@ -11,7 +11,9 @@
 |---------|--------|
 | Walk → sprint → charge speed | Built |
 | Throw with charge | Built |
-| Auto-grab ball | Built |
+| Auto-grab ball | Built (serves as **catch** — no separate catch action) |
+| Pass (to teammate) | Built via **charged throw** — no separate pass button |
+| Throw cooldown | **Not planned** — `PickupDelayAfterThrow` only blocks instant re-grab after release |
 | Tackle + ragdoll | Built (launch strength still tuning) |
 | Dodge (double-tap strafe) | Built |
 | Tackle whiff (miss penalty) | **Deferred** — not building unless playtests need it |

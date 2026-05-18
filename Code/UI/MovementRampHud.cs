@@ -10,7 +10,7 @@ public sealed class MovementRampHud : Component
 	[Property] public float MarginBottom { get; set; } = 24f;
 	[Property] public float DodgePanelWidth { get; set; } = 120f;
 	[Property] public float GapFromDodgePanel { get; set; } = 12f;
-	[Property] public float PanelWidth { get; set; } = 128f;
+	[Property] public float PanelWidth { get; set; } = 220f;
 	[Property] public float PanelHeight { get; set; } = 56f;
 	[Property] public int BarBlockCount { get; set; } = 14;
 	[Property] public int LabelFontSize { get; set; } = 20;
