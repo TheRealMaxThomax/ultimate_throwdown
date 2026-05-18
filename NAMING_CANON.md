@@ -31,7 +31,7 @@
 | `MatchPhase` | Enum: `Playing`, `GoalCelebration`, `Intermission`, `MatchOver` |
 | `GoalZone` | Defended goal volume + host dwell scoring (`DefendingTeam`, `ScoreDwellSeconds`) |
 
-**Often-used on `PlayerTeam`:** `TeamId`, `NetMatchPhase`, `NetRoundResetSequence`, `IsMatchGameplayInputAllowed`, `ApplyRoundResetTransform()` (synced, host-assigned)
+**Often-used on `PlayerTeam`:** `TeamId`, `NetMatchPhase`, `NetTeam0RoundWins`, `NetTeam1RoundWins`, `NetMatchTimeRemaining`, `NetPhaseTimeRemaining`, `NetLastGoalScoringTeamId`, `NetIsOvertime`, `NetRoundResetSequence`, `IsMatchGameplayInputAllowed`, `ApplyRoundResetTransform()` (synced, host-assigned)
 
 **Often-used on `MatchDirector`:** `CurrentPhase`, `IsGameplayInputAllowed`, `BallSpawn`, `RegisterGoal()`, `HostRequestRematch()`, `NetTeam0RoundWins`, `NetTeam1RoundWins`, `NetMatchTimeRemaining`, `NetPhaseTimeRemaining`, `NetLastGoalScoringTeamId`, `NetIsOvertime`, `EnableDebugForceGoal`, `DebugForceGoalAction` (`DebugForceGoal` → `,` in `Input.config`)
 
@@ -67,9 +67,11 @@
 |------|-----|
 | `DodgeCooldownHud` | Placeholder dodge cooldown timer (owner HUD) |
 | `MovementRampHud` | Placeholder walk / sprint / charge ramp bar (owner HUD) |
-| `MatchScoreHud` | *(planned)* Round wins top bar |
-| `GoalBannerHud` | *(planned)* "TEAM A SCORED!" during celebration |
-| `IntermissionHud` | *(planned)* Intermission countdown |
+| `MatchHudDraw` | Shared HUD read/draw helpers (`FormatMatchClock`, `TryGetHudState`) |
+| `MatchScoreHud` | Top bar: team names + round wins |
+| `MatchClockHud` | Match timer `M.SS` (10.00, 9.59, …); `OVERTIME` label |
+| `GoalBannerHud` | "TEAM A SCORED!" during celebration |
+| `IntermissionHud` | "Resuming in N…" during intermission |
 | `MatchOverHud` | *(planned)* Winner + rematch |
 
 ---

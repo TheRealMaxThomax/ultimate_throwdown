@@ -22,6 +22,25 @@ public sealed class PlayerTeam : Component
 	[Sync( SyncFlags.FromHost )]
 	public Rotation NetRoundResetRotation { get; set; }
 
+	/// <summary> HUD mirrors of <see cref="MatchDirector"/> — pushed from host (director on local camera does not replicate). </summary>
+	[Sync( SyncFlags.FromHost )]
+	public int NetTeam0RoundWins { get; set; }
+
+	[Sync( SyncFlags.FromHost )]
+	public int NetTeam1RoundWins { get; set; }
+
+	[Sync( SyncFlags.FromHost )]
+	public float NetMatchTimeRemaining { get; set; }
+
+	[Sync( SyncFlags.FromHost )]
+	public float NetPhaseTimeRemaining { get; set; }
+
+	[Sync( SyncFlags.FromHost )]
+	public int NetLastGoalScoringTeamId { get; set; } = MatchDirector.NoTeam;
+
+	[Sync( SyncFlags.FromHost )]
+	public bool NetIsOvertime { get; set; }
+
 	public bool IsTeam0 => TeamId == 0;
 	public bool IsTeam1 => TeamId == 1;
 

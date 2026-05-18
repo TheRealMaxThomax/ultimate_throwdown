@@ -245,7 +245,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 		spawnedPlayersBySteamId[steamId] = player;
 
-		SyncMatchPhaseToPlayer( player );
+		SyncMatchHudStateToPlayer( player );
 		ApplyMidMatchSpawnRules( player );
 
 		if ( DisableTemplateOnStart && playerTemplate.IsValid() && playerTemplate.Enabled )
@@ -345,7 +345,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 			ballGrab.BlockPickupForSeconds( pickupBlockSeconds );
 	}
 
-	private void SyncMatchPhaseToPlayer( GameObject player )
+	private void SyncMatchHudStateToPlayer( GameObject player )
 	{
 		if ( !Networking.IsHost || !player.IsValid() )
 			return;
@@ -356,6 +356,12 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 			return;
 
 		playerTeam.NetMatchPhase = director.NetPhase;
+		playerTeam.NetTeam0RoundWins = director.NetTeam0RoundWins;
+		playerTeam.NetTeam1RoundWins = director.NetTeam1RoundWins;
+		playerTeam.NetMatchTimeRemaining = director.NetMatchTimeRemaining;
+		playerTeam.NetPhaseTimeRemaining = director.NetPhaseTimeRemaining;
+		playerTeam.NetLastGoalScoringTeamId = director.NetLastGoalScoringTeamId;
+		playerTeam.NetIsOvertime = director.NetIsOvertime;
 	}
 
 	private Transform GetGroundedSpawnTransformForTeam( int teamId ) => GetSpawnTransformForTeam( teamId, 0 );

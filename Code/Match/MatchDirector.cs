@@ -61,6 +61,7 @@ public sealed class MatchDirector : Component
 		TickMatchTimer();
 		TickPhase();
 		TickDebugForceGoal();
+		PushMatchHudStateToPlayers();
 	}
 
 	public static MatchDirector FindInScene( Scene scene )
@@ -136,7 +137,7 @@ public sealed class MatchDirector : Component
 		NetLastGoalScoringTeamId = NoTeam;
 		NetIsOvertime = false;
 		NetMatchWinnerTeamId = NoTeam;
-		PushMatchPhaseToPlayers();
+		PushMatchHudStateToPlayers();
 	}
 
 	private void TickMatchTimer()
@@ -174,8 +175,18 @@ public sealed class MatchDirector : Component
 			return;
 		}
 
+		BeginOvertimeSetup();
+	}
+
+	/// <summary> Tied at 0:00 — flag OT, full round reset, then standard intermission before golden-goal play. </summary>
+	private void BeginOvertimeSetup()
+	{
 		NetIsOvertime = true;
-		LogMatch( "Match timer expired — tied round wins. Overtime: next goal wins." );
+		NetMatchTimeRemaining = 0f;
+		LogMatch( "Match timer expired — tied round wins. OVERTIME: reset + intermission, then next goal wins." );
+		PerformRoundReset();
+		LogMatch( "OVERTIME reset complete." );
+		BeginIntermission();
 	}
 
 	private void TickPhase()
@@ -202,7 +213,7 @@ public sealed class MatchDirector : Component
 	{
 		NetPhase = (int)MatchPhase.GoalCelebration;
 		NetPhaseTimeRemaining = GoalCelebrationSeconds;
-		PushMatchPhaseToPlayers();
+		PushMatchHudStateToPlayers();
 
 		var teamName = ResolveTeamDisplayName( scoringTeamId );
 		LogMatch( $"GOAL — {teamName} scored. Celebration {GoalCelebrationSeconds:0}s." );
@@ -319,15 +330,18 @@ public sealed class MatchDirector : Component
 	{
 		NetPhase = (int)MatchPhase.Intermission;
 		NetPhaseTimeRemaining = IntermissionSeconds;
-		PushMatchPhaseToPlayers();
-		LogMatch( $"Intermission {IntermissionSeconds:0}s." );
+		PushMatchHudStateToPlayers();
+		if ( NetIsOvertime && NetTeam0RoundWins == NetTeam1RoundWins )
+			LogMatch( $"OVERTIME intermission {IntermissionSeconds:0}s — next goal wins." );
+		else
+			LogMatch( $"Intermission {IntermissionSeconds:0}s." );
 	}
 
 	private void BeginPlaying()
 	{
 		NetPhase = (int)MatchPhase.Playing;
 		NetPhaseTimeRemaining = 0f;
-		PushMatchPhaseToPlayers();
+		PushMatchHudStateToPlayers();
 		LogMatch( "Round resumed — Playing." );
 	}
 
@@ -337,21 +351,30 @@ public sealed class MatchDirector : Component
 		NetPhase = (int)MatchPhase.MatchOver;
 		NetPhaseTimeRemaining = 0f;
 		NetMatchTimeRemaining = 0f;
-		PushMatchPhaseToPlayers();
+		PushMatchHudStateToPlayers();
 
 		var teamName = ResolveTeamDisplayName( winningTeamId );
 		LogMatch( $"Match over — {teamName} wins ({reason}). Score {NetTeam0RoundWins}-{NetTeam1RoundWins}." );
 	}
 
-	/// <summary> MatchDirector lives on local scene objects — phase must be copied onto networked players for clients. </summary>
-	private void PushMatchPhaseToPlayers()
+	/// <summary> MatchDirector lives on local scene objects — HUD + phase must be copied onto networked players for clients. </summary>
+	public void PushMatchHudStateToPlayers()
 	{
+		if ( !Networking.IsHost )
+			return;
+
 		foreach ( var playerTeam in Scene.GetAllComponents<PlayerTeam>() )
 		{
 			if ( !playerTeam.GameObject.Network.Active )
 				continue;
 
 			playerTeam.NetMatchPhase = NetPhase;
+			playerTeam.NetTeam0RoundWins = NetTeam0RoundWins;
+			playerTeam.NetTeam1RoundWins = NetTeam1RoundWins;
+			playerTeam.NetMatchTimeRemaining = NetMatchTimeRemaining;
+			playerTeam.NetPhaseTimeRemaining = NetPhaseTimeRemaining;
+			playerTeam.NetLastGoalScoringTeamId = NetLastGoalScoringTeamId;
+			playerTeam.NetIsOvertime = NetIsOvertime;
 		}
 	}
 
