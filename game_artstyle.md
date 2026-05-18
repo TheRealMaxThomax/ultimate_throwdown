@@ -86,4 +86,4 @@ Gameplay needs **readable shape and size**, not detail.
 
 ---
 
-Maps / multiplayer: `SESSION_NOTES.md`
+Maps / multiplayer: `SESSION_NOTES.md` (CRITICAL + Hammer); full map notes in archive if needed

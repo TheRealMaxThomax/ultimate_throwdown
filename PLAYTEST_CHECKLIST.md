@@ -65,4 +65,4 @@ Run this quick checklist before committing gameplay changes.
 - [ ] Free-ball client feel is acceptable (not overly floaty/laggy compared with host).
 
 ## If Component Is Missing
-Follow `Component Missing Recovery (s&box)` in `SESSION_NOTES.md`.
+Follow `Component Missing Recovery (s&box)` in `SESSION_NOTES_ARCHIVE.md`.

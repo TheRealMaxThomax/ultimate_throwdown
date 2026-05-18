@@ -1,0 +1,16 @@
+---
+description: Read and update NAMING_CANON when adding or renaming gameplay code under Code/
+alwaysApply: true
+---
+
+# Naming canon (`Code/`)
+
+When you **add**, **rename**, or **introduce a new public API** under `Code/` (new component, script, `[Sync]` field, inspector property, RPC, or tag constant):
+
+1. **Read `NAMING_CANON.md` first** — reuse existing names; do not invent synonyms (e.g. `BallGrab`, not “ball handler”).
+2. **Match nearby code** — if the canon and an existing file disagree, follow the **code** and fix the canon in the same change.
+3. **Update `NAMING_CANON.md`** when you add a name future sessions must reuse (one line in the right Ball / Player / Network table, or the expandable list).
+
+**Skip the canon read** for tiny edits inside one file (tuning a number, bugfix in private logic) that add **no** new public names.
+
+**Do not rename** synced or inspector-facing fields without calling out a breaking change for Max (scene/prefab rewiring).

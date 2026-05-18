@@ -5,7 +5,7 @@ This is the simple process to follow each time you work on the game.
 ## 1) Start of Session
 - Pull latest changes:
   - `git pull`
-- Read `SESSION_NOTES.md`.
+- Read `SESSION_NOTES.md` (start here). Open the other doc files only when you need design detail, exact names, or an old fix recipe.
 - Confirm startup scene is correct:
   - `scenes/throwdown_prototype.scene`
 - Pick one small goal for this session (example: tune throw force).
@@ -54,7 +54,7 @@ Good commit message examples:
 - Validate first-contact solidity: before any pickup/drop, each new client must be unable to walk/jump inside ball.
 - Validate cosmetics visibility: each player sees every player's cosmetics (not just self).
 - Validate camera-distance render stability: skin/cosmetics should not shift/glitch when camera angle or distance changes.
-- If free-ball looks jittery/floaty only on client, use the proven recipe in `SESSION_NOTES.md` (`Proven Fix Recipes`) before random tuning.
+- If free-ball looks jittery/floaty only on client, use the proven recipe in `SESSION_NOTES_ARCHIVE.md` before random tuning.
 - If behavior differs by window, stop feature work and fix networking consistency first.
 
 ## Optional Safety Rule (Recommended)
