@@ -14,7 +14,7 @@
 | Auto-grab ball | Built |
 | Tackle + ragdoll | Built (launch strength still tuning) |
 | Dodge (double-tap strafe) | Built |
-| Tackle whiff (miss penalty) | **Not built** |
+| Tackle whiff (miss penalty) | **Deferred** — not building unless playtests need it |
 | Weapons | **Not built** |
 | Class passives / ults | **Not built** (stats in `.cdata` mostly are) |
 
@@ -58,18 +58,22 @@ Think of three gears:
 
 ---
 
-## Tackle whiff (future — not in game yet)
+## Tackle whiff (deferred)
 
-**Problem:** Attacker charges in, defender dodges out, attacker stays at charge speed and tries again for free.
+**Decision (2026-05-18):** **Not building now.** Dodge + **charge yaw** (`ChargeYawMaxDegreesPerSecond` on `CatchUpSpeedBoost`) already buy the carrier time to throw, run, or dodge again after cooldown. Revisit only if playtests show chargers getting unfair second tackles too often.
 
-**Planned fix:**
-- **Outer zone** — existing tackle range
-- **Inner zone** — smaller “you’re really on them” distance
-- If attacker was **inner + threatening** and then **no tackle lands** (dodge out, bad angle, peel off) → **penalty** (e.g. drop to sprint for a moment)
+**Counterplay today (no whiff code):**
+- Carrier dodge → **walk** + dodge cooldown
+- Attacker at charge keeps speed but **slow turn** to re-aim after a lateral dodge
+- Attacker pays full cost only when a tackle **lands** (charge strip, tackle cooldown)
 
-**Skill idea:** Late dodge when attacker is already close = good for defender. Early dodge while attacker is still far = attacker can adjust.
+**If we add it later (preferred shape — not the old attacker-sprint idea):**
+- **Outer / inner zone** — host tracks “committed” threaten state when attacker is inner range
+- On committed miss (dodge out, iframe, peel off, no tackle landed): **ball carrier stays at sprint** instead of dodge’s usual drop to walk
+- **Do not** drop the attacker to sprint — they keep charge; re-chase cost stays mostly **yaw + time**
+- Still pairs with `PlayerDodge` iframe (no hit during iframe; whiff = tier outcome on carrier, not a second attacker penalty)
 
-Details for when we implement → host tracks threaten state; works with existing `PlayerDodge` iframe (iframe = no hit; whiff = miss tax).
+**Skill idea (unchanged):** Late dodge when attacker is already close = good for carrier. Early dodge while attacker is still far = attacker can adjust.
 
 ---
 
@@ -118,6 +122,7 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 - Good dodge should sometimes force a missed tackle — not every time
 - Good tackles should still land often enough to feel fair
 - Carriers shouldn’t reliably dodge past **every** defender to score; passing matters
+- Whiff is optional tuning later; don’t ship it until charge yaw + dodge numbers are settled in real 2-player tests
 
 ---
 

@@ -14,14 +14,16 @@
 
 ## Right now
 
-**Goal:** Polish tackles and movement; test multiplayer more. Dodge works. “Tackle whiff” (punish a missed tackle) is **not built yet**.
+**Goal:** Polish tackles and movement; test multiplayer more. Dodge works.
+
+**Tackle whiff:** **Not adding now** — charge yaw + dodge tiers are enough unless playtests say otherwise. If we add it later: **carrier keeps sprint** on a committed miss, not attacker → sprint. Details → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md).
 
 **Works today:** Pick up / drop / throw ball; auto-grab when you walk into the ball; tackles and ragdolls in multiplayer; dodge (double-tap left/right strafe).
 
 **Next up (in order):**
 1. Playtest multiplayer in **two game windows** (host + join).
 2. Tune how hard tackles launch people (`TackleLaunchSpeed` in the editor).
-3. Later: tackle whiff penalty, then nicer stand-up animation.
+3. Later: nicer stand-up animation.
 
 **Git:** Work on branch `main`, commit when a chunk of work is done.
 
@@ -64,7 +66,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Walk into the ball = pick it up.** No kick button. No pushing the ball with your body (too hard to sync online).
 - **Online: the host is the referee** — clients ask (“I want to throw”); host decides and tells everyone the result.
 - **Tackles:** Only at full charge speed. Host spawns a **separate ragdoll object** (not physics on the player prefab).
-- **Dodge:** Double-tap A or D (strafe left/right). Short invincibility vs tackles only.
+- **Dodge:** Double-tap A or D (strafe left/right). Short invincibility vs tackles only. Carrier drops to walk after dodge; charge yaw slows a charger’s re-aim for a second pass.
 - **Test dummies:** Tag `practice_npc` on **dummies only**, never on real players.
 - **Weapons later:** You’ll hold ball **or** weapon, not both (not implemented yet).
 
@@ -130,7 +132,7 @@ Paste at the start of a new chat:
 
 ## Recent session notes
 
-- **2026-05-18:** Docs split into smaller, simpler files.
+- **2026-05-18:** Tackle whiff deferred (carrier-sprint shape if needed later); docs split into smaller files.
 - **2026-05-13:** Map loads on clients too; keep `Resources: null`.
 - **2026-05-08:** Dodge added (double-tap strafe).
 - Older log → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
