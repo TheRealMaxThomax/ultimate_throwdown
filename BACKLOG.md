@@ -4,11 +4,11 @@ Use this file to track ideas, bugs, and next milestones.
 Keep items short and clear.
 
 ## Current Milestone
-- **Match flow slice 6:** `MatchOverHud` + working `HostRequestRematch()`. Slices 1–5 shipped (see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md)).
+- **Gameplay polish + MP soak** — v1 match flow (slices 1–6) shipped. See [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md).
 
 ## TODO (Next Up)
-- [ ] **Slice 6** — match over UI + host rematch; remove `EnableDebugForceGoal` before calling match flow shipped.
-- [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, HUD sync.
+- [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, match over, rematch, HUD sync.
+- [ ] **Map vote** — 30s timer, all players vote `Slot1`–`N`, plurality wins, random tie-break among top (see MATCH_FLOW_PLAN → Later).
 - [ ] Improve free-ball client feel to better match host while keeping shared position consistency.
 - [ ] Tune `BallClientFeel` values (`FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`) with repeatable multiplayer push tests.
 - [ ] Tune `ThrowForce`, `ThrowUpForce`, and `ThrowStartOffset`.
@@ -32,6 +32,9 @@ Keep items short and clear.
 - [ ] Add sound effects for pickup/drop/throw.
 
 ## Done
+- [x] **Enemy team outlines** — `Highlight` on camera, `PlayerEnemyOutline`, `RagdollEnemyOutline` (copies prefab `HighlightOutline`, `NetVictimTeamId` for clients).
+- [x] **Match flow slice 6** — `MatchOverHud`, 10s match-over celebration, host `1` rematch, `SnapBallToGround`, `NetMatchWinnerTeamId` sync.
+- [x] Match flow slices 1–5 (teams, director, goals, reset/freeze, HUD).
 - [x] No throw cooldown — only existing `PickupDelayAfterThrow` / drop lockouts gate re-grab.
 - [x] Split throw logic into `BallThrow`.
 - [x] Keep hold-state source of truth in `BallGrab`.

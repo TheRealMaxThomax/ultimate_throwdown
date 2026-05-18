@@ -6,7 +6,7 @@
 | File | Open when… |
 |------|------------|
 | **This file** | Every session — current goal, checklist, don’t-break rules |
-| [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) | Match flow slices, networking gotchas, slice 6 tasks |
+| [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) | Full match flow design (slices 1–6 **complete**) |
 | [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) | Tuning dodge/tackle, or planning weapons / classes |
 | [`NAMING_CANON.md`](NAMING_CANON.md) | Exact script/property names — agents read this automatically when adding/renaming under `Code/` |
 | [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) | Something broke before and you want the long “why we did it” story |
@@ -15,23 +15,21 @@
 
 ## Right now
 
-**Goal:** **Slice 6 only** — match over screen + host rematch. Match flow slices 1–5 are **in** and playtested (2-window MP).
-
-**Match flow detail:** [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md)
+**Goal:** **v1 match flow is done** (slices 1–6). Next focus is gameplay polish, longer MP playtests, and **map vote** when you’re ready (see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) → Later).
 
 **Works today:**
 - Ball grab/throw; tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
 - **Teams + spawns** (balance on join, ground-snapped spawns)
-- **`MatchDirector`** — phases, 10:00 match clock (`M.SS`), celebration / intermission, **OVERTIME** (tied at 0:00 → reset + 20s intermission, then golden goal)
+- **`MatchDirector`** — phases, 10:00 match clock (`M.SS`), goal celebration / intermission, **OVERTIME**, **match over**
 - **`GoalZone`** dwell scoring
-- **Post-goal reset** — teleport to spawns, ball to `BallSpawn`, ragdoll stand-up, 20s freeze (camera free)
-- **Match HUD** on scene **`MatchHud`** root — score, clock, goal banner, intermission countdown
+- **Post-goal reset** — teleport to spawns, ball to `BallSpawn` (ground clearance), ragdoll stand-up, 20s freeze (camera free)
+- **Match HUD** on **`MatchHud`** — score, clock, goal banner, intermission countdown, **match over** (10s winner celebration → host **`1`** rematch)
+- **Rematch** — same map, fresh 0–0 and 10:00 timer (`HostRequestRematch`)
+- **Enemy team outline** — red `HighlightOutline` on opponents (not self/teammates); same look on tackle ragdolls (`PlayerEnemyOutline`, `RagdollEnemyOutline`); tune on player prefab **`HighlightOutline`**
 
-**Not yet:** `MatchOverHud`, working `HostRequestRematch()`, remove debug force-goal before ship.
+**Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
-**Next up:** **Slice 6** — match over UI + rematch (reuse slice 4 reset).
-
-**Still later:** Tackle tuning, longer MP playtests, tackle whiff deferred → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md).
+**Still later:** Tackle tuning, map vote (30s, all players, `Slot1`–`N`), tackle whiff deferred → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md).
 
 **Git:** Work on branch `main`, commit when a chunk of work is done.
 
@@ -88,6 +86,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Crouch:** Disabled — do not rebind `Duck` without re-enabling intentionally.
 - **Test dummies:** Tag `practice_npc` on **dummies only**.
 - **Weapons later:** Ball **or** weapon, not both (not implemented).
+- **Enemy outlines:** Camera needs **`Highlight`** post-process (`EnemyOutlineCameraSetup` on Main Camera, or add `Highlight` manually). Per-player **`HighlightOutline`** on the prefab is the style source; ragdolls copy it on the host (`NetVictimTeamId` synced for clients).
 
 More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
@@ -97,7 +96,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 1. Start Play (host).
 2. Network menu → **Join via new instance** (second window = client).
-3. Check both windows: grab, throw, tackle, dodge, **goals, reset, intermission freeze, HUD**.
+3. Check both windows: grab, throw, tackle, dodge, **enemy red outlines** (standing + ragdoll, both directions), **goals, reset, intermission, match over, rematch, HUD**.
 4. Spam actions once to probe desync.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
@@ -108,11 +107,12 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 **Main Camera (manager):**
 - `GameNetworkManager` — `PlayerTemplateRoot`, `Team0Spawns` / `Team1Spawns` (6 each)
-- `MatchDirector` — `BallSpawn` wired; `Enable Match Debug Logs` optional; remove `EnableDebugForceGoal` before ship
+- `MatchDirector` — `BallSpawn` wired; `Enable Match Debug Logs` optional; `Enable Debug Force Goal` off for ship
 - `MapMatchConfig` — team display names
+- **`EnemyOutlineCameraSetup`** on Main Camera (adds `Highlight` post-process) — **or** add **`Highlight`** (Post Processing) yourself; keep **Enable Post Processing** on the camera
 
 **`MatchHud` empty (scene UI root):**
-- `MatchScoreHud`, `MatchClockHud`, `GoalBannerHud`, `IntermissionHud`
+- `MatchScoreHud`, `MatchClockHud`, `GoalBannerHud`, `IntermissionHud`, **`MatchOverHud`**
 
 **Map:**
 - Two **`GoalZone`** — opposite `Defending Team`, tuned `Box Size`
@@ -121,6 +121,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 **Player prefab:**
 - `PlayerTeam` (auto at spawn), `PlayerTackle`, `PlayerDodge`, `RagdollClientFeel`, `PlayerClass`, `CatchUpSpeedBoost`
 - **`PlayerDisableCrouch`** (also auto-added at network spawn — add on prefab for scene NPCs)
+- **`HighlightOutline`** — tune colors/width here (ragdoll copies this exact component); optional **`PlayerEnemyOutline`** (auto at spawn)
 - `DodgeCooldownHud`, `MovementRampHud`, `ThrowChargeBar` (owner HUD)
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
 
@@ -131,6 +132,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - Holding forward + backward while charging — exploit or cool fake-out?
 - Closed roof on arena vs open roof + sun for lighting
 - Small screen shake on tackle hit — yes or no?
+- Map vote: allow changing vote during the 30s window?
 
 ---
 
@@ -139,7 +141,6 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - [ ] Throw strength still needs playtest tuning
 - [ ] Walk/run animations while charging throw (can’t move)
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
-- [ ] Match over is phase-only today — no rematch UI until slice 6
 
 ---
 
@@ -148,7 +149,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md and MATCH_FLOW_PLAN.md. Continue from slice 6 (match over + rematch). Do not edit .scene files unless I ask.
+Read SESSION_NOTES.md. Match flow slices 1–6 are done (MATCH_FLOW_PLAN.md). Do not edit .scene files unless I ask.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -157,6 +158,8 @@ Read SESSION_NOTES.md and MATCH_FLOW_PLAN.md. Continue from slice 6 (match over 
 
 ## Recent session notes
 
+- **2026-05-18:** Enemy team outlines — `Highlight` on camera, `PlayerEnemyOutline` + ragdoll copy via `RagdollEnemyOutline` / `NetVictimTeamId` (2-window MP).
+- **2026-05-18:** Match flow **slice 6** — match over celebration, `MatchOverHud`, host **`1`** rematch, ball ground snap fix.
 - **2026-05-18:** Match flow slices 4–5 shipped (reset/MP freeze, HUD + `M.SS` clock); OT setup = reset + intermission; crouch disabled.
 - **2026-05-18:** Match flow slices 1–3 (teams, `MatchDirector`, `GoalZone`).
 - **2026-05-18:** Tackle whiff deferred; docs split.

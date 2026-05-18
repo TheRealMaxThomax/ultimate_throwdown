@@ -54,8 +54,15 @@
 | `RagdollClientFeel` | Smoother ragdoll camera for the owning player |
 | `PlayerCosmeticsSync` | Outfits / avatar look only |
 | `PlayerDisableCrouch` | Blocks duck/crouch on `PlayerController` |
+| `PlayerEnemyOutline` | Enables red `HighlightOutline` for enemies (local viewer); off while ragdolled |
+| `RagdollEnemyOutline` | Outline on host-spawned tackle ragdoll; copies victim `HighlightOutline` |
+| `EnemyOutlineCameraSetup` | Ensures main camera has `Highlight` post-process |
 
-**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `RagdollPhysicsInitDelay`  
+**Often-used on `PlayerEnemyOutline`:** `CopyOutlineFromPlayer()`, `CopyOutlineSettings()`, `ShouldShowOutlineForTeamId()`, `FindLocalViewerTeamId()` — **tune `HighlightOutline` on the player prefab** (source of truth for look)
+
+**Often-used on `RagdollEnemyOutline`:** `NetVictimTeamId` (synced), `ConfigureFromVictim()` (host, before network spawn)
+
+**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `RagdollPhysicsInitDelay` (spawns ragdoll + `RagdollEnemyOutline`)  
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
 **Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`  
 **Tag for test dummies only:** `practice_npc`
@@ -84,7 +91,7 @@
 | `GameNetworkManager` | Spawns players when joining; team balance + team spawns (`Code/Network/`) |
 | `StartupMapBootstrap` | Loads `testing_map` on host and clients (`Code/Map/`) |
 
-**Often-used on `GameNetworkManager`:** `Team0Spawns`, `Team1Spawns`, `SpawnPointOccupiedRadius`, `MatchConfig`, `ApplyRoundResetToAllPlayers()`, `ApplyRoundResetToPlayer()` (legacy: `Team0Spawn`, `Team1Spawn`, `JoinSpawnSpacing`)
+**Often-used on `GameNetworkManager`:** `Team0Spawns`, `Team1Spawns`, `SpawnPointOccupiedRadius`, `MatchConfig`, `SnapPositionToGround()`, `SnapBallToGround()`, `ApplyRoundResetToAllPlayers()`, `ApplyRoundResetToPlayer()` (legacy: `Team0Spawn`, `Team1Spawn`, `JoinSpawnSpacing`)
 
 ---
 

@@ -592,6 +592,7 @@ public sealed class PlayerTackle : Component
 		// a short host delay so physics bodies exist (see RagdollPhysicsInitDelay).
 		ragdollGo.Tags.Add( "ragdoll" );
 		victim.ragdollObject = ragdollGo;
+		ragdollGo.Components.GetOrCreate<RagdollEnemyOutline>().ConfigureFromVictim( victim );
 		ragdollGo.NetworkSpawn();
 
 		var initDelay = RagdollPhysicsInitDelay.Clamp( 0.01f, 0.25f );

@@ -16,9 +16,15 @@ Run this quick checklist before committing gameplay changes.
 - [ ] After goal: 5s celebration (can move) → teleport + ball center → 20s intermission frozen except camera → play resumes (host **and** client).
 - [ ] Match clock `10.00` → `9.59`… while playing; pauses during celebration/intermission.
 - [ ] Tied at 0:00 → **OVERTIME** on clock → reset + 20s intermission → golden-goal round.
-- [ ] Round wins increment; first to 5 → `MatchOver` phase (slice 6: rematch UI not built yet).
+- [ ] Round wins increment; first to 5 → match over: **~10s** `TEAM WINS!` + free movement → rematch panel → host **`1`** → fresh 0–0 / 10:00 (both windows).
 - [ ] Debug: `,` (`DebugForceGoal`) triggers goal on host when enabled.
 - [ ] Ctrl / crouch does nothing (`PlayerDisableCrouch`).
+
+## Team outlines (2 windows)
+- [ ] Main Camera has **`Highlight`** post-process (via `EnemyOutlineCameraSetup` or manual); camera **Enable Post Processing** on.
+- [ ] Enemy players show **red outline**; no outline on self or teammate.
+- [ ] After tackle: **red outline on ragdoll** on host **and** client (both tackle directions).
+- [ ] Ragdoll outline matches standing player outline (same `HighlightOutline` settings on prefab).
 
 ## Core Ball Loop
 - [ ] Can approach the ball and see prompt text.

@@ -22,8 +22,10 @@
 | Goal zones + dwell scoring | **Built** — `GoalZone`; own-goal impossible by `DefendingTeam` |
 | Post-goal reset (teleport, ball center, intermission freeze) | **Built** (slice 4); MP via `PlayerTeam` sync |
 | OVERTIME setup (tied timer → reset + intermission) | **Built** — `BeginOvertimeSetup()` |
-| Match HUD (score, clock, banner, countdown) | **Built** (slice 5) — placeholder draw on `MatchHud` root |
-| Match over + rematch UI | **Not built** (slice 6) |
+| Match HUD (score, clock, banner, countdown) | **Built** — placeholder draw on `MatchHud` root |
+| Match over + rematch | **Built** — 10s celebration, then host **`1`** (`Slot1`) same-map rematch |
+| Map vote (30s, all players) | **Not built** — planned; see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) → Later |
+| Enemy team outline | **Built** — `Highlight` on camera + `HighlightOutline` on players; ragdoll copy via `RagdollEnemyOutline` |
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives / ults | **Not built** (stats in `.cdata` mostly are) |
