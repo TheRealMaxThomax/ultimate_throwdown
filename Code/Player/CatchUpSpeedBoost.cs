@@ -1,6 +1,13 @@
 using Sandbox;
 using System;
 
+public enum MovementRampTier : byte
+{
+	Walk,
+	Sprint,
+	Charge,
+}
+
 /// <summary>
 /// Walk / sprint / charge tiers: when <see cref="PlayerClass.CurrentClass"/> is set, tier speeds and ramp durations read from that <see cref="ClassData"/> asset; “Fallback” inspector fields apply only if no class is assigned (or for quick tests).
 /// </summary>
@@ -96,6 +103,63 @@ public sealed class CatchUpSpeedBoost : Component
 	private bool ownerAtChargeSpeed;
 	[Sync] private bool NetAtChargeSpeed { get; set; }
 	public bool IsAtChargeSpeed => Network.IsOwner ? ownerAtChargeSpeed : NetAtChargeSpeed;
+
+	/// <summary> Owner HUD: walk → sprint → charge segment and fill 0–1 for the active segment. </summary>
+	public void GetMovementRampDisplay( out MovementRampTier tier, out float progress01 )
+	{
+		tier = MovementRampTier.Walk;
+		progress01 = 0f;
+
+		ballGrab ??= Components.Get<BallGrab>();
+		ballThrow ??= Components.Get<BallThrow>();
+		playerClass ??= Components.Get<PlayerClass>();
+		playerDodge ??= Components.Get<PlayerDodge>();
+		playerTackle ??= Components.Get<PlayerTackle>();
+
+		if ( ballThrow?.IsChargingThrow == true )
+			return;
+
+		if ( !IsForwardIntentForChargeRamp() )
+			return;
+
+		var timeToSprint = ClassStat( playerClass?.CurrentClass?.TimeToSprintSpeed, TimeToSprintSpeed );
+		timeToSprint = MathF.Max( timeToSprint, 0.01f );
+
+		if ( forwardMoveTime < timeToSprint )
+		{
+			tier = MovementRampTier.Walk;
+			progress01 = (forwardMoveTime / timeToSprint).Clamp( 0f, 1f );
+			return;
+		}
+
+		var isHoldingBall = ballGrab?.IsHolding ?? false;
+		if ( isHoldingBall )
+		{
+			tier = MovementRampTier.Sprint;
+			progress01 = 1f;
+			return;
+		}
+
+		var timeToCatchUp = ResolveTimeToCatchUpSpeed( timeToSprint );
+		var catchUpDelay = MathF.Max( 0f, timeToCatchUp - timeToSprint );
+		if ( catchUpDelay <= 0.01f )
+		{
+			tier = MovementRampTier.Charge;
+			progress01 = 1f;
+			return;
+		}
+
+		var blockCatchUpRamp = playerDodge != null && Time.Now < playerDodge.SyncedBlockCatchUpUntil;
+		if ( blockCatchUpRamp || nonHoldingSprintTime < catchUpDelay )
+		{
+			tier = MovementRampTier.Sprint;
+			progress01 = (nonHoldingSprintTime / catchUpDelay).Clamp( 0f, 1f );
+			return;
+		}
+
+		tier = MovementRampTier.Charge;
+		progress01 = 1f;
+	}
 
 	protected override void OnStart()
 	{
@@ -318,22 +382,7 @@ public sealed class CatchUpSpeedBoost : Component
 		var timeToSprint = ClassStat( playerClass?.CurrentClass?.TimeToSprintSpeed, TimeToSprintSpeed );
 
 		playerTackle ??= Components.Get<PlayerTackle>();
-		var cd = playerClass?.CurrentClass;
-		var timeToCatchUpBase = ClassStat( cd?.TimeToCatchUpSpeed, TimeToCatchUpSpeed );
-		var ragSlow = cd != null && cd.TimeToCatchUpSpeedAfterRagdoll > 0f && playerTackle is { IsPostRagdollSlowCatchUpRampActive: true };
-		var atkSlow = cd != null && cd.TimeToCatchUpSpeedAfterAttack > 0f && playerTackle is { IsPostAttackSlowCatchUpRampActive: true };
-		float timeToCatchUp;
-		if ( ragSlow || atkSlow )
-		{
-			var sub = timeToSprint;
-			if ( ragSlow )
-				sub = MathF.Max( sub, MathF.Max( cd.TimeToCatchUpSpeedAfterRagdoll, timeToSprint ) );
-			if ( atkSlow )
-				sub = MathF.Max( sub, MathF.Max( cd.TimeToCatchUpSpeedAfterAttack, timeToSprint ) );
-			timeToCatchUp = sub;
-		}
-		else
-			timeToCatchUp = timeToCatchUpBase;
+		var timeToCatchUp = ResolveTimeToCatchUpSpeed( timeToSprint );
 
 		if ( !isMovingForward )
 		{
@@ -357,6 +406,27 @@ public sealed class CatchUpSpeedBoost : Component
 		var atCatchUp = nonHoldingSprintTime >= catchUpDelay;
 		ownerAtChargeSpeed = atCatchUp;
 		return atCatchUp ? catchUpSpeed : sprintSpeed;
+	}
+
+	private float ResolveTimeToCatchUpSpeed( float timeToSprint )
+	{
+		playerClass ??= Components.Get<PlayerClass>();
+		playerTackle ??= Components.Get<PlayerTackle>();
+		var cd = playerClass?.CurrentClass;
+		var timeToCatchUpBase = ClassStat( cd?.TimeToCatchUpSpeed, TimeToCatchUpSpeed );
+		var ragSlow = cd != null && cd.TimeToCatchUpSpeedAfterRagdoll > 0f && playerTackle is { IsPostRagdollSlowCatchUpRampActive: true };
+		var atkSlow = cd != null && cd.TimeToCatchUpSpeedAfterAttack > 0f && playerTackle is { IsPostAttackSlowCatchUpRampActive: true };
+		if ( ragSlow || atkSlow )
+		{
+			var sub = timeToSprint;
+			if ( ragSlow )
+				sub = MathF.Max( sub, MathF.Max( cd.TimeToCatchUpSpeedAfterRagdoll, timeToSprint ) );
+			if ( atkSlow )
+				sub = MathF.Max( sub, MathF.Max( cd.TimeToCatchUpSpeedAfterAttack, timeToSprint ) );
+			return sub;
+		}
+
+		return timeToCatchUpBase;
 	}
 
 	private static float ClassStat( float? classStat, float fallback )

@@ -232,7 +232,6 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "OverrideMassCenter": true,
-          "PreciseContacts": true,
           "RigidbodyFlags": "DisableCollisionSounds",
           "SleepThreshold": 2,
           "StartAsleep": false
@@ -337,19 +336,6 @@
           "PromptText": "Pick Up With E"
         },
         {
-          "__type": "ThrowChargeBar",
-          "__guid": "708d1c89-8c03-4454-ae39-2754f582302a",
-          "__enabled": true,
-          "Flags": 0,
-          "ChargeBarOffset": "0,0,70",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
           "__type": "BallThrow",
           "__guid": "7e849884-e060-4c39-8860-9c475b50f8ef",
           "__enabled": true,
@@ -376,6 +362,19 @@
           "ThrowUpForce": 150
         },
         {
+          "__type": "ThrowChargeBar",
+          "__guid": "708d1c89-8c03-4454-ae39-2754f582302a",
+          "__enabled": true,
+          "Flags": 0,
+          "ChargeBarOffset": "0,0,70",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        },
+        {
           "__type": "BallClientFeel",
           "__guid": "4ba1f8bf-ccb2-4c04-a1c1-c11cc50e7f81",
           "__enabled": true,
@@ -385,6 +384,20 @@
           "FreeBallVisualFollowSharpness": 14,
           "InterpolationDelay": 0.06,
           "MaxSnapshots": 24,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        },
+        {
+          "__type": "PlayerClass",
+          "__guid": "a13a8635-d347-4439-8c09-f5de73d612c3",
+          "__enabled": true,
+          "Flags": 0,
+          "CurrentClass": "classes/juggernaut.cdata",
+          "ModelScaleRetrySeconds": 3,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -410,20 +423,6 @@
           "RetryInterval": 1
         },
         {
-          "__type": "PlayerClass",
-          "__guid": "a13a8635-d347-4439-8c09-f5de73d612c3",
-          "__enabled": true,
-          "Flags": 0,
-          "CurrentClass": "classes/juggernaut.cdata",
-          "ModelScaleRetrySeconds": 3,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        },
-        {
           "__type": "CatchUpSpeedBoost",
           "__guid": "f2eaf873-d65c-424b-9952-5c6167ecb3bd",
           "__enabled": true,
@@ -446,6 +445,27 @@
           "StartMoveSpeed": 140,
           "TimeToCatchUpSpeed": 4,
           "TimeToSprintSpeed": 2
+        },
+        {
+          "__type": "MovementRampHud",
+          "__guid": "9afa4379-b0e2-4250-a515-1c4335dc4435",
+          "__enabled": true,
+          "Flags": 0,
+          "BarBlockCount": 14,
+          "BarFontSize": 14,
+          "DodgePanelWidth": 120,
+          "GapFromDodgePanel": 12,
+          "LabelFontSize": 20,
+          "MarginBottom": 24,
+          "MarginRight": 24,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "PanelHeight": 56,
+          "PanelWidth": 220
         },
         {
           "__type": "PlayerTackle",
@@ -506,6 +526,23 @@
           "RechargeBlockedAfterChargeDodge": 2,
           "RightStrafeAction": "right",
           "ShoveVelocityMultiplier": 6.5
+        },
+        {
+          "__type": "DodgeCooldownHud",
+          "__guid": "0ac5eca2-e47e-41d9-8f4b-666c1dd2ccbe",
+          "__enabled": true,
+          "Flags": 0,
+          "FontSize": 20,
+          "MarginBottom": 24,
+          "MarginRight": 24,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "PanelHeight": 56,
+          "PanelWidth": 120
         }
       ],
       "Children": [
@@ -2541,7 +2578,6 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "OverrideMassCenter": true,
-          "PreciseContacts": true,
           "RigidbodyFlags": "DisableCollisionSounds",
           "SleepThreshold": 2,
           "StartAsleep": false
@@ -4850,7 +4886,6 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "OverrideMassCenter": true,
-          "PreciseContacts": true,
           "RigidbodyFlags": "DisableCollisionSounds",
           "SleepThreshold": 2,
           "StartAsleep": false
@@ -7159,7 +7194,6 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "OverrideMassCenter": true,
-          "PreciseContacts": true,
           "RigidbodyFlags": "DisableCollisionSounds",
           "SleepThreshold": 2,
           "StartAsleep": false
@@ -9423,7 +9457,6 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "OverrideMassCenter": false,
-          "PreciseContacts": false,
           "RigidbodyFlags": 0,
           "SleepThreshold": 2,
           "StartAsleep": false
@@ -9516,17 +9549,17 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "b2813d63-4a51-4d27-9857-41cfa3c83775"
-        }
-      },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
         "DisableClientRecording": false
       },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
+        }
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "b2813d63-4a51-4d27-9857-41cfa3c83775"
         }
       }
     }

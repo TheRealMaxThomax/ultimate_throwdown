@@ -35,6 +35,7 @@
 
 **Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `RagdollPhysicsInitDelay`  
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
+**Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`  
 **Tag for test dummies only:** `practice_npc`
 
 ---
@@ -44,6 +45,7 @@
 | Name | Job |
 |------|-----|
 | `DodgeCooldownHud` | Placeholder dodge cooldown timer (owner HUD) |
+| `MovementRampHud` | Placeholder walk / sprint / charge ramp bar (owner HUD) |
 
 ---
 
