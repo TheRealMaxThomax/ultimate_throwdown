@@ -47,15 +47,30 @@
           "ZNear": 10
         },
         {
+          "__type": "MapMatchConfig",
+          "__guid": "9809b0ea-c602-445c-95dc-db7271a471ea",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Team0DisplayName": "Team A",
+          "Team1DisplayName": "Team B"
+        },
+        {
           "__type": "GameNetworkManager",
-          "__guid": "fbc3324a-74da-476d-9f9c-c1abccd478e0",
+          "__guid": "d1d03741-3a7b-4c29-bbea-ef5ae183d29e",
           "__enabled": true,
           "Flags": 0,
           "DisableTemplateOnStart": true,
-          "EnableNetDebugLogs": false,
+          "EnableNetDebugLogs": true,
           "JoinSpawnSpacing": 64,
           "LockBoneMergedSkinnedMeshLod": false,
           "LockPlayerModelLodInPreRender": true,
+          "MatchConfig": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -67,7 +82,15 @@
             "_type": "gameobject",
             "go": "8d430dd2-b7e0-40eb-8f6f-ea76a9c25d57"
           },
-          "SpawnPoint": null
+          "SpawnPoint": null,
+          "Team0Spawn": {
+            "_type": "gameobject",
+            "go": "8eef1831-2413-409e-95fe-df40c496d909"
+          },
+          "Team1Spawn": {
+            "_type": "gameobject",
+            "go": "19774dd0-66d6-42af-bf21-362f934018d2"
+          }
         }
       ],
       "Children": []
@@ -396,7 +419,7 @@
           "__guid": "a13a8635-d347-4439-8c09-f5de73d612c3",
           "__enabled": true,
           "Flags": 0,
-          "CurrentClass": "classes/juggernaut.cdata",
+          "CurrentClass": "classes/speedster.cdata",
           "ModelScaleRetrySeconds": 3,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -2464,8 +2487,8 @@
       "__version": 2,
       "Flags": 0,
       "Name": "NPC_Speedster",
-      "Position": "930,-98.3878937,250.415588",
-      "Rotation": "0,0,0,1",
+      "Position": "300,-900,250.415604",
+      "Rotation": "0,-0,-0.707106769,0.707106769",
       "Scale": "1,1,1",
       "Tags": "practice_npc",
       "Enabled": true,
@@ -4772,8 +4795,8 @@
       "__version": 2,
       "Flags": 0,
       "Name": "NPC_Sniper",
-      "Position": "930,56.8229675,250.098785",
-      "Rotation": "0,0,0,1",
+      "Position": "177.079987,-900,250.098816",
+      "Rotation": "0,-0,-0.707106769,0.707106769",
       "Scale": "1,1,1",
       "Tags": "practice_npc",
       "Enabled": true,
@@ -7080,8 +7103,8 @@
       "__version": 2,
       "Flags": 0,
       "Name": "NPC_Juggernaut",
-      "Position": "930,-259.003448,250.086716",
-      "Rotation": "0,0,0,1",
+      "Position": "54.5691833,-900.000122,250.086761",
+      "Rotation": "0,-0,-0.707106769,0.707106769",
       "Scale": "1,1,1",
       "Tags": "practice_npc",
       "Enabled": true,
@@ -9527,6 +9550,98 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "8eef1831-2413-409e-95fe-df40c496d909",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Team0Spawn",
+      "Position": "1695.03979,40,351.259399",
+      "Rotation": "0,0,1,-4.37113883E-08",
+      "Scale": "5,10,4",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "efb122d8-ea86-416a-aca6-f1924230c8fe",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "models/dev/box.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "0,0.03333,1,0.17"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "19774dd0-66d6-42af-bf21-362f934018d2",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Team1Spawn",
+      "Position": "-1122.36841,40,349.968445",
+      "Rotation": "0,0,0,1",
+      "Scale": "5,10,4",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ModelRenderer",
+          "__guid": "26585a86-2b89-4308-ac1e-3d3120b494a0",
+          "__enabled": true,
+          "Flags": 0,
+          "BodyGroups": 18446744073709551615,
+          "CreateAttachments": false,
+          "LodOverride": null,
+          "MaterialGroup": null,
+          "MaterialOverride": null,
+          "Materials": null,
+          "Model": "models/dev/box.vmdl",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RenderOptions": {
+            "GameLayer": true,
+            "OverlayLayer": false,
+            "BloomLayer": false,
+            "AfterUILayer": false
+          },
+          "RenderType": "On",
+          "Tint": "1,0,0,0.17"
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
@@ -9549,9 +9664,6 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
@@ -9561,6 +9673,9 @@
         "Storage": {
           "$blob": "b2813d63-4a51-4d27-9857-41cfa3c83775"
         }
+      },
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
       }
     }
   },

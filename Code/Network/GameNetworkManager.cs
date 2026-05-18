@@ -12,6 +12,15 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 	/// <summary> If set, this object&apos;s <see cref="GameObject.WorldTransform"/> is the spawn pose; otherwise the template&apos;s transform at startup is snapped. </summary>
 	[Property] public GameObject SpawnPoint { get; set; }
 
+	/// <summary> Team 0 spawn. When set, new team-0 players spawn here instead of <see cref="SpawnPoint"/>. </summary>
+	[Property] public GameObject Team0Spawn { get; set; }
+
+	/// <summary> Team 1 spawn. When set, new team-1 players spawn here instead of <see cref="SpawnPoint"/>. </summary>
+	[Property] public GameObject Team1Spawn { get; set; }
+
+	/// <summary> Optional; if unset, first <see cref="MapMatchConfig"/> in the scene is used. </summary>
+	[Property] public MapMatchConfig MatchConfig { get; set; }
+
 	/// <summary> Each joining connection spawns this many units along the spawn point&apos;s local +X so players don&apos;t stack (0 = same spot). </summary>
 	[Property] public float JoinSpawnSpacing { get; set; } = 64f;
 
@@ -23,6 +32,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 	[Property] public bool LockBoneMergedSkinnedMeshLod { get; set; } = false;
 
 	private readonly Dictionary<long, GameObject> spawnedPlayersBySteamId = new();
+	private readonly Dictionary<long, int> preferredTeamBySteamId = new();
 	private GameObject playerTemplate;
 	private Transform designSpawnTransform;
 	private bool designSpawnCaptured;
@@ -127,7 +137,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 		if ( SpawnPoint.IsValid() )
 		{
-			designSpawnTransform = SpawnPoint.WorldTransform;
+			designSpawnTransform = WithoutScale( SpawnPoint.WorldTransform );
 			designSpawnCaptured = true;
 			return;
 		}
@@ -137,6 +147,12 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 			designSpawnTransform = playerTemplate.WorldTransform;
 			designSpawnCaptured = true;
 		}
+	}
+
+	/// <summary> Spawn empties are often scaled up for editor visibility — strip that so the cloned player keeps the template scale. </summary>
+	private static Transform WithoutScale( Transform t )
+	{
+		return new Transform( t.Position, t.Rotation, 1f );
 	}
 
 	private void EnsurePlayersForActiveConnections()
@@ -203,13 +219,19 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		if ( spawnedPlayersBySteamId.TryGetValue( steamId, out var existingPlayer ) && existingPlayer.IsValid() )
 			return;
 
-		var slotIndex = spawnedPlayersBySteamId.Count;
-		var t = designSpawnTransform;
-		t.Position += t.Rotation * Vector3.Right * (slotIndex * JoinSpawnSpacing);
+		var teamId = AssignTeamForConnection( connection );
+		preferredTeamBySteamId[steamId] = teamId;
+
+		var teamSlotIndex = CountPlayersOnTeam( teamId );
+		var t = GetSpawnTransformForTeam( teamId, teamSlotIndex );
 
 		var player = playerTemplate.Clone( t );
 		player.Name = $"Player_{connection.DisplayName}";
 		player.Enabled = true;
+
+		var playerTeam = player.Components.GetOrCreate<PlayerTeam>();
+		playerTeam.TeamId = teamId;
+
 		player.NetworkSpawn( connection );
 
 		spawnedPlayersBySteamId[steamId] = player;
@@ -225,8 +247,62 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 		if ( EnableNetDebugLogs )
 		{
-			Log.Info( $"[NetDebug] Spawned player for {connection.DisplayName} ({connection.SteamId}) at {t.Position} slot={slotIndex}." );
+			var teamName = ResolveMapMatchConfig()?.GetTeamDisplayName( teamId ) ?? $"Team{teamId}";
+			Log.Info( $"[NetDebug] Spawned player for {connection.DisplayName} ({connection.SteamId}) at {t.Position} team={teamId} ({teamName}) teamSlot={teamSlotIndex}." );
 		}
+	}
+
+	private MapMatchConfig ResolveMapMatchConfig()
+	{
+		if ( MatchConfig.IsValid() )
+			return MatchConfig;
+
+		return MapMatchConfig.FindInScene( Scene );
+	}
+
+	private int CountPlayersOnTeam( int teamId )
+	{
+		var count = 0;
+		foreach ( var player in spawnedPlayersBySteamId.Values )
+		{
+			if ( !player.IsValid() )
+				continue;
+
+			var playerTeam = player.Components.Get<PlayerTeam>();
+			if ( !playerTeam.IsValid() )
+				continue;
+
+			if ( playerTeam.TeamId == teamId )
+				count++;
+		}
+
+		return count;
+	}
+
+	private int AssignTeamForConnection( Connection connection )
+	{
+		var steamId = (long)connection.SteamId;
+		if ( preferredTeamBySteamId.TryGetValue( steamId, out var preferredTeam ) && MatchTeamIds.IsValid( preferredTeam ) )
+			return preferredTeam;
+
+		var team0Count = CountPlayersOnTeam( MatchTeamIds.Team0 );
+		var team1Count = CountPlayersOnTeam( MatchTeamIds.Team1 );
+
+		if ( team0Count < team1Count )
+			return MatchTeamIds.Team0;
+
+		if ( team1Count < team0Count )
+			return MatchTeamIds.Team1;
+
+		return Game.Random.Int( 0, MatchTeamIds.TeamCount - 1 );
+	}
+
+	private Transform GetSpawnTransformForTeam( int teamId, int teamSlotIndex )
+	{
+		var teamSpawn = teamId == MatchTeamIds.Team0 ? Team0Spawn : Team1Spawn;
+		var t = teamSpawn.IsValid() ? WithoutScale( teamSpawn.WorldTransform ) : designSpawnTransform;
+		t.Position += t.Rotation * Vector3.Right * (teamSlotIndex * JoinSpawnSpacing);
+		return t;
 	}
 
 }

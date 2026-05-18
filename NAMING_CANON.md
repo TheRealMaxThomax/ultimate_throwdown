@@ -21,10 +21,24 @@
 
 ---
 
+## Match (`Code/Match/`)
+
+| Name | Job |
+|------|-----|
+| `MapMatchConfig` | Per-map team display names (`Team0DisplayName`, `Team1DisplayName`) |
+| `MatchTeamIds` | Constants `Team0` / `Team1` (ids `0` / `1`) |
+| `MatchDirector` | *(planned)* Phase state machine, round wins, intermission |
+| `GoalZone` | *(planned)* Defended goal volume + scoring dwell |
+
+**Often-used on `PlayerTeam`:** `TeamId` (synced, host-assigned)
+
+---
+
 ## Player (`Code/Player/`)
 
 | Name | Job |
 |------|-----|
+| `PlayerTeam` | Synced match team id (`0` / `1`) |
 | `CatchUpSpeedBoost` | Walk / sprint / charge speed ramps |
 | `PlayerDodge` | Dodge (lives at **bottom of** `CatchUpSpeedBoost.cs` — same file on purpose) |
 | `PlayerClass` | Which class is equipped |
@@ -53,8 +67,10 @@
 
 | Name | Job |
 |------|-----|
-| `GameNetworkManager` | Spawns players when joining (`Code/Network/`) |
+| `GameNetworkManager` | Spawns players when joining; team balance + team spawns (`Code/Network/`) |
 | `StartupMapBootstrap` | Loads `testing_map` on host and clients (`Code/Map/`) |
+
+**Often-used on `GameNetworkManager`:** `Team0Spawn`, `Team1Spawn`, `MatchConfig`, `JoinSpawnSpacing`
 
 ---
 

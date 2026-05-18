@@ -1,8 +1,21 @@
 # Match Flow Plan — scoring, teams, rounds (planning doc)
 
-**What this is:** Full plan for goals, teams, rounds, intermission, and match end. Decided in chat, not built yet.
+**What this is:** Full plan for goals, teams, rounds, intermission, and match end. Decided in chat, mid-implementation.
 **When to read:** Before implementing any of: `GoalZone`, team assignment, round/match flow, score HUD. Once shipped, fold the short version into [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) / [`SESSION_NOTES.md`](SESSION_NOTES.md) / [`NAMING_CANON.md`](NAMING_CANON.md) and trim this file.
-**Status:** Planning only — no code changes yet.
+**Status:** Slice 1 shipped (teams + spawns). Slices 2–6 still planning.
+
+---
+
+## Progress
+
+| Slice | What | Status |
+|------|------|--------|
+| 1 | Teams + spawns (`PlayerTeam`, balance-on-join, team spawn points, `MapMatchConfig`) | **Done** |
+| 2 | `MatchDirector` skeleton (phases, input freeze in intermission, paused match timer, debug "force goal") | Pending |
+| 3 | `GoalZone` + dwell scoring (host-side) | Pending |
+| 4 | Reset orchestration (teleport to team spawn, ball to `BallSpawn`, force stand-up, release carrier) | Pending |
+| 5 | HUD (round score top bar, goal banner, intermission countdown) | Pending |
+| 6 | Match over + rematch (host action, client waiting state) | Pending |
 
 ---
 
@@ -104,19 +117,20 @@ Each map needs:
 
 ---
 
-## Components (planned, names per [`NAMING_CANON.md`](NAMING_CANON.md) rules)
+## Components (status per [`NAMING_CANON.md`](NAMING_CANON.md))
 
-| Component | Folder | Job |
-|-----------|--------|-----|
-| `MapMatchConfig` | `Code/Match/` (new) | Per-map team display names + optional overrides |
-| `PlayerTeam` | `Code/Player/` | Synced `TeamId` on each player; host-assigned at spawn |
-| `GoalZone` | `Code/Match/` | Defended end + trigger volume; reports valid carrier-in-zone to host |
-| `MatchDirector` | `Code/Match/` | Phase state machine, round wins, match timer, OT, reset orchestration |
-| `MatchScoreHud` | `Code/UI/` | Round wins top bar |
-| `GoalBannerHud` | `Code/UI/` | "TEAM A SCORED!" banner |
-| `IntermissionHud` | `Code/UI/` | Countdown during intermission |
+| Component | Folder | Job | Status |
+|-----------|--------|-----|--------|
+| `MapMatchConfig` | `Code/Match/` | Per-map team display names | **Built** |
+| `MatchTeamIds` | `Code/Match/` | Team id constants (`Team0`, `Team1`) | **Built** |
+| `PlayerTeam` | `Code/Player/` | Synced `TeamId`; host-assigned at spawn | **Built** |
+| `GoalZone` | `Code/Match/` | Defended end + trigger volume; reports valid carrier-in-zone to host | Planned |
+| `MatchDirector` | `Code/Match/` | Phase state machine, round wins, match timer, OT, reset orchestration | Planned |
+| `MatchScoreHud` | `Code/UI/` | Round wins top bar | Planned |
+| `GoalBannerHud` | `Code/UI/` | "TEAM A SCORED!" banner | Planned |
+| `IntermissionHud` | `Code/UI/` | Countdown during intermission | Planned |
 
-**Folder decision:** New `Code/Match/` system folder (per folder-structure rule) for `MatchDirector`, `GoalZone`, `MapMatchConfig`. Confirm before implementing.
+**Folder decision:** `Code/Match/` exists and is used for match-flow components.
 
 ---
 
@@ -150,7 +164,7 @@ Each map needs:
 
 Build in this order so each slice is testable before the next:
 
-1. **Teams + spawns** — `PlayerTeam`, host balance-on-join, team spawn points, `MapMatchConfig` skeleton.
+1. **Teams + spawns** — `PlayerTeam`, host balance-on-join, team spawn points, `MapMatchConfig` skeleton. **Done.**
 2. **`MatchDirector` skeleton** — phases (`Playing` / `GoalCelebration` / `Intermission` / `MatchOver`), input freeze in intermission, match timer with pause, manual "force goal" debug input to drive flow without zones yet.
 3. **`GoalZone` + dwell** — host-side trigger / poll, valid carrier check, dwell timer, call `MatchDirector.RegisterGoal`.
 4. **Reset orchestration** — teleport players to team spawn, ball to `BallSpawn`, force ragdoll stand-up, release carrier.
@@ -158,6 +172,24 @@ Build in this order so each slice is testable before the next:
 6. **Match over + rematch** — host action, client waiting state.
 
 Each slice ends with a 2-window MP playtest (per [`PLAYTEST_CHECKLIST.md`](PLAYTEST_CHECKLIST.md)) before moving on.
+
+### Slice 1 — shipped notes
+
+**Files added/changed:**
+- `Code/Player/PlayerTeam.cs` — `[Sync( SyncFlags.FromHost )] TeamId`.
+- `Code/Match/MapMatchConfig.cs` — `Team0DisplayName` / `Team1DisplayName`; `FindInScene` auto-find.
+- `Code/Match/MatchTeamIds.cs` — `Team0` / `Team1` / `TeamCount` constants + `IsValid`.
+- `Code/Network/GameNetworkManager.cs` — added `Team0Spawn`, `Team1Spawn`, `MatchConfig`; balance-on-join (smaller team, `Game.Random.Int` if tied); reconnect reuses prior team via `preferredTeamBySteamId`; `GetOrCreate<PlayerTeam>` on spawn; spawn transforms strip scale (`WithoutScale`) so editor-scaled empties don't grow the player.
+
+**Editor setup that's now expected:**
+- `MapMatchConfig` somewhere in the scene (auto-find), or wired explicitly on `GameNetworkManager.MatchConfig`.
+- `Team0Spawn` / `Team1Spawn` empty objects wired on `GameNetworkManager`. Falls back to `SpawnPoint` if not wired.
+- `PlayerTeam` is auto-added at spawn (no manual editor work needed on the template).
+
+**Verified behavior:**
+- Solo play hits the tied case → random team → spawns at either red/blue zone (expected).
+- 2-window join: second player goes to the opposite team (smaller-team rule).
+- Player no longer scales up to the spawn empty's editor scale.
 
 ---
 
@@ -184,9 +216,9 @@ These belong in `SESSION_NOTES.md` "Open decisions" once we start building:
 
 ## When ready to build
 
-Say "go" + which slice. Default start: **slice 1 (teams + spawns)** so join/reset work before scoring lands.
+Say "go" + which slice. Next default: **slice 2 (`MatchDirector` skeleton)** so the phase machine + paused timer exist before goal zones land.
 
-Once the system is shipped:
+Once the full system is shipped:
 - Trim this file or delete it; move durable rules into [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md).
-- Add new component names to [`NAMING_CANON.md`](NAMING_CANON.md).
+- Add new component names to [`NAMING_CANON.md`](NAMING_CANON.md). (Slice 1 names already added.)
 - Update [`SESSION_NOTES.md`](SESSION_NOTES.md) "Right now" and editor checklist.
