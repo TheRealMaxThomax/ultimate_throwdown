@@ -1,6 +1,7 @@
 using Sandbox;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 // PlayerTackle — quick map (editor Outline or Ctrl+F the symbol name)
 //   Inspector properties ........ top of class
@@ -11,7 +12,7 @@ using System.Collections.Generic;
 //   Victim pick ................. TryFindTackleVictim (cone vs horizontal view forward, not velocity)
 //   Hit + ball .................. ExecuteTackle
 //   Ragdoll (host only) ......... SpawnRagdollObject, AddVictimClothingToRagdoll, HandleRagdollRecovery, IsRagdollGroundedAndSettled
-//   Juggernaut ramp ............. UpdateTackleChargeBonus
+//   Juggernaut ramp ............. StepTackleChargeBonus (host + owner mirror for RPC)
 //   Local down / up ............. ApplyRagdollLocally, StandUpLocally
 //   Stand-up camera blend ....... OnPreRender (lerp last ragdoll cam -> PlayerController camera this frame)
 public sealed class PlayerTackle : Component
@@ -32,8 +33,8 @@ public sealed class PlayerTackle : Component
 	[Property] public float TackleRpcPositionSlop { get; set; } = 128f;
 	/// <summary>Extra multiplier on tackle radius when validating owner snapshots (latency compensation).</summary>
 	[Property] public float TackleRpcRadiusFudge { get; set; } = 1.12f;
-	/// <summary>Host: seconds to wait after networking the ragdoll before ApplyImpulse (lets local physics bodies exist). Too low can weaken launch; too high leaves a visible stall before flight.</summary>
-	[Property] public float RagdollPhysicsInitDelay { get; set; } = 0.05f;
+	/// <summary>Host: max seconds to poll for ragdoll physics bodies before launch + <c>NetworkSpawn</c>. Impulse runs as soon as bodies exist (often &lt; 1 frame). Too low can miss launch; too high delays replication.</summary>
+	[Property] public float RagdollPhysicsInitDelay { get; set; } = 0.08f;
 	/// <summary>Seconds to ease main camera from ragdoll orbit to normal third-person after stand-up. 0 = hand off immediately.</summary>
 	[Property] public float StandUpCameraBlendDuration { get; set; } = 0.6f;
 	/// <summary>Host: after stand-up from ragdoll, for this many seconds use <see cref="ClassData.TimeToCatchUpSpeedAfterRagdoll"/> for charge ramp when that value &gt; 0.</summary>
@@ -83,6 +84,9 @@ public sealed class PlayerTackle : Component
 
 	// Host-only: Juggernaut-style tackle ramp (see ClassData.TackleChargeRampRate / MaxTackleChargeBonus)
 	private float tackleChargeBonus;
+
+	/// <summary>Owner mirror of <see cref="tackleChargeBonus"/> for remote tackle RPC (host NetAtChargeSpeed can lag).</summary>
+	private float ownerTackleChargeBonus;
 
 	// Host-only: the spawned ragdoll physics object
 	private GameObject ragdollObject;
@@ -209,7 +213,15 @@ public sealed class PlayerTackle : Component
 			if ( isRagdolled )
 				tackleChargeBonus = 0f;
 			else
-				UpdateTackleChargeBonus();
+				StepTackleChargeBonus( ref tackleChargeBonus );
+		}
+
+		if ( Network.IsOwner && !Networking.IsHost )
+		{
+			if ( isRagdolled )
+				ownerTackleChargeBonus = 0f;
+			else
+				StepTackleChargeBonus( ref ownerTackleChargeBonus );
 		}
 
 		if ( Networking.IsHost && IsMatchGameplayInputAllowed() )
@@ -310,7 +322,7 @@ public sealed class PlayerTackle : Component
 		var attackerPos = WorldPosition;
 		var victimPos = victim.WorldPosition;
 		nextRemoteTackleRequestAt = Time.Now + (TackleCooldown * 0.2f).Clamp( 0.05f, 0.25f );
-		RequestTackleApplyOnHost( victim.GameObject.Id, approachDir, attackerPos, victimPos );
+		RequestTackleApplyOnHost( victim.GameObject.Id, approachDir, attackerPos, victimPos, ownerTackleChargeBonus );
 	}
 
 	[Rpc.Host]
@@ -318,7 +330,8 @@ public sealed class PlayerTackle : Component
 		Guid victimRootId,
 		Vector3 horizontalApproachDirectionFromOwner,
 		Vector3 attackerWorldPosFromOwner,
-		Vector3 victimWorldPosFromOwner )
+		Vector3 victimWorldPosFromOwner,
+		float chargeBonusFromOwner )
 	{
 		if ( this.Network.Owner is null || Rpc.Caller.SteamId != this.Network.Owner.SteamId )
 			return;
@@ -382,12 +395,16 @@ public sealed class PlayerTackle : Component
 		}
 
 		ApplyTackleCooldownOnHost();
+		// Launch uses owner snapshot (client detected the hit). Host-only distance/cone checks
+		// waited for host positions to catch up and made tackles feel late.
 		var tackleDir = toVictimOwner.Normal;
+		var maxBonus = playerClass?.CurrentClass?.MaxTackleChargeBonus ?? 0f;
+		var clampedOwnerBonus = MathX.Clamp( chargeBonusFromOwner, 0f, maxBonus );
 
 		if ( EnableTackleDebugLogs )
-			Log.Info( $"[Tackle] Rpc {GameObject.Name} → {victim.GameObject.Name} | Dir={tackleDir}" );
+			Log.Info( $"[Tackle] Rpc {GameObject.Name} → {victim.GameObject.Name} | Dir={tackleDir} hostBonus={tackleChargeBonus:F3} ownerBonus={clampedOwnerBonus:F3}" );
 
-		ExecuteTackle( victim, tackleDir );
+		ExecuteTackle( victim, tackleDir, clampedOwnerBonus );
 	}
 
 	/// <summary>Horizontal view-forward for tackle cone; same basis as dodge shove (EyeAngles, not velocity).</summary>
@@ -459,7 +476,7 @@ public sealed class PlayerTackle : Component
 		return false;
 	}
 
-	private void ExecuteTackle( PlayerTackle victim, Vector3 tackleDir )
+	private void ExecuteTackle( PlayerTackle victim, Vector3 tackleDir, float chargeBonusFromOwner = -1f )
 	{
 		if ( Networking.IsHost )
 		{
@@ -480,12 +497,15 @@ public sealed class PlayerTackle : Component
 		if ( victimMass <= 0f ) victimMass = 80f;
 
 		var massRatio = MathX.Clamp( attackerMass / victimMass, 0.5f, 2.5f );
-		var juggMult = 1f + tackleChargeBonus;
+		var chargeBonus = tackleChargeBonus;
+		if ( chargeBonusFromOwner >= 0f )
+			chargeBonus = MathF.Max( chargeBonus, chargeBonusFromOwner );
+		var juggMult = 1f + chargeBonus;
 		var tacklePower = massRatio * juggMult;
 		var effectiveLaunchSpeed = TackleLaunchSpeed * tacklePower;
 
 		if ( EnableTackleDebugLogs )
-			Log.Info( $"[Tackle] Power massRatio={massRatio:F2} juggMult={juggMult:F2} → launchSpeed={effectiveLaunchSpeed:F0}" );
+			Log.Info( $"[Tackle] Power massRatio={massRatio:F2} chargeBonus={chargeBonus:F3} juggMult={juggMult:F2} → launchSpeed={effectiveLaunchSpeed:F0}" );
 
 		var classData = victim.playerClass?.CurrentClass;
 		var ballLaunchForce = (classData?.BallLaunchForceOnTackle ?? 500f) * tacklePower;
@@ -587,47 +607,88 @@ public sealed class PlayerTackle : Component
 		if ( baseVictimRenderer != null )
 			AddVictimClothingToRagdoll( victim, ragdollGo, primaryRenderer, baseVictimRenderer );
 
-		// Network as soon as the mesh exists so we don't sit in a hole where the player is hidden
-		// (NetIsRagdolled) but the ragdoll object hasn't replicated yet. Impulse is applied after
-		// a short host delay so physics bodies exist (see RagdollPhysicsInitDelay).
+		// Impulse on host while still local, then NetworkSpawn — clients' first ragdoll snapshot
+		// should already be in flight (avoids a stationary ragdoll + late launch on replication).
 		ragdollGo.Tags.Add( "ragdoll" );
 		victim.ragdollObject = ragdollGo;
 		ragdollGo.Components.GetOrCreate<RagdollEnemyOutline>().ConfigureFromVictim( victim );
-		ragdollGo.NetworkSpawn();
 
-		var initDelay = RagdollPhysicsInitDelay.Clamp( 0.01f, 0.25f );
-		await GameTask.DelaySeconds( initDelay );
+		var waitForBodies = RagdollPhysicsInitDelay.Clamp( 0.01f, 0.25f );
+		var launched = await TryApplyRagdollLaunchImpulseAsync( ragdollGo, tackleDir, effectiveLaunchSpeed, waitForBodies );
 		if ( !ragdollGo.IsValid() )
 			return;
 
-		var mp = ragdollGo.Components.Get<ModelPhysics>();
-		if ( mp == null || mp.Bodies.Count == 0 )
-			return;
+		if ( EnableTackleDebugLogs )
+			Log.Info( $"[Tackle] NetworkSpawn after impulse | launched={launched}" );
 
-		var pb0 = mp.Bodies[0].Component?.PhysicsBody;
-		var group = pb0?.PhysicsGroup;
+		ragdollGo.NetworkSpawn();
+	}
+
+	/// <summary>Poll until <see cref="ModelPhysics"/> bodies exist, apply pelvis impulse, tag bodies. Returns false if timed out.</summary>
+	private async Task<bool> TryApplyRagdollLaunchImpulseAsync(
+		GameObject ragdollGo,
+		Vector3 tackleDir,
+		float effectiveLaunchSpeed,
+		float maxWaitSeconds )
+	{
+		const float pollStepSeconds = 0.008f;
+		var started = Time.Now;
+
+		while ( ragdollGo.IsValid() && Time.Now - started < maxWaitSeconds )
+		{
+			if ( TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, out var bodyCount ) )
+			{
+				if ( EnableTackleDebugLogs )
+					Log.Info( $"[Tackle] Impulse ready in {(Time.Now - started) * 1000f:F0}ms | Bodies={bodyCount}" );
+				return true;
+			}
+
+			await GameTask.DelaySeconds( pollStepSeconds );
+		}
+
+		if ( ragdollGo.IsValid() && TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, out var finalBodies ) )
+		{
+			if ( EnableTackleDebugLogs )
+				Log.Info( $"[Tackle] Impulse on timeout edge | Bodies={finalBodies}" );
+			return true;
+		}
 
 		if ( EnableTackleDebugLogs )
-			Log.Info( $"[Tackle] Post-network impulse | Bodies={mp.Bodies.Count} BodyType[0]={pb0?.BodyType} Group={group != null}" );
+			Log.Warning( $"[Tackle] Impulse failed after {maxWaitSeconds * 1000f:F0}ms — spawning without launch" );
+		return false;
+	}
+
+	private bool TryApplyRagdollLaunchImpulse(
+		GameObject ragdollGo,
+		Vector3 tackleDir,
+		float effectiveLaunchSpeed,
+		out int bodyCount )
+	{
+		bodyCount = 0;
+		var mp = ragdollGo.Components.Get<ModelPhysics>();
+		if ( mp == null || mp.Bodies.Count == 0 )
+			return false;
+
+		bodyCount = mp.Bodies.Count;
+		var pb0 = mp.Bodies[0].Component?.PhysicsBody;
+		if ( pb0 == null )
+			return false;
 
 		var launchDir = (tackleDir + Vector3.Up * TackleLaunchArc).Normal;
 		var launchVelocity = launchDir * effectiveLaunchSpeed;
-
-		// Pelvis-only Velocity = launchVelocity killed travel distance: pelvis mass is a small
-		// fraction of the whole ragdoll, so linear momentum was tiny and the solver drained it
-		// through joints. Applying one impulse M×v at the pelvis (≈ whole-body COM) matches
-		// total momentum of "every body at launchVelocity" while joints can still flex limbs
-		// relative to the core during flight.
 		var totalMass = mp.Mass;
-		if ( pb0 != null && totalMass > 0f )
-			pb0.ApplyImpulse( launchVelocity * totalMass );
+		if ( totalMass <= 0f )
+			return false;
 
-		if ( EnableTackleDebugLogs && pb0 != null )
-			Log.Info( $"[Tackle] After velocity | Group={group != null} Vel={pb0.Velocity}" );
+		pb0.ApplyImpulse( launchVelocity * totalMass );
 
-		// Tag every physics body for stand-up floor traces.
 		foreach ( var body in mp.Bodies )
 			body.Component?.GameObject?.Tags.Add( "ragdoll" );
+
+		if ( EnableTackleDebugLogs )
+			Log.Info( $"[Tackle] ApplyImpulse | Bodies={bodyCount} Vel={pb0.Velocity}" );
+
+		return true;
 	}
 
 	/// <summary>
@@ -773,21 +834,21 @@ public sealed class PlayerTackle : Component
 		return pelvisBody.Velocity.Length <= maxPelvisSpeed;
 	}
 
-	private void UpdateTackleChargeBonus()
+	private void StepTackleChargeBonus( ref float bonus )
 	{
 		var c = playerClass?.CurrentClass;
 		var rate = c?.TackleChargeRampRate ?? 0f;
 		var maxBonus = c?.MaxTackleChargeBonus ?? 0f;
 		if ( rate <= 0f || maxBonus <= 0f )
 		{
-			tackleChargeBonus = 0f;
+			bonus = 0f;
 			return;
 		}
 
 		if ( speedBoost != null && speedBoost.IsAtChargeSpeed )
-			tackleChargeBonus = MathX.Clamp( tackleChargeBonus + rate * Time.Delta, 0f, maxBonus );
+			bonus = MathX.Clamp( bonus + rate * Time.Delta, 0f, maxBonus );
 		else
-			tackleChargeBonus = 0f;
+			bonus = 0f;
 	}
 
 	private Vector3 ComputeStandUpPositionFromRagdoll()
