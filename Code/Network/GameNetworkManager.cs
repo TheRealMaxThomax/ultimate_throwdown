@@ -12,16 +12,25 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 	/// <summary> If set, this object&apos;s <see cref="GameObject.WorldTransform"/> is the spawn pose; otherwise the template&apos;s transform at startup is snapped. </summary>
 	[Property] public GameObject SpawnPoint { get; set; }
 
-	/// <summary> Team 0 spawn. When set, new team-0 players spawn here instead of <see cref="SpawnPoint"/>. </summary>
+	/// <summary> Team 0 spawn points. Host picks the first one with no living team-0 player within <see cref="SpawnPointOccupiedRadius"/>; falls back to a random entry, then to <see cref="Team0Spawn"/>, then <see cref="SpawnPoint"/>. </summary>
+	[Property] public List<GameObject> Team0Spawns { get; set; } = new();
+
+	/// <summary> Team 1 spawn points. Same rules as <see cref="Team0Spawns"/>. </summary>
+	[Property] public List<GameObject> Team1Spawns { get; set; } = new();
+
+	/// <summary> Legacy single team-0 spawn. Used only if <see cref="Team0Spawns"/> is empty. </summary>
 	[Property] public GameObject Team0Spawn { get; set; }
 
-	/// <summary> Team 1 spawn. When set, new team-1 players spawn here instead of <see cref="SpawnPoint"/>. </summary>
+	/// <summary> Legacy single team-1 spawn. Used only if <see cref="Team1Spawns"/> is empty. </summary>
 	[Property] public GameObject Team1Spawn { get; set; }
 
 	/// <summary> Optional; if unset, first <see cref="MapMatchConfig"/> in the scene is used. </summary>
 	[Property] public MapMatchConfig MatchConfig { get; set; }
 
-	/// <summary> Each joining connection spawns this many units along the spawn point&apos;s local +X so players don&apos;t stack (0 = same spot). </summary>
+	/// <summary> A spawn point is considered occupied if a same-team player is within this many units. </summary>
+	[Property] public float SpawnPointOccupiedRadius { get; set; } = 60f;
+
+	/// <summary> Legacy line spacing — only used when falling back to a single <see cref="Team0Spawn"/> / <see cref="Team1Spawn"/> / <see cref="SpawnPoint"/>. </summary>
 	[Property] public float JoinSpawnSpacing { get; set; } = 64f;
 
 	[Property] public bool DisableTemplateOnStart { get; set; } = true;
@@ -299,10 +308,61 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 	private Transform GetSpawnTransformForTeam( int teamId, int teamSlotIndex )
 	{
-		var teamSpawn = teamId == MatchTeamIds.Team0 ? Team0Spawn : Team1Spawn;
-		var t = teamSpawn.IsValid() ? WithoutScale( teamSpawn.WorldTransform ) : designSpawnTransform;
+		var spawnList = teamId == MatchTeamIds.Team0 ? Team0Spawns : Team1Spawns;
+		var freePoint = PickFreeSpawnPoint( spawnList, teamId );
+		if ( freePoint.IsValid() )
+			return WithoutScale( freePoint.WorldTransform );
+
+		var singleSpawn = teamId == MatchTeamIds.Team0 ? Team0Spawn : Team1Spawn;
+		var t = singleSpawn.IsValid() ? WithoutScale( singleSpawn.WorldTransform ) : designSpawnTransform;
 		t.Position += t.Rotation * Vector3.Right * (teamSlotIndex * JoinSpawnSpacing);
 		return t;
+	}
+
+	/// <summary> First spawn with no same-team player within <see cref="SpawnPointOccupiedRadius"/>. If all are occupied, returns a random entry so we still place the player somewhere. </summary>
+	private GameObject PickFreeSpawnPoint( List<GameObject> spawnList, int teamId )
+	{
+		if ( spawnList is null || spawnList.Count == 0 )
+			return null;
+
+		foreach ( var spawn in spawnList )
+		{
+			if ( !spawn.IsValid() )
+				continue;
+
+			if ( !IsSpawnPointOccupied( spawn, teamId ) )
+				return spawn;
+		}
+
+		for ( var attempt = 0; attempt < 4; attempt++ )
+		{
+			var pick = spawnList[Game.Random.Int( 0, spawnList.Count - 1 )];
+			if ( pick.IsValid() )
+				return pick;
+		}
+
+		return null;
+	}
+
+	private bool IsSpawnPointOccupied( GameObject spawn, int teamId )
+	{
+		var radiusSq = SpawnPointOccupiedRadius * SpawnPointOccupiedRadius;
+		var spawnPos = spawn.WorldPosition;
+
+		foreach ( var player in spawnedPlayersBySteamId.Values )
+		{
+			if ( !player.IsValid() )
+				continue;
+
+			var playerTeam = player.Components.Get<PlayerTeam>();
+			if ( !playerTeam.IsValid() || playerTeam.TeamId != teamId )
+				continue;
+
+			if ( (player.WorldPosition - spawnPos).LengthSquared <= radiusSq )
+				return true;
+		}
+
+		return false;
 	}
 
 }

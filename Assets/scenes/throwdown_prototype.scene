@@ -62,11 +62,11 @@
         },
         {
           "__type": "GameNetworkManager",
-          "__guid": "d1d03741-3a7b-4c29-bbea-ef5ae183d29e",
+          "__guid": "96b427f2-d5c2-4253-836e-96ed70fd9888",
           "__enabled": true,
           "Flags": 0,
           "DisableTemplateOnStart": true,
-          "EnableNetDebugLogs": true,
+          "EnableNetDebugLogs": false,
           "JoinSpawnSpacing": 64,
           "LockBoneMergedSkinnedMeshLod": false,
           "LockPlayerModelLodInPreRender": true,
@@ -83,14 +83,80 @@
             "go": "8d430dd2-b7e0-40eb-8f6f-ea76a9c25d57"
           },
           "SpawnPoint": null,
-          "Team0Spawn": {
-            "_type": "gameobject",
-            "go": "8eef1831-2413-409e-95fe-df40c496d909"
-          },
-          "Team1Spawn": {
-            "_type": "gameobject",
-            "go": "19774dd0-66d6-42af-bf21-362f934018d2"
-          }
+          "SpawnPointOccupiedRadius": 30,
+          "Team0Spawn": null,
+          "Team0Spawns": [
+            {
+              "_type": "gameobject",
+              "go": "6a298b8f-fe0c-4991-8b02-a8ffa477e0b1"
+            },
+            {
+              "_type": "gameobject",
+              "go": "120e6270-9258-4a0d-b715-bdac55c90bcc"
+            },
+            {
+              "_type": "gameobject",
+              "go": "30959c48-bea9-43bd-9da5-d275183205de"
+            },
+            {
+              "_type": "gameobject",
+              "go": "e9a2861b-334f-48ef-b2a5-7dbaf81581cb"
+            },
+            {
+              "_type": "gameobject",
+              "go": "25f59459-0fc5-4eb6-b0ae-f46fb412c7f2"
+            },
+            {
+              "_type": "gameobject",
+              "go": "72fa895b-aa9f-4136-a612-336cac8b1e8d"
+            }
+          ],
+          "Team1Spawn": null,
+          "Team1Spawns": [
+            {
+              "_type": "gameobject",
+              "go": "0cee4dee-7a90-4e05-9d5a-4988b9aca89a"
+            },
+            {
+              "_type": "gameobject",
+              "go": "6327e150-bb46-441c-bac5-b8d45ae79d76"
+            },
+            {
+              "_type": "gameobject",
+              "go": "45f1bcbc-54f0-4fcb-83b3-080abaed9f78"
+            },
+            {
+              "_type": "gameobject",
+              "go": "9e0fbdcf-c928-4b99-8be5-7e556cff6646"
+            },
+            {
+              "_type": "gameobject",
+              "go": "499df8ac-5f5b-4d47-8302-1aab1f2eb9d6"
+            },
+            {
+              "_type": "gameobject",
+              "go": "4cacf4b1-bbf6-449c-94a9-f55ee0729a22"
+            }
+          ]
+        },
+        {
+          "__type": "MatchDirector",
+          "__guid": "77637316-8f50-4652-b4e1-717c02a0a599",
+          "__enabled": true,
+          "Flags": 0,
+          "DebugForceGoalAction": "DebugForceGoal",
+          "EnableDebugForceGoal": true,
+          "EnableMatchDebugLogs": true,
+          "GoalCelebrationSeconds": 5,
+          "IntermissionSeconds": 20,
+          "MatchDurationSeconds": 600,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "RoundWinsToWinMatch": 5
         }
       ],
       "Children": []
@@ -9555,7 +9621,7 @@
       "__guid": "8eef1831-2413-409e-95fe-df40c496d909",
       "__version": 2,
       "Flags": 0,
-      "Name": "Team0Spawn",
+      "Name": "TeamSpawnsA",
       "Position": "1695.03979,40,351.259399",
       "Rotation": "0,0,1,-4.37113883E-08",
       "Scale": "5,10,4",
@@ -9595,14 +9661,123 @@
           "Tint": "0,0.03333,1,0.17"
         }
       ],
-      "Children": []
+      "Children": [
+        {
+          "__guid": "6a298b8f-fe0c-4991-8b02-a8ffa477e0b1",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team0Spawn_1",
+          "Position": "-9,-16,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "120e6270-9258-4a0d-b715-bdac55c90bcc",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team0Spawn_2",
+          "Position": "11.9999971,-16,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "30959c48-bea9-43bd-9da5-d275183205de",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team0Spawn_3",
+          "Position": "-9,0,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "e9a2861b-334f-48ef-b2a5-7dbaf81581cb",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team0Spawn_4",
+          "Position": "12,0,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "25f59459-0fc5-4eb6-b0ae-f46fb412c7f2",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team0Spawn_5",
+          "Position": "12,16,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "72fa895b-aa9f-4136-a612-336cac8b1e8d",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team0Spawn_6",
+          "Position": "-9,16,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        }
+      ]
     },
     {
-      "__guid": "19774dd0-66d6-42af-bf21-362f934018d2",
+      "__guid": "8c8ab952-c29c-4e53-88c3-08f81a351980",
       "__version": 2,
       "Flags": 0,
-      "Name": "Team1Spawn",
-      "Position": "-1122.36841,40,349.968445",
+      "Name": "TeamSpawnsA",
+      "Position": "-1116.89038,39.9997635,351.259399",
       "Rotation": "0,0,0,1",
       "Scale": "5,10,4",
       "Tags": "",
@@ -9615,7 +9790,7 @@
       "Components": [
         {
           "__type": "Sandbox.ModelRenderer",
-          "__guid": "26585a86-2b89-4308-ac1e-3d3120b494a0",
+          "__guid": "85425e16-f1de-4e8d-94c4-f7402ed3cef9",
           "__enabled": true,
           "Flags": 0,
           "BodyGroups": 18446744073709551615,
@@ -9641,7 +9816,116 @@
           "Tint": "1,0,0,0.17"
         }
       ],
-      "Children": []
+      "Children": [
+        {
+          "__guid": "0cee4dee-7a90-4e05-9d5a-4988b9aca89a",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team1Spawn_1",
+          "Position": "-9,-16,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "6327e150-bb46-441c-bac5-b8d45ae79d76",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team1Spawn_2",
+          "Position": "11.9999971,-16,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "45f1bcbc-54f0-4fcb-83b3-080abaed9f78",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team1Spawn_3",
+          "Position": "-9,0,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "9e0fbdcf-c928-4b99-8be5-7e556cff6646",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team1Spawn_4",
+          "Position": "12,0,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "499df8ac-5f5b-4d47-8302-1aab1f2eb9d6",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team1Spawn_5",
+          "Position": "12,16,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        },
+        {
+          "__guid": "4cacf4b1-bbf6-449c-94a9-f55ee0729a22",
+          "__version": 2,
+          "Flags": 0,
+          "Name": "Team1Spawn_6",
+          "Position": "-9,16,-23",
+          "Rotation": "0,0,0,1",
+          "Scale": "1,1,1",
+          "Tags": "",
+          "Enabled": true,
+          "NetworkMode": 2,
+          "NetworkFlags": 0,
+          "NetworkOrphaned": 0,
+          "NetworkTransmit": true,
+          "OwnerTransfer": 1,
+          "Components": [],
+          "Children": []
+        }
+      ]
     }
   ],
   "SceneProperties": {
@@ -9664,11 +9948,6 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
-      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "b2813d63-4a51-4d27-9857-41cfa3c83775"
@@ -9676,6 +9955,11 @@
       },
       "Sandbox.MovieMaker.MovieRecorderSystem": {
         "DisableClientRecording": false
+      },
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
+        }
       }
     }
   },

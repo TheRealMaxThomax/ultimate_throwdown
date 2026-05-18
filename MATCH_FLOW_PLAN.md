@@ -2,7 +2,7 @@
 
 **What this is:** Full plan for goals, teams, rounds, intermission, and match end. Decided in chat, mid-implementation.
 **When to read:** Before implementing any of: `GoalZone`, team assignment, round/match flow, score HUD. Once shipped, fold the short version into [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) / [`SESSION_NOTES.md`](SESSION_NOTES.md) / [`NAMING_CANON.md`](NAMING_CANON.md) and trim this file.
-**Status:** Slice 1 shipped (teams + spawns). Slices 2–6 still planning.
+**Status:** Slices 1–2 shipped. Slices 3–6 pending.
 
 ---
 
@@ -11,7 +11,7 @@
 | Slice | What | Status |
 |------|------|--------|
 | 1 | Teams + spawns (`PlayerTeam`, balance-on-join, team spawn points, `MapMatchConfig`) | **Done** |
-| 2 | `MatchDirector` skeleton (phases, input freeze in intermission, paused match timer, debug "force goal") | Pending |
+| 2 | `MatchDirector` skeleton (phases, paused match timer, OT, debug F9 force goal) | **Done** |
 | 3 | `GoalZone` + dwell scoring (host-side) | Pending |
 | 4 | Reset orchestration (teleport to team spawn, ball to `BallSpawn`, force stand-up, release carrier) | Pending |
 | 5 | HUD (round score top bar, goal banner, intermission countdown) | Pending |
@@ -108,12 +108,12 @@ Each map needs:
 | Object | Purpose |
 |--------|---------|
 | `MapMatchConfig` (one) | `Team0DisplayName`, `Team1DisplayName`, optional match timer length override |
-| `Team0Spawn` | Team 0 spawn transform |
-| `Team1Spawn` | Team 1 spawn transform |
+| `Team0Spawns` ×6 | Team 0 spawn empties (6 max for 6v6); wired into `GameNetworkManager.Team0Spawns` |
+| `Team1Spawns` ×6 | Team 1 spawn empties; wired into `GameNetworkManager.Team1Spawns` |
 | `BallSpawn` | Ball reset position (center) |
 | `GoalZone` ×2 | Each with `DefendingTeam = 0` or `1` and a trigger collider |
 
-`GameNetworkManager`'s `SpawnPoint` + `JoinSpawnSpacing` can stay as a **fallback** when team spawns aren't wired (or warn loudly).
+`GameNetworkManager`'s legacy single `SpawnPoint` + `JoinSpawnSpacing` is only used if the spawn lists are empty.
 
 ---
 
@@ -125,7 +125,8 @@ Each map needs:
 | `MatchTeamIds` | `Code/Match/` | Team id constants (`Team0`, `Team1`) | **Built** |
 | `PlayerTeam` | `Code/Player/` | Synced `TeamId`; host-assigned at spawn | **Built** |
 | `GoalZone` | `Code/Match/` | Defended end + trigger volume; reports valid carrier-in-zone to host | Planned |
-| `MatchDirector` | `Code/Match/` | Phase state machine, round wins, match timer, OT, reset orchestration | Planned |
+| `MatchDirector` | `Code/Match/` | Phase state machine, round wins, match timer, OT, reset orchestration | **Built** (reset still stub) |
+| `MatchPhase` | `Code/Match/` | `Playing`, `GoalCelebration`, `Intermission`, `MatchOver` | **Built** |
 | `MatchScoreHud` | `Code/UI/` | Round wins top bar | Planned |
 | `GoalBannerHud` | `Code/UI/` | "TEAM A SCORED!" banner | Planned |
 | `IntermissionHud` | `Code/UI/` | Countdown during intermission | Planned |
@@ -165,7 +166,7 @@ Each map needs:
 Build in this order so each slice is testable before the next:
 
 1. **Teams + spawns** — `PlayerTeam`, host balance-on-join, team spawn points, `MapMatchConfig` skeleton. **Done.**
-2. **`MatchDirector` skeleton** — phases (`Playing` / `GoalCelebration` / `Intermission` / `MatchOver`), input freeze in intermission, match timer with pause, manual "force goal" debug input to drive flow without zones yet.
+2. **`MatchDirector` skeleton** — phases (`Playing` / `GoalCelebration` / `Intermission` / `MatchOver`), input freeze in intermission, match timer with pause, manual "force goal" debug input to drive flow without zones yet. **Done.**
 3. **`GoalZone` + dwell** — host-side trigger / poll, valid carrier check, dwell timer, call `MatchDirector.RegisterGoal`.
 4. **Reset orchestration** — teleport players to team spawn, ball to `BallSpawn`, force ragdoll stand-up, release carrier.
 5. **HUD** — round score bar, goal banner, intermission countdown.
@@ -179,16 +180,21 @@ Each slice ends with a 2-window MP playtest (per [`PLAYTEST_CHECKLIST.md`](PLAYT
 - `Code/Player/PlayerTeam.cs` — `[Sync( SyncFlags.FromHost )] TeamId`.
 - `Code/Match/MapMatchConfig.cs` — `Team0DisplayName` / `Team1DisplayName`; `FindInScene` auto-find.
 - `Code/Match/MatchTeamIds.cs` — `Team0` / `Team1` / `TeamCount` constants + `IsValid`.
-- `Code/Network/GameNetworkManager.cs` — added `Team0Spawn`, `Team1Spawn`, `MatchConfig`; balance-on-join (smaller team, `Game.Random.Int` if tied); reconnect reuses prior team via `preferredTeamBySteamId`; `GetOrCreate<PlayerTeam>` on spawn; spawn transforms strip scale (`WithoutScale`) so editor-scaled empties don't grow the player.
+- `Code/Network/GameNetworkManager.cs` — balance-on-join (smaller team, `Game.Random.Int` if tied); reconnect reuses prior team via `preferredTeamBySteamId`; `GetOrCreate<PlayerTeam>` on spawn; spawn transforms strip scale (`WithoutScale`) so editor-scaled empties don't grow the player.
+
+**Spawn point lists (post-slice-1 tweak, before slice 2):**
+- `Team0Spawns: List<GameObject>` and `Team1Spawns: List<GameObject>` on `GameNetworkManager` (intended capacity: 6 per team for max 6v6).
+- Host picker walks the list and uses the **first point with no same-team player within `SpawnPointOccupiedRadius` (default 60)**; falls back to a random entry if all are occupied.
+- Old `Team0Spawn` / `Team1Spawn` singles kept as legacy fallback (used only when the list is empty). `JoinSpawnSpacing` line offset is now only used in the legacy single-spawn fallback path.
 
 **Editor setup that's now expected:**
 - `MapMatchConfig` somewhere in the scene (auto-find), or wired explicitly on `GameNetworkManager.MatchConfig`.
-- `Team0Spawn` / `Team1Spawn` empty objects wired on `GameNetworkManager`. Falls back to `SpawnPoint` if not wired.
+- **6 team spawn empties per team** wired into `Team0Spawns` / `Team1Spawns` on `GameNetworkManager`. Falls back to single `Team0Spawn` / `Team1Spawn`, then to `SpawnPoint`, if the lists are empty.
 - `PlayerTeam` is auto-added at spawn (no manual editor work needed on the template).
 
 **Verified behavior:**
-- Solo play hits the tied case → random team → spawns at either red/blue zone (expected).
-- 2-window join: second player goes to the opposite team (smaller-team rule).
+- Solo play hits the tied case → random team → spawns at `Spawn_1` of that team (expected — only player, slot 1 always free).
+- 2-window join: second player goes to the opposite team (smaller-team rule); two players forced onto same team take **different spawn points** thanks to occupied-radius picker.
 - Player no longer scales up to the spawn empty's editor scale.
 
 ---
@@ -216,7 +222,24 @@ These belong in `SESSION_NOTES.md` "Open decisions" once we start building:
 
 ## When ready to build
 
-Say "go" + which slice. Next default: **slice 2 (`MatchDirector` skeleton)** so the phase machine + paused timer exist before goal zones land.
+Say "go" + which slice. Next default: **slice 3 (`GoalZone` + dwell)**.
+
+### Slice 2 — shipped notes
+
+**Files added:**
+- `Code/Match/MatchPhase.cs` — phase enum.
+- `Code/Match/MatchDirector.cs` — host phase machine, synced round wins / timer / phase, `RegisterGoal()`, OT on timer tie, `IsGameplayInputAllowed` (for slice 4 wiring).
+
+**Editor setup:**
+- Add **`MatchDirector`** component to the same object as `GameNetworkManager` (e.g. Main Camera).
+- Turn on **`Enable Match Debug Logs`** to see `[Match]` lines in console.
+- **`Enable Debug Force Goal`** stays on for now; **`Debug Force Goal Action`** = `DebugForceGoal` (F9 in `ProjectSettings/Input.config`). Host only. Remove or disable before shipping.
+
+**Test (host):**
+1. Play → timer counts down from 10:00 in `Playing`.
+2. Press **F9** → celebration 5s → intermission 20s → `Playing` (timer paused during both).
+3. F9 five times for one team (or until 5 round wins) → `MatchOver`.
+4. Timer hits 0 with tied round wins → overtime log; next F9 ends match.
 
 Once the full system is shipped:
 - Trim this file or delete it; move durable rules into [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md).

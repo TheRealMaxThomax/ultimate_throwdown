@@ -27,10 +27,13 @@
 |------|-----|
 | `MapMatchConfig` | Per-map team display names (`Team0DisplayName`, `Team1DisplayName`) |
 | `MatchTeamIds` | Constants `Team0` / `Team1` (ids `0` / `1`) |
-| `MatchDirector` | *(planned)* Phase state machine, round wins, intermission |
+| `MatchDirector` | Phase state machine, round wins, match timer, debug force goal |
+| `MatchPhase` | Enum: `Playing`, `GoalCelebration`, `Intermission`, `MatchOver` |
 | `GoalZone` | *(planned)* Defended goal volume + scoring dwell |
 
 **Often-used on `PlayerTeam`:** `TeamId` (synced, host-assigned)
+
+**Often-used on `MatchDirector`:** `CurrentPhase`, `IsGameplayInputAllowed`, `RegisterGoal()`, `NetTeam0RoundWins`, `NetTeam1RoundWins`, `NetMatchTimeRemaining`, `NetPhaseTimeRemaining`, `NetIsOvertime`, `EnableDebugForceGoal`, `DebugForceGoalAction` (`DebugForceGoal` → F9 in `Input.config`)
 
 ---
 
@@ -70,7 +73,7 @@
 | `GameNetworkManager` | Spawns players when joining; team balance + team spawns (`Code/Network/`) |
 | `StartupMapBootstrap` | Loads `testing_map` on host and clients (`Code/Map/`) |
 
-**Often-used on `GameNetworkManager`:** `Team0Spawn`, `Team1Spawn`, `MatchConfig`, `JoinSpawnSpacing`
+**Often-used on `GameNetworkManager`:** `Team0Spawns`, `Team1Spawns`, `SpawnPointOccupiedRadius`, `MatchConfig` (legacy: `Team0Spawn`, `Team1Spawn`, `JoinSpawnSpacing`)
 
 ---
 
