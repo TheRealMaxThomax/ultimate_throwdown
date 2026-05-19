@@ -1,0 +1,21 @@
+{
+  "publish": {
+    "Enabled": false,
+    "ProjectConfig": {
+      "Title": "Throwdown Turf Wars",
+      "Type": "map",
+      "Org": "local",
+      "Ident": "throwdownturfwars",
+      "Schema": 0,
+      "IncludeSourceFiles": false,
+      "Resources": null,
+      "PackageReferences": [],
+      "EditorReferences": [],
+      "Mounts": null,
+      "IsStandaloneOnly": false,
+      "Metadata": {
+        "SingleAssetSource": "maps/throwdown_turf_wars.vmap"
+      }
+    }
+  }
+}
