@@ -6,8 +6,8 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Main Camera",
-      "Position": "-126.925858,0,335.577667",
-      "Rotation": "0,0,0,1",
+      "Position": "-2448.30249,-801.610718,1115.06958",
+      "Rotation": "0,0.130525902,0,0.991444886",
       "Scale": "1,1,1",
       "Tags": "",
       "Enabled": true,
@@ -180,52 +180,11 @@
       "Children": []
     },
     {
-      "__guid": "523c7f99-2180-43b8-a7d3-ccccb0e8864a",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Directional Light",
-      "Position": "1230.49841,510.148804,1321.03357",
-      "Rotation": "-0.245984167,0.593858242,0.293152541,0.707732737",
-      "Scale": "1,1,1",
-      "Tags": "light_directional,light",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.DirectionalLight",
-          "__guid": "9d139409-5e72-47ee-abbe-baf4703a7165",
-          "__enabled": true,
-          "Flags": 0,
-          "FogMode": "Enabled",
-          "FogStrength": 1,
-          "LightColor": "0.91373,0.98039,1,1",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "ShadowBias": 0.0005,
-          "ShadowCascadeCount": 4,
-          "ShadowCascadeSplitRatio": 0.91,
-          "ShadowHardness": 0,
-          "Shadows": true,
-          "SkyColor": "0,0,0,0",
-          "Visualizer": {}
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "8d430dd2-b7e0-40eb-8f6f-ea76a9c25d57",
       "__version": 2,
       "Flags": 0,
       "Name": "Player",
-      "Position": "92.4105225,124.05603,250.704773",
+      "Position": "-499.690674,-70.4052734,250.704773",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
@@ -503,7 +462,7 @@
           "__guid": "a13a8635-d347-4439-8c09-f5de73d612c3",
           "__enabled": true,
           "Flags": 0,
-          "CurrentClass": "classes/juggernaut.cdata",
+          "CurrentClass": "classes/speedster.cdata",
           "ModelScaleRetrySeconds": 3,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -2601,7 +2560,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "NPC_Speedster",
-      "Position": "300,-900,250.415604",
+      "Position": "-782.869507,31.9289856,403.198181",
       "Rotation": "0,-0,-0.707106769,0.707106769",
       "Scale": "1,1,1",
       "Tags": "practice_npc",
@@ -4909,7 +4868,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "NPC_Sniper",
-      "Position": "177.079987,-900,250.098816",
+      "Position": "-905.789429,31.9289856,402.881409",
       "Rotation": "0,-0,-0.707106769,0.707106769",
       "Scale": "1,1,1",
       "Tags": "practice_npc",
@@ -7217,7 +7176,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "NPC_Juggernaut",
-      "Position": "54.5691833,-900.000122,250.086761",
+      "Position": "-1028.30042,31.9289856,402.869324",
       "Rotation": "0,-0,-0.707106769,0.707106769",
       "Scale": "1,1,1",
       "Tags": "practice_npc",
@@ -9525,7 +9484,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "main_ball",
-      "Position": "359.650208,162.046097,278.466187",
+      "Position": "-1374.53772,22.8884583,456.595184",
       "Rotation": "0,0,0,1",
       "Scale": "0.400000006,0.400000006,0.400000006",
       "Tags": "ball",
@@ -9650,7 +9609,7 @@
           "Flags": 0,
           "__version": 1,
           "EnableCollision": true,
-          "MapName": "maps/throwdown_turf_wars.vmap",
+          "MapName": "maps/throwdown_turfwars_lowpoly.vmap",
           "NoOrigin": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -9670,8 +9629,8 @@
       "__version": 2,
       "Flags": 0,
       "Name": "TeamSpawnsA",
-      "Position": "1695.03979,40,351.259399",
-      "Rotation": "0,0,1,-4.37113883E-08",
+      "Position": "-911.139771,649.731934,506.837311",
+      "Rotation": "0,0,0,1",
       "Scale": "5,10,4",
       "Tags": "",
       "Enabled": true,
@@ -9825,8 +9784,8 @@
       "__version": 2,
       "Flags": 0,
       "Name": "TeamSpawnsB",
-      "Position": "-1116.89038,39.9997635,351.259399",
-      "Rotation": "0,0,0,1",
+      "Position": "-912.889526,-1199.53479,505.032104",
+      "Rotation": "0,0,1,-4.37113883E-08",
       "Scale": "5,10,4",
       "Tags": "",
       "Enabled": true,
@@ -9980,8 +9939,8 @@
       "__version": 2,
       "Flags": 0,
       "Name": "GoalZoneA",
-      "Position": "-1118.97571,39.9819565,350.680145",
-      "Rotation": "0,0,0,1",
+      "Position": "-914.974731,-1199.55261,504.45285",
+      "Rotation": "0,0,1,-4.37113883E-08",
       "Scale": "1,1,1",
       "Tags": "",
       "Enabled": true,
@@ -10016,7 +9975,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "GoalZoneB",
-      "Position": "1696.59875,39.9819565,350.680145",
+      "Position": "-909.580688,649.713867,506.258057",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
@@ -10052,7 +10011,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "BallSpawn",
-      "Position": "260.97226,33.3901558,279.803009",
+      "Position": "-802.321838,13.991684,461.783813",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
@@ -10070,7 +10029,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "MatchHUD",
-      "Position": "6.37820435,44.0888176,349.245239",
+      "Position": "-756.017639,-150.372559,911.665894",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
@@ -10193,17 +10152,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "f0420258-40ed-43c4-944e-1e829cab972c"
+        }
+      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
-        }
-      },
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
-      },
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "b2813d63-4a51-4d27-9857-41cfa3c83775"
         }
       }
     }

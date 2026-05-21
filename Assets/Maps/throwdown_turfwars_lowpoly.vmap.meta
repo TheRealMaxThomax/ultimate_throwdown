@@ -1,0 +1,21 @@
+{
+  "publish": {
+    "Enabled": false,
+    "ProjectConfig": {
+      "Title": "Throwdown Turfwars Lowpoly",
+      "Type": "map",
+      "Org": "local",
+      "Ident": "throwdownturfwarslowpoly",
+      "Schema": 0,
+      "IncludeSourceFiles": false,
+      "Resources": null,
+      "PackageReferences": [],
+      "EditorReferences": [],
+      "Mounts": null,
+      "IsStandaloneOnly": false,
+      "Metadata": {
+        "SingleAssetSource": "maps/throwdown_turfwars_lowpoly.vmap"
+      }
+    }
+  }
+}
