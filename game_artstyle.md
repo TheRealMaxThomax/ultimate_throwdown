@@ -23,6 +23,24 @@
 
 **Collision:** Mapping meshes / big props = real collision. Small deco = usually **no collision**.
 
+### Clutter performance (grass)
+
+Clutter is **instanced**, but heavy paint still costs FPS. Prefer **less coverage + lower density** over one huge fill.
+
+| Lever | Starting point (`grass.clutter`) | If FPS drops |
+|--------|----------------------------------|--------------|
+| **Density** (scatterer) | **10** | Try **4–6**; thin with brush **Opacity** while painting |
+| **Tile Radius** | **4** | **2–3** — fewer tiles around camera |
+| **Tile Size** | **512** | **1024** — coarser streaming, fewer tiles |
+| **Painted area** | Forecourts / verges only | **Erase** under roads, goals, main paths — no grass where players fight |
+| **Model** | `grass.vmdl` | Simpler mesh or second entry (`grass_group1` / `grass_group2`) at lower weight |
+
+**Hybrid (often best read):** **Clutter** for soft verges; **hand-placed** `.vmdl` clumps at station corners (10–20 copies) where you want guaranteed detail.
+
+**Mode:** **Volume** + fixed bounds = instances saved in scene (predictable cost). **Infinite** streams with camera — fine for open ground, watch **Tile Radius**.
+
+Judge in **Play** with ball + two players in mind, not editor flycam over the whole map.
+
 **Scene hierarchy (stay sane):** Folder empties e.g. `_MAP_STATIC` (road, seal), `_PROPS` (by station side), `_LIGHTING` (sun, env probe, spots), `_CLUTTER`. Rename blocks when created — avoid dozens of `Block (N)` at root.
 
 **Multiple maps later:** One **`.scene` per playable map** (e.g. `throwdown_turf_wars.scene`) with its own goals/spawns/lighting; shared game code. Set **Startup Scene** in `.sbproj` for which map to Play.
@@ -161,7 +179,10 @@ Lighting is authored in the **same `.scene`** as the map geo (e.g. `throwdown_tu
 | **Ambient Light** | Overall darkness — **use this** for base fill (replaces deprecated **`Directional Light` → Sky Color**) |
 | **Envmap Probe** | Material “glue” / indirect read — large bounds over play area; darken **Tint** if the level washes out |
 | **Directional Light** | Dim **Light Color** for moon angle + shadows — **not** the main darkness knob |
-| **Spot / Point lights** | Street pools (warm, pointing down) — main readable night lighting |
+| **Spot / Point lights** | Street pools (warm, pointing down) — **Fog Mode enabled** on spots |
+| **Volumetric fog** (camera) | Light **beams in air** / hazy cones — needs fog in the world, not just emissive |
+| **Fog volume** (optional) | Local mist along road / forecourts — beams read strongest inside or near the volume |
+| **Bloom** (camera + bulb mesh) | Soft **bulb halo** — complements volumetrics; not a substitute for fog |
 | **Sky Box 2D** | Horizon look — dark **Tint**, night material |
 
 **Tune order:** **Ambient** (dark enough?) → **Env probe** (materials look right?) → **spots** along road/forecourts → **directional** last (shadow direction/strength).
@@ -174,8 +195,11 @@ If too bright: lower **Ambient Light** color first; temporarily disable **Envmap
 
 **Street lamp prop:**  
 - Pole / housing → grey or eggshell (no emissive)  
-- Small **bulb mesh** → subtle emissive (silhouette only)  
-- **Spot light** above → real ground pool  
+- Small **bulb mesh** → subtle emissive + **Bloom Layer** on renderer if camera bloom is on  
+- **Spot light** above → ground pool; **Fog Mode on** so it scatters in volumetric fog  
+- **Broken pole** → `streetlight_broken.vmdl` (no spot, non-emissive bulb). **Unstable lamp** → parent empty + **`StreetLightFlicker`** (child model + child spot); off bulb uses `goldenearth_streetlight_off.vmat` on the **`light.vmat`** slot only  
+
+**Beams through air (“foggy lamp” look):** **Main Camera → Volumetric Fog** (costs ~1–2 ms GPU). Spots alone + emissive = pool + bright bulb, not shafts. Tune in **Play**; optional **fog volumes** along the road for pockets of mist.
 
 **Emissive budget (low poly):** Glow is the **exception**. Priority order:
 

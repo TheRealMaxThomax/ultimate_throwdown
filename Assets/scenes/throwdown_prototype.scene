@@ -9587,44 +9587,6 @@
       "Children": []
     },
     {
-      "__guid": "d620dcab-457a-440a-85fc-f63595e82910",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "Map",
-      "Position": "-800,175.966537,185.973419",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.MapInstance",
-          "__guid": "5d3cd562-d4dc-4229-9b7a-6aeb7d69efc0",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 1,
-          "EnableCollision": true,
-          "MapName": "maps/throwdown_turfwars_lowpoly.vmap",
-          "NoOrigin": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OnMapLoaded": null,
-          "OnMapUnloaded": null,
-          "UseMapFromLaunch": false
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "8eef1831-2413-409e-95fe-df40c496d909",
       "__version": 2,
       "Flags": 0,

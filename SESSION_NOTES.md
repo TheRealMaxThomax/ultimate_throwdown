@@ -26,6 +26,7 @@
 - **Match HUD** on **`MatchHud`** — score, clock, goal banner, intermission countdown, **match over** (10s winner celebration → host **`1`** rematch)
 - **Rematch** — same map, fresh 0–0 and 10:00 timer (`HostRequestRematch`)
 - **Enemy team outline** — red `HighlightOutline` on opponents (not self/teammates); same look on tackle ragdolls (`PlayerEnemyOutline`, `RagdollEnemyOutline`); tune on player prefab **`HighlightOutline`**
+- **Street lamps (Turf Wars)** — `streetlight.vmdl` + warm spots; **`streetlight_broken.vmdl`** for dead poles (no spot/emissive). Optional **`StreetLightFlicker`** on a **per-lamp parent** empty (child model + child spot) — syncs spot + bulb emissive (`goldenearth_streetlight_off.vmat` on **`light.vmat`** slot, auto index `-1`)
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -60,7 +61,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | `Code/Network/` | Spawning players when people join |
 | `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig` |
 | `Code/UI/` | Match HUD + placeholder owner HUDs (dodge/ramp) |
-| `Code/Map/` | `StartupMapBootstrap` — locks `practice_npc` rigidbodies only (no Hammer map load) |
+| `Code/Map/` | `StartupMapBootstrap` (practice NPC locks); **`StreetLightFlicker`** (decorative lamp flicker, local only) |
 
 **Scene you play in:** `scenes/throwdown_turf_wars.scene` (Turf Wars WIP). `throwdown_prototype.scene` = older greybox fallback.
 
@@ -128,6 +129,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 **Map:**
 - Two **`GoalZone`** — opposite `Defending Team`, tuned `Box Size`
 - **`BallSpawn`** at center → wired on `MatchDirector`
+- **Street lamps:** steady = `streetlight.vmdl` + spot under `_LIGHTING` or parented to lamp; broken = `streetlight_broken.vmdl` (no spot). **Flicker** = one parent empty per lamp → **`StreetLightFlicker`** + child model + child **`Spot Light`**; **Bulb Material Index** `-1` (auto)
 
 **Player prefab** (clone source for `GameNetworkManager` — all joins inherit these values):
 - `PlayerTeam` (auto at spawn), `PlayerTackle`, `PlayerDodge`, `RagdollClientFeel`, `PlayerClass`, `CatchUpSpeedBoost`
@@ -154,6 +156,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - [ ] Throw strength still needs playtest tuning
 - [ ] Walk/run animations while charging throw (can’t move)
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
+- [ ] **Clutter** sometimes missing after **engine reload** — save scene after paint; check clutter **Volume** bounds; verify in **Play** (not only editor flycam)
 
 ---
 
@@ -172,6 +175,7 @@ Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Heigh
 
 ## Recent session notes
 
+- **2026-05-25:** **Street lamps** — Blender `streetlight` / `streetlight_broken`; emissive `goldenearth_streetlight.vmat`; **`StreetLightFlicker`** (`Code/Map/`) on per-lamp parent empties (spot + bulb off sync). Clutter reload quirk logged under Known issues.
 - **2026-05-25:** **Scene-first map** — Turf Wars in `throwdown_turf_wars.scene` (Mapping **M**, clutter, Blender props). No Hammer `MapInstance` auto-load. Night lighting: **Ambient Light** + **Envmap Probe** + spot lights (not `DirectionalLight.SkyColor`). **`BallThrow`** aims via **`EyeAngles`** when `ThrowDirectionSource` unset. **Step up** = **`Move Mode Walk`** on player template only.
 - **2026-05-21:** **Low poly** map art direction (Turf Wars lowpoly vmaps + `turfwars_*` materials). Perimeter walls around map edges — open void caused meshes (map, player, ball) to disappear at some camera angles.
 - **2026-05-18:** MP tackle parity — impulse before `NetworkSpawn` + body poll; owner `ownerTackleChargeBonus` in RPC; reverted `StartAsleep` / collision-sound mute (killed launch).
