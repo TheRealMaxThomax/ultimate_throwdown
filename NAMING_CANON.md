@@ -17,7 +17,7 @@
 | `ThrowChargeBar` | UI bar while charging throw |
 
 **Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `NetIsHolding`  
-**Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `IsChargingThrow`, `NetIsChargingThrow`
+**Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `IsChargingThrow`, `NetIsChargingThrow`, `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`)
 
 ---
 
@@ -89,7 +89,7 @@
 | Name | Job |
 |------|-----|
 | `GameNetworkManager` | Spawns players when joining; team balance + team spawns (`Code/Network/`) |
-| `StartupMapBootstrap` | Loads `testing_map` on host and clients (`Code/Map/`) |
+| `StartupMapBootstrap` | Scene startup; locks `practice_npc` rigidbodies (`Code/Map/`) |
 
 **Often-used on `GameNetworkManager`:** `Team0Spawns`, `Team1Spawns`, `SpawnPointOccupiedRadius`, `MatchConfig`, `SnapPositionToGround()`, `SnapBallToGround()`, `ApplyRoundResetToAllPlayers()`, `ApplyRoundResetToPlayer()` (legacy: `Team0Spawn`, `Team1Spawn`, `JoinSpawnSpacing`)
 
@@ -105,10 +105,28 @@ Examples — full list is in the editor on the asset:
 
 ## Project settings
 
-- Map source: `Assets/Maps/testing_map.vmap`
-- Playable map name: `testing_map`
+- **Playable map:** geometry in active **`.scene`** (e.g. `scenes/throwdown_turf_wars.scene`). Set **Startup Scene** in `ultimate_throwdown.sbproj`.
+- Legacy Hammer: `Assets/Maps/testing_map.vmap` — not auto-loaded (`StartupMapBootstrap` does not inject `MapInstance`).
+- **Player movement:** `Move Mode Walk` → `StepUpHeight` on **Player** template (inspector only; global for all classes).
 - `.sbproj`: **`"Resources": null`** (required for stable multiplayer join)
 - `Input.config`: **`Duck`** action unbound (`KeyboardCode` / `GamepadCode` = `None`) — crouch disabled project-wide
+
+---
+
+## Map materials (`Assets/materials/` — Turf Wars)
+
+**Pattern:** `{palette}` = base · `{palette}_{N}darker` · `{palette}_{N}lighter` (percent + direction — not `old_40`).
+
+| vmat | Use |
+|------|-----|
+| `eggshell` | Base `#E0E0CE` — walls, new road lines |
+| `eggshell_40darker` | Old road lines (faded) |
+| `eggshell_50darker` | Old thin / broken line scraps |
+| `grey` | Road asphalt, kerbs (`#67697C`) |
+| `golden` | Wood, old-side dirt (matte) |
+| `olive` | Grass / trees |
+
+Shade examples: `eggshell_30lighter`, `grey_20lighter` (footpaths) — see `game_artstyle.md`.
 
 ---
 

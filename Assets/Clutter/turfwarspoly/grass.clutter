@@ -1,0 +1,24 @@
+{
+  "Entries": [
+    {
+      "Prefab": null,
+      "Model": "models/turfwarspoly/grass.vmdl",
+      "Weight": 1,
+      "HasAsset": true,
+      "AssetName": "models/turfwarspoly/grass.vmdl"
+    }
+  ],
+  "IsEmpty": false,
+  "TileSizeEnum": "Size512",
+  "TileRadius": 4,
+  "Scatterer": {
+    "Type": "SimpleScatterer",
+    "Scale": "0.800000012 2",
+    "Density": 10,
+    "PlaceOnGround": true,
+    "HeightOffset": 0,
+    "AlignToNormal": false
+  },
+  "__references": [],
+  "__version": 0
+}

@@ -21,6 +21,7 @@ public sealed class BallThrow : Component
 	private BallGrab ballGrab;
 	private ThrowChargeBar throwChargeBar;
 	private PlayerClass playerClass;
+	private PlayerController playerController;
 	private Rigidbody playerBody;
 	private bool isChargingThrow;
 	/// <summary> Owner writes; host reads for dodge validation. </summary>
@@ -34,6 +35,7 @@ public sealed class BallThrow : Component
 		ballGrab = Components.Get<BallGrab>();
 		throwChargeBar = Components.Get<ThrowChargeBar>();
 		playerClass = Components.Get<PlayerClass>();
+		playerController = Components.Get<PlayerController>();
 		playerBody = Components.Get<Rigidbody>();
 	}
 
@@ -69,9 +71,7 @@ public sealed class BallThrow : Component
 			isChargingThrow = false;
 			NetIsChargingThrow = false;
 			throwChargeBar?.Hide();
-			var directionSource = ThrowDirectionSource.IsValid() ? ThrowDirectionSource : GameObject;
-			var throwDirectionWorld = directionSource.WorldRotation.Forward;
-			RequestThrowHeldBallOnHost( chargeLerp, throwDirectionWorld );
+			RequestThrowHeldBallOnHost( chargeLerp, GetThrowDirectionWorld() );
 		}
 
 		if ( isChargingThrow )
@@ -133,7 +133,7 @@ public sealed class BallThrow : Component
 		// Use direction from Rpc.Caller so the throw matches local aim. Host-side transform can lag for remote players.
 		var throwDirection = throwDirectionFromCaller.Length > 0.001f
 			? throwDirectionFromCaller.Normal
-			: (ThrowDirectionSource.IsValid() ? ThrowDirectionSource : GameObject).WorldRotation.Forward;
+			: GetThrowDirectionWorld();
 		var throwStartPosition = releasedBall.WorldPosition + (throwDirection * ThrowStartOffset) + (Vector3.Up * 10f);
 		releasedBall.WorldPosition = throwStartPosition;
 		releasedBallBody.Velocity = (throwDirection * ThrowForce * throwForceMultiplier * classPower) + (Vector3.Up * ThrowUpForce * throwUpForceMultiplier * classPower);
@@ -172,5 +172,24 @@ public sealed class BallThrow : Component
 		return MaxThrowChargeTime <= MinThrowChargeTime
 			? 1f
 			: (clampedChargeSeconds - MinThrowChargeTime) / (MaxThrowChargeTime - MinThrowChargeTime);
+	}
+
+	/// <summary>
+	/// World throw direction at release. Prefers <see cref="ThrowDirectionSource"/> when wired; otherwise
+	/// <see cref="PlayerController.EyeAngles"/> (body <see cref="GameObject.WorldRotation"/> lags look during charge).
+	/// </summary>
+	private Vector3 GetThrowDirectionWorld()
+	{
+		if ( ThrowDirectionSource.IsValid() )
+			return ThrowDirectionSource.WorldRotation.Forward;
+
+		playerController ??= Components.Get<PlayerController>();
+		if ( playerController.IsValid() )
+			return playerController.EyeAngles.ToRotation().Forward;
+
+		if ( Scene.Camera.IsValid() )
+			return Scene.Camera.WorldRotation.Forward;
+
+		return WorldRotation.Forward;
 	}
 }

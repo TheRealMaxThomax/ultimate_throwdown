@@ -41,7 +41,7 @@ Run this quick checklist before committing gameplay changes.
 - [ ] After throw, pickup is blocked briefly then allowed again.
 
 ## Throw Feel
-- [ ] Throw direction follows `ThrowDirectionSource` as expected.
+- [ ] Throw direction follows look (`EyeAngles`; or `ThrowDirectionSource` if wired).
 - [ ] Throw distance feels reasonable.
 - [ ] Throw arc (`ThrowUpForce`) feels reasonable.
 - [ ] Ball spawn offset on throw does not look broken/clipping.
@@ -53,6 +53,9 @@ Run this quick checklist before committing gameplay changes.
 - [ ] While charging, player cannot move.
 - [ ] While charging, camera aim still works.
 - [ ] On release throw, movement returns immediately.
+
+## Movement (scene geo)
+- [ ] Player steps onto curbs / path lips (`Move Mode Walk` → **Step Up Height** on Player template, e.g. 24–32).
 
 ## Movement Ramp (`CatchUpSpeedBoost`)
 - [ ] Forward movement without ball ramps through all 3 stages (start -> sprint -> catch-up) with no stage skip.

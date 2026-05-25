@@ -6,8 +6,8 @@ This is the simple process to follow each time you work on the game.
 - Pull latest changes:
   - `git pull`
 - Read `SESSION_NOTES.md` (start here). Match flow v1 is complete — use `MATCH_FLOW_PLAN.md` for reference or map-vote work. Open other docs only when you need design detail, exact names, or an old fix recipe.
-- Confirm startup scene is correct:
-  - `scenes/throwdown_prototype.scene`
+- Confirm startup scene is correct (`ultimate_throwdown.sbproj` → **Startup Scene**):
+  - `scenes/throwdown_turf_wars.scene` (Turf Wars WIP) — or `throwdown_prototype.scene` for greybox
 - Pick one small goal for this session (example: tune throw force).
 
 ## 2) Build in Small Steps

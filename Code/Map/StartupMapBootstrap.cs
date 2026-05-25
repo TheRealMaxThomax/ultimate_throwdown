@@ -1,19 +1,12 @@
 using Sandbox;
 
 /// <summary>
-/// Mounts a compiled Hammer map when Play starts. MapList in ultimate_throwdown.sbproj does not load maps by itself;
-/// without MapInstance you only get StartupScene geometry (flat floor / primitives).
-/// If load fails, change <see cref="StartupMapId"/> (see log / Asset Browser for the real id).
+/// Scene startup helpers. Map geometry lives in <c>.scene</c> files (not auto-loaded Hammer maps).
 /// </summary>
 public sealed class StartupMapBootstrap : GameObjectSystem<StartupMapBootstrap>, ISceneStartup
 {
 	/// Same tag as <c>PlayerTackle</c> practice dummies — keeps scene NPCs from sliding when players bump their dynamic <see cref="Rigidbody"/>.
 	private const string PracticeNpcTag = "practice_npc";
-
-	/// <summary>
-	/// Base map name — resolves to <c>maps/testing_map.*</c> in this package. Use dotted ids (e.g. <c>facepunch.flatgrass</c>) for Facepunch maps.
-	/// </summary>
-	private const string StartupMapId = "testing_map";
 
 	public StartupMapBootstrap( Scene scene )
 		: base( scene )
@@ -26,35 +19,12 @@ public sealed class StartupMapBootstrap : GameObjectSystem<StartupMapBootstrap>,
 
 	void ISceneStartup.OnHostInitialize()
 	{
-		EnsureStartupMapLoaded();
 		ApplyPracticeNpcRigidbodyLocks();
 	}
 
 	void ISceneStartup.OnClientInitialize()
 	{
-		// Clients need the same <see cref="MapInstance"/> as host or lighting/geometry won’t match (often much brighter fallback).
-		// With <c>Resources: null</c> in .sbproj this is usually fine; if join logs <c>AssembleChunk</c> / 1024 errors, revert client load
-		// or shrink packaged deps — see SESSION_NOTES CRITICAL.
-		EnsureStartupMapLoaded();
 		ApplyPracticeNpcRigidbodyLocks();
-	}
-
-	/// <summary> Idempotent: one <see cref="MapInstance"/> per scene (host / listen server).</summary>
-	private void EnsureStartupMapLoaded()
-	{
-		foreach ( var existing in Scene.GetAllComponents<MapInstance>() )
-		{
-			if ( existing.IsValid() )
-				return;
-		}
-
-		var root = new GameObject( true, "StartupMapInstance" );
-		var map = root.AddComponent<MapInstance>();
-		map.MapName = StartupMapId;
-		map.EnableCollision = true;
-		map.UseMapFromLaunch = false;
-
-		Log.Info( $"[StartupMapBootstrap] Loading map '{StartupMapId}' via MapInstance." );
 	}
 
 	/// <summary>

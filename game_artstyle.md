@@ -1,7 +1,7 @@
 # Game art style
 
 **Maps:** Low poly, **flat colours** (Coolors palette below). **Night** scene.  
-**Workflow:** Base map in **Hammer** → props from **Blender** (separate files, placed in editor).  
+**Workflow:** Base geo in **scene Mapping mode** (**M**) → props from **Blender** (`.vmdl`, drag into scene) → **clutter** for grass scatter. Hammer `.vmap` is legacy; gameplay lives in **`.scene`** files.  
 **Seal the map:** Walls / skybox box around the edges — open void causes geometry (map, player, ball) to disappear at some camera angles.
 
 **Props / characters:** Blocky models. Gameplay needs readable shape and size, not detail.
@@ -12,14 +12,46 @@
 
 | Tool | What goes there |
 |------|-----------------|
-| **Hammer** | Road, forecourts, bulk walls, collision, **cone lights** pointing down, map seal box |
-| **Blender** | Separate `.blend` files → export as props: vending, store shell, canopy roof/bars, windows, sliding door, trees, grass clumps, footpath tiles, pumps, etc. |
+| **Scene editor (Mapping M)** | Road, forecourts, seal walls, kerbs — brushes/meshes with **mesh collision** |
+| **Scene editor (place models)** | Drag `.vmdl` from Asset Browser — path tiles, trees, pumps, station kit |
+| **Clutter** | `.clutter` palettes (e.g. `Assets/Clutter/turfwarspoly/grass.clutter`) — paint grass on collidable ground |
+| **Blender** | Separate `.blend` → export `.vmdl` — hero + kit pieces listed below |
 
-**Modular approach (low poly):** Simple **base structures** in Hammer or Blender (one-off hero meshes). **Decoration kit** you place many times: windows, doors, wood panels, path tiles, grass clumps. Reuse the kit on both sides of the map; **materials and placement** sell new vs old — not two completely different pipelines.
+**Modular approach (low poly):** Simple **base structures** in Mapping mode or Blender (one-off hero meshes). **Decoration kit** you place many times: windows, doors, path tiles, grass clumps. Reuse the kit on both sides; **materials and placement** sell new vs old.
 
-**Grid:** Snap in Hammer on **16 / 32 / 64** so props line up.
+**Grid:** Snap on **16 / 32 / 64** (Mapping mode or prop placement).
 
-**Collision:** Hammer / big props = real collision. Small deco (windows, panels) = usually **no collision**.
+**Collision:** Mapping meshes / big props = real collision. Small deco = usually **no collision**.
+
+**Scene hierarchy (stay sane):** Folder empties e.g. `_MAP_STATIC` (road, seal), `_PROPS` (by station side), `_LIGHTING` (sun, env probe, spots), `_CLUTTER`. Rename blocks when created — avoid dozens of `Block (N)` at root.
+
+**Multiple maps later:** One **`.scene` per playable map** (e.g. `throwdown_turf_wars.scene`) with its own goals/spawns/lighting; shared game code. Set **Startup Scene** in `.sbproj` for which map to Play.
+
+---
+
+## Blender (props)
+
+**Scale:** **1 Blender unit = 1 s&box / Hammer unit** (player height **72**). Type the same numbers you’d use in Hammer.
+
+| Setting | Value |
+|--------|--------|
+| **Scene → Units → Unit System** | **None** |
+| **Unit Scale** | `1` |
+| **Snap** | On — **Increment** + **Grid** (snapping panel near magnet) |
+| **Overlay → Grid Floor → Scale** | `1` |
+| **Overlay → Subdivisions** | `16` (matches Hammer **16 / 32 / 64**; set snap increment to **16**, **32**, or **64** in **Edit → Preferences → Editing** when laying out big pieces) |
+| **Scale X / Y / Z** | **Locked** to `1, 1, 1` (Transform locks in **N → Item**) |
+| **Edit Mode → Overlays** | **Edge Length** on (size labels on mesh; **Dimensions** in **N → Item** is the real export size) |
+
+**Workflow habits:** Size meshes in **Edit Mode** (**S** → number → Enter). **Ctrl+A → All Transforms** before export. Hide blockers (e.g. player reference) with **H** or Outliner **eye** — export **Selected Objects** only.
+
+**Player reference block (optional):** **32 × 32 × 72** — compare props to human scale; don’t export.
+
+**FBX export preset (static props):** Selected Objects · Forward **-Z** · Up **Y** · Apply Scalings **FBX All** · Binary. Save operator preset (e.g. `S&box Static Prop`).
+
+**ModelDoc:** **Static Prop** archetype · collision **Physics Hull From Render** (or **Physics Shape Box**) · materials on mesh slots. **Place one `.vmdl` many times** in the scene — don’t merge 20 tiles into one mesh unless a strip length is locked.
+
+**Viewport:** If geometry vanishes when zoomed out, **N → View → Clip End** → `10000` or higher.
 
 ---
 
@@ -31,11 +63,15 @@ One road down the middle. **Two petrol stations** — opposite sides.
 |--|----------------------|---------------------|
 | **Feel** | Tidy station, even grass | Neglected, dirt, patchy grass |
 | **Walls / canopy** | Eggshell, sharp | Same kit, more grey + mahogany trim |
+| **Footpaths** | **Lighter dim grey** (grey ladder — ~20% lighter than road) · modular **path tiles** placed in scene | Same tile kit; can read more worn via placement / edge grime later |
 | **Ground** | Dusty olive grass (even clumps) | **Golden earth** dirt patches + sparse olive grass |
+| **Road centre lines** | `eggshell` — full-width, even | `eggshell_40darker` — faded; `eggshell_50darker` on thin / broken scraps |
 | **Glass / signs** | Cool sky **tint**; vending/sign can use **low emissive** | **Broken neon** — some letters emissive, some **off** (burnt-out tubes) |
 | **Lights** | More even warm street pools | Fewer / wider spacing — darker pockets between lamps |
 
-**Road:** Dim grey — neutral lane, both teams readable.
+**Road surface:** **Dim grey** `#67697C` — neutral lane, both teams readable. Lines are separate geometry (brushes or thin props), not painted on the asphalt vmat alone.
+
+**Road line geometry:** New = full stripes. Old = thinner meshes, gaps, cut-off ends — material darkness does the rest.
 
 ---
 
@@ -43,7 +79,7 @@ One road down the middle. **Two petrol stations** — opposite sides.
 
 | Name | Hex | Main use |
 |------|-----|----------|
-| **Eggshell** | `#E0E0CE` | Main light surfaces — walls, canopy soffit, footpath |
+| **Eggshell** | `#E0E0CE` | Walls, canopy soffit, **new road lines**; darker eggshell **shades** for old lines |
 | **Dim grey** | `#67697C` | Road, kerbs, metal posts, bins, generic props |
 | **Rich mahogany** | `#3D0C11` | Small accents only — trim, door frames, **dark plane behind glass** |
 | **Golden earth** | `#9C6615` | Warm accent — wood panels; **dirt on old side** (matte, no emissive) |
@@ -59,9 +95,9 @@ One road down the middle. **Two petrol stations** — opposite sides.
 
 | Colour | Shade ideas |
 |--------|-------------|
-| **Eggshell** | Base wall · slightly darker soffit · lighter top edge (optional) |
+| **Eggshell** | Base wall · slightly darker soffit · **new road lines** (base) · **old lines ~40% darker** · **thin old lines ~50% darker** (~`#86867C` / `#707067` ballpark — tune at night in Play) |
 | **Dim grey** (4 shades max) | **Road** base `#67697C` → **curb ~10% darker** → **footpath ~20% lighter** → **forecourt pad ~30% lighter** (last grey step) · metal posts: lighter highlight optional |
-| **Eggshell** | **Buildings**, canopy soffit, **petrol price sign**, other clean station surfaces — not road/path/pad grey stack |
+| **Eggshell (surfaces)** | **Buildings**, canopy soffit, **petrol price sign** — not footpath (use grey ladder) |
 | **Golden earth** | Dirt (dull) · wood panel (base) · **bulb** (bright + emissive) — already 3 roles |
 | **Dusty olive** | Grass base · darker clump underside · lighter tip (optional) |
 | **Mahogany** | Trim · darker recess behind glass |
@@ -78,13 +114,30 @@ One road down the middle. **Two petrol stations** — opposite sides.
 
 ---
 
-## Materials in s&box (~7 flat vmats)
+## Materials in s&box (flat vmats)
 
-Reuse these on Hammer brushes and Blender props. Tint in one place; don’t make a new material per object.
+Reuse these on mapping meshes and Blender props. Tint in one place; don’t make a new material per object.
+
+### vmat naming
+
+**Pattern:** `{palette}_{amount}{lighter|darker}` — base colour has **no suffix**.
+
+| Example | Meaning |
+|---------|---------|
+| `eggshell` | Base `#E0E0CE` |
+| `eggshell_40darker` | ~40% darker than base |
+| `eggshell_50darker` | ~50% darker than base |
+| `eggshell_30lighter` | ~30% lighter than base (example — soffit / highlight) |
+
+Same idea for other palette vmats when needed (e.g. `grey_20lighter` for footpaths). **Don’t** use `old_40` / `old_50` in filenames — use **lighter** / **darker** + percent.
+
+### Turf Wars vmats (core)
 
 | Material | Colour | Emissive? |
 |----------|--------|-----------|
-| `eggshell` | `#E0E0CE` | No |
+| `eggshell` | `#E0E0CE` | No (walls, new road lines) |
+| `eggshell_40darker` | ~40% darker than eggshell | No (old road lines — faded) |
+| `eggshell_50darker` | ~50% darker than eggshell | No (old thin / broken line scraps) |
 | `grey` | `#67697C` | No |
 | `mahogany` | `#3D0C11` | No |
 | `golden` | `#9C6615` | No (wood / accents) |
@@ -97,50 +150,46 @@ Reuse these on Hammer brushes and Blender props. Tint in one place; don’t make
 
 ---
 
-## Night lighting
+## Night lighting (scene)
 
-### Scene vs map (don’t double up)
+Lighting is authored in the **same `.scene`** as the map geo (e.g. `throwdown_turf_wars.scene`). **Play** is the truth — editor viewport often lies.
 
-- Each Hammer map has its own **`light_environment`** + **`env_sky`**.
-- **Disable or delete** the scene **Directional Light** in `throwdown_prototype.scene` when using map instances — two suns keep the level bright and fight your night tune.
-- Darkness lives on the **map**, not the scene.
+### Stack (what each piece does)
 
-### `light_environment` (Hammer)
+| Piece | Role |
+|-------|------|
+| **Ambient Light** | Overall darkness — **use this** for base fill (replaces deprecated **`Directional Light` → Sky Color**) |
+| **Envmap Probe** | Material “glue” / indirect read — large bounds over play area; darken **Tint** if the level washes out |
+| **Directional Light** | Dim **Light Color** for moon angle + shadows — **not** the main darkness knob |
+| **Spot / Point lights** | Street pools (warm, pointing down) — main readable night lighting |
+| **Sky Box 2D** | Horizon look — dark **Tint**, night material |
 
-| Setting | Night starting point |
-|---------|----------------------|
-| **Brightness** | `0.02`–`0.1` (directional moon/sun — shadows change most here) |
-| **Sky intensity** | `0.2`–`0.3` |
-| **Sky ambient bounce colour** | **Very dark** — `0 0 0` or `10 12 18` (this is **RGB**, not a separate slider; ~`147 147 147` keeps the map daytime-bright) |
-| **Sky color** | Dim cool grey-blue, not `255 255 255` |
-| **Ambient color** | `0 0 0` or very dark blue-grey |
-| **Lower hemisphere is black** | On |
-| **Sun light min brightness** | `0` if present (high values act like a brightness floor) |
+**Tune order:** **Ambient** (dark enough?) → **Env probe** (materials look right?) → **spots** along road/forecourts → **directional** last (shadow direction/strength).
 
-**Order:** cones → dark bounce **colour** → sky intensity → brightness. **Compile → Play** after changes (editor preview lies).
+If too bright: lower **Ambient Light** color first; temporarily disable **Envmap Probe** to test, then re-enable with darker tint.
 
-If still too bright: disable **light probe / combined probe volume** once to test, then rebake; check scene isn’t adding a **Directional Light** again.
+### Street lamps + emissive
 
-### Street cones + emissive
-
-**Main read = Hammer cone lights** pointing down (warm tint, golden-earth family). Use many on paths and forecourts.
+**Main read = spot lights** above paths (warm golden-earth family), not emissive on every surface.
 
 **Street lamp prop:**  
 - Pole / housing → grey or eggshell (no emissive)  
-- Small **bulb mesh** → brighter golden earth + **low emissive**  
-- **Cone entity** above does the real ground lighting — bulb emissive is for silhouette, not lighting the whole map  
+- Small **bulb mesh** → subtle emissive (silhouette only)  
+- **Spot light** above → real ground pool  
 
 **Emissive budget (low poly):** Glow is the **exception**. Priority order:
 
-1. Cone lights (scene)  
-2. Warm bulb emissive (repeated, subtle)  
-3. **One** broken neon sign on old side (some letters on, some off)  
-4. New-side vending / sign glass (cool sky, low)  
+1. Spot lights along road / forecourts  
+2. Warm bulb emissive (subtle, repeated)  
+3. **One** broken neon sign on old side  
+4. New-side vending / sign glass (cool, low)  
 5. Everything else → flat colour only  
 
-If everything glows, nothing reads.
+**Test at night in Play** after every pass.
 
-**Test at night in-game** after every lighting pass — editor preview lies.
+### Legacy Hammer note
+
+Old Turf Wars Hammer passes used **`light_environment`** + cone entities. Same *ideas* (dark ambient, warm cones, low emissive) — different components in scene. Do not also load a Hammer map via **`MapInstance`** unless you want double lighting.
 
 ---
 
@@ -152,7 +201,7 @@ If everything glows, nothing reads.
 |----------------------|----------|----------|
 | Glass plane | Cool sky tint (`glass`) | Same or less saturation |
 | Behind glass | Mahogany or grey plane | Darker, maybe faded poster |
-| Glow | Low `emissive_cool` + optional small Hammer light | Usually **no** vending glow |
+| Glow | Low `emissive_cool` + optional small spot light | Usually **no** vending glow |
 
 **Vending:** Glass plane → snack boxes (flat colours) or Inkscape shelf → body (grey / golden / mahogany).
 
@@ -181,7 +230,7 @@ If everything glows, nothing reads.
 - **Colour / albedo** → colour PNG  
 - **Self illum mask** → mask PNG  
 - **Emissive tint** → cool sky or warm golden earth; keep strength **low** — mask does the shape  
-- Plane in Hammer / on prop — non-emissive frame = mahogany or grey mesh around it
+- Plane on prop or mapping mesh — non-emissive frame = mahogany or grey mesh around it
 
 ### Tips
 
@@ -197,21 +246,28 @@ One hero neon per old side is enough.
 
 ## Blender prop list (Turf Wars)
 
-Export each as its own prop file; place in Hammer:
+Export each as its own prop file; **drag into scene** (or clutter for grass):
 
 - Vending machine  
 - Petrol station **store shell** (shape only)  
 - Canopy roof + canopy bars  
 - Windows, sliding door  
-- Trees, grass clumps  
-- Footpath square tiles  
+- Trees, grass clumps (or **clutter** from `grass.clutter`)  
+- Footpath square tiles (e.g. **120 × 120 × 2** — one `.vmdl`, duplicate; snap **16 / 32 / 64**)  
 - Pumps, bins, cars (later)  
+
+---
+
+## Materials on mapping meshes
+
+In **Mapping mode** (**M**): **Texture tool** (**4**) applies `.vmat` to faces (road, forecourt pads, seal walls). **Placed `.vmdl` props** get materials from **ModelDoc** / Blender export, not per-face in the mapper.
 
 ---
 
 ## Scale reference (game units)
 
-- Player: **72 × 32** default — smallest **62 × 24**, largest **88 × 42**
+- Player: **72 tall × 32 wide** (capsule radius **16**) — reference block **32 × 32 × 72** in Blender; smallest **62 × 24**, largest **88 × 42**
+- **Curbs / path lips:** **`Move Mode Walk` → Step Up Height** on **Player** template — global, **24–32** for 16-unit geo (was **10**). All joins clone the template.
 - Ball grab **45** · dodge sideways **175** · goal box **250 × 500 × 200**
 - Field size: **`length ≈ seconds × 350`** at charge (4 s ≈ 1400 units)
 - Paths: **~100+** wide for Juggernaut
@@ -221,14 +277,15 @@ Export each as its own prop file; place in Hammer:
 
 ## Turf Wars build order
 
-1. Hammer — road, two forecourts, seal walls, greybox lights  
-2. Flat vmats from palette  
-3. Blender hero pieces — canopy, store shell  
-4. Blender kit — windows, door, path tiles, grass, trees  
-5. Place kit on both sides; dress **new vs old** (materials + grass/dirt)  
-6. Street lamps + cone lights; tune warm pools  
-7. Signs — new clean + old broken neon  
-8. Vending, pumps, cars when core read works  
+1. Scene — road, two forecourts, seal walls (Mapping **M**)  
+2. Flat vmats on meshes (incl. `eggshell_40darker` / `eggshell_50darker`)  
+3. Night lighting — Ambient + Env probe + spot pools (see above)  
+4. Blender hero pieces — canopy, store shell  
+5. Blender kit — windows, door, path tiles; **clutter** / place grass, trees  
+6. Dress **new vs old** on both sides — **in progress:** footpaths, road lines, worn old lines  
+7. Street lamp meshes + spot tune  
+8. Signs — new clean + old broken neon  
+9. Vending, pumps, cars when core read works  
 
 **Quick test:** Road + both forecourts + one lamp + one station corner + night Play.  
 **Quality bar:** Reads as two petrol stations across a road at night — not perfect mesh.

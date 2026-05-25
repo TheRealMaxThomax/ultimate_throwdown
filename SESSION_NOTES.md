@@ -47,7 +47,7 @@ In `ultimate_throwdown.sbproj`, keep:
 
 If join breaks after a change, put `Resources` back to `null` and test again with two windows.
 
-**Map:** The game loads `testing_map` via code (`StartupMapBootstrap`), not only from the project map list. Edit the map in Hammer: `Assets/Maps/testing_map.vmap`, then compile.
+**Map:** Geometry lives in the active **`.scene`** (e.g. `throwdown_turf_wars.scene`). `StartupMapBootstrap` no longer injects Hammer `MapInstance` maps — delete any `MapInstance` in the scene if you still see old compiled geometry.
 
 ---
 
@@ -60,9 +60,9 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | `Code/Network/` | Spawning players when people join |
 | `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig` |
 | `Code/UI/` | Match HUD + placeholder owner HUDs (dodge/ramp) |
-| `Code/Map/` | Loads `testing_map` when the game starts |
+| `Code/Map/` | `StartupMapBootstrap` — locks `practice_npc` rigidbodies only (no Hammer map load) |
 
-**Scene you play in:** `scenes/throwdown_prototype.scene`
+**Scene you play in:** `scenes/throwdown_turf_wars.scene` (Turf Wars WIP). `throwdown_prototype.scene` = older greybox fallback.
 
 **Important:** AI should **not** edit `.scene` files unless you ask — you wire components in the s&box editor.
 
@@ -129,12 +129,14 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - Two **`GoalZone`** — opposite `Defending Team`, tuned `Box Size`
 - **`BallSpawn`** at center → wired on `MatchDirector`
 
-**Player prefab:**
+**Player prefab** (clone source for `GameNetworkManager` — all joins inherit these values):
 - `PlayerTeam` (auto at spawn), `PlayerTackle`, `PlayerDodge`, `RagdollClientFeel`, `PlayerClass`, `CatchUpSpeedBoost`
 - **`PlayerDisableCrouch`** (also auto-added at network spawn — add on prefab for scene NPCs)
+- **`Move Mode Walk` → Step Up Height** — global curb step (default was **10**; try **24–32** for 16-unit geo). Tune here only — no code wrapper.
 - **`HighlightOutline`** — tune colors/width here (ragdoll copies this exact component); optional **`PlayerEnemyOutline`** (auto at spawn)
 - `DodgeCooldownHud`, `MovementRampHud`, `ThrowChargeBar` (owner HUD)
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
+- **`BallThrow` → Throw Direction Source** optional; if empty, throw uses **`PlayerController.EyeAngles`** (look while charging)
 
 ---
 
@@ -161,6 +163,7 @@ Paste at the start of a new chat:
 
 ```
 Read SESSION_NOTES.md. Match flow slices 1–6 are done (MATCH_FLOW_PLAN.md). Do not edit .scene files unless I ask.
+Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Height) — do not add code that only mirrors a property Max can set on the player template.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -169,6 +172,7 @@ Read SESSION_NOTES.md. Match flow slices 1–6 are done (MATCH_FLOW_PLAN.md). Do
 
 ## Recent session notes
 
+- **2026-05-25:** **Scene-first map** — Turf Wars in `throwdown_turf_wars.scene` (Mapping **M**, clutter, Blender props). No Hammer `MapInstance` auto-load. Night lighting: **Ambient Light** + **Envmap Probe** + spot lights (not `DirectionalLight.SkyColor`). **`BallThrow`** aims via **`EyeAngles`** when `ThrowDirectionSource` unset. **Step up** = **`Move Mode Walk`** on player template only.
 - **2026-05-21:** **Low poly** map art direction (Turf Wars lowpoly vmaps + `turfwars_*` materials). Perimeter walls around map edges — open void caused meshes (map, player, ball) to disappear at some camera angles.
 - **2026-05-18:** MP tackle parity — impulse before `NetworkSpawn` + body poll; owner `ownerTackleChargeBonus` in RPC; reverted `StartAsleep` / collision-sound mute (killed launch).
 - **2026-05-18:** Enemy team outlines — `Highlight` on camera, `PlayerEnemyOutline` + ragdoll copy via `RagdollEnemyOutline` / `NetVictimTeamId` (2-window MP).
