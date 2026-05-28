@@ -91,6 +91,7 @@
 | `GameNetworkManager` | Spawns players when joining; team balance + team spawns (`Code/Network/`) |
 | `StartupMapBootstrap` | Scene startup; locks `practice_npc` rigidbodies (`Code/Map/`) |
 | `StreetLightFlicker` | One lamp cluster: flickers child `SpotLight` + bulb material slot (`Code/Map/`) |
+| `StationLightFlicker` | Petrol-station light block: flickers child `SpotLight` + optional mesh visual on/off (`Code/Map/`) |
 
 **Often-used on `StreetLightFlicker`:** `Spot`, `LampModel`, `BulbOffMaterial`, `BulbMaterialIndex` (`-1` = auto-detect `light.vmat` / emissive slot), `SyncBulbEmissive`
 
