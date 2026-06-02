@@ -33,7 +33,9 @@
 
 **Still later:** Tackle tuning, map vote (30s, all players, `Slot1`–`N`), tackle whiff deferred → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md).
 
-**Git:** Work on branch `main`, commit when a chunk of work is done.
+**Avatar (WIP):** On branch **`feature/human-avatar`**, Player **Body** uses **`citizen_human_*`** (`models/citizen/citizen_human/`) + human locomotion graph — **not** `citizen.vmdl` / **`citizen_holdball_test`**. Male/female from account via **`PlayerCosmeticsSync`** / `ClothingContainer`; no dual-body v1. Solo + 2-window MP: cosmetics, tackle ragdoll, launch distance OK vs old citizen. **Leaning human for release** (goofy tone from gameplay, not silhouette); merge TBD.
+
+**Git:** Day-to-day on `main`; avatar scene work on **`feature/human-avatar`** until merged.
 
 ---
 
@@ -137,6 +139,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - `PlayerTeam` (auto at spawn), `PlayerTackle`, `PlayerDodge`, `RagdollClientFeel`, `PlayerClass`, `CatchUpSpeedBoost`
 - **`PlayerDisableCrouch`** (also auto-added at network spawn — add on prefab for scene NPCs)
 - **`Move Mode Walk` → Step Up Height** — global curb step (default was **10**; try **24–32** for 16-unit geo). Tune here only — no code wrapper.
+- **Body child** — `SkinnedModelRenderer`: **`citizen_human_*`** + human **Animation Graph** (not `citizen_holdball_test` unless on classic citizen)
 - **`HighlightOutline`** — tune colors/width here (ragdoll copies this exact component); optional **`PlayerEnemyOutline`** (auto at spawn)
 - `DodgeCooldownHud`, `MovementRampHud`, `ThrowChargeBar` (owner HUD)
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
@@ -146,6 +149,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 ## Open decisions (not chosen yet)
 
+- **Player body for v1:** **`citizen_human_*`** (branch tested) vs classic **`citizen.vmdl`** — leaning **human** (audience + looks good); citizen fits chaotic meme tone. No custom rig (account cosmetics). **Human hold/throw anim graph** still TBD after body is locked.
 - Holding forward + backward while charging — exploit or cool fake-out?
 - Closed roof on arena vs open roof + sun for lighting
 - Small screen shake on tackle hit — yes or no?
@@ -177,6 +181,7 @@ Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Heigh
 
 ## Recent session notes
 
+- **2026-06-02:** **`feature/human-avatar`** — Player Body → `citizen_human_*` + human anim graph (drop `citizen_holdball_test` on human or T-pose at run). Cosmetics + male/female from connection; tackle/ragdoll/MP unchanged in code.
 - **2026-05-28:** Added **`StationLightFlicker`** (`Code/Map/`) for petrol-station fixtures: flickers child `SpotLight` and tints mesh (`VisualOnColor`/`VisualOffColor`) instead of hiding it.
 - **2026-05-28:** Turf Wars `MatchDirector.BallSpawn` wiring confirmed in `throwdown_turf_wars.scene`; goal/intermission ball resets are now correctly configured.
 - **2026-05-25:** **Street lamps** — Blender `streetlight` / `streetlight_broken`; emissive `goldenearth_streetlight.vmat`; **`StreetLightFlicker`** (`Code/Map/`) on per-lamp parent empties (spot + bulb off sync). Clutter reload quirk logged under Known issues.
