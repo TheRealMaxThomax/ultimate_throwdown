@@ -224,12 +224,23 @@ public sealed class CatchUpSpeedBoost : Component
 			nonHoldingSprintTime = 0f;
 			ownerAtChargeSpeed = false;
 			NetAtChargeSpeed = false;
-			// Zero locomotion caps so wind-up reads as stationary (BallThrow clears AnalogMove / freezes non-Sniper body).
-			smoothedMoveSpeedCap = 0f;
-			playerController.WalkSpeed = 0f;
-			playerController.RunSpeed = 0f;
-			ResetPlayerControllerMomentumTimesToBaseline();
 			ApplyChargeLookDamp( atChargeSpeed: false );
+
+			// Grounded wind-up = planted. Airborne wind-up = normal gravity (BallThrow disables built-in input + wish velocity).
+			if ( playerController.IsOnGround )
+			{
+				smoothedMoveSpeedCap = 0f;
+				playerController.WalkSpeed = 0f;
+				playerController.RunSpeed = 0f;
+				ResetPlayerControllerMomentumTimesToBaseline();
+			}
+			else
+			{
+				var airMoveCap = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
+				playerController.WalkSpeed = airMoveCap;
+				playerController.RunSpeed = airMoveCap;
+			}
+
 			return;
 		}
 

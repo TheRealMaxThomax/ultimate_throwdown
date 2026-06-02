@@ -1,9 +1,9 @@
 using Sandbox;
 using System;
-
 /// <summary>
 /// Hold-to-charge throw on the owner. When <see cref="PlayerClass.CurrentClass"/> is set, <see cref="ClassData.ThrowPower"/> scales applied forces and <see cref="ClassData.ThrowChargeSpeedScale"/> scales how fast charge reaches full within the prefab min/max time window.
 /// </summary>
+[Order( 10001 )]
 public sealed class BallThrow : Component
 {
 	[Property] public string ThrowAction { get; set; } = "attack1";
@@ -22,12 +22,12 @@ public sealed class BallThrow : Component
 	private ThrowChargeBar throwChargeBar;
 	private PlayerClass playerClass;
 	private PlayerController playerController;
-	private Rigidbody playerBody;
 	private bool isChargingThrow;
 	/// <summary> Owner writes; host reads for dodge validation. </summary>
 	[Sync] private bool NetIsChargingThrow { get; set; }
-	private Vector3 lockedChargePosition;
 	private float throwChargeStartedAt;
+	private bool inputControlsSuppressed;
+	private bool savedUseInputControls = true;
 	public bool IsChargingThrow => Network.IsOwner ? isChargingThrow : NetIsChargingThrow;
 
 	protected override void OnStart()
@@ -36,7 +36,6 @@ public sealed class BallThrow : Component
 		throwChargeBar = Components.Get<ThrowChargeBar>();
 		playerClass = Components.Get<PlayerClass>();
 		playerController = Components.Get<PlayerController>();
-		playerBody = Components.Get<Rigidbody>();
 	}
 
 	protected override void OnUpdate()
@@ -54,9 +53,7 @@ public sealed class BallThrow : Component
 
 		if ( !ballGrab.IsHolding )
 		{
-			isChargingThrow = false;
-			NetIsChargingThrow = false;
-			throwChargeBar?.Hide();
+			ClearThrowChargeLocal();
 			return;
 		}
 
@@ -68,26 +65,41 @@ public sealed class BallThrow : Component
 		if ( isChargingThrow && Input.Released( ThrowAction ) )
 		{
 			var chargeLerp = GetThrowChargeLerp();
-			isChargingThrow = false;
-			NetIsChargingThrow = false;
-			throwChargeBar?.Hide();
+			ClearThrowChargeLocal();
 			RequestThrowHeldBallOnHost( chargeLerp, GetThrowDirectionWorld() );
 		}
 
 		if ( isChargingThrow )
 		{
-			// Block locomotion input for everyone; non-Sniper also snaps position / clears physics velocity each frame.
-			// Sniper keeps dodge specialty: lateral dodge impulse must survive this tick (see PlayerDodge).
+			// Block locomotion input; <see cref="OnFixedUpdate"/> disables built-in jump/move on <see cref="PlayerController"/>.
 			Input.AnalogMove = Vector3.Zero;
-			if ( !IsSniperClass() )
-			{
-				WorldPosition = lockedChargePosition;
-				if ( playerBody.IsValid() )
-					playerBody.Velocity = Vector3.Zero;
-			}
-
 			throwChargeBar?.SetCharge( GetThrowChargeLerp() );
 		}
+	}
+
+	protected override void OnFixedUpdate()
+	{
+		if ( !Network.IsOwner )
+			return;
+
+		playerController ??= Components.Get<PlayerController>();
+		if ( !playerController.IsValid() )
+			return;
+
+		if ( isChargingThrow )
+		{
+			if ( !inputControlsSuppressed )
+			{
+				savedUseInputControls = playerController.UseInputControls;
+				inputControlsSuppressed = true;
+			}
+
+			playerController.UseInputControls = false;
+			playerController.WishVelocity = Vector3.Zero;
+			return;
+		}
+
+		RestoreInputControlsIfNeeded();
 	}
 
 	private void StartThrowCharge()
@@ -95,7 +107,6 @@ public sealed class BallThrow : Component
 		isChargingThrow = true;
 		NetIsChargingThrow = true;
 		throwChargeStartedAt = Time.Now;
-		lockedChargePosition = WorldPosition;
 		throwChargeBar?.Show();
 		throwChargeBar?.SetCharge( 0f );
 	}
@@ -150,18 +161,25 @@ public sealed class BallThrow : Component
 		isChargingThrow = false;
 		NetIsChargingThrow = false;
 		throwChargeBar?.Hide();
+		RestoreInputControlsIfNeeded();
+	}
+
+	private void RestoreInputControlsIfNeeded()
+	{
+		if ( !inputControlsSuppressed )
+			return;
+
+		playerController ??= Components.Get<PlayerController>();
+		if ( playerController.IsValid() )
+			playerController.UseInputControls = savedUseInputControls;
+
+		inputControlsSuppressed = false;
 	}
 
 	private bool IsMatchGameplayInputAllowed()
 	{
 		var team = Components.Get<PlayerTeam>();
 		return team is null || team.IsMatchGameplayInputAllowed;
-	}
-
-	private bool IsSniperClass()
-	{
-		var name = playerClass?.CurrentClass?.ClassName;
-		return name != null && name.Equals( "Sniper", StringComparison.OrdinalIgnoreCase );
 	}
 
 	private float GetThrowChargeLerp()
