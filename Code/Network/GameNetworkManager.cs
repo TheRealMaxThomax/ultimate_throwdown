@@ -51,6 +51,9 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 	protected override void OnStart()
 	{
 		EnsureTemplateFound();
+		if ( playerTemplate.IsValid() )
+			PlayerClass.PrepareDresserBeforeSpawn( playerTemplate );
+
 		CaptureDesignSpawnTransform();
 		if ( EnableNetDebugLogs )
 		{
@@ -237,6 +240,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 		var player = playerTemplate.Clone( t );
 		player.Name = $"Player_{connection.DisplayName}";
+		PlayerClass.PrepareDresserBeforeSpawn( player );
 		player.Enabled = true;
 
 		var playerTeam = player.Components.GetOrCreate<PlayerTeam>();

@@ -923,6 +923,8 @@ public sealed class PlayerTackle : Component
 
 		if ( playerController.IsValid() ) playerController.Enabled = true;
 
+		playerClass?.ApplyClassAppearance();
+
 		if ( this.Network.IsOwner && StandUpCameraBlendDuration > 0.001f && activeCamera.IsValid() )
 		{
 			standUpCameraBlendFromPos = lastRagdollCameraPos;

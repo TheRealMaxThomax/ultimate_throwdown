@@ -8,13 +8,65 @@ public sealed class PlayerClass : Component
 	/// <summary> Re-apply <see cref="ClassData.ModelScale"/> for a few seconds so clothing added after start still picks up scale. </summary>
 	[Property] public float ModelScaleRetrySeconds { get; set; } = 3f;
 
+	/// <summary> Shader / clothing height when menu avatar height is disabled — matches engine dresser "standard" body. </summary>
+	public const float NeutralMenuHeight = 1f;
+
 	private float modelScaleRetryUntil;
 
 	protected override void OnStart()
 	{
+		DisableDresserMenuHeight();
 		modelScaleRetryUntil = Time.Now + ModelScaleRetrySeconds;
+		ApplyClassAppearance();
+	}
+
+	/// <summary> Re-applies capsule + model scale (call after cosmetics or ragdoll stand-up). </summary>
+	public void ApplyClassAppearance()
+	{
 		ApplyClassCapsule();
+		ApplyNeutralMenuHeight();
 		ApplyClassModelScale();
+	}
+
+	/// <summary> Call on cloned players before <c>Enabled = true</c> so the prefab <see cref="Dresser"/> cannot apply menu height first. </summary>
+	public static void PrepareDresserBeforeSpawn( GameObject playerRoot )
+	{
+		if ( !playerRoot.IsValid() )
+			return;
+
+		var dresser = playerRoot.Components.Get<Dresser>( FindMode.EverythingInSelfAndDescendants );
+		if ( !dresser.IsValid() )
+			return;
+
+		dresser.ApplyHeightScale = false;
+		dresser.Enabled = false;
+	}
+
+	/// <summary> Menu avatar height is a morph (<c>scale_height</c>) — class size uses <see cref="ClassData.ModelScale"/> on mesh roots. </summary>
+	public static void ApplyNeutralMenuHeight( GameObject playerRoot )
+	{
+		if ( !playerRoot.IsValid() )
+			return;
+
+		foreach ( var smr in playerRoot.Components.GetAll<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !smr.IsValid() )
+				continue;
+
+			smr.Set( "scale_height", NeutralMenuHeight );
+		}
+	}
+
+	private void ApplyNeutralMenuHeight() => ApplyNeutralMenuHeight( GameObject );
+
+	/// <summary> Class <see cref="ClassData.ModelScale"/> is authoritative — menu avatar height must not stack on top. </summary>
+	private void DisableDresserMenuHeight()
+	{
+		var dresser = Components.Get<Dresser>( FindMode.EverythingInSelfAndDescendants );
+		if ( !dresser.IsValid() )
+			return;
+
+		dresser.ApplyHeightScale = false;
 	}
 
 	protected override void OnUpdate()
@@ -24,6 +76,16 @@ public sealed class PlayerClass : Component
 
 		if ( Time.Now <= modelScaleRetryUntil )
 			ApplyClassModelScale();
+	}
+
+	/// <summary> Cosmetics can set <c>scale_height</c> after our async callback — enforce class size right before draw. </summary>
+	protected override void OnPreRender()
+	{
+		if ( CurrentClass is null )
+			return;
+
+		ApplyNeutralMenuHeight();
+		ApplyClassModelScale();
 	}
 
 	/// <summary> Pushes <see cref="ClassData.CapsuleHeight"/> / <see cref="ClassData.CapsuleRadius"/> onto <see cref="PlayerController.BodyHeight"/> / <see cref="PlayerController.BodyRadius"/>. </summary>

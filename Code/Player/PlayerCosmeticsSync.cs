@@ -21,6 +21,7 @@ public sealed class PlayerCosmeticsSync : Component
 	protected override void OnStart()
 	{
 		dresser = Components.Get<Dresser>( FindMode.EverythingInSelfAndDescendants );
+		DisableDresserAutoApply();
 		bodyRenderer = Components.Get<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants );
 		nextApplyAt = Time.Now + FirstApplyDelay;
 	}
@@ -105,12 +106,17 @@ public sealed class PlayerCosmeticsSync : Component
 			// On remote clients, ownership verification can be unavailable for other players.
 			// Using removeUnowned=false prevents valid remote cosmetics from being stripped.
 			var clothing = ClothingContainer.CreateFromConnection( ownerConnection, false );
+			// Class ModelScale is authoritative — strip menu avatar height before dressing (see scale_height on body).
+			clothing.Height = PlayerClass.NeutralMenuHeight;
+			clothing.Normalize();
 			await clothing.ApplyAsync( bodyRenderer, CancellationToken.None );
 
 			if ( LockHighestLodAfterApply )
 			{
 				ApplyStableLodOverrides();
 			}
+
+			Components.Get<PlayerClass>()?.ApplyClassAppearance();
 
 			appliedSuccessfully = true;
 			if ( EnableDebugLogs )
@@ -147,5 +153,15 @@ public sealed class PlayerCosmeticsSync : Component
 	private void ApplyStableLodOverrides()
 	{
 		CitizenAvatarLod.ApplyUnderRoot( GameObject );
+	}
+
+	/// <summary> <see cref="PlayerCosmeticsSync"/> owns clothing apply — disable engine dresser so menu height does not stack with <see cref="PlayerClass"/>. </summary>
+	private void DisableDresserAutoApply()
+	{
+		if ( !dresser.IsValid() )
+			return;
+
+		dresser.ApplyHeightScale = false;
+		dresser.Enabled = false;
 	}
 }

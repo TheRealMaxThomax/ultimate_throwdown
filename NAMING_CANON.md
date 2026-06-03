@@ -50,6 +50,8 @@
 | `PlayerDodge` | Dodge (lives at **bottom of** `CatchUpSpeedBoost.cs` — same file on purpose) |
 | `PlayerClass` | Which class is equipped |
 | `ClassData` | Class stats asset type (lives in **`PlayerClass.cs`**, not its own file) |
+
+**Often-used on `PlayerClass`:** `CurrentClass`, `NeutralMenuHeight`, `ApplyClassAppearance()`, `PrepareDresserBeforeSpawn()` (disable menu height before spawn; class `ModelScale` + neutral `scale_height`)
 | `PlayerTackle` | Tackle and ragdoll |
 | `RagdollClientFeel` | Smoother ragdoll camera for the owning player |
 | `PlayerCosmeticsSync` | Outfits / avatar look only |
