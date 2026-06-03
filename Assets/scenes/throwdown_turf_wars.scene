@@ -2736,7 +2736,7 @@
                   ]
                 },
                 {
-                  "__guid": "46402127-e7bb-4aea-ae28-c027e48b7576",
+                  "__guid": "5333b559-d6b5-422b-b601-129122c08227",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2753,7 +2753,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "a4985385-e71e-4f38-9975-43eed9519a38",
+                      "__guid": "e20328d8-fe1e-4636-b421-b920b34f244a",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -5985,7 +5985,7 @@
                   ]
                 },
                 {
-                  "__guid": "2e310e3f-8843-4558-b771-58ea307c163c",
+                  "__guid": "f1670e16-8e60-4c13-8122-a1eeff78ac55",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6002,7 +6002,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "d0b50ef1-a809-4bbf-a5ae-e93578a0fc48",
+                      "__guid": "94c1e5e0-004e-4a1c-b16c-de77e0782de5",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8601,7 +8601,7 @@
                   ]
                 },
                 {
-                  "__guid": "fe6b7f1b-b008-442b-9ec9-5430808b3f1a",
+                  "__guid": "3185160d-98e5-4fbb-bb2e-45dab6e89f6b",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8618,7 +8618,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "298f56df-41af-4dd8-975d-0e142ae55ba4",
+                      "__guid": "9c8fe579-a1de-421c-97c4-acd15ba18347",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11217,7 +11217,7 @@
                   ]
                 },
                 {
-                  "__guid": "a3c7002f-0e93-41bf-9d52-9a84732e50ab",
+                  "__guid": "cfe518ef-7141-49d1-957c-532bcbacd2a4",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11234,7 +11234,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "00178cae-ff01-4e98-80a0-85a564bdd0fd",
+                      "__guid": "d6a5dc9e-51b4-416b-a648-2f89b5f6c1a8",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -78947,10 +78947,10 @@
       "Flags": 0,
       "Name": "TrafficCarTemplate",
       "Position": "-1224.00171,4160.96729,146",
-      "Rotation": "0,0,-1,1.94707184E-07",
+      "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
-      "Enabled": true,
+      "Enabled": false,
       "NetworkMode": 2,
       "NetworkFlags": 0,
       "NetworkOrphaned": 0,
@@ -78960,7 +78960,7 @@
         {
           "__type": "TrafficCar",
           "__guid": "bf3c5fd8-3e22-484c-86a9-82e1e5662bec",
-          "__enabled": false,
+          "__enabled": true,
           "Flags": 0,
           "HitBoxGizmoColor": "1,0.35,0.1,0.35",
           "OnComponentDestroy": null,
@@ -79101,13 +79101,20 @@
           "__guid": "5e1607f0-30f3-48a1-b1b8-93f19254ea1e",
           "__enabled": true,
           "Flags": 0,
+          "CarAcceleration": 150,
+          "CarDeceleration": 800,
           "CarHeightOffset": 0,
           "CarSpeed": 700,
           "CarTemplate": {
             "_type": "gameobject",
             "go": "1e301b11-30f6-4856-99ca-0f031441e404"
           },
+          "CornerArcSamples": 10,
+          "CornerFilletRadius": 90,
+          "CurveMinSpeedFraction": 0.01,
+          "CurveSlowLookAhead": 400,
           "DisableTemplateOnStart": true,
+          "FacingYawOffsetDegrees": 0,
           "HitBoxCenterOffset": "0,0,60",
           "HitHalfExtents": "140,70,60",
           "KnockdownLaunchArc": 0.85,
@@ -79124,7 +79131,7 @@
           "OnComponentUpdate": null,
           "OnlySpawnWhileMatchPlaying": true,
           "PlayerHitCooldownSeconds": 0.75,
-          "WaypointReachRadius": 28,
+          "StraightSegmentSamples": 4,
           "Waypoints": [
             {
               "_type": "gameobject",
@@ -79158,19 +79165,18 @@
               "_type": "gameobject",
               "go": "34728012-301a-44fb-ab17-a4cde6a40a30"
             }
-          ],
-          "YawTurnSpeedDegrees": 420
+          ]
         }
       ],
       "Children": []
     },
     {
-      "__guid": "2539d33a-dd20-4b0d-bf8c-563c2c829126",
+      "__guid": "05e1204f-c7a4-4a54-903d-c2c738209dc0",
       "__version": 2,
       "Flags": 0,
       "Name": "TrafficCarTemplate (1)",
-      "Position": "-2718,3239.33496,96.006897",
-      "Rotation": "0,0,0.739904165,-0.672712624",
+      "Position": "-2714.96997,3925.22559,96.006897",
+      "Rotation": "0,0,-0.751290202,0.659972072",
       "Scale": "1,1,1",
       "Tags": "",
       "Enabled": true,
@@ -79182,7 +79188,7 @@
       "Components": [
         {
           "__type": "TrafficCar",
-          "__guid": "2ebf7c46-37d1-40e9-8583-f570d5cc3ff3",
+          "__guid": "b8842664-0028-458e-ac4b-81f450d066c6",
           "__enabled": true,
           "Flags": 0,
           "HitBoxGizmoColor": "1,0.35,0.1,0.35",
@@ -79196,7 +79202,7 @@
       ],
       "Children": [
         {
-          "__guid": "31f60c4a-4d0a-459b-83e8-a81b4c304667",
+          "__guid": "39738051-ce43-4bfa-a3d6-a22208d38d04",
           "__version": 2,
           "Flags": 0,
           "Name": "Body",
@@ -79213,7 +79219,7 @@
           "Components": [
             {
               "__type": "Sandbox.ModelRenderer",
-              "__guid": "02aff692-1a1f-47c5-8051-7ef4a190e64f",
+              "__guid": "bcb31f36-34df-4dc6-a855-c559dbee0797",
               "__enabled": true,
               "Flags": 0,
               "BodyGroups": 18446744073709551615,
@@ -79240,7 +79246,7 @@
             },
             {
               "__type": "Sandbox.ModelCollider",
-              "__guid": "3543725f-b4f2-4dd3-a42d-7e6818c9a71a",
+              "__guid": "89be7c81-0f08-4a14-946c-6b2d28bffe40",
               "__enabled": true,
               "Flags": 0,
               "ColliderFlags": 0,
@@ -79265,7 +79271,7 @@
             },
             {
               "__type": "Sandbox.Rigidbody",
-              "__guid": "3cc065ff-a642-4c61-a81e-c794495c4d55",
+              "__guid": "ae42a731-bae5-49fa-b3bd-27b31b6f6523",
               "__enabled": true,
               "Flags": 0,
               "AngularDamping": 0,
@@ -79324,14 +79330,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
-      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "2bb95a48-5185-418f-bb05-a48190a95869"
+        }
+      },
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
         }
       }
     }

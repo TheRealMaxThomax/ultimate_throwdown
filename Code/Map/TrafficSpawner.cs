@@ -32,9 +32,9 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 	[Property, Group( "Car" )] public float CornerFilletRadius { get; set; } = 90f;
 	[Property, Group( "Car" )] public int CornerArcSamples { get; set; } = 10;
 	[Property, Group( "Car" )] public int StraightSegmentSamples { get; set; } = 4;
-	/// <summary>Path distance ahead used to detect bends and lower target speed.</summary>
-	[Property, Group( "Car" )] public float CurveSlowLookAhead { get; set; } = 120f;
-	[Property, Group( "Car" )] public float CurveMinSpeedFraction { get; set; } = 0.4f;
+	/// <summary>Path distance ahead — car starts slowing this far before a bend.</summary>
+	[Property, Group( "Car" )] public float CurveSlowLookAhead { get; set; } = 180f;
+	[Property, Group( "Car" )] public float CurveMinSpeedFraction { get; set; } = 0.35f;
 	/// <summary>Extra yaw on the car root after path facing — use 180 if the model nose points backward.</summary>
 	[Property, Group( "Car" )] public float FacingYawOffsetDegrees { get; set; } = 0f;
 	[Property, Group( "Car" )] public float PlayerHitCooldownSeconds { get; set; } = 0.75f;

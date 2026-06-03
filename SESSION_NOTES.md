@@ -28,7 +28,7 @@
 - **Enemy team outline** — red `HighlightOutline` on opponents (not self/teammates); same look on tackle ragdolls (`PlayerEnemyOutline`, `RagdollEnemyOutline`); tune on player prefab **`HighlightOutline`**
 - **Street lamps (Turf Wars)** — `streetlight.vmdl` + warm spots; **`streetlight_broken.vmdl`** for dead poles (no spot/emissive). Optional **`StreetLightFlicker`** on a **per-lamp parent** empty (child model + child spot) — syncs spot + bulb emissive (`goldenearth_streetlight_off.vmat` on **`light.vmat`** slot, auto index `-1`)
 - **Petrol station lights** — optional **`StationLightFlicker`** on a parent empty (child `Spot Light` + child block mesh). Keeps mesh visible and flickers via `Spot.Enabled` + mesh `Color` (`VisualOnColor`/`VisualOffColor`)
-- **Road traffic (WIP — Road0)** — **`TrafficSpawner`** + **`TrafficCar`**; host waypoint driving, knockdown via **`PlayerTackle.ApplyKnockdownFromHost`**. Wire waypoints + car template in editor.
+- **Road traffic (Turf Wars — Road0 working)** — **`TrafficSpawner`** + disabled **`TrafficCarTemplate`** (**`TrafficCar`** on root). Host: filleted path through **`Waypoints`**, spawn/clone/`NetworkSpawn`, corner slow + accel/decel, player knockdown via **`PlayerTackle.ApplyKnockdownFromHost`**. Ball bounces off **`Body`** model collider + locked **`Rigidbody`**. Dodge iframe = immunity. **`Only Spawn While Match Playing`** on by default. **Road1** = duplicate spawner + waypoints (not wired yet).
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -92,6 +92,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Test dummies:** Tag `practice_npc` on **dummies only**.
 - **Weapons later:** Ball **or** weapon, not both (not implemented).
 - **Enemy outlines:** Camera needs **`Highlight`** post-process (`EnemyOutlineCameraSetup` on Main Camera, or add `Highlight` manually). Per-player **`HighlightOutline`** on the prefab is the style source; ragdolls copy it on the host (`NetVictimTeamId` synced for clients).
+- **Traffic cars:** Host-only movement + hits. Straights + rounded fillets through waypoint chain (not point-to-point snaps). **`TrafficCarTemplate` stays disabled** in scene — spawner clones it; stray clones cleaned on Play start.
 
 More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
@@ -101,7 +102,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 1. Start Play (host).
 2. Network menu → **Join via new instance** (second window = client).
-3. Check both windows: grab, throw, tackle (**host→client and client→host**, similar launch distance), dodge, **enemy red outlines** (standing + ragdoll, both directions), **goals, reset, intermission, match over, rematch, HUD**.
+3. Check both windows: grab, throw, tackle (**host→client and client→host**, similar launch distance), dodge, **enemy red outlines** (standing + ragdoll, both directions), **goals, reset, intermission, match over, rematch, HUD**, **traffic cars visible on client + knockdown both directions** (when Road0 enabled).
 4. Spam actions once to probe desync.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
@@ -135,7 +136,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **`BallSpawn`** at center → wired on `MatchDirector`
 - **Street lamps:** steady = `streetlight.vmdl` + spot under `_LIGHTING` or parented to lamp; broken = `streetlight_broken.vmdl` (no spot). **Flicker** = one parent empty per lamp → **`StreetLightFlicker`** + child model + child **`Spot Light`**; **Bulb Material Index** `-1` (auto)
 - **Petrol station lights:** one parent empty per fixture → **`StationLightFlicker`** + child **`Spot Light`** + child mesh block; set `VisualOnColor`/`VisualOffColor` (mesh stays enabled)
-- **Road0 traffic:** empty with **`TrafficSpawner`** → **`Car Template`** (disabled clone source with **`TrafficCar`** + model child); **`Waypoints`** list in drive order (first = spawn). Tune **`Hit Half Extents`** / **`Car Speed`** on spawner; orange hit box gizmo on car when selected
+- **Road0 traffic:** see **Traffic cars** subsection below (spawner + car template wiring)
 
 **Player prefab** (clone source for `GameNetworkManager` — all joins inherit these values):
 - `PlayerTeam` (auto at spawn), `PlayerTackle`, `PlayerDodge`, `RagdollClientFeel`, `PlayerClass`, `CatchUpSpeedBoost`
@@ -147,6 +148,21 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
 - **`BallThrow` → Throw Direction Source** optional; if empty, throw uses **`PlayerController.EyeAngles`** (look while charging)
 
+**Traffic cars (per lane — Road0 done, Road1 = copy pattern):**
+
+**`TrafficCarTemplate`** (disabled in scene — clone source only):
+- Root: **`TrafficCar`**
+- Child **`Body`**: **`Model Renderer`** → car `.vmdl` (Model Doc **Static Prop** + optional physics hull); **`Model Collider`** on **Body** (same vmdl — follows Body scale/offset); **`Rigidbody`** on Body — gravity off, lock position **X/Y/Z** (+ rotation if needed)
+- **`Facing Yaw Offset Degrees`** on spawner if model nose points backward (**180**)
+
+**`Traffic_Road0`** (or one empty per lane):
+- **`TrafficSpawner`** — **`Car Template`** → `TrafficCarTemplate`; **`Waypoints`** in **drive order** (first = spawn, last = exit). 2–3 waypoints per 90° turn (before / in / on bend / after)
+- Tune on spawner **Car** group: **`Car Speed`**, **`Car Acceleration`** / **`Car Deceleration`**, **`Corner Fillet Radius`**, **`Curve Slow Look Ahead`**, **`Curve Min Speed Fraction`**, **`Hit Half Extents`**, **`Hit Box Center Offset`** (Z up if pivot at wheels), **`Car Height Offset`** (usually 0 if Body local Y = 0)
+- **`Disable Template On Start`** on; **`Only Spawn While Match Playing`** for ship
+- Do **not** save scene with traffic clones in hierarchy — delete `(clone)` leftovers if any
+
+**Car model:** CC0 low-poly e.g. `models/turfwarspoly/normalcar1.vmdl` — Static Prop archetype; hull on Body for ball bounce, code hit box for players.
+
 ---
 
 ## Open decisions (not chosen yet)
@@ -156,12 +172,14 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - Closed roof on arena vs open roof + sun for lighting
 - Small screen shake on tackle hit — yes or no?
 - Map vote: allow changing vote during the 30s window?
-- **Traffic knockdown tuning:** car **`KnockdownLaunchSpeed`** / **`Hit Half Extents`** vs dodgeability on Turf Wars roads
+- **Traffic knockdown tuning:** **`KnockdownLaunchSpeed`** / hit box vs dodgeability; **2-window MP** on traffic not fully playtested yet
+- **Road1 traffic:** second lane = second **`TrafficSpawner`** + waypoint list (same or second car template)
 
 ---
 
 ## Known issues
 
+- [ ] **Traffic cars** — 2-window MP playtest (visibility, knockdown, ball bounce on client)
 - [ ] Throw strength still needs playtest tuning
 - [ ] Walk/run animations while charging throw (can’t move)
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
@@ -184,7 +202,7 @@ Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Heigh
 
 ## Recent session notes
 
-- **2026-06-03:** **Road0 traffic v1** — **`TrafficSpawner`** + **`TrafficCar`** (`Code/Map/`); host waypoint driving + oriented hit box; **`PlayerTackle.ApplyKnockdownFromHost`**. Wire Road0 waypoints + car template in editor.
+- **2026-06-03:** **Turf Wars road traffic (Road0)** — **`TrafficSpawner`** + **`TrafficCar`**: filleted paths, corner slow from turn angle + look-ahead, accel/decel, clone disabled template, Play-start clone cleanup, **`PlayerTackle.ApplyKnockdownFromHost`**. Car: Static Prop vmdl, **`Model Collider` + locked `Rigidbody` on `Body`**. Road1 = duplicate spawner.
 - **2026-06-02:** **`feature/human-avatar`** — Player Body → `citizen_human_*` + human anim graph (drop `citizen_holdball_test` on human or T-pose at run). Cosmetics + male/female from connection; tackle/ragdoll/MP unchanged in code.
 - **2026-05-28:** Added **`StationLightFlicker`** (`Code/Map/`) for petrol-station fixtures: flickers child `SpotLight` and tints mesh (`VisualOnColor`/`VisualOffColor`) instead of hiding it.
 - **2026-05-28:** Turf Wars `MatchDirector.BallSpawn` wiring confirmed in `throwdown_turf_wars.scene`; goal/intermission ball resets are now correctly configured.

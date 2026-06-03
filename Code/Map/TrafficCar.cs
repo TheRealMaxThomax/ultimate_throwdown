@@ -16,6 +16,8 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 
 	private readonly List<Vector3> pathSamplePoints = new();
 	private readonly List<float> pathSampleDistances = new();
+	private readonly List<float> pathSampleBaseSpeedMultipliers = new();
+	private readonly List<float> pathSpeedMultipliers = new();
 	private float totalPathLength;
 	private float pathDistance;
 	private float currentSpeed;
@@ -26,8 +28,8 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 	private float CornerFilletRadius => spawner.IsValid() ? spawner.CornerFilletRadius : 90f;
 	private int CornerArcSamples => spawner.IsValid() ? spawner.CornerArcSamples : 10;
 	private int StraightSegmentSamples => spawner.IsValid() ? spawner.StraightSegmentSamples : 4;
-	private float CurveSlowLookAhead => spawner.IsValid() ? spawner.CurveSlowLookAhead : 120f;
-	private float CurveMinSpeedFraction => spawner.IsValid() ? spawner.CurveMinSpeedFraction : 0.4f;
+	private float CurveSlowLookAhead => spawner.IsValid() ? spawner.CurveSlowLookAhead : 180f;
+	private float CurveMinSpeedFraction => spawner.IsValid() ? spawner.CurveMinSpeedFraction : 0.35f;
 	private float FacingYawOffsetDegrees => spawner.IsValid() ? spawner.FacingYawOffsetDegrees : 0f;
 
 	private Vector3 HitHalfExtents => spawner.IsValid()
@@ -113,47 +115,77 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 	private float GetTargetSpeedForPathDistance( float distance )
 	{
 		var cruise = CruiseSpeed;
-		var lookAhead = CurveSlowLookAhead;
-		if ( lookAhead <= 0f || totalPathLength <= 0f )
-			return cruise;
-
-		var tangentNow = SamplePathTangent( distance );
-		var tangentAhead = SamplePathTangent( distance + lookAhead );
-		var flatNow = tangentNow.WithZ( 0f );
-		var flatAhead = tangentAhead.WithZ( 0f );
-		if ( flatNow.LengthSquared <= 0.001f || flatAhead.LengthSquared <= 0.001f )
-			return cruise;
-
-		flatNow = flatNow.Normal;
-		flatAhead = flatAhead.Normal;
-
-		var dot = Vector3.Dot( flatNow, flatAhead );
-		if ( dot >= 0.995f )
-			return cruise;
-
-		var minFrac = CurveMinSpeedFraction.Clamp( 0.05f, 1f );
-		var bend = (1f - dot) * 0.5f;
-		var slowMul = 1f - bend * (1f - minFrac);
-		return cruise * slowMul.Clamp( minFrac, 1f );
+		var mul = SamplePathSpeedMultiplier( distance );
+		return cruise * mul;
 	}
 
 	private void BuildPathSamples()
 	{
 		pathSamplePoints.Clear();
 		pathSampleDistances.Clear();
+		pathSampleBaseSpeedMultipliers.Clear();
+		pathSpeedMultipliers.Clear();
 		totalPathLength = 0f;
 
 		var lanePoints = CollectLanePoints();
 		if ( lanePoints.Count < 2 )
 			return;
 
-		var polyline = BuildFilletPath( lanePoints );
-		if ( polyline.Count < 2 )
+		BuildFilletPath( lanePoints );
+		BuildPathSpeedProfile();
+	}
+
+	private void BuildPathSpeedProfile()
+	{
+		pathSpeedMultipliers.Clear();
+		if ( pathSampleDistances.Count == 0 )
 			return;
 
-		AddPathSample( polyline[0] );
-		for ( var i = 1; i < polyline.Count; i++ )
-			AppendPathSample( polyline[i] );
+		var lookAhead = CurveSlowLookAhead.Clamp( 0f, 512f );
+		for ( var i = 0; i < pathSampleDistances.Count; i++ )
+		{
+			var startDist = pathSampleDistances[i];
+			var worst = pathSampleBaseSpeedMultipliers[i];
+			for ( var j = i + 1; j < pathSampleDistances.Count; j++ )
+			{
+				if ( pathSampleDistances[j] - startDist > lookAhead )
+					break;
+
+				worst = MathF.Min( worst, pathSampleBaseSpeedMultipliers[j] );
+			}
+
+			pathSpeedMultipliers.Add( worst );
+		}
+	}
+
+	private static float SpeedMulFromTurnAngle( float turnAngleRad, float minFrac )
+	{
+		var sharpness = (turnAngleRad / (MathF.PI * 0.5f)).Clamp( 0f, 1f );
+		return 1f - sharpness * (1f - minFrac);
+	}
+
+	private float SamplePathSpeedMultiplier( float distance )
+	{
+		if ( pathSpeedMultipliers.Count == 0 )
+			return 1f;
+
+		if ( distance <= pathSampleDistances[0] )
+			return pathSpeedMultipliers[0];
+
+		if ( distance >= totalPathLength )
+			return pathSpeedMultipliers[^1];
+
+		for ( var i = 1; i < pathSampleDistances.Count; i++ )
+		{
+			if ( pathSampleDistances[i] < distance )
+				continue;
+
+			var span = pathSampleDistances[i] - pathSampleDistances[i - 1];
+			var t = span > 0.001f ? (distance - pathSampleDistances[i - 1]) / span : 0f;
+			return MathX.Lerp( pathSpeedMultipliers[i - 1], pathSpeedMultipliers[i], t );
+		}
+
+		return pathSpeedMultipliers[^1];
 	}
 
 	private List<Vector3> CollectLanePoints()
@@ -171,20 +203,22 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 		return lanePoints;
 	}
 
-	private List<Vector3> BuildFilletPath( List<Vector3> points )
+	private void BuildFilletPath( List<Vector3> points )
 	{
-		var path = new List<Vector3>();
 		if ( points.Count < 2 )
-			return path;
+			return;
+
+		var minFrac = CurveMinSpeedFraction.Clamp( 0.05f, 1f );
 
 		if ( points.Count == 2 )
 		{
-			AppendLineSamples( path, points[0], points[1] );
-			return path;
+			AddPathSample( points[0], 1f );
+			AppendLineSamples( points[0], points[1], 1f );
+			return;
 		}
 
 		var cursor = points[0];
-		path.Add( cursor );
+		AddPathSample( cursor, 1f );
 		var filletRadius = CornerFilletRadius.Clamp( 8f, 512f );
 		var arcSamples = CornerArcSamples.Clamp( 3, 32 );
 
@@ -194,20 +228,20 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 			var corner = points[i];
 			var next = points[i + 1];
 
-			if ( !TryGetCornerFillet( prev, corner, next, filletRadius, out var arcStart, out var arcEnd, out var arcControl ) )
+			if ( !TryGetCornerFillet( prev, corner, next, filletRadius, out var arcStart, out var arcEnd, out var arcControl, out var turnAngle ) )
 			{
-				AppendLineSamples( path, cursor, corner );
+				AppendLineSamples( cursor, corner, 1f );
 				cursor = corner;
 				continue;
 			}
 
-			AppendLineSamples( path, cursor, arcStart );
-			AppendQuadraticBezierSamples( path, arcStart, arcControl, arcEnd, arcSamples );
+			var cornerMul = SpeedMulFromTurnAngle( turnAngle, minFrac );
+			AppendLineSamples( cursor, arcStart, 1f );
+			AppendQuadraticBezierSamples( arcStart, arcControl, arcEnd, arcSamples, cornerMul );
 			cursor = arcEnd;
 		}
 
-		AppendLineSamples( path, cursor, points[^1] );
-		return path;
+		AppendLineSamples( cursor, points[^1], 1f );
 	}
 
 	private bool TryGetCornerFillet(
@@ -217,11 +251,13 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 		float radius,
 		out Vector3 arcStart,
 		out Vector3 arcEnd,
-		out Vector3 arcControl )
+		out Vector3 arcControl,
+		out float turnAngleRadians )
 	{
 		arcStart = default;
 		arcEnd = default;
 		arcControl = corner;
+		turnAngleRadians = 0f;
 
 		var inDir = (corner - prev).WithZ( 0f );
 		var outDir = (next - corner).WithZ( 0f );
@@ -234,8 +270,8 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 		outDir /= outLen;
 
 		var dot = Vector3.Dot( inDir, outDir ).Clamp( -1f, 1f );
-		var turnAngle = MathF.Acos( dot );
-		if ( turnAngle < 0.12f )
+		turnAngleRadians = MathF.Acos( dot );
+		if ( turnAngleRadians < 0.12f )
 			return false;
 
 		var maxRadius = MathF.Min( inLen, outLen ) * 0.45f;
@@ -248,7 +284,7 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 		return true;
 	}
 
-	private void AppendLineSamples( List<Vector3> path, Vector3 from, Vector3 to )
+	private void AppendLineSamples( Vector3 from, Vector3 to, float speedMul )
 	{
 		if ( Vector3.DistanceBetween( from, to ) <= 0.05f )
 			return;
@@ -257,33 +293,35 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 		for ( var i = 1; i <= samples; i++ )
 		{
 			var t = i / (float)samples;
-			path.Add( Vector3.Lerp( from, to, t ) );
+			AppendPathSample( Vector3.Lerp( from, to, t ), speedMul );
 		}
 	}
 
-	private void AppendQuadraticBezierSamples( List<Vector3> path, Vector3 start, Vector3 control, Vector3 end, int samples )
+	private void AppendQuadraticBezierSamples( Vector3 start, Vector3 control, Vector3 end, int samples, float speedMul )
 	{
 		for ( var i = 1; i <= samples; i++ )
 		{
 			var t = i / (float)samples;
 			var u = 1f - t;
 			var point = u * u * start + 2f * u * t * control + t * t * end;
-			path.Add( point );
+			AppendPathSample( point, speedMul );
 		}
 	}
 
-	private void AddPathSample( Vector3 point )
+	private void AddPathSample( Vector3 point, float speedMul )
 	{
 		pathSamplePoints.Add( point );
 		pathSampleDistances.Add( 0f );
+		pathSampleBaseSpeedMultipliers.Add( speedMul );
 	}
 
-	private void AppendPathSample( Vector3 point )
+	private void AppendPathSample( Vector3 point, float speedMul )
 	{
 		var prev = pathSamplePoints[^1];
 		totalPathLength += Vector3.DistanceBetween( prev, point );
 		pathSamplePoints.Add( point );
 		pathSampleDistances.Add( totalPathLength );
+		pathSampleBaseSpeedMultipliers.Add( speedMul );
 	}
 
 	private Vector3 SamplePathPosition( float distance )
