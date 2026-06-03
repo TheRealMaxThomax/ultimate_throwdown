@@ -28,6 +28,7 @@
 - **Enemy team outline** — red `HighlightOutline` on opponents (not self/teammates); same look on tackle ragdolls (`PlayerEnemyOutline`, `RagdollEnemyOutline`); tune on player prefab **`HighlightOutline`**
 - **Street lamps (Turf Wars)** — `streetlight.vmdl` + warm spots; **`streetlight_broken.vmdl`** for dead poles (no spot/emissive). Optional **`StreetLightFlicker`** on a **per-lamp parent** empty (child model + child spot) — syncs spot + bulb emissive (`goldenearth_streetlight_off.vmat` on **`light.vmat`** slot, auto index `-1`)
 - **Petrol station lights** — optional **`StationLightFlicker`** on a parent empty (child `Spot Light` + child block mesh). Keeps mesh visible and flickers via `Spot.Enabled` + mesh `Color` (`VisualOnColor`/`VisualOffColor`)
+- **Road traffic (WIP — Road0)** — **`TrafficSpawner`** + **`TrafficCar`**; host waypoint driving, knockdown via **`PlayerTackle.ApplyKnockdownFromHost`**. Wire waypoints + car template in editor.
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -64,7 +65,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | `Code/Network/` | Spawning players when people join |
 | `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig` |
 | `Code/UI/` | Match HUD + placeholder owner HUDs (dodge/ramp) |
-| `Code/Map/` | `StartupMapBootstrap` (practice NPC locks); **`StreetLightFlicker`** (decorative lamp flicker); **`StationLightFlicker`** (petrol station spot + mesh color flicker) |
+| `Code/Map/` | `StartupMapBootstrap` (practice NPC locks); **`StreetLightFlicker`** (decorative lamp flicker); **`StationLightFlicker`** (petrol station spot + mesh color flicker); **`TrafficSpawner`** / **`TrafficCar`** (host lane traffic + knockdown) |
 
 **Scene you play in:** `scenes/throwdown_turf_wars.scene` (Turf Wars WIP). `throwdown_prototype.scene` = older greybox fallback.
 
@@ -134,6 +135,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **`BallSpawn`** at center → wired on `MatchDirector`
 - **Street lamps:** steady = `streetlight.vmdl` + spot under `_LIGHTING` or parented to lamp; broken = `streetlight_broken.vmdl` (no spot). **Flicker** = one parent empty per lamp → **`StreetLightFlicker`** + child model + child **`Spot Light`**; **Bulb Material Index** `-1` (auto)
 - **Petrol station lights:** one parent empty per fixture → **`StationLightFlicker`** + child **`Spot Light`** + child mesh block; set `VisualOnColor`/`VisualOffColor` (mesh stays enabled)
+- **Road0 traffic:** empty with **`TrafficSpawner`** → **`Car Template`** (disabled clone source with **`TrafficCar`** + model child); **`Waypoints`** list in drive order (first = spawn). Tune **`Hit Half Extents`** / **`Car Speed`** on spawner; orange hit box gizmo on car when selected
 
 **Player prefab** (clone source for `GameNetworkManager` — all joins inherit these values):
 - `PlayerTeam` (auto at spawn), `PlayerTackle`, `PlayerDodge`, `RagdollClientFeel`, `PlayerClass`, `CatchUpSpeedBoost`
@@ -154,6 +156,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - Closed roof on arena vs open roof + sun for lighting
 - Small screen shake on tackle hit — yes or no?
 - Map vote: allow changing vote during the 30s window?
+- **Traffic knockdown tuning:** car **`KnockdownLaunchSpeed`** / **`Hit Half Extents`** vs dodgeability on Turf Wars roads
 
 ---
 
@@ -181,6 +184,7 @@ Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Heigh
 
 ## Recent session notes
 
+- **2026-06-03:** **Road0 traffic v1** — **`TrafficSpawner`** + **`TrafficCar`** (`Code/Map/`); host waypoint driving + oriented hit box; **`PlayerTackle.ApplyKnockdownFromHost`**. Wire Road0 waypoints + car template in editor.
 - **2026-06-02:** **`feature/human-avatar`** — Player Body → `citizen_human_*` + human anim graph (drop `citizen_holdball_test` on human or T-pose at run). Cosmetics + male/female from connection; tackle/ragdoll/MP unchanged in code.
 - **2026-05-28:** Added **`StationLightFlicker`** (`Code/Map/`) for petrol-station fixtures: flickers child `SpotLight` and tints mesh (`VisualOnColor`/`VisualOffColor`) instead of hiding it.
 - **2026-05-28:** Turf Wars `MatchDirector.BallSpawn` wiring confirmed in `throwdown_turf_wars.scene`; goal/intermission ball resets are now correctly configured.

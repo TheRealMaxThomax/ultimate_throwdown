@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 //   Host detection .............. TryDetectAndApplyHostTackle, ApplyTackleCooldownOnHost
 //   Client → host ............... TryOwnerRequestTackleOnHost, RequestTackleApplyOnHost
 //   Victim pick ................. TryFindTackleVictim (cone vs horizontal view forward, not velocity)
-//   Hit + ball .................. ExecuteTackle
+//   Hit + ball .................. ExecuteTackle, ApplyKnockdownFromHost
 //   Ragdoll (host only) ......... SpawnRagdollObject, AddVictimClothingToRagdoll, HandleRagdollRecovery, IsRagdollGroundedAndSettled
 //   Juggernaut ramp ............. StepTackleChargeBonus (host + owner mirror for RPC)
 //   Local down / up ............. ApplyRagdollLocally, StandUpLocally
@@ -476,6 +476,22 @@ public sealed class PlayerTackle : Component
 		return false;
 	}
 
+	/// <summary>Host: hazard knockdown (traffic, etc.) — same ragdoll path as tackle without attacker bookkeeping.</summary>
+	/// <returns><c>true</c> if knockdown started.</returns>
+	public bool ApplyKnockdownFromHost( Vector3 launchDir, float launchSpeed, float launchArc = -1f )
+	{
+		if ( !Networking.IsHost )
+			return false;
+
+		if ( IsTackleImmune || IsRagdolled
+			|| Components.Get<PlayerDodge>() is { IsImmuneToTackle: true } )
+			return false;
+
+		var arc = launchArc >= 0f ? launchArc : TackleLaunchArc;
+		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, tacklePowerForBall: 1f, attackerGrabForCarrierLockout: null );
+		return true;
+	}
+
 	private void ExecuteTackle( PlayerTackle victim, Vector3 tackleDir, float chargeBonusFromOwner = -1f )
 	{
 		if ( Networking.IsHost )
@@ -488,8 +504,6 @@ public sealed class PlayerTackle : Component
 			else
 				NetPostAttackSlowCatchUpUntil = 0f;
 		}
-
-		CapturePracticeNpcPreTacklePoseIfTagged( victim );
 
 		var attackerMass = playerClass?.CurrentClass?.Mass ?? 80f;
 		var victimMass = victim.playerClass?.CurrentClass?.Mass ?? 80f;
@@ -507,8 +521,21 @@ public sealed class PlayerTackle : Component
 		if ( EnableTackleDebugLogs )
 			Log.Info( $"[Tackle] Power massRatio={massRatio:F2} chargeBonus={chargeBonus:F3} juggMult={juggMult:F2} → launchSpeed={effectiveLaunchSpeed:F0}" );
 
+		ApplyVictimKnockdownFromHost( victim, tackleDir, effectiveLaunchSpeed, TackleLaunchArc, tacklePower, Components.Get<BallGrab>() );
+	}
+
+	private void ApplyVictimKnockdownFromHost(
+		PlayerTackle victim,
+		Vector3 launchDir,
+		float effectiveLaunchSpeed,
+		float launchArc,
+		float tacklePowerForBall,
+		BallGrab attackerGrabForCarrierLockout )
+	{
+		CapturePracticeNpcPreTacklePoseIfTagged( victim );
+
 		var classData = victim.playerClass?.CurrentClass;
-		var ballLaunchForce = (classData?.BallLaunchForceOnTackle ?? 500f) * tacklePower;
+		var ballLaunchForce = (classData?.BallLaunchForceOnTackle ?? 500f) * tacklePowerForBall;
 		var ballLockout = classData?.BallPickupLockoutAfterTackle ?? 1.5f;
 
 		var victimBallGrab = victim.Components.Get<BallGrab>();
@@ -520,18 +547,15 @@ public sealed class PlayerTackle : Component
 				var ballBody = droppedBall.Components.Get<Rigidbody>( FindMode.EverythingInSelfAndDescendants );
 				if ( ballBody.IsValid() )
 				{
-					var ballLaunchDir = (tackleDir + Vector3.Up * TackleLaunchArc).Normal;
+					var ballLaunchDir = (launchDir + Vector3.Up * launchArc).Normal;
 					ballBody.Velocity = ballLaunchDir * ballLaunchForce;
 				}
 
 				victimBallGrab.BlockPickupForSeconds( ballLockout );
 			}
 
-			var attackerGrab = Components.Get<BallGrab>();
-			if ( attackerGrab.IsValid() && AttackerPickupLockoutAfterCarrierTackle > 0f )
-			{
-				attackerGrab.BlockPickupForSeconds( AttackerPickupLockoutAfterCarrierTackle );
-			}
+			if ( attackerGrabForCarrierLockout.IsValid() && AttackerPickupLockoutAfterCarrierTackle > 0f )
+				attackerGrabForCarrierLockout.BlockPickupForSeconds( AttackerPickupLockoutAfterCarrierTackle );
 		}
 
 		// Immediately disable victim's capsule on the host before the ragdoll spawns.
@@ -552,7 +576,7 @@ public sealed class PlayerTackle : Component
 
 		victim.NetIsRagdolled = true;
 
-		SpawnRagdollObject( victim, tackleDir, effectiveLaunchSpeed );
+		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc );
 		HandleRagdollRecovery( victim );
 	}
 
@@ -575,7 +599,7 @@ public sealed class PlayerTackle : Component
 	// Spawns a host-owned physics ragdoll at the victim's position.
 	// NetworkSpawn makes it visible on all clients automatically.
 	// Physics runs on the host without client transform ownership conflicts.
-	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 tackleDir, float effectiveLaunchSpeed )
+	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 tackleDir, float effectiveLaunchSpeed, float launchArc )
 	{
 		var ragdollGo = new GameObject( true, "PlayerRagdoll" );
 		ragdollGo.WorldPosition = victim.WorldPosition + Vector3.Up * 10f;
@@ -614,7 +638,7 @@ public sealed class PlayerTackle : Component
 		ragdollGo.Components.GetOrCreate<RagdollEnemyOutline>().ConfigureFromVictim( victim );
 
 		var waitForBodies = RagdollPhysicsInitDelay.Clamp( 0.01f, 0.25f );
-		var launched = await TryApplyRagdollLaunchImpulseAsync( ragdollGo, tackleDir, effectiveLaunchSpeed, waitForBodies );
+		var launched = await TryApplyRagdollLaunchImpulseAsync( ragdollGo, tackleDir, effectiveLaunchSpeed, launchArc, waitForBodies );
 		if ( !ragdollGo.IsValid() )
 			return;
 
@@ -629,6 +653,7 @@ public sealed class PlayerTackle : Component
 		GameObject ragdollGo,
 		Vector3 tackleDir,
 		float effectiveLaunchSpeed,
+		float launchArc,
 		float maxWaitSeconds )
 	{
 		const float pollStepSeconds = 0.008f;
@@ -636,7 +661,7 @@ public sealed class PlayerTackle : Component
 
 		while ( ragdollGo.IsValid() && Time.Now - started < maxWaitSeconds )
 		{
-			if ( TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, out var bodyCount ) )
+			if ( TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, launchArc, out var bodyCount ) )
 			{
 				if ( EnableTackleDebugLogs )
 					Log.Info( $"[Tackle] Impulse ready in {(Time.Now - started) * 1000f:F0}ms | Bodies={bodyCount}" );
@@ -646,7 +671,7 @@ public sealed class PlayerTackle : Component
 			await GameTask.DelaySeconds( pollStepSeconds );
 		}
 
-		if ( ragdollGo.IsValid() && TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, out var finalBodies ) )
+		if ( ragdollGo.IsValid() && TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, launchArc, out var finalBodies ) )
 		{
 			if ( EnableTackleDebugLogs )
 				Log.Info( $"[Tackle] Impulse on timeout edge | Bodies={finalBodies}" );
@@ -662,6 +687,7 @@ public sealed class PlayerTackle : Component
 		GameObject ragdollGo,
 		Vector3 tackleDir,
 		float effectiveLaunchSpeed,
+		float launchArc,
 		out int bodyCount )
 	{
 		bodyCount = 0;
@@ -674,7 +700,7 @@ public sealed class PlayerTackle : Component
 		if ( pb0 == null )
 			return false;
 
-		var launchDir = (tackleDir + Vector3.Up * TackleLaunchArc).Normal;
+		var launchDir = (tackleDir + Vector3.Up * launchArc).Normal;
 		var launchVelocity = launchDir * effectiveLaunchSpeed;
 		var totalMass = mp.Mass;
 		if ( totalMass <= 0f )

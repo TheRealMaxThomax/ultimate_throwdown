@@ -64,7 +64,7 @@
 
 **Often-used on `RagdollEnemyOutline`:** `NetVictimTeamId` (synced), `ConfigureFromVictim()` (host, before network spawn)
 
-**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `RagdollPhysicsInitDelay` (max poll for bodies → impulse → `NetworkSpawn` + `RagdollEnemyOutline`); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg)  
+**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `RagdollPhysicsInitDelay` (max poll for bodies → impulse → `NetworkSpawn` + `RagdollEnemyOutline`); `ApplyKnockdownFromHost()` (traffic/hazards); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg)  
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
 **Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`  
 **Tag for test dummies only:** `practice_npc`
@@ -94,6 +94,12 @@
 | `StartupMapBootstrap` | Scene startup; locks `practice_npc` rigidbodies (`Code/Map/`) |
 | `StreetLightFlicker` | One lamp cluster: flickers child `SpotLight` + bulb material slot (`Code/Map/`) |
 | `StationLightFlicker` | Petrol-station light block: flickers child `SpotLight` + optional mesh visual on/off (`Code/Map/`) |
+| `TrafficSpawner` | Host lane spawner: clones **`CarTemplate`**, drives **`Waypoints`**, tune speed/knockdown/hit box (`Code/Map/`) |
+| `TrafficCar` | On car template: host moves along spawner waypoints, knocks down via **`PlayerTackle.ApplyKnockdownFromHost`** (`Code/Map/`) |
+
+**Often-used on `TrafficSpawner`:** `CarTemplate`, `Waypoints`, `CarSpeed`, `CarAcceleration`, `CarDeceleration`, `CornerFilletRadius`, `CornerArcSamples`, `CurveSlowLookAhead`, `CurveMinSpeedFraction`, `CarHeightOffset`, `HitHalfExtents`, `HitBoxCenterOffset`, `MaxAliveCars`, `OnlySpawnWhileMatchPlaying`
+
+**Often-used on `PlayerTackle`:** `ApplyKnockdownFromHost()` (traffic/hazards; host only)
 
 **Often-used on `StreetLightFlicker`:** `Spot`, `LampModel`, `BulbOffMaterial`, `BulbMaterialIndex` (`-1` = auto-detect `light.vmat` / emissive slot), `SyncBulbEmissive`
 
