@@ -9,6 +9,20 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 {
 	[Property] public Color HitBoxGizmoColor { get; set; } = new( 1f, 0.35f, 0.1f, 0.35f );
 
+	/// <summary>Uniform scale on the Body child (match template Body transform). Used for host sync + client fallback.</summary>
+	[Property, Group( "Car visual" )] public float MeshUniformScale { get; set; } = 0.6f;
+
+	/// <summary>How quickly client proxies chase synced pose (higher = tighter, lower = smoother).</summary>
+	[Property, Group( "Network proxy" )] public float ProxyPoseFollowSharpness { get; set; } = 18f;
+
+	[Sync( SyncFlags.FromHost )] private Vector3 NetWorldPosition { get; set; }
+	[Sync( SyncFlags.FromHost )] private Rotation NetWorldRotation { get; set; }
+	/// <summary>Uniform scale of the Body child on host (template default 0.6).</summary>
+	[Sync( SyncFlags.FromHost )] private float NetMeshUniformScale { get; set; } = 1f;
+
+	private GameObject proxyBodyObject;
+	private bool proxyPoseInitialized;
+
 	private TrafficSpawner spawner;
 	private IReadOnlyList<GameObject> waypoints;
 	private Vector3 travelDir = Vector3.Forward;
@@ -75,13 +89,165 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 		PlaceOnPath( 0f );
 	}
 
+	/// <summary>Call on host before <c>NetworkSpawn</c> so clients receive enabled renderers.</summary>
+	internal static void PrepareHierarchyForNetworkSpawn( GameObject carRoot )
+	{
+		EnableHierarchyForRendering( carRoot );
+	}
+
+	protected override void OnStart()
+	{
+		if ( !IsProxy )
+			return;
+
+		proxyBodyObject = FindBodyObject();
+		DisableHoistedRootRendererIfPresent();
+		EnableHierarchyForRendering( GameObject );
+		DisableProxyPhysicsAndColliders();
+		ApplyProxyBodyScale();
+	}
+
 	protected override void OnUpdate()
 	{
+		if ( IsProxy )
+		{
+			ApplySyncedPoseFromHost();
+			return;
+		}
+
 		if ( !Networking.IsHost || waypoints is null || waypoints.Count < 2 || totalPathLength <= 0f )
 			return;
 
 		AdvanceAlongLane();
 		TryKnockdownPlayersInHitBox();
+	}
+
+	private void ApplySyncedPoseFromHost()
+	{
+		ApplyProxyBodyScale();
+
+		if ( !proxyPoseInitialized )
+		{
+			WorldPosition = NetWorldPosition;
+			WorldRotation = NetWorldRotation;
+			proxyPoseInitialized = true;
+			return;
+		}
+
+		var blend = MathF.Min( 1f, Time.Delta * ProxyPoseFollowSharpness.Clamp( 1f, 60f ) );
+		WorldPosition = Vector3.Lerp( WorldPosition, NetWorldPosition, blend );
+		WorldRotation = Rotation.Slerp( WorldRotation, NetWorldRotation, blend );
+	}
+
+	private void DisableProxyPhysicsAndColliders()
+	{
+		foreach ( var rb in Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !rb.IsValid() )
+				continue;
+
+			rb.MotionEnabled = false;
+			rb.Enabled = false;
+		}
+
+		foreach ( var col in Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( col.IsValid() )
+				col.Enabled = false;
+		}
+	}
+
+	private void ApplyProxyBodyScale()
+	{
+		if ( !proxyBodyObject.IsValid() )
+			proxyBodyObject = FindBodyObject();
+
+		if ( !proxyBodyObject.IsValid() )
+			return;
+
+		var uniform = ResolveMeshUniformScale();
+		proxyBodyObject.LocalScale = new Vector3( uniform, uniform, uniform );
+	}
+
+	private float ResolveMeshUniformScale()
+	{
+		if ( Networking.IsHost )
+		{
+			var fromBody = ReadMeshUniformScale();
+			if ( fromBody > 0.001f && fromBody < 0.95f )
+				return fromBody;
+		}
+		else if ( NetMeshUniformScale > 0.001f && NetMeshUniformScale < 0.95f )
+		{
+			return NetMeshUniformScale;
+		}
+
+		if ( MeshUniformScale > 0.001f && MeshUniformScale < 0.95f )
+			return MeshUniformScale;
+
+		return 1f;
+	}
+
+	/// <summary>Older client builds hoisted the mesh to root — turn that off so Body scale applies.</summary>
+	private void DisableHoistedRootRendererIfPresent()
+	{
+		var body = FindBodyObject();
+		if ( !body.IsValid() )
+			return;
+
+		var rootRenderer = Components.Get<ModelRenderer>();
+		var bodyRenderer = body.Components.Get<ModelRenderer>();
+		if ( !rootRenderer.IsValid() || !bodyRenderer.IsValid() )
+			return;
+
+		if ( rootRenderer.GameObject != GameObject )
+			return;
+
+		rootRenderer.Enabled = false;
+		bodyRenderer.Enabled = true;
+	}
+
+	private GameObject FindBodyObject()
+	{
+		foreach ( var child in GameObject.Children )
+		{
+			if ( child.IsValid() && child.Name.Equals( "Body", StringComparison.OrdinalIgnoreCase ) )
+				return child;
+		}
+
+		foreach ( var renderer in Components.GetAll<ModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !renderer.IsValid() || renderer.GameObject == GameObject || renderer.Model is null )
+				continue;
+
+			return renderer.GameObject;
+		}
+
+		return null;
+	}
+
+	private static void EnableHierarchyForRendering( GameObject root )
+	{
+		if ( !root.IsValid() )
+			return;
+
+		VisitDescendants( root, go => go.Enabled = true );
+
+		foreach ( var renderer in root.Components.GetAll<ModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( renderer.IsValid() )
+				renderer.Enabled = true;
+		}
+	}
+
+	private static void VisitDescendants( GameObject root, Action<GameObject> visit )
+	{
+		if ( !root.IsValid() )
+			return;
+
+		visit( root );
+		foreach ( var child in root.Children )
+			VisitDescendants( child, visit );
 	}
 
 	private void AdvanceAlongLane()
@@ -105,11 +271,30 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 		WorldPosition = SamplePathPosition( distance );
 
 		var flat = SamplePathTangent( distance ).WithZ( 0f );
-		if ( flat.LengthSquared <= 0.001f )
-			return;
+		if ( flat.LengthSquared > 0.001f )
+		{
+			travelDir = flat.Normal;
+			WorldRotation = Rotation.LookAt( travelDir ) * Rotation.FromYaw( FacingYawOffsetDegrees );
+		}
 
-		travelDir = flat.Normal;
-		WorldRotation = Rotation.LookAt( travelDir ) * Rotation.FromYaw( FacingYawOffsetDegrees );
+		PublishNetworkState();
+	}
+
+	private void PublishNetworkState()
+	{
+		NetWorldPosition = WorldPosition;
+		NetWorldRotation = WorldRotation;
+		NetMeshUniformScale = ResolveMeshUniformScale();
+	}
+
+	private float ReadMeshUniformScale()
+	{
+		var body = FindBodyObject();
+		if ( !body.IsValid() )
+			return 1f;
+
+		var scale = body.LocalScale;
+		return (scale.x + scale.y + scale.z) / 3f;
 	}
 
 	private float GetTargetSpeedForPathDistance( float distance )

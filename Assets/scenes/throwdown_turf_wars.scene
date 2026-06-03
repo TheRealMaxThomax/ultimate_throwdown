@@ -78968,7 +78968,8 @@
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "ProxyPoseFollowSharpness": 18
         }
       ],
       "Children": [
@@ -79169,145 +79170,6 @@
         }
       ],
       "Children": []
-    },
-    {
-      "__guid": "05e1204f-c7a4-4a54-903d-c2c738209dc0",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "TrafficCarTemplate (1)",
-      "Position": "-2714.96997,3925.22559,96.006897",
-      "Rotation": "0,0,-0.751290202,0.659972072",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "TrafficCar",
-          "__guid": "b8842664-0028-458e-ac4b-81f450d066c6",
-          "__enabled": true,
-          "Flags": 0,
-          "HitBoxGizmoColor": "1,0.35,0.1,0.35",
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
-        }
-      ],
-      "Children": [
-        {
-          "__guid": "39738051-ce43-4bfa-a3d6-a22208d38d04",
-          "__version": 2,
-          "Flags": 0,
-          "Name": "Body",
-          "Position": "0,0,0",
-          "Rotation": "0,0,0,1",
-          "Scale": "0.600000024,0.600000024,0.600000024",
-          "Tags": "",
-          "Enabled": true,
-          "NetworkMode": 2,
-          "NetworkFlags": 0,
-          "NetworkOrphaned": 0,
-          "NetworkTransmit": true,
-          "OwnerTransfer": 1,
-          "Components": [
-            {
-              "__type": "Sandbox.ModelRenderer",
-              "__guid": "bcb31f36-34df-4dc6-a855-c559dbee0797",
-              "__enabled": true,
-              "Flags": 0,
-              "BodyGroups": 18446744073709551615,
-              "CreateAttachments": false,
-              "LodOverride": null,
-              "MaterialGroup": null,
-              "MaterialOverride": null,
-              "Materials": null,
-              "Model": "models/turfwarspoly/normalcar1.vmdl",
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "RenderOptions": {
-                "GameLayer": true,
-                "OverlayLayer": false,
-                "BloomLayer": false,
-                "AfterUILayer": false
-              },
-              "RenderType": "On",
-              "Tint": "1,1,1,1"
-            },
-            {
-              "__type": "Sandbox.ModelCollider",
-              "__guid": "89be7c81-0f08-4a14-946c-6b2d28bffe40",
-              "__enabled": true,
-              "Flags": 0,
-              "ColliderFlags": 0,
-              "Elasticity": null,
-              "Friction": null,
-              "IsTrigger": false,
-              "Model": "models/turfwarspoly/normalcar1.vmdl",
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "OnObjectTriggerEnter": null,
-              "OnObjectTriggerExit": null,
-              "OnTriggerEnter": null,
-              "OnTriggerExit": null,
-              "RollingResistance": null,
-              "Static": false,
-              "Surface": null,
-              "SurfaceVelocity": "0,0,0"
-            },
-            {
-              "__type": "Sandbox.Rigidbody",
-              "__guid": "ae42a731-bae5-49fa-b3bd-27b31b6f6523",
-              "__enabled": true,
-              "Flags": 0,
-              "AngularDamping": 0,
-              "EnableImpactDamage": true,
-              "EnhancedCcd": false,
-              "Gravity": false,
-              "GravityScale": 1,
-              "ImpactDamage": 0,
-              "LinearDamping": 0,
-              "Locking": {
-                "X": true,
-                "Y": true,
-                "Z": true,
-                "Pitch": true,
-                "Yaw": true,
-                "Roll": true
-              },
-              "MassCenterOverride": "0,0,0",
-              "MassOverride": 0,
-              "MinImpactDamageSpeed": 500,
-              "MotionEnabled": true,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "OverrideMassCenter": false,
-              "RigidbodyFlags": 0,
-              "SleepThreshold": 2,
-              "StartAsleep": false
-            }
-          ],
-          "Children": []
-        }
-      ]
     }
   ],
   "SceneProperties": {

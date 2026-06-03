@@ -131,8 +131,18 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 		}
 
 		trafficCar.Enabled = true;
+		TrafficCar.PrepareHierarchyForNetworkSpawn( carGo );
 		trafficCar.ConfigureLane( this, Waypoints );
-		carGo.NetworkSpawn();
+
+		carGo.NetworkMode = NetworkMode.Object;
+		if ( !carGo.NetworkSpawn() )
+		{
+			Log.Warning( $"[TrafficSpawner] {GameObject.Name}: NetworkSpawn failed for traffic car." );
+			carGo.Destroy();
+			return false;
+		}
+
+		carGo.Network.Refresh();
 		aliveCars.Add( carGo );
 		return true;
 	}
