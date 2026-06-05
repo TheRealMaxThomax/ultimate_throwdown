@@ -17,7 +17,7 @@
 
 **Goal:** **v1 match flow is done** (slices 1–6). Gameplay polish, longer MP playtests, **map vote** when ready (see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) → Later).
 
-**Next session (map):** **Road1 traffic** — duplicate **`Traffic_Road0`** in editor (second **`TrafficSpawner`** + waypoint chain; same **`TrafficCarTemplate`** is fine).
+**Next session (map):** Fill **`Car Model Variants`** on each traffic spawner (red list on Road0, blue list on Road1).
 
 **Works today:**
 - Ball grab/throw; tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
@@ -30,7 +30,7 @@
 - **Enemy team outline** — red `HighlightOutline` on opponents (not self/teammates); same look on tackle ragdolls (`PlayerEnemyOutline`, `RagdollEnemyOutline`); tune on player prefab **`HighlightOutline`**
 - **Street lamps (Turf Wars)** — `streetlight.vmdl` + warm spots; **`streetlight_broken.vmdl`** for dead poles (no spot/emissive). Optional **`StreetLightFlicker`** on a **per-lamp parent** empty (child model + child spot) — syncs spot + bulb emissive (`goldenearth_streetlight_off.vmat` on **`light.vmat`** slot, auto index `-1`)
 - **Petrol station lights** — optional **`StationLightFlicker`** on a parent empty (child `Spot Light` + child block mesh). Keeps mesh visible and flickers via `Spot.Enabled` + mesh `Color` (`VisualOnColor`/`VisualOffColor`)
-- **Road traffic (Turf Wars — Road0)** — **`TrafficSpawner`** + disabled **`TrafficCarTemplate`** (**`TrafficCar`** on root). Host: filleted path, **`NetworkSpawn`**, knockdown via **`PlayerTackle.ApplyKnockdownFromHost`**, ball off **`Body`** collider. **2-window MP OK** (client sees cars at Body scale, knockdown + ball bounce). Client proxy: synced pose + **`MeshUniformScale`** / **`NetMeshUniformScale`**. **Road1** = duplicate spawner (not wired yet).
+- **Road traffic (Turf Wars — Road0 + Road1)** — **`TrafficSpawner`** + disabled **`TrafficCarTemplate`** (**`TrafficCar`** on root). Host: filleted path, **`NetworkSpawn`**, knockdown via **`PlayerTackle.ApplyKnockdownFromHost`**, ball off **`Body`** collider. **`CarModelVariants`** — random Body `.vmdl` per spawn (per-lane lists for red vs blue). **2-window MP OK** (client sees cars at Body scale, knockdown + ball bounce). Client proxy: synced pose + **`MeshUniformScale`** / **`NetMeshUniformScale`**.
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -94,7 +94,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Test dummies:** Tag `practice_npc` on **dummies only**.
 - **Weapons later:** Ball **or** weapon, not both (not implemented).
 - **Enemy outlines:** Camera needs **`Highlight`** post-process (`EnemyOutlineCameraSetup` on Main Camera, or add `Highlight` manually). Per-player **`HighlightOutline`** on the prefab is the style source; ragdolls copy it on the host (`NetVictimTeamId` synced for clients).
-- **Traffic cars:** Host-only movement + hits. Straights + rounded fillets through waypoint chain. **`TrafficCarTemplate` stays disabled** — spawner clones + **`NetworkSpawn`**. Clients: **Body** mesh (not hoisted root), **`NetWorldPosition`** / **`NetMeshUniformScale`**, **`MeshUniformScale`** on **`TrafficCar`** (default **0.6** = Body scale).
+- **Traffic cars:** Host-only movement + hits. Straights + rounded fillets through waypoint chain. **`TrafficCarTemplate` stays disabled** — spawner clones + **`NetworkSpawn`**. **`CarModelVariants`** on each **`TrafficSpawner`** (random pick before spawn; empty = template default). Clients: **Body** mesh (not hoisted root), **`NetWorldPosition`** / **`NetMeshUniformScale`**, **`MeshUniformScale`** on **`TrafficCar`** (default **0.6** = Body scale).
 
 More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
@@ -157,8 +157,9 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - Child **`Body`**: transform scale **0.6**; **`Model Renderer`** → car `.vmdl` (Model Doc **Static Prop**); **`Model Collider`** on **Body**; **`Rigidbody`** on Body — gravity off, lock **X/Y/Z** (+ rotation if needed)
 - **`Facing Yaw Offset Degrees`** on spawner if model nose points backward (**180**)
 
-**`Traffic_Road0`** (or one empty per lane):
+**`Traffic_Road0`** / **`Traffic_Road1`** (one empty per lane):
 - **`TrafficSpawner`** — **`Car Template`** → `TrafficCarTemplate`; **`Waypoints`** in **drive order** (first = spawn, last = exit). 2–3 waypoints per 90° turn (before / in / on bend / after)
+- **`Car Model Variants`** — add red `.vmdl`s on Road0 spawner, blue on Road1 (baked colors in model/material); leave empty to keep template Body model
 - Tune on spawner **Car** group: **`Car Speed`**, **`Car Acceleration`** / **`Car Deceleration`**, **`Corner Fillet Radius`**, **`Curve Slow Look Ahead`**, **`Curve Min Speed Fraction`**, **`Hit Half Extents`**, **`Hit Box Center Offset`** (Z up if pivot at wheels), **`Car Height Offset`** (usually 0 if Body local Y = 0)
 - **`Disable Template On Start`** on; **`Only Spawn While Match Playing`** for ship
 - Do **not** save scene with traffic clones in hierarchy — delete `(clone)` leftovers if any
@@ -175,7 +176,6 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - Small screen shake on tackle hit — yes or no?
 - Map vote: allow changing vote during the 30s window?
 - **Traffic knockdown tuning:** **`KnockdownLaunchSpeed`** / hit box vs dodgeability
-- **Road1 traffic:** second lane = second **`TrafficSpawner`** + waypoint list (same or second car template)
 
 ---
 
@@ -203,7 +203,8 @@ Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Heigh
 
 ## Recent session notes
 
-- **2026-06-03 (wrap):** **Road0 traffic MP shipped** — client visibility, Body scale, knockdown, ball bounce (2-window verified). Code: **`PlayerDodge.cs`** split from **`CatchUpSpeedBoost.cs`**; **`TrafficCar`** client proxy (no mesh hoist). **Next:** Road1 = copy **`Traffic_Road0`** spawner + waypoints in editor.
+- **2026-06-05:** **`TrafficSpawner.CarModelVariants`** — random Body `.vmdl` per spawn; per-lane lists (red Road0 / blue Road1) in editor.
+- **2026-06-03 (wrap):** **Road0 traffic MP shipped** — client visibility, Body scale, knockdown, ball bounce (2-window verified). Code: **`PlayerDodge.cs`** split from **`CatchUpSpeedBoost.cs`**; **`TrafficCar`** client proxy (no mesh hoist).
 - **2026-06-03:** **Turf Wars road traffic (Road0)** — **`TrafficSpawner`** + **`TrafficCar`**: filleted paths, corner slow, accel/decel, **`PlayerTackle.ApplyKnockdownFromHost`**, **`Model Collider` + locked `Rigidbody` on `Body`**.
 - **2026-06-02:** **`feature/human-avatar`** — Player Body → `citizen_human_*` + human anim graph (drop `citizen_holdball_test` on human or T-pose at run). Cosmetics + male/female from connection; tackle/ragdoll/MP unchanged in code.
 - **2026-05-28:** Added **`StationLightFlicker`** (`Code/Map/`) for petrol-station fixtures: flickers child `SpotLight` and tints mesh (`VisualOnColor`/`VisualOffColor`) instead of hiding it.

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Sandbox;
 
@@ -17,6 +18,8 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 	[Property, Group( "Spawn" )] public int MaxAliveCars { get; set; } = 2;
 	[Property, Group( "Spawn" )] public bool DisableTemplateOnStart { get; set; } = true;
 	[Property, Group( "Spawn" )] public bool OnlySpawnWhileMatchPlaying { get; set; } = true;
+	/// <summary>Random Body mesh per spawn — empty keeps the template model. Use different lists per lane (e.g. red Road0, blue Road1).</summary>
+	[Property, Group( "Spawn" )] public List<Model> CarModelVariants { get; set; } = new();
 
 	[Property, Group( "Car" )] public float CarSpeed { get; set; } = 420f;
 	[Property, Group( "Car" )] public float CarAcceleration { get; set; } = 140f;
@@ -122,7 +125,9 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 		if ( !carGo.IsValid() )
 			return false;
 
-		carGo.Enabled = true;
+		carGo.Enabled = false;
+		ApplyRandomCarModelVariant( carGo );
+
 		if ( !TryGetTrafficCar( carGo, out var trafficCar ) )
 		{
 			Log.Warning( $"[TrafficSpawner] {GameObject.Name}: CarTemplate has no TrafficCar — add it to the template root." );
@@ -130,10 +135,11 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 			return false;
 		}
 
-		trafficCar.Enabled = true;
-		TrafficCar.PrepareHierarchyForNetworkSpawn( carGo );
 		trafficCar.ConfigureLane( this, Waypoints );
+		TrafficCar.PrepareHierarchyForNetworkSpawn( carGo );
 
+		carGo.Enabled = true;
+		trafficCar.Enabled = true;
 		carGo.NetworkMode = NetworkMode.Object;
 		if ( !carGo.NetworkSpawn() )
 		{
@@ -153,16 +159,74 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 		if ( !CarTemplate.IsValid() )
 			return null;
 
-		var restoreTemplateEnabled = !CarTemplate.Enabled;
-		if ( restoreTemplateEnabled )
-			CarTemplate.Enabled = true;
+		return CarTemplate.Clone( spawnTransform );
+	}
 
-		var carGo = CarTemplate.Clone( spawnTransform );
+	private void ApplyRandomCarModelVariant( GameObject carGo )
+	{
+		var model = PickRandomCarModelVariant();
+		if ( model is null )
+			return;
 
-		if ( restoreTemplateEnabled && CarTemplate.IsValid() )
-			CarTemplate.Enabled = false;
+		var bodyRenderer = FindBodyModelRenderer( carGo );
+		if ( !bodyRenderer.IsValid() )
+			return;
 
-		return carGo;
+		bodyRenderer.Model = model;
+	}
+
+	private Model PickRandomCarModelVariant()
+	{
+		if ( CarModelVariants is null || CarModelVariants.Count == 0 )
+			return null;
+
+		var validCount = 0;
+		foreach ( var candidate in CarModelVariants )
+		{
+			if ( candidate is not null && candidate.IsValid )
+				validCount++;
+		}
+
+		if ( validCount == 0 )
+			return null;
+
+		var pick = Game.Random.Int( 0, validCount - 1 );
+		foreach ( var candidate in CarModelVariants )
+		{
+			if ( candidate is null || !candidate.IsValid )
+				continue;
+
+			if ( pick-- == 0 )
+				return candidate;
+		}
+
+		return null;
+	}
+
+	private static ModelRenderer FindBodyModelRenderer( GameObject carRoot )
+	{
+		if ( !carRoot.IsValid() )
+			return null;
+
+		foreach ( var child in carRoot.Children )
+		{
+			if ( !child.IsValid() || !child.Name.Equals( "Body", StringComparison.OrdinalIgnoreCase ) )
+				continue;
+
+			var onBody = child.Components.Get<ModelRenderer>();
+			if ( onBody.IsValid() )
+				return onBody;
+		}
+
+		foreach ( var renderer in carRoot.Components.GetAll<ModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( !renderer.IsValid() || renderer.GameObject == carRoot )
+				continue;
+
+			return renderer;
+		}
+
+		return null;
 	}
 
 	private static bool TryGetTrafficCar( GameObject carGo, out TrafficCar trafficCar )

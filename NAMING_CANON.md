@@ -95,9 +95,11 @@
 | `StreetLightFlicker` | One lamp cluster: flickers child `SpotLight` + bulb material slot (`Code/Map/`) |
 | `StationLightFlicker` | Petrol-station light block: flickers child `SpotLight` + optional mesh visual on/off (`Code/Map/`) |
 | `TrafficSpawner` | Host lane spawner: clones disabled **`CarTemplate`**, filleted **`Waypoints`**, speed/knockdown/hit box (`Code/Map/`) |
-| `TrafficCar` | On car template root: host path follower + knockdown; client proxies use **`NetWorldPosition`**, **`NetWorldRotation`**, **`NetMeshUniformScale`** (Body child scale), **`ProxyPoseFollowSharpness`** (`Code/Map/`) |
+| `TrafficCar` | On car template root: host path follower + knockdown; idle/drive **`SoundEvent`** loops; client proxies use **`NetWorldPosition`**, **`NetWorldRotation`**, **`NetMeshUniformScale`**, **`NetCurrentSpeed`**, **`ProxyPoseFollowSharpness`** (`Code/Map/`) |
 
-**Often-used on `TrafficSpawner`:** `CarTemplate`, `Waypoints`, `CarSpeed`, `CarAcceleration`, `CarDeceleration`, `CornerFilletRadius`, `CornerArcSamples`, `CurveSlowLookAhead`, `CurveMinSpeedFraction`, `FacingYawOffsetDegrees`, `CarHeightOffset`, `HitHalfExtents`, `HitBoxCenterOffset`, `KnockdownLaunchSpeed`, `MaxAliveCars`, `DisableTemplateOnStart`, `OnlySpawnWhileMatchPlaying`
+**Often-used on `TrafficSpawner`:** `CarTemplate`, `Waypoints`, `CarModelVariants` (random Body `.vmdl` per spawn; per-lane lists), `CarSpeed`, `CarAcceleration`, `CarDeceleration`, `CornerFilletRadius`, `CornerArcSamples`, `CurveSlowLookAhead`, `CurveMinSpeedFraction`, `FacingYawOffsetDegrees`, `CarHeightOffset`, `HitHalfExtents`, `HitBoxCenterOffset`, `KnockdownLaunchSpeed`, `MaxAliveCars`, `DisableTemplateOnStart`, `OnlySpawnWhileMatchPlaying`
+
+**Often-used on `TrafficCar`:** `EngineIdleSound`, `EngineDriveSound`, `EngineSoundVolume`, `EngineSoundMaxDistance`, `EngineSoundLocalOffset`, `EngineSoundBlendSharpness`, `MeshUniformScale`, `ProxyPoseFollowSharpness`
 
 **Often-used on `StreetLightFlicker`:** `Spot`, `LampModel`, `BulbOffMaterial`, `BulbMaterialIndex` (`-1` = auto-detect `light.vmat` / emissive slot), `SyncBulbEmissive`
 

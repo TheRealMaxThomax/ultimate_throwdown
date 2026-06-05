@@ -23,7 +23,7 @@
 							},
 							{
 								from = "grey.vmat"
-								to = "materials/turfwarspoly/dimgrey.vmat"
+								to = "materials/turfwarspoly/almost black.vmat"
 							},
 							{
 								from = "headlights.vmat"
@@ -48,13 +48,26 @@
 				children = 
 				[
 					{
-						_class = "PhysicsHullFromRender"
+						_class = "PhysicsMeshFile"
+						name = "NormalCar1"
 						parent_bone = ""
 						surface_prop = "default"
 						collision_tags = "solid"
-						faceMergeAngle = 20.0
-						maxHullVertices = 32
-						hull_mode = "HullPerElement"
+						recenter_on_parent_bone = false
+						offset_origin = [ 0.0, 0.0, 0.0 ]
+						offset_angles = [ 0.0, 0.0, 0.0 ]
+						align_origin_x_type = "None"
+						align_origin_y_type = "None"
+						align_origin_z_type = "None"
+						filename = "Models/turfwarspoly/NormalCar1.fbx"
+						import_scale = 1.0
+						maxMeshVertices = 0
+						qemError = 0.0
+						import_filter = 
+						{
+							exclude_by_default = false
+							exception_list = [  ]
+						}
 					},
 				]
 			},

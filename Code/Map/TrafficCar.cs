@@ -15,13 +15,26 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 	/// <summary>How quickly client proxies chase synced pose (higher = tighter, lower = smoother).</summary>
 	[Property, Group( "Network proxy" )] public float ProxyPoseFollowSharpness { get; set; } = 18f;
 
+	[Property, Group( "Engine sound" )] public SoundEvent EngineIdleSound { get; set; }
+	[Property, Group( "Engine sound" )] public SoundEvent EngineDriveSound { get; set; }
+	[Property, Group( "Engine sound" )] public float EngineSoundVolume { get; set; } = 0.55f;
+	[Property, Group( "Engine sound" )] public float EngineSoundMaxDistance { get; set; } = 2800f;
+	[Property, Group( "Engine sound" )] public Vector3 EngineSoundLocalOffset { get; set; } = new( 0f, 0f, 24f );
+	[Property, Group( "Engine sound" )] public float EngineSoundBlendSharpness { get; set; } = 6f;
+
 	[Sync( SyncFlags.FromHost )] private Vector3 NetWorldPosition { get; set; }
 	[Sync( SyncFlags.FromHost )] private Rotation NetWorldRotation { get; set; }
 	/// <summary>Uniform scale of the Body child on host (template default 0.6).</summary>
 	[Sync( SyncFlags.FromHost )] private float NetMeshUniformScale { get; set; } = 1f;
+	[Sync( SyncFlags.FromHost )] private float NetCurrentSpeed { get; set; }
+	[Sync( SyncFlags.FromHost )] private float NetDriveBlend { get; set; }
 
 	private GameObject proxyBodyObject;
 	private bool proxyPoseInitialized;
+	private SoundHandle engineIdleHandle;
+	private SoundHandle engineDriveHandle;
+	private float engineDriveBlendSmoothed;
+	private bool engineSoundsActive;
 
 	private TrafficSpawner spawner;
 	private IReadOnlyList<GameObject> waypoints;
@@ -97,14 +110,16 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 
 	protected override void OnStart()
 	{
-		if ( !IsProxy )
-			return;
+		if ( IsProxy )
+		{
+			proxyBodyObject = FindBodyObject();
+			DisableHoistedRootRendererIfPresent();
+			EnableHierarchyForRendering( GameObject );
+			DisableProxyPhysicsAndColliders();
+			ApplyProxyBodyScale();
+		}
 
-		proxyBodyObject = FindBodyObject();
-		DisableHoistedRootRendererIfPresent();
-		EnableHierarchyForRendering( GameObject );
-		DisableProxyPhysicsAndColliders();
-		ApplyProxyBodyScale();
+		StartEngineSounds();
 	}
 
 	protected override void OnUpdate()
@@ -112,6 +127,7 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 		if ( IsProxy )
 		{
 			ApplySyncedPoseFromHost();
+			UpdateEngineSounds();
 			return;
 		}
 
@@ -120,6 +136,23 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 
 		AdvanceAlongLane();
 		TryKnockdownPlayersInHitBox();
+		UpdateEngineSounds();
+	}
+
+	protected override void OnDisabled()
+	{
+		if ( IsSpawnerCarTemplate() )
+			return;
+
+		StopEngineSounds();
+	}
+
+	protected override void OnDestroy()
+	{
+		if ( IsSpawnerCarTemplate() )
+			return;
+
+		StopEngineSounds();
 	}
 
 	private void ApplySyncedPoseFromHost()
@@ -285,6 +318,107 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 		NetWorldPosition = WorldPosition;
 		NetWorldRotation = WorldRotation;
 		NetMeshUniformScale = ResolveMeshUniformScale();
+		NetCurrentSpeed = currentSpeed;
+	}
+
+	private bool IsSpawnerCarTemplate()
+	{
+		foreach ( var laneSpawner in Scene.GetAllComponents<TrafficSpawner>() )
+		{
+			if ( !laneSpawner.IsValid() || !laneSpawner.CarTemplate.IsValid() )
+				continue;
+
+			if ( laneSpawner.CarTemplate == GameObject )
+				return true;
+		}
+
+		return false;
+	}
+
+	private static bool IsEngineSoundAssigned( SoundEvent soundEvent ) =>
+		soundEvent is not null && soundEvent.IsValid();
+
+	private void StartEngineSounds()
+	{
+		if ( !Game.IsPlaying || !GameObject.IsValid() || IsSpawnerCarTemplate() || engineSoundsActive )
+			return;
+
+		if ( !IsEngineSoundAssigned( EngineIdleSound ) && !IsEngineSoundAssigned( EngineDriveSound ) )
+			return;
+
+		if ( IsEngineSoundAssigned( EngineIdleSound ) )
+		{
+			engineIdleHandle = GameObject.PlaySound( EngineIdleSound, EngineSoundLocalOffset );
+			engineIdleHandle.Distance = EngineSoundMaxDistance;
+			engineIdleHandle.Volume = 0f;
+		}
+
+		if ( IsEngineSoundAssigned( EngineDriveSound ) )
+		{
+			engineDriveHandle = GameObject.PlaySound( EngineDriveSound, EngineSoundLocalOffset );
+			engineDriveHandle.Distance = EngineSoundMaxDistance;
+			engineDriveHandle.Volume = 0f;
+		}
+
+		engineSoundsActive = engineIdleHandle.IsPlaying || engineDriveHandle.IsPlaying;
+		UpdateEngineSounds();
+	}
+
+	private void UpdateEngineSounds()
+	{
+		if ( !engineSoundsActive )
+			return;
+
+		float driveBlend;
+		if ( IsProxy )
+		{
+			driveBlend = NetDriveBlend;
+		}
+		else
+		{
+			var cruise = CruiseSpeed;
+			if ( cruise <= 1f )
+				return;
+
+			driveBlend = 0f;
+			var targetSpeed = GetTargetSpeedForPathDistance( pathDistance );
+			var accel = targetSpeed - currentSpeed;
+			if ( accel > 0f )
+				driveBlend = (accel / Math.Max( CarAcceleration, 1f )).Clamp( 0f, 1f );
+
+			// Keep accel sound off at tiny movement speeds to avoid flutter at spawn/stop.
+			var speedFraction = (currentSpeed / cruise).Clamp( 0f, 1f );
+			if ( speedFraction < 0.08f )
+				driveBlend = 0f;
+
+			NetDriveBlend = driveBlend;
+		}
+
+		var blendRate = EngineSoundBlendSharpness.Clamp( 0.5f, 30f );
+		engineDriveBlendSmoothed = MathX.Lerp( engineDriveBlendSmoothed, driveBlend, Time.Delta * blendRate );
+
+		var master = EngineSoundVolume.Clamp( 0f, 2f );
+		if ( engineIdleHandle.IsPlaying )
+			engineIdleHandle.Volume = master * (1f - engineDriveBlendSmoothed);
+
+		if ( engineDriveHandle.IsPlaying )
+			engineDriveHandle.Volume = master * engineDriveBlendSmoothed;
+	}
+
+	private void StopEngineSounds()
+	{
+		if ( !engineSoundsActive )
+			return;
+
+		if ( engineIdleHandle.IsPlaying )
+			engineIdleHandle.Stop( 0.12f );
+
+		if ( engineDriveHandle.IsPlaying )
+			engineDriveHandle.Stop( 0.12f );
+
+		engineSoundsActive = false;
+		engineIdleHandle = default;
+		engineDriveHandle = default;
 	}
 
 	private float ReadMeshUniformScale()
