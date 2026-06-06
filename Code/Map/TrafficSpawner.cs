@@ -6,7 +6,7 @@ using Sandbox;
 /// Host spawns <see cref="TrafficCar"/> clones on a ordered waypoint lane (e.g. Road0).
 /// Wire waypoints in travel order; keep <see cref="CarTemplate"/> disabled in-scene as the clone source.
 /// </summary>
-public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
+public sealed class TrafficSpawner : Component
 {
 	[Property] public GameObject CarTemplate { get; set; }
 
@@ -18,7 +18,7 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 	[Property, Group( "Spawn" )] public int MaxAliveCars { get; set; } = 2;
 	[Property, Group( "Spawn" )] public bool DisableTemplateOnStart { get; set; } = true;
 	[Property, Group( "Spawn" )] public bool OnlySpawnWhileMatchPlaying { get; set; } = true;
-	/// <summary>Random Body mesh per spawn — empty keeps the template model. Use different lists per lane (e.g. red Road0, blue Road1).</summary>
+	/// <summary>Random Body mesh per spawn — sets Body <see cref="ModelRenderer"/> + <see cref="ModelCollider"/>; empty keeps template models.</summary>
 	[Property, Group( "Spawn" )] public List<Model> CarModelVariants { get; set; } = new();
 
 	[Property, Group( "Car" )] public float CarSpeed { get; set; } = 420f;
@@ -50,6 +50,9 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 
 	protected override void OnStart()
 	{
+		if ( !Game.IsPlaying )
+			return;
+
 		if ( CarTemplate.IsValid() && DisableTemplateOnStart )
 			CarTemplate.Enabled = false;
 
@@ -63,7 +66,7 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 
 	protected override void OnUpdate()
 	{
-		if ( !Networking.IsHost )
+		if ( !Game.IsPlaying || !Networking.IsHost )
 			return;
 
 		PruneAliveCars();
@@ -90,6 +93,9 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 
 	private bool CanSpawnNow()
 	{
+		if ( !Game.IsPlaying )
+			return false;
+
 		if ( aliveCars.Count >= MaxAliveCars )
 			return false;
 
@@ -126,7 +132,6 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 			return false;
 
 		carGo.Enabled = false;
-		ApplyRandomCarModelVariant( carGo );
 
 		if ( !TryGetTrafficCar( carGo, out var trafficCar ) )
 		{
@@ -134,6 +139,10 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 			carGo.Destroy();
 			return false;
 		}
+
+		var spawnModel = PickRandomCarModelVariant();
+		if ( spawnModel is null )
+			Log.Warning( $"[TrafficSpawner] {GameObject.Name}: No valid CarModelVariants — using template Body models." );
 
 		trafficCar.ConfigureLane( this, Waypoints );
 		TrafficCar.PrepareHierarchyForNetworkSpawn( carGo );
@@ -147,6 +156,10 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 			carGo.Destroy();
 			return false;
 		}
+
+		// Apply after NetworkSpawn — spawn resets renderer/collider to template defaults.
+		if ( spawnModel is not null )
+			ApplyCarBodyModel( carGo, spawnModel );
 
 		carGo.Network.Refresh();
 		aliveCars.Add( carGo );
@@ -162,17 +175,22 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 		return CarTemplate.Clone( spawnTransform );
 	}
 
-	private void ApplyRandomCarModelVariant( GameObject carGo )
+	private static void ApplyCarBodyModel( GameObject carRoot, Model model )
 	{
-		var model = PickRandomCarModelVariant();
-		if ( model is null )
+		if ( !carRoot.IsValid() || model is null || !model.IsValid )
 			return;
 
-		var bodyRenderer = FindBodyModelRenderer( carGo );
-		if ( !bodyRenderer.IsValid() )
+		var bodyGo = FindBodyGameObject( carRoot );
+		if ( !bodyGo.IsValid() )
 			return;
 
-		bodyRenderer.Model = model;
+		var renderer = bodyGo.Components.Get<ModelRenderer>();
+		if ( renderer.IsValid() )
+			renderer.Model = model;
+
+		var collider = bodyGo.Components.Get<ModelCollider>();
+		if ( collider.IsValid() )
+			collider.Model = model;
 	}
 
 	private Model PickRandomCarModelVariant()
@@ -180,30 +198,36 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 		if ( CarModelVariants is null || CarModelVariants.Count == 0 )
 			return null;
 
-		var validCount = 0;
+		var validModels = new List<Model>();
 		foreach ( var candidate in CarModelVariants )
 		{
-			if ( candidate is not null && candidate.IsValid )
-				validCount++;
+			var resolved = ResolveCarModel( candidate );
+			if ( resolved is not null )
+				validModels.Add( resolved );
 		}
 
-		if ( validCount == 0 )
+		if ( validModels.Count == 0 )
 			return null;
 
-		var pick = Game.Random.Int( 0, validCount - 1 );
-		foreach ( var candidate in CarModelVariants )
-		{
-			if ( candidate is null || !candidate.IsValid )
-				continue;
-
-			if ( pick-- == 0 )
-				return candidate;
-		}
-
-		return null;
+		return validModels[Game.Random.Int( 0, validModels.Count - 1 )];
 	}
 
-	private static ModelRenderer FindBodyModelRenderer( GameObject carRoot )
+	private static Model ResolveCarModel( Model candidate )
+	{
+		if ( candidate is null )
+			return null;
+
+		if ( candidate.IsValid )
+			return candidate;
+
+		if ( string.IsNullOrWhiteSpace( candidate.Name ) )
+			return null;
+
+		var loaded = Model.Load( candidate.Name );
+		return loaded is not null && loaded.IsValid ? loaded : null;
+	}
+
+	private static GameObject FindBodyGameObject( GameObject carRoot )
 	{
 		if ( !carRoot.IsValid() )
 			return null;
@@ -213,9 +237,7 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 			if ( !child.IsValid() || !child.Name.Equals( "Body", StringComparison.OrdinalIgnoreCase ) )
 				continue;
 
-			var onBody = child.Components.Get<ModelRenderer>();
-			if ( onBody.IsValid() )
-				return onBody;
+			return child;
 		}
 
 		foreach ( var renderer in carRoot.Components.GetAll<ModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
@@ -223,10 +245,19 @@ public sealed class TrafficSpawner : Component, Component.ExecuteInEditor
 			if ( !renderer.IsValid() || renderer.GameObject == carRoot )
 				continue;
 
-			return renderer;
+			return renderer.GameObject;
 		}
 
 		return null;
+	}
+
+	private static ModelRenderer FindBodyModelRenderer( GameObject carRoot )
+	{
+		var bodyGo = FindBodyGameObject( carRoot );
+		if ( !bodyGo.IsValid() )
+			return null;
+
+		return bodyGo.Components.Get<ModelRenderer>();
 	}
 
 	private static bool TryGetTrafficCar( GameObject carGo, out TrafficCar trafficCar )

@@ -94,10 +94,10 @@
 | `StartupMapBootstrap` | Scene startup; locks `practice_npc` rigidbodies (`Code/Map/`) |
 | `StreetLightFlicker` | One lamp cluster: flickers child `SpotLight` + bulb material slot (`Code/Map/`) |
 | `StationLightFlicker` | Petrol-station light block: flickers child `SpotLight` + optional mesh visual on/off (`Code/Map/`) |
-| `TrafficSpawner` | Host lane spawner: clones disabled **`CarTemplate`**, filleted **`Waypoints`**, speed/knockdown/hit box (`Code/Map/`) |
-| `TrafficCar` | On car template root: host path follower + knockdown; idle/drive **`SoundEvent`** loops; client proxies use **`NetWorldPosition`**, **`NetWorldRotation`**, **`NetMeshUniformScale`**, **`NetCurrentSpeed`**, **`ProxyPoseFollowSharpness`** (`Code/Map/`) |
+| `TrafficSpawner` | Host lane spawner: clones disabled **`CarTemplate`**, **`CarModelVariants`** (after **`NetworkSpawn`**: Body renderer + collider), filleted **`Waypoints`**, speed/knockdown/hit box (`Code/Map/`) |
+| `TrafficCar` | On car template root: host path follower + knockdown; idle/drive **`SoundEvent`** loops; client proxies use **`NetWorldPosition`**, **`NetWorldRotation`**, **`NetMeshUniformScale`**, **`NetCurrentSpeed`**, **`NetDriveBlend`**, **`ProxyPoseFollowSharpness`** (`Code/Map/`) |
 
-**Often-used on `TrafficSpawner`:** `CarTemplate`, `Waypoints`, `CarModelVariants` (random Body `.vmdl` per spawn; per-lane lists), `CarSpeed`, `CarAcceleration`, `CarDeceleration`, `CornerFilletRadius`, `CornerArcSamples`, `CurveSlowLookAhead`, `CurveMinSpeedFraction`, `FacingYawOffsetDegrees`, `CarHeightOffset`, `HitHalfExtents`, `HitBoxCenterOffset`, `KnockdownLaunchSpeed`, `MaxAliveCars`, `DisableTemplateOnStart`, `OnlySpawnWhileMatchPlaying`
+**Often-used on `TrafficSpawner`:** `CarTemplate`, `Waypoints`, `CarModelVariants` (random Body `.vmdl` per spawn — **after `NetworkSpawn`**, sets renderer + collider; per-lane lists; `Model.Load` fallback), `CarSpeed`, `CarAcceleration`, `CarDeceleration`, `CornerFilletRadius`, `CornerArcSamples`, `CurveSlowLookAhead`, `CurveMinSpeedFraction`, `FacingYawOffsetDegrees`, `CarHeightOffset`, `HitHalfExtents`, `HitBoxCenterOffset`, `KnockdownLaunchSpeed`, `MaxAliveCars`, `DisableTemplateOnStart`, `OnlySpawnWhileMatchPlaying`
 
 **Often-used on `TrafficCar`:** `EngineIdleSound`, `EngineDriveSound`, `EngineSoundVolume`, `EngineSoundMaxDistance`, `EngineSoundLocalOffset`, `EngineSoundBlendSharpness`, `MeshUniformScale`, `ProxyPoseFollowSharpness`
 

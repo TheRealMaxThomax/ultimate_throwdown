@@ -17,7 +17,7 @@
 
 **Goal:** **v1 match flow is done** (slices 1–6). Gameplay polish, longer MP playtests, **map vote** when ready (see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) → Later).
 
-**Next session (map):** Fill **`Car Model Variants`** on each traffic spawner (red list on Road0, blue list on Road1).
+**Next session:** Gameplay polish — longer MP playtests, **traffic knockdown** / engine-sound tuning, or **map vote** when ready.
 
 **Works today:**
 - Ball grab/throw; tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
@@ -30,7 +30,7 @@
 - **Enemy team outline** — red `HighlightOutline` on opponents (not self/teammates); same look on tackle ragdolls (`PlayerEnemyOutline`, `RagdollEnemyOutline`); tune on player prefab **`HighlightOutline`**
 - **Street lamps (Turf Wars)** — `streetlight.vmdl` + warm spots; **`streetlight_broken.vmdl`** for dead poles (no spot/emissive). Optional **`StreetLightFlicker`** on a **per-lamp parent** empty (child model + child spot) — syncs spot + bulb emissive (`goldenearth_streetlight_off.vmat` on **`light.vmat`** slot, auto index `-1`)
 - **Petrol station lights** — optional **`StationLightFlicker`** on a parent empty (child `Spot Light` + child block mesh). Keeps mesh visible and flickers via `Spot.Enabled` + mesh `Color` (`VisualOnColor`/`VisualOffColor`)
-- **Road traffic (Turf Wars — Road0 + Road1)** — **`TrafficSpawner`** + disabled **`TrafficCarTemplate`** (**`TrafficCar`** on root). Host: filleted path, **`NetworkSpawn`**, knockdown via **`PlayerTackle.ApplyKnockdownFromHost`**, ball off **`Body`** collider. **`CarModelVariants`** — random Body `.vmdl` per spawn (per-lane lists for red vs blue). **2-window MP OK** (client sees cars at Body scale, knockdown + ball bounce). Client proxy: synced pose + **`MeshUniformScale`** / **`NetMeshUniformScale`**.
+- **Road traffic (Turf Wars — Road0 + Road1)** — **`TrafficSpawner`** + disabled **`TrafficCarTemplate`**. **3 car models per lane** via **`CarModelVariants`** (red Road0 / blue Road1); host applies random **Body renderer + Model Collider** **after** **`NetworkSpawn`** + **`Network.Refresh`**. **Physics mesh** on each `.vmdl`; **ball bounce** on host. Knockdown via code hit box + **`PlayerTackle.ApplyKnockdownFromHost`**. **Engine sounds** — idle = cruise/slow, drive = accel only. **`Game.IsPlaying`** guard (no editor spawn spam). **2-window MP OK**.
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -94,7 +94,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Test dummies:** Tag `practice_npc` on **dummies only**.
 - **Weapons later:** Ball **or** weapon, not both (not implemented).
 - **Enemy outlines:** Camera needs **`Highlight`** post-process (`EnemyOutlineCameraSetup` on Main Camera, or add `Highlight` manually). Per-player **`HighlightOutline`** on the prefab is the style source; ragdolls copy it on the host (`NetVictimTeamId` synced for clients).
-- **Traffic cars:** Host-only movement + hits. Straights + rounded fillets through waypoint chain. **`TrafficCarTemplate` stays disabled** — spawner clones + **`NetworkSpawn`**. **`CarModelVariants`** on each **`TrafficSpawner`** (random pick before spawn; empty = template default). Clients: **Body** mesh (not hoisted root), **`NetWorldPosition`** / **`NetMeshUniformScale`**, **`MeshUniformScale`** on **`TrafficCar`** (default **0.6** = Body scale).
+- **Traffic cars:** Host-only movement + hits. **`TrafficCarTemplate` stays disabled** — clone while disabled, **`ConfigureLane`** → enable → **`NetworkSpawn`** → apply **`CarModelVariants`** (renderer + collider, same `.vmdl`) → **`Network.Refresh`**. **Do not** apply variants before `NetworkSpawn` (spawn resets to template mesh). Template **Body** must reference a **valid** fallback `.vmdl` (not a deleted asset). **`TrafficSpawner`** runs only when **`Game.IsPlaying`**. Per lane: 3 model variants (physics mesh + `solid`). Engine audio on template; never sound lifecycle on template. Clients: proxy pose + **`NetDriveBlend`**; colliders off on client.
 
 More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
@@ -104,7 +104,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 1. Start Play (host).
 2. Network menu → **Join via new instance** (second window = client).
-3. Check both windows: grab, throw, tackle (**host→client and client→host**, similar launch distance), dodge, **enemy red outlines** (standing + ragdoll, both directions), **goals, reset, intermission, match over, rematch, HUD**, **traffic** (client sees cars at Body scale, knockdown + ball bounce both directions — Road0 verified 2026-06-03).
+3. Check both windows: grab, throw, tackle (**host→client and client→host**, similar launch distance), dodge, **enemy red outlines** (standing + ragdoll, both directions), **goals, reset, intermission, match over, rematch, HUD**, **traffic** (Road0 + Road1: 3 model variants per lane, knockdown, **ball bounce on host**, engine idle/drive).
 4. Spam actions once to probe desync.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
@@ -119,6 +119,15 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - Remote attacker: `TryOwnerRequestTackleOnHost` → `RequestTackleApplyOnHost` (owner positions + `ownerTackleChargeBonus`).
 - **Do not** require extra host-side charge/distance gates on the RPC — `NetAtChargeSpeed` / host positions lag and tackles feel late.
 - Rare: impact sound spam at tackle start (client → host); left alone — not worth breaking launch.
+
+---
+
+## Multiplayer gotcha (traffic)
+
+- **`TrafficSpawner`** only spawns when **`Game.IsPlaying`** — no traffic logic in edit mode (avoids `NetworkSpawn failed` console spam).
+- **Variant mesh:** host applies **`CarModelVariants` after `NetworkSpawn`**, then **`Network.Refresh`**. Applying before spawn gets overwritten by template defaults.
+- **Ball vs car:** host only (client traffic proxies have colliders disabled). Each variant `.vmdl` needs a **physics mesh**; template **Body** fallback must be a **real** asset.
+- Player knockdown uses **code hit box** on `TrafficCar`, not `ModelCollider` — knockdown can work even when ball bounce is broken.
 
 ---
 
@@ -138,7 +147,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **`BallSpawn`** at center → wired on `MatchDirector`
 - **Street lamps:** steady = `streetlight.vmdl` + spot under `_LIGHTING` or parented to lamp; broken = `streetlight_broken.vmdl` (no spot). **Flicker** = one parent empty per lamp → **`StreetLightFlicker`** + child model + child **`Spot Light`**; **Bulb Material Index** `-1` (auto)
 - **Petrol station lights:** one parent empty per fixture → **`StationLightFlicker`** + child **`Spot Light`** + child mesh block; set `VisualOnColor`/`VisualOffColor` (mesh stays enabled)
-- **Road0 traffic:** see **Traffic cars** subsection below (spawner + car template wiring)
+- **Road0 / Road1 traffic:** see **Traffic cars** subsection below (spawner + car template wiring)
 
 **Player prefab** (clone source for `GameNetworkManager` — all joins inherit these values):
 - `PlayerTeam` (auto at spawn), `PlayerTackle`, `PlayerDodge`, `RagdollClientFeel`, `PlayerClass`, `CatchUpSpeedBoost`
@@ -150,21 +159,22 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
 - **`BallThrow` → Throw Direction Source** optional; if empty, throw uses **`PlayerController.EyeAngles`** (look while charging)
 
-**Traffic cars (per lane — Road0 done, Road1 = copy pattern):**
+**Traffic cars (per lane — Road0 + Road1 wired):**
 
 **`TrafficCarTemplate`** (disabled in scene — clone source only):
 - Root: **`TrafficCar`** — **`Mesh Uniform Scale`** **0.6** (client MP fallback; must match Body)
-- Child **`Body`**: transform scale **0.6**; **`Model Renderer`** → car `.vmdl` (Model Doc **Static Prop**); **`Model Collider`** on **Body**; **`Rigidbody`** on Body — gravity off, lock **X/Y/Z** (+ rotation if needed)
+- **Engine sound** (on template): **`Engine Idle Sound`** → `traffic_engine_idle`; **`Engine Drive Sound`** → `traffic_engine_drive` (`Assets/Sounds/Traffic/`). Tune **`Engine Sound Volume`** + **`Engine Sound Max Distance`** on template
+- Child **`Body`**: scale **0.6**; **`Model Renderer`** + **`Model Collider`** → any **valid** fallback `.vmdl` (spawn overrides both from **`Car Model Variants`**); **physics mesh** + `solid` in Model Doc; **`Rigidbody`** on Body — gravity off, lock **X/Y/Z**
 - **`Facing Yaw Offset Degrees`** on spawner if model nose points backward (**180**)
 
 **`Traffic_Road0`** / **`Traffic_Road1`** (one empty per lane):
 - **`TrafficSpawner`** — **`Car Template`** → `TrafficCarTemplate`; **`Waypoints`** in **drive order** (first = spawn, last = exit). 2–3 waypoints per 90° turn (before / in / on bend / after)
-- **`Car Model Variants`** — add red `.vmdl`s on Road0 spawner, blue on Road1 (baked colors in model/material); leave empty to keep template Body model
+- **`Car Model Variants`** — 3 red `.vmdl`s on Road0, 3 blue on Road1 (each: **physics mesh** + `solid`); code picks random + sets **renderer + collider** after spawn
 - Tune on spawner **Car** group: **`Car Speed`**, **`Car Acceleration`** / **`Car Deceleration`**, **`Corner Fillet Radius`**, **`Curve Slow Look Ahead`**, **`Curve Min Speed Fraction`**, **`Hit Half Extents`**, **`Hit Box Center Offset`** (Z up if pivot at wheels), **`Car Height Offset`** (usually 0 if Body local Y = 0)
 - **`Disable Template On Start`** on; **`Only Spawn While Match Playing`** for ship
 - Do **not** save scene with traffic clones in hierarchy — delete `(clone)` leftovers if any
 
-**Car model:** CC0 low-poly e.g. `models/turfwarspoly/normalcar1.vmdl` — Static Prop archetype; hull on Body for ball bounce, code hit box for players.
+**Car models:** `models/turfwarspoly/*` — Static Prop; **PhysicsMeshFile** (or hull-from-render) per variant; code hit box on spawner for players, **Model Collider** for ball.
 
 ---
 
@@ -185,6 +195,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - [ ] Walk/run animations while charging throw (can’t move)
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
 - [ ] **Clutter** sometimes missing after **engine reload** — save scene after paint; check clutter **Volume** bounds; verify in **Play** (not only editor flycam)
+- [ ] **Traffic engine loops** — seam click in-game vs clean Audacity preview; re-export with DC offset remove + zero-crossing trim if needed
 
 ---
 
@@ -203,7 +214,9 @@ Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Heigh
 
 ## Recent session notes
 
-- **2026-06-05:** **`TrafficSpawner.CarModelVariants`** — random Body `.vmdl` per spawn; per-lane lists (red Road0 / blue Road1) in editor.
+- **2026-06-05 (traffic wrap):** **Road0 + Road1 verified** — 3 **`CarModelVariants`** per lane (red/blue); renderer + collider synced **after `NetworkSpawn`** + **`Network.Refresh`**; **`Model.Load`** fallback; template needs valid fallback `.vmdl`. **Ball bounce** + engine idle/drive + spawn fixes (`Game.IsPlaying`, no template enable-on-clone). **Do not** apply variants before `NetworkSpawn`.
+- **2026-06-05 (wrap):** **Road1 traffic + variants + engine audio** — **`CarModelVariants`** (red/blue per lane); **`TrafficCar`** idle/drive loops; **`NetDriveBlend`**. Spawn/sound lifecycle fixes on template clone.
+- **2026-06-05:** **`TrafficSpawner.CarModelVariants`** — random Body `.vmdl` per spawn; per-lane lists in editor.
 - **2026-06-03 (wrap):** **Road0 traffic MP shipped** — client visibility, Body scale, knockdown, ball bounce (2-window verified). Code: **`PlayerDodge.cs`** split from **`CatchUpSpeedBoost.cs`**; **`TrafficCar`** client proxy (no mesh hoist).
 - **2026-06-03:** **Turf Wars road traffic (Road0)** — **`TrafficSpawner`** + **`TrafficCar`**: filleted paths, corner slow, accel/decel, **`PlayerTackle.ApplyKnockdownFromHost`**, **`Model Collider` + locked `Rigidbody` on `Body`**.
 - **2026-06-02:** **`feature/human-avatar`** — Player Body → `citizen_human_*` + human anim graph (drop `citizen_holdball_test` on human or T-pose at run). Cosmetics + male/female from connection; tackle/ragdoll/MP unchanged in code.

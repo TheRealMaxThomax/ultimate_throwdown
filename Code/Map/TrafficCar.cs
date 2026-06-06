@@ -131,7 +131,7 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 			return;
 		}
 
-		if ( !Networking.IsHost || waypoints is null || waypoints.Count < 2 || totalPathLength <= 0f )
+		if ( !Networking.IsHost || !Game.IsPlaying || waypoints is null || waypoints.Count < 2 || totalPathLength <= 0f )
 			return;
 
 		AdvanceAlongLane();
