@@ -17,7 +17,7 @@
 
 **Goal:** **v1 match flow is done** (slices 1–6). Gameplay polish, longer MP playtests, **map vote** when ready (see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) → Later).
 
-**Next session:** Gameplay polish — longer MP playtests, **traffic knockdown** / engine-sound tuning, or **map vote** when ready.
+**Next session:** Gameplay polish, longer MP playtests, **map vote** when ready, or traffic tuning.
 
 **Works today:**
 - Ball grab/throw; tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
@@ -147,6 +147,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **`BallSpawn`** at center → wired on `MatchDirector`
 - **Street lamps:** steady = `streetlight.vmdl` + spot under `_LIGHTING` or parented to lamp; broken = `streetlight_broken.vmdl` (no spot). **Flicker** = one parent empty per lamp → **`StreetLightFlicker`** + child model + child **`Spot Light`**; **Bulb Material Index** `-1` (auto)
 - **Petrol station lights:** one parent empty per fixture → **`StationLightFlicker`** + child **`Spot Light`** + child mesh block; set `VisualOnColor`/`VisualOffColor` (mesh stays enabled)
+- **Petrol station signs (mapping blocks):** sign face uses emissive `.vmat` (e.g. `gassymoessign.vmat` on slot **1**; slot **0** = frame wood). Steady glow only — no runtime flicker (removed **`SignFlicker`** attempt).
 - **Road0 / Road1 traffic:** see **Traffic cars** subsection below (spawner + car template wiring)
 
 **Player prefab** (clone source for `GameNetworkManager` — all joins inherit these values):
@@ -214,6 +215,9 @@ Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Heigh
 
 ## Recent session notes
 
+- **2026-06-07 (sign flicker — removed):** **`SignFlicker`** + flicker-only assets (`gassymoessignflicker.vmat`, partial illum mask, diffuse overlay mat) **deleted** — mapping-block runtime emissive swap does not render; overlay approach also failed in Play. **`gassymoessign.vmat`** sign art kept for steady emissive on blocks. **Editor:** remove **`SignFlicker`** component from **`Block (4)`** (and any other blocks) if still attached.
+- **2026-06-06:** **`TrafficSpawner.SpawnDelaySeconds`** — per-lane wait after Playing starts (e.g. Road1 = 5s fairness). Editor-only on **`Traffic_Road1`** spawner.
+- **2026-06-06:** Editor **`CloudLocations` / Asset Browser** console spam — local tools patch (`OnDestroyed` + `EditorEvent.Unregister`); harmless to game; may revert on s&box update.
 - **2026-06-05 (traffic wrap):** **Road0 + Road1 verified** — 3 **`CarModelVariants`** per lane (red/blue); renderer + collider synced **after `NetworkSpawn`** + **`Network.Refresh`**; **`Model.Load`** fallback; template needs valid fallback `.vmdl`. **Ball bounce** + engine idle/drive + spawn fixes (`Game.IsPlaying`, no template enable-on-clone). **Do not** apply variants before `NetworkSpawn`.
 - **2026-06-05 (wrap):** **Road1 traffic + variants + engine audio** — **`CarModelVariants`** (red/blue per lane); **`TrafficCar`** idle/drive loops; **`NetDriveBlend`**. Spawn/sound lifecycle fixes on template clone.
 - **2026-06-05:** **`TrafficSpawner.CarModelVariants`** — random Body `.vmdl` per spawn; per-lane lists in editor.

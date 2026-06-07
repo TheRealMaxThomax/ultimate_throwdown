@@ -15,6 +15,8 @@ public sealed class TrafficSpawner : Component
 
 	[Property, Group( "Spawn" )] public float MinSpawnIntervalSeconds { get; set; } = 8f;
 	[Property, Group( "Spawn" )] public float MaxSpawnIntervalSeconds { get; set; } = 18f;
+	/// <summary>Wait this long after playing starts before the first spawn (per round). Road1 uses ~5s for side fairness.</summary>
+	[Property, Group( "Spawn" )] public float SpawnDelaySeconds { get; set; } = 0f;
 	[Property, Group( "Spawn" )] public int MaxAliveCars { get; set; } = 2;
 	[Property, Group( "Spawn" )] public bool DisableTemplateOnStart { get; set; } = true;
 	[Property, Group( "Spawn" )] public bool OnlySpawnWhileMatchPlaying { get; set; } = true;
@@ -46,6 +48,8 @@ public sealed class TrafficSpawner : Component
 
 	private readonly List<GameObject> aliveCars = new();
 	private float nextSpawnAt;
+	private float spawnAllowedAt;
+	private MatchPhase trackedPhase;
 	private MatchDirector matchDirector;
 
 	protected override void OnStart()
@@ -61,6 +65,8 @@ public sealed class TrafficSpawner : Component
 
 		CleanupStrayTrafficCarsInScene();
 		matchDirector = MatchDirector.FindInScene( Scene );
+		trackedPhase = matchDirector.IsValid() ? matchDirector.CurrentPhase : MatchPhase.Playing;
+		ResetSpawnDelay();
 		ScheduleNextSpawn();
 	}
 
@@ -70,8 +76,12 @@ public sealed class TrafficSpawner : Component
 			return;
 
 		PruneAliveCars();
+		UpdateSpawnDelayForPhase();
 
 		if ( !CanSpawnNow() )
+			return;
+
+		if ( Time.Now < spawnAllowedAt )
 			return;
 
 		if ( Time.Now < nextSpawnAt )
@@ -309,6 +319,50 @@ public sealed class TrafficSpawner : Component
 			if ( !aliveCars[i].IsValid() )
 				aliveCars.RemoveAt( i );
 		}
+	}
+
+	private void ResetSpawnDelay()
+	{
+		var delay = SpawnDelaySeconds.Clamp( 0f, 600f );
+		if ( delay <= 0f )
+		{
+			spawnAllowedAt = 0f;
+			return;
+		}
+
+		if ( OnlySpawnWhileMatchPlaying
+			&& (!matchDirector.IsValid() || matchDirector.CurrentPhase != MatchPhase.Playing) )
+		{
+			spawnAllowedAt = float.MaxValue;
+			return;
+		}
+
+		spawnAllowedAt = Time.Now + delay;
+	}
+
+	private void UpdateSpawnDelayForPhase()
+	{
+		if ( SpawnDelaySeconds <= 0f || !OnlySpawnWhileMatchPlaying )
+			return;
+
+		if ( !matchDirector.IsValid() )
+			matchDirector = MatchDirector.FindInScene( Scene );
+
+		if ( !matchDirector.IsValid() )
+			return;
+
+		var phase = matchDirector.CurrentPhase;
+		if ( phase == trackedPhase )
+			return;
+
+		var previousPhase = trackedPhase;
+		trackedPhase = phase;
+
+		if ( phase != MatchPhase.Playing || previousPhase == MatchPhase.Playing )
+			return;
+
+		spawnAllowedAt = Time.Now + SpawnDelaySeconds.Clamp( 0f, 600f );
+		ScheduleNextSpawn();
 	}
 
 	private void ScheduleNextSpawn()
