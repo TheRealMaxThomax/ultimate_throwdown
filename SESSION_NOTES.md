@@ -20,7 +20,7 @@
 **Next session:** Gameplay polish, longer MP playtests, **map vote** when ready, or traffic tuning.
 
 **Works today:**
-- Ball grab/throw; **throw trajectory preview** (`ThrowTrajectoryPreview` — owner-only dotted arc + first-hit landing marker while charging; reads ball gravity/damping/collider from scene; matches `ReleaseHeldBall` pivot via `GetPredictedThrowReleasePivotPosition`); **`ThrowChargeBar`** — screen HUD vertical bar above dodge (placeholder, same style as ramp/dodge HUD); tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
+- Ball grab/throw; **throw trajectory preview** (`ThrowTrajectoryPreview` — owner-only white dashed arc + first-hit landing sphere while charging; reads ball gravity/damping/collider from scene; matches `ReleaseHeldBall` pivot via `GetPredictedThrowReleasePivotPosition`); **`ThrowChargeBar`** — screen HUD vertical bar above dodge (placeholder, same style as ramp/dodge HUD); tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
 - **Teams + spawns** (balance on join, ground-snapped spawns)
 - **`MatchDirector`** — phases, 10:00 match clock (`M.SS`), goal celebration / intermission, **OVERTIME**, **match over**
 - **`GoalZone`** dwell scoring
@@ -86,7 +86,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 ## How the game is put together (simple rules)
 
 - **One script, one job** — e.g. `BallGrab` = “who holds the ball”, `BallThrow` = “throwing”, `ThrowTrajectoryPreview` = owner aim helper only.
-- **Throw trajectory preview:** Owner-only, first arc to ground (no bounces). `ThrowReleaseMath` shares release velocity with `BallThrow`; sim uses `PhysicsWorld.Gravity`, ball `LinearDamping`, sphere sweep radius (collider read even while held/disabled). Preview pivot = `BallGrab.GetPredictedThrowReleasePivotPosition()` (same as `ReleaseHeldBall` before throw offsets).
+- **Throw trajectory preview:** Owner-only white dashed arc (scrolls along path) + solid semi-transparent landing sphere (`models/dev/sphere.vmdl`), first arc to ground (no bounces). `ThrowReleaseMath` shares release velocity with `BallThrow`; sim uses `PhysicsWorld.Gravity`, ball `LinearDamping`, sphere sweep radius (collider read even while held/disabled). Preview pivot = `BallGrab.GetPredictedThrowReleasePivotPosition()` (same as `ReleaseHeldBall` before throw offsets).
 - **Walk into the ball = pick it up.** No kick button.
 - **Online: the host is the referee** — clients request; host decides.
 - **Tackles:** Only at full charge speed. Host spawns **ragdoll object**; clients **request** via RPC. Launch = pelvis `ApplyImpulse` on host **before** `NetworkSpawn` (poll `RagdollPhysicsInitDelay` max). Juggernaut bonus: owner mirror sent in RPC so client tackles aren’t weaker.
@@ -216,7 +216,7 @@ Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Heigh
 
 ## Recent session notes
 
-- **2026-06-08:** **`ThrowTrajectoryPreview`** + **`ThrowReleaseMath`** — owner-only dotted arc + first-hit landing marker; all classes same accuracy; auto-reads ball physics (no manual gravity tune). Accuracy fixes: `GetPredictedThrowReleasePivotPosition()` (not hand anchor), ball-center at `tr.Fraction`, collider radius while held disabled, ground marker under center. **`ThrowChargeBar`** → screen HUD (vertical, right edge above dodge; placeholder like ramp/dodge HUD).
+- **2026-06-08:** **`ThrowTrajectoryPreview`** + **`ThrowReleaseMath`** — owner-only white dashed arc + first-hit landing sphere; all classes same accuracy; auto-reads ball physics (no manual gravity tune). Accuracy fixes: `GetPredictedThrowReleasePivotPosition()` (not hand anchor), ball-center at `tr.Fraction`, collider radius while held disabled, ground marker under center. **`ThrowChargeBar`** → screen HUD (vertical, right edge above dodge; placeholder like ramp/dodge HUD).
 - **2026-06-07 (sign flicker — removed):** **`SignFlicker`** + flicker-only assets (`gassymoessignflicker.vmat`, partial illum mask, diffuse overlay mat) **deleted** — mapping-block runtime emissive swap does not render; overlay approach also failed in Play. **`gassymoessign.vmat`** sign art kept for steady emissive on blocks. **Editor:** remove **`SignFlicker`** component from **`Block (4)`** (and any other blocks) if still attached.
 - **2026-06-06:** **`TrafficSpawner.SpawnDelaySeconds`** — per-lane wait after Playing starts (e.g. Road1 = 5s fairness). Editor-only on **`Traffic_Road1`** spawner.
 - **2026-06-06:** Editor **`CloudLocations` / Asset Browser** console spam — local tools patch (`OnDestroyed` + `EditorEvent.Unregister`); harmless to game; may revert on s&box update.

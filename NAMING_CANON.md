@@ -15,7 +15,7 @@
 | `BallThrow` | Throwing and charge |
 | `BallClientFeel` | Makes the ball look smooth on clients (not gameplay authority) |
 | `ThrowChargeBar` | Owner screen HUD while charging throw (vertical bar above dodge; placeholder) |
-| `ThrowTrajectoryPreview` | Owner-only dotted arc + first-hit landing marker while charging throw |
+| `ThrowTrajectoryPreview` | Owner-only dashed arc + first-hit landing sphere while charging throw |
 | `ThrowReleaseMath` | Shared throw release + first-arc sim (`ComputeRelease`, `TryGetBallFlightParameters`, `TrySimulateFirstImpact`) |
 
 **Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `NetIsHolding`, `GetPredictedThrowReleasePivotPosition()`  
