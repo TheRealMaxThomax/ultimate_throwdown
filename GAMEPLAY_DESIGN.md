@@ -11,6 +11,7 @@
 |---------|--------|
 | Walk → sprint → charge speed | Built |
 | Throw with charge | Built |
+| Throw trajectory preview (owner, first arc) | Built — `ThrowTrajectoryPreview`; no bounces; all classes |
 | Auto-grab ball | Built (serves as **catch** — no separate catch action) |
 | Pass (to teammate) | Built via **charged throw** — no separate pass button |
 | Throw cooldown | **Not planned** — `PickupDelayAfterThrow` only blocks instant re-grab after release |

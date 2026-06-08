@@ -234,7 +234,7 @@
               "BodyMass": 500,
               "BodyRadius": 16,
               "BrakePower": 1,
-              "CameraOffset": "185,0,12",
+              "CameraOffset": "185,0,28",
               "ColliderObject": {
                 "_type": "gameobject",
                 "go": "faf32fd2-a73d-4dc8-96bc-9d7a641b8c85"
@@ -446,13 +446,45 @@
               "__guid": "42ae48fe-441c-4830-92db-018b6ccf4a27",
               "__enabled": true,
               "Flags": 0,
-              "ChargeBarOffset": "0,0,70",
+              "BarBlockCount": 14,
+              "BarEmptyColor": "0.35,0.35,0.35,0.85",
+              "BarFillColor": "1,0.85,0.45,1",
+              "BarRowGap": 3,
+              "BarRowHeight": 12,
+              "DodgePanelHeight": 56,
+              "GapFromDodgePanel": 12,
+              "LabelFontSize": 18,
+              "MarginBottom": 24,
+              "MarginRight": 24,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
-              "OnComponentUpdate": null
+              "OnComponentUpdate": null,
+              "PanelPaddingBottom": 10,
+              "PanelPaddingTop": 8,
+              "PanelWidth": 64
+            },
+            {
+              "__type": "ThrowTrajectoryPreview",
+              "__guid": "4aef583a-871d-4a30-beb5-276bfd772531",
+              "__enabled": true,
+              "Flags": 0,
+              "ArcDotColor": "1,0.95,0.7,0.35",
+              "ArcDotRadius": 3,
+              "ArcDotStride": 2,
+              "LandingMarkerColor": "1,0.9,0.5,0.55",
+              "LandingMarkerLift": 1.5,
+              "LandingMarkerRadius": 10,
+              "MaxSimulationSeconds": 6,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SimulationStepSeconds": 0.05
             },
             {
               "__type": "BallClientFeel",
@@ -2736,7 +2768,7 @@
                   ]
                 },
                 {
-                  "__guid": "c4cf3fd6-4e28-454e-88d4-4433c4bf5228",
+                  "__guid": "5dcef3d1-2b0e-4aaa-bfc9-c961b9de89a0",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2753,7 +2785,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "6ba6262a-66c6-437e-8569-b7343c7a582d",
+                      "__guid": "18167a70-9bdb-4211-9a90-133d1839040f",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -3740,13 +3772,25 @@
               "__guid": "3b5a3dad-2d50-4568-82bd-900b258c6049",
               "__enabled": true,
               "Flags": 0,
-              "ChargeBarOffset": "0,0,70",
+              "BarBlockCount": 14,
+              "BarEmptyColor": "0.35,0.35,0.35,0.85",
+              "BarFillColor": "1,0.85,0.45,1",
+              "BarRowGap": 3,
+              "BarRowHeight": 12,
+              "DodgePanelHeight": 56,
+              "GapFromDodgePanel": 12,
+              "LabelFontSize": 18,
+              "MarginBottom": 24,
+              "MarginRight": 24,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
-              "OnComponentUpdate": null
+              "OnComponentUpdate": null,
+              "PanelPaddingBottom": 10,
+              "PanelPaddingTop": 8,
+              "PanelWidth": 44
             },
             {
               "__type": "BallThrow",
@@ -5985,7 +6029,7 @@
                   ]
                 },
                 {
-                  "__guid": "2b69ce8c-c589-40ba-996a-b77622267a59",
+                  "__guid": "2ddc1853-6117-464e-a99f-b036a116c8b2",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6002,7 +6046,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "e7f341ce-7277-4d6d-bbe1-2462e5e184fd",
+                      "__guid": "4ae31c0d-7012-4848-9f5b-ec601f46ad56",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6356,13 +6400,25 @@
               "__guid": "747b98f8-dde6-42f9-a0be-b32239a37d8e",
               "__enabled": true,
               "Flags": 0,
-              "ChargeBarOffset": "0,0,70",
+              "BarBlockCount": 14,
+              "BarEmptyColor": "0.35,0.35,0.35,0.85",
+              "BarFillColor": "1,0.85,0.45,1",
+              "BarRowGap": 3,
+              "BarRowHeight": 12,
+              "DodgePanelHeight": 56,
+              "GapFromDodgePanel": 12,
+              "LabelFontSize": 18,
+              "MarginBottom": 24,
+              "MarginRight": 24,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
-              "OnComponentUpdate": null
+              "OnComponentUpdate": null,
+              "PanelPaddingBottom": 10,
+              "PanelPaddingTop": 8,
+              "PanelWidth": 44
             },
             {
               "__type": "BallThrow",
@@ -8601,7 +8657,7 @@
                   ]
                 },
                 {
-                  "__guid": "6c1bb291-cd56-4e72-a59d-4091a2f16722",
+                  "__guid": "64e2f7fb-cc12-4b3a-a060-c5c56e91c4f1",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8618,7 +8674,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "0a1df597-b750-411c-8989-5d29cffc72e6",
+                      "__guid": "d79d97a5-0612-4509-bcdf-3c74946dfb56",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8972,13 +9028,25 @@
               "__guid": "ae758e61-adec-486d-a2db-2262302cd94e",
               "__enabled": true,
               "Flags": 0,
-              "ChargeBarOffset": "0,0,70",
+              "BarBlockCount": 14,
+              "BarEmptyColor": "0.35,0.35,0.35,0.85",
+              "BarFillColor": "1,0.85,0.45,1",
+              "BarRowGap": 3,
+              "BarRowHeight": 12,
+              "DodgePanelHeight": 56,
+              "GapFromDodgePanel": 12,
+              "LabelFontSize": 18,
+              "MarginBottom": 24,
+              "MarginRight": 24,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
-              "OnComponentUpdate": null
+              "OnComponentUpdate": null,
+              "PanelPaddingBottom": 10,
+              "PanelPaddingTop": 8,
+              "PanelWidth": 44
             },
             {
               "__type": "BallThrow",
@@ -11217,7 +11285,7 @@
                   ]
                 },
                 {
-                  "__guid": "d0c7216f-4df1-49f0-9cd9-0dea479b090a",
+                  "__guid": "9976d885-65fa-4bdd-b7ca-f088e1b0de25",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11234,7 +11302,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "451d8eea-4662-4706-8621-3a1c52c2c828",
+                      "__guid": "19096a26-223a-4c9a-b47a-9f7afd408f8b",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,

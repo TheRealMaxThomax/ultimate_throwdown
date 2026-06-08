@@ -30,6 +30,45 @@ public sealed class BallThrow : Component
 	private bool savedUseInputControls = true;
 	public bool IsChargingThrow => Network.IsOwner ? isChargingThrow : NetIsChargingThrow;
 
+	public readonly struct ThrowPreviewSnapshot
+	{
+		public Vector3 ReleasePivotWorldPosition { get; init; }
+		public GameObject HeldBall { get; init; }
+		public Vector3 ThrowDirection { get; init; }
+		public float ChargeLerp { get; init; }
+		public ThrowReleaseMath.ReleaseSettings ReleaseSettings { get; init; }
+	}
+
+	/// <summary> Owning client: live aim/charge state for <see cref="ThrowTrajectoryPreview"/>. </summary>
+	public bool TryGetThrowPreviewSnapshot( out ThrowPreviewSnapshot snapshot )
+	{
+		snapshot = default;
+		if ( !isChargingThrow || ballGrab is null || !ballGrab.IsHolding )
+			return false;
+
+		var heldBall = ballGrab.HeldBall;
+		if ( !heldBall.IsValid() )
+			return false;
+
+		snapshot = new ThrowPreviewSnapshot
+		{
+			ReleasePivotWorldPosition = ballGrab.GetPredictedThrowReleasePivotPosition(),
+			HeldBall = heldBall,
+			ThrowDirection = GetThrowDirectionWorld(),
+			ChargeLerp = GetThrowChargeLerp(),
+			ReleaseSettings = new ThrowReleaseMath.ReleaseSettings
+			{
+				ThrowForce = ThrowForce,
+				ThrowUpForce = ThrowUpForce,
+				ThrowStartOffset = ThrowStartOffset,
+				MinThrowForceMultiplier = MinThrowForceMultiplier,
+				MinThrowUpForceMultiplier = MinThrowUpForceMultiplier,
+				ClassThrowPower = playerClass?.CurrentClass?.ThrowPower ?? 1f
+			}
+		};
+		return true;
+	}
+
 	protected override void OnStart()
 	{
 		ballGrab = Components.Get<BallGrab>();
@@ -136,18 +175,28 @@ public sealed class BallThrow : Component
 		if ( !releasedBallBody.IsValid() )
 			return;
 
-		chargeLerp = chargeLerp.Clamp( 0f, 1f );
-		var throwForceMultiplier = MinThrowForceMultiplier.LerpTo( 1f, chargeLerp );
-		var throwUpForceMultiplier = MinThrowUpForceMultiplier.LerpTo( 1f, chargeLerp );
-		var classPower = playerClass?.CurrentClass?.ThrowPower ?? 1f;
-
 		// Use direction from Rpc.Caller so the throw matches local aim. Host-side transform can lag for remote players.
 		var throwDirection = throwDirectionFromCaller.Length > 0.001f
-			? throwDirectionFromCaller.Normal
+			? throwDirectionFromCaller
 			: GetThrowDirectionWorld();
-		var throwStartPosition = releasedBall.WorldPosition + (throwDirection * ThrowStartOffset) + (Vector3.Up * 10f);
+		var releaseSettings = new ThrowReleaseMath.ReleaseSettings
+		{
+			ThrowForce = ThrowForce,
+			ThrowUpForce = ThrowUpForce,
+			ThrowStartOffset = ThrowStartOffset,
+			MinThrowForceMultiplier = MinThrowForceMultiplier,
+			MinThrowUpForceMultiplier = MinThrowUpForceMultiplier,
+			ClassThrowPower = playerClass?.CurrentClass?.ThrowPower ?? 1f
+		};
+		ThrowReleaseMath.ComputeRelease(
+			releasedBall.WorldPosition,
+			throwDirection,
+			chargeLerp,
+			releaseSettings,
+			out var throwStartPosition,
+			out var throwVelocity );
 		releasedBall.WorldPosition = throwStartPosition;
-		releasedBallBody.Velocity = (throwDirection * ThrowForce * throwForceMultiplier * classPower) + (Vector3.Up * ThrowUpForce * throwUpForceMultiplier * classPower);
+		releasedBallBody.Velocity = throwVelocity;
 
 		if ( EnableNetDebugLogs )
 		{
@@ -182,15 +231,11 @@ public sealed class BallThrow : Component
 		return team is null || team.IsMatchGameplayInputAllowed;
 	}
 
-	private float GetThrowChargeLerp()
-	{
-		var chargeScale = MathF.Max( 0.05f, playerClass?.CurrentClass?.ThrowChargeSpeedScale ?? 1f );
-		var chargeHeldSeconds = (Time.Now - throwChargeStartedAt) * chargeScale;
-		var clampedChargeSeconds = chargeHeldSeconds.Clamp( MinThrowChargeTime, MaxThrowChargeTime );
-		return MaxThrowChargeTime <= MinThrowChargeTime
-			? 1f
-			: (clampedChargeSeconds - MinThrowChargeTime) / (MaxThrowChargeTime - MinThrowChargeTime);
-	}
+	private float GetThrowChargeLerp() => ThrowReleaseMath.GetChargeLerp(
+		throwChargeStartedAt,
+		MinThrowChargeTime,
+		MaxThrowChargeTime,
+		playerClass?.CurrentClass?.ThrowChargeSpeedScale ?? 1f );
 
 	/// <summary>
 	/// World throw direction at release. Prefers <see cref="ThrowDirectionSource"/> when wired; otherwise

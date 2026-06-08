@@ -14,10 +14,12 @@
 | `BallGrab` | Who holds the ball; pickup, drop, auto-grab |
 | `BallThrow` | Throwing and charge |
 | `BallClientFeel` | Makes the ball look smooth on clients (not gameplay authority) |
-| `ThrowChargeBar` | UI bar while charging throw |
+| `ThrowChargeBar` | Owner screen HUD while charging throw (vertical bar above dodge; placeholder) |
+| `ThrowTrajectoryPreview` | Owner-only dotted arc + first-hit landing marker while charging throw |
+| `ThrowReleaseMath` | Shared throw release + first-arc sim (`ComputeRelease`, `TryGetBallFlightParameters`, `TrySimulateFirstImpact`) |
 
-**Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `NetIsHolding`  
-**Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `IsChargingThrow`, `NetIsChargingThrow`, `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`)
+**Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `NetIsHolding`, `GetPredictedThrowReleasePivotPosition()`  
+**Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `IsChargingThrow`, `NetIsChargingThrow`, `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`), `TryGetThrowPreviewSnapshot()`
 
 ---
 
@@ -149,7 +151,13 @@ Shade examples: `eggshell_30lighter`, `grey_20lighter` (footpaths) — see `game
 
 **BallGrab:** `HeldBall`, `MainBallName`, `InteractAction`, `HoldAnchor`, `PickupDelayAfterDrop`, `DropperNoPushWindow`, `DropSideOffset`, `DropVelocityScale`, `NetPickupBlockedRemain`, `ReleaseHeldBall()`, `BlockPickupForSeconds()`, …
 
-**BallThrow:** `ThrowAction`, `ThrowStartOffset`, `MinThrowChargeTime`, `MaxThrowChargeTime`, `ClearThrowChargeLocal()`, …
+**BallThrow:** `ThrowAction`, `ThrowStartOffset`, `MinThrowChargeTime`, `MaxThrowChargeTime`, `ClearThrowChargeLocal()`, `TryGetThrowPreviewSnapshot()`, …
+
+**ThrowReleaseMath:** `ReleaseSettings`, `BallFlightParameters`, `GetChargeLerp()`, `ComputeRelease()`, `TryGetBallFlightParameters()`, `TrySimulateFirstImpact()`, …
+
+**ThrowTrajectoryPreview:** `ArcDotColor`, `LandingMarkerColor`, `SimulationStepSeconds`, …
+
+**ThrowChargeBar:** `MarginRight`, `MarginBottom`, `GapFromDodgePanel`, `BarBlockCount`, `Show()`, `Hide()`, `SetCharge()`, …
 
 **BallClientFeel:** `InterpolationDelay`, `MaxSnapshots`, `FreeBallVisualFollowSharpness`, …
 

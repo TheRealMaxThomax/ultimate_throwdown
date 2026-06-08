@@ -47,7 +47,9 @@ Run this quick checklist before committing gameplay changes.
 - [ ] Ball spawn offset on throw does not look broken/clipping.
 - [ ] Short tap throw is clearly weaker than full-charge throw.
 - [ ] Charge timing feels good (`MinThrowChargeTime` to `MaxThrowChargeTime`).
-- [ ] Charge bar updates smoothly and matches throw strength.
+- [ ] Charge bar updates smoothly and matches throw strength (vertical bar above dodge while charging).
+- [ ] Trajectory preview arc + landing marker match first ground contact (flat and lob throws).
+- [ ] Trajectory preview visible only to thrower (not opponents).
 
 ## Charge Lock Behavior
 - [ ] While charging, player cannot move.
@@ -68,6 +70,7 @@ Run this quick checklist before committing gameplay changes.
 - [ ] No script compile errors.
 - [ ] `BallThrow` appears in Add Component list.
 - [ ] `ThrowChargeBar` appears in Add Component list.
+- [ ] `ThrowTrajectoryPreview` appears in Add Component list.
 - [ ] `CatchUpSpeedBoost` appears in Add Component list.
 - [ ] `BallClientFeel` appears in Add Component list.
 - [ ] No obvious regressions in grab/drop behavior.

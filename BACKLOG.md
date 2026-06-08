@@ -15,7 +15,7 @@ Keep items short and clear.
 - [ ] Tune charged throw values (`MinThrowChargeTime`, `MaxThrowChargeTime`, `MinThrowForceMultiplier`, `MinThrowUpForceMultiplier`).
 - [ ] Tune movement ramp values (`StartMoveSpeed`, `SprintMoveSpeed`, `CatchUpMoveSpeed`, `TimeToSprintSpeed`, `TimeToCatchUpSpeed`).
 - [ ] Match HUD: replace placeholder draw with styled UI when art pass is ready (slice 5 placeholders work).
-- [ ] HUD timing decision: keep temporary debug charge bar until throw feel is stable, then build proper throw charge panel.
+- [ ] Replace placeholder owner HUDs (`ThrowChargeBar`, `MovementRampHud`, `DodgeCooldownHud`) with styled final UI when art pass is ready (`ThrowChargeBar` already on screen — vertical above dodge).
 
 ## Bugs / Issues
 - [ ] While charging throw, movement is locked but walk/run animations still play in place.
@@ -26,12 +26,14 @@ Keep items short and clear.
   - Plan: Keep host-authoritative ball truth, then improve client perceived responsiveness via safe visual tuning.
 
 ## Ideas (Later)
-- [ ] Build proper HUD throw charge bar (single rectangle with red/yellow/green sections and smooth fill).
+- [ ] Final art pass on throw charge bar (red/yellow/green sections, smooth fill — replace placeholder vertical bar).
 - [ ] Add animation hooks for hold/throw.
 - [ ] Add catch-up sprint animation (head slightly down, arm up, charging posture) for the non-ball-carrier catch-up state.
 - [ ] Add sound effects for pickup/drop/throw.
 
 ## Done
+- [x] **Throw trajectory preview** — `ThrowTrajectoryPreview` + `ThrowReleaseMath`; owner-only first arc + landing marker; physics-matched (gravity, damping, sphere sweep, release pivot).
+- [x] **`ThrowChargeBar` screen HUD** — vertical bar above dodge (placeholder; replaced world `DebugOverlay` text).
 - [x] **MP tackle launch parity** — impulse before `NetworkSpawn`, body poll, owner Juggernaut bonus in client tackle RPC (`PlayerTackle`).
 - [x] **Enemy team outlines** — `Highlight` on camera, `PlayerEnemyOutline`, `RagdollEnemyOutline` (copies prefab `HighlightOutline`, `NetVictimTeamId` for clients).
 - [x] **Match flow slice 6** — `MatchOverHud`, 10s match-over celebration, host `1` rematch, `SnapBallToGround`, `NetMatchWinnerTeamId` sync.

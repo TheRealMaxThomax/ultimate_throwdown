@@ -288,17 +288,23 @@ public sealed class BallGrab : Component
 		ballBody.Velocity = new Vector3( clampedHorizontal.x, clampedHorizontal.y, ballBody.Velocity.z );
 	}
 
+	/// <summary> Ball pivot on release before <see cref="BallThrow"/> throw offsets — used by throw trajectory preview. </summary>
+	public Vector3 GetPredictedThrowReleasePivotPosition()
+	{
+		var playerController = Components.Get<PlayerController>();
+		var facingRotation = playerController.IsValid()
+			? Rotation.FromYaw( playerController.EyeAngles.yaw )
+			: GameObject.WorldRotation;
+		return GameObject.WorldPosition + (facingRotation.Right * DropSideOffset) + (Vector3.Up * 4f);
+	}
+
 	public GameObject ReleaseHeldBall( Vector3 playerVelocity = default )
 	{
 		if ( !ballObject.IsValid() || !isHolding )
 			return null;
 
-		var playerController = Components.Get<PlayerController>();
-		var facingRotation = playerController.IsValid()
-			? Rotation.FromYaw( playerController.EyeAngles.yaw )
-			: GameObject.WorldRotation;
 		dropInheritedSpeed = playerVelocity.WithZ( 0f ).Length;
-		ballObject.WorldPosition = GameObject.WorldPosition + (facingRotation.Right * DropSideOffset) + (Vector3.Up * 4f);
+		ballObject.WorldPosition = GetPredictedThrowReleasePivotPosition();
 
 		foreach ( var body in ballBodiesToRestore )
 		{
