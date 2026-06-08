@@ -7,6 +7,7 @@ Keep items short and clear.
 - **Gameplay polish + MP soak** — v1 match flow (slices 1–6) shipped. See [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md).
 
 ## TODO (Next Up)
+- [ ] **MP test throw polish (2026-06-08)** — 2-window: `ThrowTrajectoryPreview` (arc + landing sphere + scrolling dashes), `ThrowChargeCamera` (charge pullback/FOV + release blend), throw/cancel, **tackle while charging** (ragdoll cam + stand-up blend). Solo OK; not MP-verified yet.
 - [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, match over, rematch, HUD sync.
 - [ ] **Map vote** — 30s timer, all players vote `Slot1`–`N`, plurality wins, random tie-break among top (see MATCH_FLOW_PLAN → Later).
 - [ ] Improve free-ball client feel to better match host while keeping shared position consistency.
@@ -32,7 +33,9 @@ Keep items short and clear.
 - [ ] Add sound effects for pickup/drop/throw.
 
 ## Done
-- [x] **Throw trajectory preview** — `ThrowTrajectoryPreview` + `ThrowReleaseMath`; owner-only first arc + landing marker; physics-matched (gravity, damping, sphere sweep, release pivot).
+- [x] **Throw trajectory preview (polish)** — scrolling dashed arc, ball-colored landing sphere, simulation-time dash scroll; `ThrowReleaseMath` physics match.
+- [x] **`ThrowChargeCamera`** — charge-scaled third-person pullback + mild FOV; release blend; ragdoll/stand-up handoff (`PlayerTackle.OnPreRender` ragdoll cam).
+- [x] **Throw trajectory preview (v1)** — `ThrowTrajectoryPreview` + `ThrowReleaseMath`; owner-only first arc + landing marker; physics-matched (gravity, damping, sphere sweep, release pivot).
 - [x] **`ThrowChargeBar` screen HUD** — vertical bar above dodge (placeholder; replaced world `DebugOverlay` text).
 - [x] **MP tackle launch parity** — impulse before `NetworkSpawn`, body poll, owner Juggernaut bonus in client tackle RPC (`PlayerTackle`).
 - [x] **Enemy team outlines** — `Highlight` on camera, `PlayerEnemyOutline`, `RagdollEnemyOutline` (copies prefab `HighlightOutline`, `NetVictimTeamId` for clients).

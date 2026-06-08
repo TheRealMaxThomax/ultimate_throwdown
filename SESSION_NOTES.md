@@ -17,10 +17,10 @@
 
 **Goal:** **v1 match flow is done** (slices 1–6). Gameplay polish, longer MP playtests, **map vote** when ready (see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) → Later).
 
-**Next session:** Gameplay polish, longer MP playtests, **map vote** when ready, or traffic tuning.
+**Next session:** **2-window MP test** everything added **2026-06-08** (throw trajectory preview, charge camera, throw/release parity) — solo OK, **not MP-verified yet**. Then longer soak / map vote when ready.
 
 **Works today:**
-- Ball grab/throw; **throw trajectory preview** (`ThrowTrajectoryPreview` — owner-only white dashed arc + first-hit landing sphere while charging; reads ball gravity/damping/collider from scene; matches `ReleaseHeldBall` pivot via `GetPredictedThrowReleasePivotPosition`); **`ThrowChargeBar`** — screen HUD vertical bar above dodge (placeholder, same style as ramp/dodge HUD); tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
+- Ball grab/throw; **throw trajectory preview** (`ThrowTrajectoryPreview` + `ThrowReleaseMath` — owner-only scrolling white dashed arc + semi-transparent ball-colored landing sphere; physics-matched first arc); **`ThrowChargeCamera`** — owner-only charge-scaled third-person pullback + mild FOV widen (`PlayerController.CameraOffset`; hands off during ragdoll / stand-up blend); **`ThrowChargeBar`** — screen HUD vertical bar above dodge (placeholder); tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
 - **Teams + spawns** (balance on join, ground-snapped spawns)
 - **`MatchDirector`** — phases, 10:00 match clock (`M.SS`), goal celebration / intermission, **OVERTIME**, **match over**
 - **`GoalZone`** dwell scoring
@@ -86,7 +86,8 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 ## How the game is put together (simple rules)
 
 - **One script, one job** — e.g. `BallGrab` = “who holds the ball”, `BallThrow` = “throwing”, `ThrowTrajectoryPreview` = owner aim helper only.
-- **Throw trajectory preview:** Owner-only white dashed arc (scrolls along path) + solid semi-transparent landing sphere (`models/dev/sphere.vmdl`), first arc to ground (no bounces). `ThrowReleaseMath` shares release velocity with `BallThrow`; sim uses `PhysicsWorld.Gravity`, ball `LinearDamping`, sphere sweep radius (collider read even while held/disabled). Preview pivot = `BallGrab.GetPredictedThrowReleasePivotPosition()` (same as `ReleaseHeldBall` before throw offsets).
+- **Throw trajectory preview:** Owner-only scrolling white dashed arc + ball-colored semi-transparent landing sphere (`models/dev/sphere.vmdl` + ball material/tint), first arc to ground (no bounces). Dash scroll uses simulation-time keys so motion stays visible while charge lengthens the arc. `ThrowReleaseMath` shares release velocity with `BallThrow`; preview pivot = `BallGrab.GetPredictedThrowReleasePivotPosition()`.
+- **Throw charge camera:** `ThrowChargeCamera` lerps `PlayerController.CameraOffset` + main-camera FOV with `BallThrow.GetThrowChargeLerp()`; quick smoothstep blend on throw/cancel. **Does not run** while ragdolled or during `PlayerTackle` stand-up camera blend — ragdoll orbit is applied in `PlayerTackle.OnPreRender` last.
 - **Walk into the ball = pick it up.** No kick button.
 - **Online: the host is the referee** — clients request; host decides.
 - **Tackles:** Only at full charge speed. Host spawns **ragdoll object**; clients **request** via RPC. Launch = pelvis `ApplyImpulse` on host **before** `NetworkSpawn` (poll `RagdollPhysicsInitDelay` max). Juggernaut bonus: owner mirror sent in RPC so client tackles aren’t weaker.
@@ -106,6 +107,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 1. Start Play (host).
 2. Network menu → **Join via new instance** (second window = client).
 3. Check both windows: grab, throw, tackle (**host→client and client→host**, similar launch distance), dodge, **enemy red outlines** (standing + ragdoll, both directions), **goals, reset, intermission, match over, rematch, HUD**, **traffic** (Road0 + Road1: 3 model variants per lane, knockdown, **ball bounce on host**, engine idle/drive).
+4. **Throw polish (2026-06-08 — MP not verified yet):** while charging — trajectory arc + landing sphere, scrolling dashes, charge camera pullback/FOV, charge bar; throw + cancel release camera; **tackle while charging** (ragdoll cam + stand-up blend must feel normal); host↔client throw aim/landing still sane.
 4. Spam actions once to probe desync.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
@@ -157,7 +159,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **`Move Mode Walk` → Step Up Height** — global curb step (default was **10**; try **24–32** for 16-unit geo). Tune here only — no code wrapper.
 - **Body child** — `SkinnedModelRenderer`: **`citizen_human_*`** + human **Animation Graph** (not `citizen_holdball_test` unless on classic citizen)
 - **`HighlightOutline`** — tune colors/width here (ragdoll copies this exact component); optional **`PlayerEnemyOutline`** (auto at spawn)
-- `DodgeCooldownHud`, `MovementRampHud`, **`ThrowChargeBar`** (vertical screen bar above dodge while charging), **`ThrowTrajectoryPreview`** (owner throw arc while charging)
+- `DodgeCooldownHud`, `MovementRampHud`, **`ThrowChargeBar`** (vertical screen bar above dodge while charging), **`ThrowTrajectoryPreview`** (owner throw arc while charging), **`ThrowChargeCamera`** (owner charge pullback + mild FOV widen; scales with charge lerp)
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
 - **`BallThrow` → Throw Direction Source** optional; if empty, throw uses **`PlayerController.EyeAngles`** (look while charging)
 
@@ -195,6 +197,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 - [ ] Throw strength still needs playtest tuning
 - [ ] Walk/run animations while charging throw (can’t move)
+- [ ] **MP test throw polish (2026-06-08)** — trajectory preview, charge camera, ragdoll coexistence; 2-window host + client
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
 - [ ] **Clutter** sometimes missing after **engine reload** — save scene after paint; check clutter **Volume** bounds; verify in **Play** (not only editor flycam)
 - [ ] **Traffic engine loops** — seam click in-game vs clean Audacity preview; re-export with DC offset remove + zero-crossing trim if needed
@@ -216,7 +219,7 @@ Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Heigh
 
 ## Recent session notes
 
-- **2026-06-08:** **`ThrowTrajectoryPreview`** + **`ThrowReleaseMath`** — owner-only white dashed arc + first-hit landing sphere; all classes same accuracy; auto-reads ball physics (no manual gravity tune). Accuracy fixes: `GetPredictedThrowReleasePivotPosition()` (not hand anchor), ball-center at `tr.Fraction`, collider radius while held disabled, ground marker under center. **`ThrowChargeBar`** → screen HUD (vertical, right edge above dodge; placeholder like ramp/dodge HUD).
+- **2026-06-08 (throw polish — solo OK, MP test next session):** **`ThrowTrajectoryPreview`** — scrolling white dashed arc (simulation-time dash keys so motion visible while arc grows); ball-colored translucent landing sphere (`ModelRenderer` + ball material/tint). **`ThrowChargeCamera`** — charge-scaled `CameraOffset` pullback + height + mild FOV; smooth release blend; baseline from prefab; skips ragdoll + `IsStandUpCameraBlending`. **`PlayerTackle`** — ragdoll orbit camera moved to **`OnPreRender`** (fixes charge-cam fight). **`BallThrow.GetThrowChargeLerp()`** public. **Next:** 2-window MP pass on all of the above.
 - **2026-06-07 (sign flicker — removed):** **`SignFlicker`** + flicker-only assets (`gassymoessignflicker.vmat`, partial illum mask, diffuse overlay mat) **deleted** — mapping-block runtime emissive swap does not render; overlay approach also failed in Play. **`gassymoessign.vmat`** sign art kept for steady emissive on blocks. **Editor:** remove **`SignFlicker`** component from **`Block (4)`** (and any other blocks) if still attached.
 - **2026-06-06:** **`TrafficSpawner.SpawnDelaySeconds`** — per-lane wait after Playing starts (e.g. Road1 = 5s fairness). Editor-only on **`Traffic_Road1`** spawner.
 - **2026-06-06:** Editor **`CloudLocations` / Asset Browser** console spam — local tools patch (`OnDestroyed` + `EditorEvent.Unregister`); harmless to game; may revert on s&box update.

@@ -231,7 +231,7 @@ public sealed class BallThrow : Component
 		return team is null || team.IsMatchGameplayInputAllowed;
 	}
 
-	private float GetThrowChargeLerp() => ThrowReleaseMath.GetChargeLerp(
+	public float GetThrowChargeLerp() => ThrowReleaseMath.GetChargeLerp(
 		throwChargeStartedAt,
 		MinThrowChargeTime,
 		MaxThrowChargeTime,

@@ -112,6 +112,8 @@ public sealed class PlayerTackle : Component
 
 	public bool IsTackleImmune => isTackleImmune;
 	public bool IsRagdolled => isRagdolled;
+	/// <summary> Owning client: easing main camera from ragdoll orbit back to <see cref="PlayerController"/> third-person. </summary>
+	public bool IsStandUpCameraBlending => standUpCameraBlendStartTime >= 0f;
 	/// <summary>Host bumps after successful tackles; <see cref="CatchUpSpeedBoost"/> consumes changes to strip charge speed.</summary>
 	public int TackleStripRampSequence => netTackleStripRampId;
 	public bool IsPostRagdollSlowCatchUpRampActive => netPostRagdollSlowCatchUpUntil > 0f && Time.Now < netPostRagdollSlowCatchUpUntil;
@@ -194,17 +196,6 @@ public sealed class PlayerTackle : Component
 					playerController.EyeAngles = look;
 				}
 
-				if ( activeCamera.IsValid() )
-				{
-					var lookRot = playerController.IsValid()
-						? playerController.EyeAngles.ToRotation()
-						: WorldRotation;
-					var orbit = -lookRot.Forward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
-					activeCamera.WorldPosition = WorldPosition + orbit;
-					activeCamera.WorldRotation = lookRot;
-					lastRagdollCameraPos = activeCamera.WorldPosition;
-					lastRagdollCameraRot = activeCamera.WorldRotation;
-				}
 			}
 		}
 
@@ -242,12 +233,25 @@ public sealed class PlayerTackle : Component
 
 	protected override void OnPreRender()
 	{
+		if ( !this.Network.IsOwner || !activeCamera.IsValid() )
+			return;
+
+		// Place ragdoll orbit last so later components (e.g. charge camera offset restore) cannot overwrite it.
+		if ( isRagdolled )
+		{
+			var lookRot = playerController.IsValid()
+				? playerController.EyeAngles.ToRotation()
+				: WorldRotation;
+			var orbit = -lookRot.Forward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
+			activeCamera.WorldPosition = WorldPosition + orbit;
+			activeCamera.WorldRotation = lookRot;
+			lastRagdollCameraPos = activeCamera.WorldPosition;
+			lastRagdollCameraRot = activeCamera.WorldRotation;
+			return;
+		}
+
 		// After all updates, PlayerController has already placed the camera. Lerp toward that exact
 		// transform so we match its third-person math (CameraOffset, collision, etc.) — avoids a snap at t=1.
-		if ( isRagdolled || !this.Network.IsOwner )
-			return;
-		if ( !activeCamera.IsValid() )
-			return;
 		if ( standUpCameraBlendStartTime < 0f )
 			return;
 

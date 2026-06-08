@@ -488,6 +488,22 @@
               "SimulationStepSeconds": 0.05
             },
             {
+              "__type": "ThrowChargeCamera",
+              "__guid": "70835401-2765-4194-af7b-a51eee71b665",
+              "__enabled": true,
+              "Flags": 0,
+              "ExtraCameraDistanceAtFullCharge": 50,
+              "ExtraCameraHeightAtFullCharge": 20,
+              "ExtraFieldOfViewAtFullCharge": 7,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "ReleaseCameraBlendDuration": 0.35
+            },
+            {
               "__type": "BallClientFeel",
               "__guid": "00d1a13e-0a67-4b96-8f6b-5b406823aa22",
               "__enabled": true,
@@ -2769,7 +2785,7 @@
                   ]
                 },
                 {
-                  "__guid": "dbaf3c96-3956-409e-a1da-33d00f7c7587",
+                  "__guid": "a521acbe-ba4f-4f40-957c-f74d628957ea",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2786,7 +2802,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "05f8fc9d-556a-420a-9dd3-a1169f9853b9",
+                      "__guid": "20d24c19-6227-4c36-b9d3-f66fec18b386",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6030,7 +6046,7 @@
                   ]
                 },
                 {
-                  "__guid": "175deb28-778d-4fdc-bfea-0452e16d9740",
+                  "__guid": "646e1a16-31db-423a-ae57-44a19cb4cf08",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6047,7 +6063,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "767c28fb-ea20-49f4-9c3a-4ec10a761a69",
+                      "__guid": "60205e7f-1527-4021-a2f0-0b6d9c52207f",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8658,7 +8674,7 @@
                   ]
                 },
                 {
-                  "__guid": "d6be07f3-0356-4354-9b3c-debd26a502ce",
+                  "__guid": "2a07b7ac-6e5e-451e-89d8-45dae487494e",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8675,7 +8691,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "f67349b8-208d-430f-8f59-b7f9ff192106",
+                      "__guid": "44d1d2a3-599a-424a-a520-dcdc82139e78",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11286,7 +11302,7 @@
                   ]
                 },
                 {
-                  "__guid": "a564e72a-84d6-4e2a-853b-dc85da933eda",
+                  "__guid": "c745ce1f-378a-4c0a-8c5b-2475127bf08e",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11303,7 +11319,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "b9f43e05-d4b9-44d5-9d08-9425307e0813",
+                      "__guid": "fa18b0ec-c462-4157-a32f-b52d0b747c30",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
