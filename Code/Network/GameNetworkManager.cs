@@ -247,7 +247,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		playerTeam.TeamId = teamId;
 		player.Components.GetOrCreate<PlayerDisableCrouch>();
 		player.Components.GetOrCreate<PlayerEnemyOutline>();
-		player.Components.GetOrCreate<BallCarrierOffscreenHud>();
+		player.Components.GetOrCreate<BallCompassHud>();
 
 		player.NetworkSpawn( connection );
 

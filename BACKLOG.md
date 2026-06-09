@@ -7,7 +7,7 @@ Keep items short and clear.
 - **Gameplay polish + MP soak** — v1 match flow (slices 1–6) shipped. See [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md).
 
 ## TODO (Next Up)
-- [ ] **`BallCarrierOffscreenHud`** — fix/polish team-only edge arrow toward off-screen teammate ball carrier.
+- [ ] **`BallCompassHud`** — 2-window playtest + tune margins/colors.
 - [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, match over, rematch, HUD sync.
 - [ ] **Map vote** — 30s timer, all players vote `Slot1`–`N`, plurality wins, random tie-break among top (see MATCH_FLOW_PLAN → Later).
 - [ ] Improve free-ball client feel to better match host while keeping shared position consistency.

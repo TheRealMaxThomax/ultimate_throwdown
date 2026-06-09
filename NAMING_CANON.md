@@ -23,7 +23,7 @@
 **Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `IsChargingThrow`, `NetIsChargingThrow`, `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`), `GetThrowChargeLerp()`, `TryGetThrowPreviewSnapshot()`  
 **Often-used on `ThrowTrajectoryPreview`:** `ArcDashScrollSpeed`, `LandingMarkerAlpha`, `TranslucentBallMaterialPath`, `LandingMarkerLift`  
 **Often-used on `BallCarrierOutline`:** `GlowColorDim`, `GlowColorBright`, `PulseSeconds`, `OutlineWidth`, `EnableEmissivePulse`, `EmissiveBrightnessMax`  
-**Often-used on `BallCarrierOffscreenHud`:** `EdgeMargin`, `ArrowLength`, `OnScreenInset`, `SideEdgeBias`
+**Often-used on `BallCompassHud`:** `LabelText`, `LabelFontSize`, `MarginLeft`, `MarginBottom`, `CompassSize`, `MarkerOrbitRadiusFraction`, `MarkerTipLength`, `MarkerHalfWidth`, `LooseColor`, `FriendlyColor`, `EnemyColor`, `LocalCarryRingColor` (player `EyeAngles` bearing; white hub label centered in ring; triangle orbits edge toward ball)
 
 ---
 
@@ -92,7 +92,7 @@
 | `GoalBannerHud` | "TEAM A SCORED!" during celebration |
 | `IntermissionHud` | "Resuming in N…" during intermission |
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
-| `BallCarrierOffscreenHud` | Local viewer edge arrow toward off-screen teammate ball carrier (**WIP — needs polish**) |
+| `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |
 
 ---
 
