@@ -27,6 +27,8 @@
 | Match over + rematch | **Built** — 10s celebration, then host **`1`** (`Slot1`) same-map rematch |
 | Map vote (30s, all players) | **Not built** — planned; see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) → Later |
 | Enemy team outline | **Built** — `Highlight` on camera + `HighlightOutline` on players; ragdoll copy via `RagdollEnemyOutline` |
+| Ball carrier glow (held ball) | **Built** — `BallCarrierOutline` on `main_ball`: gold colour-pulse outline + emissive breathe; everyone except carrier; line-of-sight only (no through walls) |
+| Teammate carrier off-screen arrow | **WIP** — `BallCarrierOffscreenHud` on player; team-only; needs polish |
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives / ults | **Not built** (stats in `.cdata` mostly are) |

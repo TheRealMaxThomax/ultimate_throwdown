@@ -7,7 +7,7 @@ Keep items short and clear.
 - **Gameplay polish + MP soak** — v1 match flow (slices 1–6) shipped. See [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md).
 
 ## TODO (Next Up)
-- [ ] **MP test throw polish (2026-06-08)** — 2-window: `ThrowTrajectoryPreview` (arc + landing sphere + scrolling dashes), `ThrowChargeCamera` (charge pullback/FOV + release blend), throw/cancel, **tackle while charging** (ragdoll cam + stand-up blend). Solo OK; not MP-verified yet.
+- [ ] **`BallCarrierOffscreenHud`** — fix/polish team-only edge arrow toward off-screen teammate ball carrier.
 - [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, match over, rematch, HUD sync.
 - [ ] **Map vote** — 30s timer, all players vote `Slot1`–`N`, plurality wins, random tie-break among top (see MATCH_FLOW_PLAN → Later).
 - [ ] Improve free-ball client feel to better match host while keeping shared position consistency.
@@ -33,7 +33,10 @@ Keep items short and clear.
 - [ ] Add sound effects for pickup/drop/throw.
 
 ## Done
-- [x] **Throw trajectory preview (polish)** — scrolling dashed arc, ball-colored landing sphere, simulation-time dash scroll; `ThrowReleaseMath` physics match.
+- [x] **Ball carrier glow** — `BallCarrierOutline`: gold colour-pulse outline + emissive breathe; non-carrier viewers only; no through walls; ring width distance-scaled.
+- [x] **Throw polish MP (2026-06-09)** — 2-window OK: trajectory, charge camera, charge bar, tackle-while-charging.
+- [x] **Throw trajectory landing marker** — 1:1 held-ball clone + `ball_translucent.vmat`; client translucent grain fix.
+- [x] **Throw trajectory preview (polish)** — scrolling dashed arc, landing sphere, simulation-time dash scroll; `ThrowReleaseMath` physics match.
 - [x] **`ThrowChargeCamera`** — charge-scaled third-person pullback + mild FOV; release blend; ragdoll/stand-up handoff (`PlayerTackle.OnPreRender` ragdoll cam).
 - [x] **Throw trajectory preview (v1)** — `ThrowTrajectoryPreview` + `ThrowReleaseMath`; owner-only first arc + landing marker; physics-matched (gravity, damping, sphere sweep, release pivot).
 - [x] **`ThrowChargeBar` screen HUD** — vertical bar above dodge (placeholder; replaced world `DebugOverlay` text).

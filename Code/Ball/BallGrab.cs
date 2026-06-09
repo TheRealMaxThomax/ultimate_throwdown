@@ -118,6 +118,7 @@ public sealed class BallGrab : Component
 		if ( MainBall.IsValid() )
 		{
 			ballObject = MainBall;
+			ballObject.Components.GetOrCreate<BallCarrierOutline>();
 			return;
 		}
 
@@ -143,6 +144,9 @@ public sealed class BallGrab : Component
 		}
 
 		ballObject = firstMatch;
+
+		if ( ballObject.IsValid() )
+			ballObject.Components.GetOrCreate<BallCarrierOutline>();
 	}
 
 	/// <summary>Returns true when any player's BallGrab is holding our main ball (synced/host state).</summary>

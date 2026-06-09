@@ -17,10 +17,10 @@
 
 **Goal:** **v1 match flow is done** (slices 1–6). Gameplay polish, longer MP playtests, **map vote** when ready (see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) → Later).
 
-**Next session:** **2-window MP test** everything added **2026-06-08** (throw trajectory preview, charge camera, throw/release parity) — solo OK, **not MP-verified yet**. Then longer soak / map vote when ready.
+**Next session:** Fix **`BallCarrierOffscreenHud`** — team-only edge arrow toward off-screen teammate ball carrier (shipped, needs polish). Then longer soak / map vote when ready.
 
 **Works today:**
-- Ball grab/throw; **throw trajectory preview** (`ThrowTrajectoryPreview` + `ThrowReleaseMath` — owner-only scrolling white dashed arc + semi-transparent ball-colored landing sphere; physics-matched first arc); **`ThrowChargeCamera`** — owner-only charge-scaled third-person pullback + mild FOV widen (`PlayerController.CameraOffset`; hands off during ragdoll / stand-up blend); **`ThrowChargeBar`** — screen HUD vertical bar above dodge (placeholder); tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
+- Ball grab/throw; **throw trajectory preview** (`ThrowTrajectoryPreview` + `ThrowReleaseMath` — owner-only scrolling white dashed arc + **1:1 translucent ball clone** landing marker via `ball_translucent.vmat`; physics-matched first arc); **`ThrowChargeCamera`** — owner-only charge-scaled third-person pullback + mild FOV widen (`PlayerController.CameraOffset`; hands off during ragdoll / stand-up blend); **`ThrowChargeBar`** — screen HUD vertical bar above dodge (placeholder); **throw polish 2-window MP OK** (2026-06-09); **ball carrier glow** — `BallCarrierOutline` on `main_ball` (gold colour-pulse `HighlightOutline` + emissive breathe; **everyone except carrier**; **no through walls**; ring width scales with distance); **`BallCarrierOffscreenHud`** on player (team-only off-screen arrow — **needs fix**); tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
 - **Teams + spawns** (balance on join, ground-snapped spawns)
 - **`MatchDirector`** — phases, 10:00 match clock (`M.SS`), goal celebration / intermission, **OVERTIME**, **match over**
 - **`GoalZone`** dwell scoring
@@ -62,11 +62,11 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 
 | Folder | What’s in it |
 |--------|----------------|
-| `Code/Ball/` | Ball pickup, throw, charge bar, trajectory preview (`ThrowReleaseMath`), smooth ball on clients |
+| `Code/Ball/` | Ball pickup, throw, charge bar, trajectory preview (`ThrowReleaseMath`), **`BallCarrierOutline`**, smooth ball on clients |
 | `Code/Player/` | Movement, dodge, tackle, team, class, cosmetics, **no crouch** |
 | `Code/Network/` | Spawning players when people join |
 | `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig` |
-| `Code/UI/` | Match HUD + placeholder owner HUDs (dodge/ramp) |
+| `Code/UI/` | Match HUD + placeholder owner HUDs (dodge/ramp) + **`BallCarrierOffscreenHud`** |
 | `Code/Map/` | `StartupMapBootstrap` (practice NPC locks); **`StreetLightFlicker`** (decorative lamp flicker); **`StationLightFlicker`** (petrol station spot + mesh color flicker); **`TrafficSpawner`** / **`TrafficCar`** (host lane traffic + knockdown) |
 
 **Scene you play in:** `scenes/throwdown_turf_wars.scene` (Turf Wars WIP). `throwdown_prototype.scene` = older greybox fallback.
@@ -86,7 +86,9 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 ## How the game is put together (simple rules)
 
 - **One script, one job** — e.g. `BallGrab` = “who holds the ball”, `BallThrow` = “throwing”, `ThrowTrajectoryPreview` = owner aim helper only.
-- **Throw trajectory preview:** Owner-only scrolling white dashed arc + ball-colored semi-transparent landing sphere (`models/dev/sphere.vmdl` + ball material/tint), first arc to ground (no bounces). Dash scroll uses simulation-time keys so motion stays visible while charge lengthens the arc. `ThrowReleaseMath` shares release velocity with `BallThrow`; preview pivot = `BallGrab.GetPredictedThrowReleasePivotPosition()`.
+- **Throw trajectory preview:** Owner-only scrolling white dashed arc + **1:1 held-ball clone** landing marker (`TranslucentBallMaterialPath` → `ball_translucent.vmat`), first arc to ground (no bounces). Dash scroll uses simulation-time keys so motion stays visible while charge lengthens the arc. `ThrowReleaseMath` shares release velocity with `BallThrow`; preview pivot = `BallGrab.GetPredictedThrowReleasePivotPosition()`. Use **Translucent** material + `g_flOpacityScale` (not tint-alpha on opaque — grains on clients).
+- **Ball carrier glow:** `BallCarrierOutline` auto on `main_ball` — gold **colour pulse** (not width pulse), ring width scales with camera distance, emissive breathe on ball for non-carrier viewers only; carrier sees nothing; obscured colours transparent (no wallhack). Tune on ball: `GlowColorDim` / `GlowColorBright`, `EmissiveBrightnessMax`.
+- **Teammate carrier arrow:** `BallCarrierOffscreenHud` auto on network player — local team only, points at teammate with ball when off-screen. **Next:** fix/polish arrow UX.
 - **Throw charge camera:** `ThrowChargeCamera` lerps `PlayerController.CameraOffset` + main-camera FOV with `BallThrow.GetThrowChargeLerp()`; quick smoothstep blend on throw/cancel. **Does not run** while ragdolled or during `PlayerTackle` stand-up camera blend — ragdoll orbit is applied in `PlayerTackle.OnPreRender` last.
 - **Walk into the ball = pick it up.** No kick button.
 - **Online: the host is the referee** — clients request; host decides.
@@ -107,8 +109,10 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 1. Start Play (host).
 2. Network menu → **Join via new instance** (second window = client).
 3. Check both windows: grab, throw, tackle (**host→client and client→host**, similar launch distance), dodge, **enemy red outlines** (standing + ragdoll, both directions), **goals, reset, intermission, match over, rematch, HUD**, **traffic** (Road0 + Road1: 3 model variants per lane, knockdown, **ball bounce on host**, engine idle/drive).
-4. **Throw polish (2026-06-08 — MP not verified yet):** while charging — trajectory arc + landing sphere, scrolling dashes, charge camera pullback/FOV, charge bar; throw + cancel release camera; **tackle while charging** (ragdoll cam + stand-up blend must feel normal); host↔client throw aim/landing still sane.
-4. Spam actions once to probe desync.
+4. **Throw polish:** trajectory arc + 1:1 translucent landing marker, charge camera, charge bar; tackle while charging (ragdoll cam OK).
+5. **Ball carrier glow:** enemy/teammate carries — gold outline + emissive pulse visible to you; **you carry** — no glow; behind wall — no glow.
+6. **Teammate off-screen arrow** (when fixed): teammate has ball off-screen → edge arrow (enemy carry = no arrow).
+7. Spam actions once to probe desync.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
 
@@ -197,7 +201,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 - [ ] Throw strength still needs playtest tuning
 - [ ] Walk/run animations while charging throw (can’t move)
-- [ ] **MP test throw polish (2026-06-08)** — trajectory preview, charge camera, ragdoll coexistence; 2-window host + client
+- [ ] **`BallCarrierOffscreenHud`** — team-only off-screen arrow toward teammate carrier needs fix/polish
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
 - [ ] **Clutter** sometimes missing after **engine reload** — save scene after paint; check clutter **Volume** bounds; verify in **Play** (not only editor flycam)
 - [ ] **Traffic engine loops** — seam click in-game vs clean Audacity preview; re-export with DC offset remove + zero-crossing trim if needed
@@ -219,6 +223,7 @@ Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Heigh
 
 ## Recent session notes
 
+- **2026-06-09 (ball carrier UX):** **`BallCarrierOutline`** — gold colour-pulse outline + emissive breathe; hidden for carrier; no through-wall glow; ring width distance-scaled (no width pulse). **`BallCarrierOffscreenHud`** — team-only off-screen arrow (needs fix next session). **Throw trajectory** — 1:1 held-ball landing marker + `ball_translucent.vmat`; translucent grain fix (no tint-alpha on opaque). **Throw polish 2-window MP OK.**
 - **2026-06-08 (throw polish — solo OK, MP test next session):** **`ThrowTrajectoryPreview`** — scrolling white dashed arc (simulation-time dash keys so motion visible while arc grows); ball-colored translucent landing sphere (`ModelRenderer` + ball material/tint). **`ThrowChargeCamera`** — charge-scaled `CameraOffset` pullback + height + mild FOV; smooth release blend; baseline from prefab; skips ragdoll + `IsStandUpCameraBlending`. **`PlayerTackle`** — ragdoll orbit camera moved to **`OnPreRender`** (fixes charge-cam fight). **`BallThrow.GetThrowChargeLerp()`** public. **Next:** 2-window MP pass on all of the above.
 - **2026-06-07 (sign flicker — removed):** **`SignFlicker`** + flicker-only assets (`gassymoessignflicker.vmat`, partial illum mask, diffuse overlay mat) **deleted** — mapping-block runtime emissive swap does not render; overlay approach also failed in Play. **`gassymoessign.vmat`** sign art kept for steady emissive on blocks. **Editor:** remove **`SignFlicker`** component from **`Block (4)`** (and any other blocks) if still attached.
 - **2026-06-06:** **`TrafficSpawner.SpawnDelaySeconds`** — per-lane wait after Playing starts (e.g. Road1 = 5s fairness). Editor-only on **`Traffic_Road1`** spawner.

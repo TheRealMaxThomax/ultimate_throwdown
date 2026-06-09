@@ -26,6 +26,17 @@ Run this quick checklist before committing gameplay changes.
 - [ ] After tackle: **red outline on ragdoll** on host **and** client (both tackle directions).
 - [ ] Ragdoll outline matches standing player outline (same `HighlightOutline` settings on prefab).
 
+## Ball carrier glow (2 windows)
+- [ ] Teammate or enemy carries ball: **gold pulse outline** on ball (both windows); **not** visible through walls.
+- [ ] **You** carry ball: **no** gold outline / emissive pulse on your screen.
+- [ ] Red enemy player outline + gold ball glow can show together (enemy carrier).
+- [ ] **`ball_translucent.vmat`** exists for trajectory landing marker (author in Material Editor).
+
+## Teammate off-screen arrow (2 windows) — WIP
+- [ ] Teammate carries ball **off your screen** → white edge arrow toward them (your team only).
+- [ ] Enemy carries ball off-screen → **no** arrow.
+- [ ] Teammate on-screen with ball → **no** arrow.
+
 ## Tackle (2 windows)
 - [ ] Host tackles client: ragdoll launches immediately; distance feels normal.
 - [ ] Client tackles host: same — no long “frozen ragdoll then launch” beat; distance similar to host tackle (same spot / class).
@@ -49,6 +60,7 @@ Run this quick checklist before committing gameplay changes.
 - [ ] Charge timing feels good (`MinThrowChargeTime` to `MaxThrowChargeTime`).
 - [ ] Charge bar updates smoothly and matches throw strength (vertical bar above dodge while charging).
 - [ ] Trajectory preview arc + landing marker match first ground contact (flat and lob throws).
+- [ ] Landing marker is **1:1 ball size** + translucent (not grainy on client).
 - [ ] Trajectory preview visible only to thrower (not opponents).
 
 ## Charge Lock Behavior

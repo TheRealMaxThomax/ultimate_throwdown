@@ -16,11 +16,14 @@
 | `BallClientFeel` | Makes the ball look smooth on clients (not gameplay authority) |
 | `ThrowChargeBar` | Owner screen HUD while charging throw (vertical bar above dodge; placeholder) |
 | `ThrowTrajectoryPreview` | Owner-only dashed arc + first-hit landing sphere while charging throw |
+| `BallCarrierOutline` | Gold colour-pulse `HighlightOutline` + emissive breathe on held ball (non-carrier viewers; no wallhack) |
 | `ThrowReleaseMath` | Shared throw release + first-arc sim (`ComputeRelease`, `TryGetBallFlightParameters`, `TrySimulateFirstImpact`) |
 
 **Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `NetIsHolding`, `GetPredictedThrowReleasePivotPosition()`  
 **Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `IsChargingThrow`, `NetIsChargingThrow`, `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`), `GetThrowChargeLerp()`, `TryGetThrowPreviewSnapshot()`  
-**Often-used on `ThrowTrajectoryPreview`:** `ArcDashScrollSpeed`, `LandingMarkerAlpha`, `TranslucentBallMaterialPath`, `LandingMarkerLift`
+**Often-used on `ThrowTrajectoryPreview`:** `ArcDashScrollSpeed`, `LandingMarkerAlpha`, `TranslucentBallMaterialPath`, `LandingMarkerLift`  
+**Often-used on `BallCarrierOutline`:** `GlowColorDim`, `GlowColorBright`, `PulseSeconds`, `OutlineWidth`, `EnableEmissivePulse`, `EmissiveBrightnessMax`  
+**Often-used on `BallCarrierOffscreenHud`:** `EdgeMargin`, `ArrowLength`, `OnScreenInset`
 
 ---
 
@@ -89,6 +92,7 @@
 | `GoalBannerHud` | "TEAM A SCORED!" during celebration |
 | `IntermissionHud` | "Resuming in N…" during intermission |
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
+| `BallCarrierOffscreenHud` | Local viewer edge arrow toward off-screen teammate ball carrier (**WIP — needs polish**) |
 
 ---
 
