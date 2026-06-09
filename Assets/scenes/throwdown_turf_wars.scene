@@ -3038,10 +3038,17 @@
               "__guid": "9685149e-47d2-43c5-b02d-696239ef890e",
               "__enabled": true,
               "Flags": 0,
-              "GlowColor": "1,1,1,1",
-              "GlowInsideColor": "1,1,1,0.35",
-              "GlowInsideObscuredColor": "1,1,1,0.25",
-              "GlowObscuredColor": "1,1,1,0.75",
+              "EmissiveBrightnessMax": 0.55,
+              "EmissiveBrightnessMin": 0,
+              "EmissiveScaleMax": 1.45,
+              "EmissiveScaleMin": 0.95,
+              "EnableEmissivePulse": true,
+              "GlowColorBright": "1,0.92,0.35,1",
+              "GlowColorDim": "1,0.75,0.2,0.55",
+              "GlowInsideColorBright": "1,0.82,0.25,0.4",
+              "GlowInsideColorDim": "1,0.7,0.18,0.2",
+              "MaxWidthScale": 0.6,
+              "MinWidthScale": 0.25,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3050,7 +3057,7 @@
               "OnComponentUpdate": null,
               "OutlineWidth": 1,
               "PulseSeconds": 1.2,
-              "PulseWidthAmplitude": 0.75
+              "WidthReferenceDistance": 280
             }
           ],
           "Children": []

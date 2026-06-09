@@ -4,6 +4,7 @@ using Sandbox.Rendering;
 
 /// <summary>
 /// Local viewer HUD: edge arrow toward a teammate who is carrying the ball when they are off-screen.
+/// Bearing uses world-horizontal direction vs local look yaw (no behind flip).
 /// </summary>
 public sealed class BallCarrierOffscreenHud : Component
 {
@@ -12,13 +13,15 @@ public sealed class BallCarrierOffscreenHud : Component
 	[Property] public float ArrowLength { get; set; } = 22f;
 	[Property] public float ArrowWidth { get; set; } = 4f;
 	[Property] public float WorldTargetHeight { get; set; } = 36f;
-	[Property] public float MinBehindCameraDot { get; set; } = 0.08f;
+	[Property] public float SideEdgeBias { get; set; } = 0.75f;
 
 	private PlayerTeam playerTeam;
+	private PlayerController playerController;
 
 	protected override void OnStart()
 	{
 		playerTeam = Components.Get<PlayerTeam>();
+		playerController = Components.Get<PlayerController>();
 	}
 
 	protected override void OnUpdate()
@@ -31,6 +34,7 @@ public sealed class BallCarrierOffscreenHud : Component
 			return;
 
 		playerTeam ??= Components.Get<PlayerTeam>();
+		playerController ??= Components.Get<PlayerController>();
 		if ( playerTeam is null || !MatchTeamIds.IsValid( playerTeam.TeamId ) )
 			return;
 
@@ -46,7 +50,7 @@ public sealed class BallCarrierOffscreenHud : Component
 		if ( IsTargetOnScreen( camera, targetWorld ) )
 			return;
 
-		if ( !TryGetEdgeArrow( camera, targetWorld, out var tip, out var tail ) )
+		if ( !TryGetEdgeArrow( camera, playerController, targetWorld, out var tip, out var tail ) )
 			return;
 
 		var hud = camera.Hud;
@@ -102,7 +106,7 @@ public sealed class BallCarrierOffscreenHud : Component
 	bool IsTargetOnScreen( CameraComponent camera, Vector3 worldPosition )
 	{
 		var toTarget = worldPosition - camera.WorldPosition;
-		if ( Vector3.Dot( camera.WorldRotation.Forward, toTarget.Normal ) < MinBehindCameraDot )
+		if ( Vector3.Dot( camera.WorldRotation.Forward, toTarget ) <= 0f )
 			return false;
 
 		var screenNormal = camera.PointToScreenNormal( worldPosition );
@@ -113,26 +117,81 @@ public sealed class BallCarrierOffscreenHud : Component
 			&& screenNormal.y <= 1f - inset;
 	}
 
-	bool TryGetEdgeArrow( CameraComponent camera, Vector3 worldPosition, out Vector2 tip, out Vector2 tail )
+	bool TryGetEdgeArrow( CameraComponent camera, PlayerController playerController, Vector3 worldPosition, out Vector2 tip, out Vector2 tail )
 	{
 		tip = default;
 		tail = default;
 
-		var center = new Vector2( Screen.Width * 0.5f, Screen.Height * 0.5f );
-		var toTarget = worldPosition - camera.WorldPosition;
-		var localDir = camera.WorldRotation.Inverse * toTarget;
-
-		var direction = new Vector2( localDir.x, -localDir.y );
-		if ( direction.LengthSquared < 0.0001f )
-			direction = new Vector2( 0f, 1f );
-		else
-			direction = direction.Normal;
-
-		if ( !TryGetEdgePoint( center, direction, EdgeMargin, out tip ) )
+		var center = GetScreenCenter();
+		if ( !TryGetLookYawBearingDirection( playerController, camera, worldPosition, SideEdgeBias, out var bearing ) )
 			return false;
 
-		tail = tip - (direction * ArrowLength);
+		if ( !TryGetEdgePoint( center, bearing, EdgeMargin, out tip ) )
+			return false;
+
+		tail = tip - (bearing * ArrowLength);
 		return true;
+	}
+
+	// World compass vs look yaw: right edge -> bottom-right -> bottom as you turn away. No behind flip.
+	static bool TryGetLookYawBearingDirection( PlayerController playerController, CameraComponent camera, Vector3 worldPosition, float sideEdgeBias, out Vector2 direction )
+	{
+		direction = default;
+
+		Vector3 origin;
+		Rotation lookRotation;
+
+		if ( playerController.IsValid() )
+		{
+			origin = playerController.WorldPosition;
+			lookRotation = playerController.EyeAngles.ToRotation();
+		}
+		else
+		{
+			origin = camera.WorldPosition;
+			lookRotation = camera.WorldRotation;
+		}
+
+		var lookForward = lookRotation.Forward.WithZ( 0 );
+		var lookRight = lookRotation.Right.WithZ( 0 );
+		if ( lookForward.LengthSquared < 0.0001f )
+			return false;
+
+		lookForward = lookForward.Normal;
+		lookRight = lookRight.Normal;
+
+		var planar = (worldPosition - origin).WithZ( 0 );
+		if ( planar.LengthSquared < 0.0001f )
+			return false;
+
+		planar = planar.Normal;
+
+		var lateral = Vector3.Dot( planar, lookRight );
+		var forward = Vector3.Dot( planar, lookForward );
+		var screenX = lateral;
+		var screenY = -forward;
+
+		// Mostly to one side (almost on-screen): hug left/right edge, not the top corner.
+		var absLateral = MathF.Abs( lateral );
+		var absForward = MathF.Abs( forward );
+		var lateralDominance = absLateral - absForward;
+		if ( lateralDominance > 0f )
+		{
+			var pull = Math.Clamp( lateralDominance / (absLateral + 0.001f), 0f, 1f ) * sideEdgeBias;
+			screenY *= 1f - pull;
+		}
+
+		var bearing = new Vector2( screenX, screenY );
+		if ( bearing.LengthSquared < 0.0001f )
+			return false;
+
+		direction = bearing.Normal;
+		return true;
+	}
+
+	static Vector2 GetScreenCenter()
+	{
+		return new Vector2( Screen.Width * 0.5f, Screen.Height * 0.5f );
 	}
 
 	static bool TryGetEdgePoint( Vector2 center, Vector2 direction, float margin, out Vector2 edgePoint )

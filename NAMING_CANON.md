@@ -23,7 +23,7 @@
 **Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `IsChargingThrow`, `NetIsChargingThrow`, `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`), `GetThrowChargeLerp()`, `TryGetThrowPreviewSnapshot()`  
 **Often-used on `ThrowTrajectoryPreview`:** `ArcDashScrollSpeed`, `LandingMarkerAlpha`, `TranslucentBallMaterialPath`, `LandingMarkerLift`  
 **Often-used on `BallCarrierOutline`:** `GlowColorDim`, `GlowColorBright`, `PulseSeconds`, `OutlineWidth`, `EnableEmissivePulse`, `EmissiveBrightnessMax`  
-**Often-used on `BallCarrierOffscreenHud`:** `EdgeMargin`, `ArrowLength`, `OnScreenInset`
+**Often-used on `BallCarrierOffscreenHud`:** `EdgeMargin`, `ArrowLength`, `OnScreenInset`, `SideEdgeBias`
 
 ---
 
