@@ -18,12 +18,12 @@
 **Goal:** **v1 match flow is done** (slices 1–6). Gameplay polish, longer MP playtests, **map vote** when ready (see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) → Later).
 
 **Next session (priority order):**
-1. **`BallCompassHud`** — 2-window playtest + polish (see **Ball compass** below).
-2. **MP join flash** — host sees brief black mesh face when client joins (likely cosmetics load; **not** compass HUD — investigate).
-3. Longer soak (15–20 min, two windows); map vote when ready.
+1. **MP join flash** — host sees brief black mesh face when client joins (likely cosmetics load; investigate).
+2. Longer soak (15–20 min, two windows); map vote when ready.
+3. **Human hold anim** — carry pose on anim graph (bone attach OK; arms don’t curl yet).
 
 **Works today:**
-- Ball grab/throw; **throw trajectory preview** (`ThrowTrajectoryPreview` + `ThrowReleaseMath` — owner-only scrolling white dashed arc + **1:1 translucent ball clone** landing marker via `ball_translucent.vmat`; physics-matched first arc); **`ThrowChargeCamera`** — owner-only charge-scaled third-person pullback + mild FOV widen (`PlayerController.CameraOffset`; hands off during ragdoll / stand-up blend); **`ThrowChargeBar`** — screen HUD vertical bar above dodge (placeholder); **throw polish 2-window MP OK** (2026-06-09); **ball carrier glow** — `BallCarrierOutline` on `main_ball` (gold colour-pulse `HighlightOutline` + emissive breathe; **everyone except carrier**; **no through walls**; ring width scales with distance); **`BallCompassHud`** on player (bottom-left compass toward ball — white loose / green teammate / red enemy; needle hidden when you carry); tackles/ragdolls; dodge; **crouch disabled** (`PlayerDisableCrouch`, Duck unbound in `Input.config`)
+- Ball grab/throw — held ball on **`hold_R`** hand bone (`BallGrab` + `BallClientFeel`); **throw trajectory preview** (`ThrowTrajectoryPreview` + `ThrowReleaseMath`); **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **throw polish 2-window MP OK**; **ball carrier glow** — `BallCarrierOutline` (white ↔ green / red team pulse; thinner default outline); **`BallCompassHud`** — ring + **BALL** hub + ring-edge triangle (player bearing; green/red/white); **`main_ball`** art WIP — emissive gold `ball_v2.vmat` + scroll (neutral vs team cues on glow/compass); tackles/ragdolls; dodge; **crouch disabled**
 - **Teams + spawns** (balance on join, ground-snapped spawns)
 - **`MatchDirector`** — phases, 10:00 match clock (`M.SS`), goal celebration / intermission, **OVERTIME**, **match over**
 - **`GoalZone`** dwell scoring
@@ -90,10 +90,10 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 
 - **One script, one job** — e.g. `BallGrab` = “who holds the ball”, `BallThrow` = “throwing”, `ThrowTrajectoryPreview` = owner aim helper only.
 - **Throw trajectory preview:** Owner-only scrolling white dashed arc + **1:1 held-ball clone** landing marker (`TranslucentBallMaterialPath` → `ball_translucent.vmat`), first arc to ground (no bounces). Dash scroll uses simulation-time keys so motion stays visible while charge lengthens the arc. `ThrowReleaseMath` shares release velocity with `BallThrow`; preview pivot = `BallGrab.GetPredictedThrowReleasePivotPosition()`. Use **Translucent** material + `g_flOpacityScale` (not tint-alpha on opaque — grains on clients).
-- **Ball carrier glow:** `BallCarrierOutline` auto on `main_ball` — gold **colour pulse** (not width pulse), ring width scales with camera distance, emissive breathe on ball for non-carrier viewers only; carrier sees nothing; obscured colours transparent (no wallhack). Tune on ball: `GlowColorDim` / `GlowColorBright`, `EmissiveBrightnessMax`.
+- **Ball carrier glow:** `BallCarrierOutline` auto on `main_ball` — **white ↔ green** (teammate) / **white ↔ red** (enemy) colour pulse; ring width scales with camera distance; emissive breathe for non-carrier viewers; carrier sees nothing; no through walls. Tune on ball: `PulseWhiteColor`, `FriendlyAccentColor`, `EnemyAccentColor`, `EmissiveBrightnessMax`.
 - **Ball compass:** `BallCompassHud` — bottom-left panel + ring; white **`LabelText`** hub centered in ring (default **BALL**); small **triangle** orbits ring edge (360°) toward **`main_ball`** (held or loose). **White** loose · **green** teammate · **red** enemy. **Needle hidden** when you carry (label + panel + dim ring stay). Bearing = **player position + `EyeAngles` yaw** (not camera). Auto-added on network spawn (`GameNetworkManager.GetOrCreate`). Tune: `MarginLeft` / `MarginBottom` / `CompassSize` / `NeedleTipRadius` / colours.
 - **Throw charge camera:** `ThrowChargeCamera` lerps `PlayerController.CameraOffset` + main-camera FOV with `BallThrow.GetThrowChargeLerp()`; quick smoothstep blend on throw/cancel. **Does not run** while ragdolled or during `PlayerTackle` stand-up camera blend — ragdoll orbit is applied in `PlayerTackle.OnPreRender` last.
-- **Walk into the ball = pick it up.** No kick button.
+- **Walk into the ball = pick it up.** No kick button. While held, ball follows **`hold_R`** on **Body** `SkinnedModelRenderer` (`BallGrab.HoldBoneName`; falls back to `HoldAnchor`). Old `HandHoldPoint` + `citizen_holdball_test` IK was for classic citizen — human uses bone attach.
 - **Online: the host is the referee** — clients request; host decides.
 - **Tackles:** Only at full charge speed. Host spawns **ragdoll object**; clients **request** via RPC. Launch = pelvis `ApplyImpulse` on host **before** `NetworkSpawn` (poll `RagdollPhysicsInitDelay` max). Juggernaut bonus: owner mirror sent in RPC so client tackles aren’t weaker.
 - **Dodge:** Double-tap A or D. Tackle iframe only.
@@ -113,9 +113,10 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 2. Network menu → **Join via new instance** (second window = client).
 3. Check both windows: grab, throw, tackle (**host→client and client→host**, similar launch distance), dodge, **enemy red outlines** (standing + ragdoll, both directions), **goals, reset, intermission, match over, rematch, HUD**, **traffic** (Road0 + Road1: 3 model variants per lane, knockdown, **ball bounce on host**, engine idle/drive).
 4. **Throw polish:** trajectory arc + 1:1 translucent landing marker, charge camera, charge bar; tackle while charging (ragdoll cam OK).
-5. **Ball carrier glow:** enemy/teammate carries — gold outline + emissive pulse visible to you; **you carry** — no glow; behind wall — no glow.
-6. **Ball compass:** needle tracks ball (loose or carried); green = teammate, red = enemy, white = loose; spin camera to verify bearing; you carry → ring only, no needle.
-7. Spam actions once to probe desync.
+5. **Ball carrier glow:** teammate = white ↔ green; enemy = white ↔ red; **you carry** — no glow; behind wall — no glow.
+6. **Ball compass:** triangle orbits ring toward ball; green / red / white by possession; you carry → **BALL** hub + ring, no triangle.
+7. **Held ball:** sits on carrier’s **right hand** (`hold_R`), not hip; both windows agree.
+8. Spam actions once to probe desync.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
 
@@ -166,9 +167,14 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **`Move Mode Walk` → Step Up Height** — global curb step (default was **10**; try **24–32** for 16-unit geo). Tune here only — no code wrapper.
 - **Body child** — `SkinnedModelRenderer`: **`citizen_human_*`** + human **Animation Graph** (not `citizen_holdball_test` unless on classic citizen)
 - **`HighlightOutline`** — tune colors/width here (ragdoll copies this exact component); optional **`PlayerEnemyOutline`** (auto at spawn)
-- `DodgeCooldownHud`, `MovementRampHud`, **`BallCompassHud`** (bottom-left ball compass — remove legacy **`BallCarrierOffscreenHud`** if still on prefab), **`ThrowChargeBar`** (vertical screen bar above dodge while charging), **`ThrowTrajectoryPreview`** (owner throw arc while charging), **`ThrowChargeCamera`** (owner charge pullback + mild FOV widen; scales with charge lerp)
+- `DodgeCooldownHud`, `MovementRampHud`, **`BallCompassHud`**, **`ThrowChargeBar`**, **`ThrowTrajectoryPreview`**, **`ThrowChargeCamera`**
+- **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
 - **`BallThrow` → Throw Direction Source** optional; if empty, throw uses **`PlayerController.EyeAngles`** (look while charging)
+
+**`main_ball`:**
+- `ModelRenderer` — e.g. **`ball_v2.vmat`** (emissive gold + pattern scroll; team read from glow/compass not ball albedo)
+- **`BallCarrierOutline`** — tune `OutlineWidth` (~1–1.5), `PulseWhiteColor`, `FriendlyAccentColor`, `EnemyAccentColor`
 
 **Traffic cars (per lane — Road0 + Road1 wired):**
 
@@ -197,28 +203,25 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - Small screen shake on tackle hit — yes or no?
 - Map vote: allow changing vote during the 30s window?
 - **Traffic knockdown tuning:** **`KnockdownLaunchSpeed`** / hit box vs dodgeability
-- **Ball carrier glow team pulse:** white ↔ green (teammate) / white ↔ red (enemy) on `BallCarrierOutline` — compass done first; glow later
-- **Ball compass polish:** optional **“Ball”** label or distance readout on `BallCompassHud`
+- **Ball compass polish:** optional distance readout on `BallCompassHud`
+- **Hero asset art:** maps/props low poly; **players + ball** may get higher-detail models later — ball on **`ball_v2.vmat`** (emissive gold + scroll) for now; `BallCarrierOutline` still copies ball material for carry breathe
+- **Human hold/throw anim graph** — bone attach shipped; posed carry layer still TBD (was `citizen_holdball_test` on classic citizen)
 
 ---
 
-## Ball compass (`BallCompassHud`) — handoff
+## Ball carrier UX — handoff (compass + glow + hold)
 
-**Shipped (needs playtest):** Bottom-left **BALL** label (white) + dark panel + ring + small **triangle** on ring edge (360° orbit) pointing toward **`main_ball`**. **White** loose · **green** teammate · **red** enemy. Always on during play; **needle hidden** when you carry (label + dim ring + panel stay). **Player position + `EyeAngles` yaw** bearing. Everyone sees it. Owner-only draw.
+**`BallCompassHud` — shipped (solo OK):** Bottom-left **BALL** hub (white) + ring + small **triangle** on ring edge (360° orbit) toward **`main_ball`**. **White** loose · **green** teammate · **red** enemy. Always on; triangle hidden when you carry (hub + dim ring stay). **Player position + `EyeAngles` yaw** bearing. Everyone sees it.
 
-**Abandoned:** Edge-of-screen arrow (noisy UX). Old team-only / off-screen-only / `EyeAngles` yaw bearing — superseded.
+**`BallCarrierOutline` — shipped:** White ↔ **green** (teammate) / white ↔ **red** (enemy) on held ball; hidden for carrier; no wallhack; default **`OutlineWidth`** ~1.5.
 
-**Future HUD chrome:** black & white panels/labels; **green / red** stay for friendly / enemy gameplay cues.
+**`BallGrab` hold — shipped:** Ball follows **`hold_R`** on Body `SkinnedModelRenderer` (`TryGetBoneTransform`); falls back to `HoldAnchor`. Human avatar — no `citizen_holdball_test` IK.
 
-**Still to try / tune:**
-- [ ] 2-window MP: close-range bearing, triangle read, label spacing
-- [ ] Size / margins vs dodge/ramp cluster on right
-- [ ] Optional distance readout
-- [ ] Razor / proper UI later (B&W chrome + semantic green/red)
+**Abandoned:** Edge-of-screen compass arrow.
 
-**Later (separate):** `BallCarrierOutline` team pulse (white ↔ green / white ↔ red).
+**Future:** B&W HUD chrome; Razor UI; optional compass distance readout; human **carry anim layer**.
 
-**Code:** `Code/UI/BallCompassHud.cs` · names in [`NAMING_CANON.md`](NAMING_CANON.md)
+**Code:** `Code/UI/BallCompassHud.cs`, `Code/Ball/BallCarrierOutline.cs`, `Code/Ball/BallGrab.cs`
 
 ---
 
@@ -226,7 +229,6 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 - [ ] Throw strength still needs playtest tuning
 - [ ] Walk/run animations while charging throw (can’t move)
-- [ ] **`BallCompassHud`** — compass playtest + polish (see **Ball compass** section)
 - [ ] **MP join visual glitch (host)** — brief **black mesh face** flash when client joins; stops when client leaves; likely joining player **`PlayerCosmeticsSync`** / human body before `ClothingContainer.ApplyAsync` (~0.25s delay) — **unconfirmed**; not caused by compass HUD (lines only)
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
 - [ ] **Clutter** sometimes missing after **engine reload** — save scene after paint; check clutter **Volume** bounds; verify in **Play** (not only editor flycam)
@@ -241,7 +243,7 @@ Paste at the start of a new chat:
 ```
 Read SESSION_NOTES.md. Match flow slices 1–6 are done (MATCH_FLOW_PLAN.md). Do not edit .scene files unless I ask.
 Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Height) — do not add code that only mirrors a property Max can set on the player template.
-Ball carrier UX: BallCarrierOutline (glow) + BallCompassHud (bottom-left ball compass) — see “Ball compass” section.
+Ball carrier UX: BallCarrierOutline (team pulse glow) + BallCompassHud (compass) + BallGrab hold_R bone — see “Ball carrier UX” section.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -250,7 +252,9 @@ Ball carrier UX: BallCarrierOutline (glow) + BallCompassHud (bottom-left ball co
 
 ## Recent session notes
 
-- **2026-06-09 (ball compass polish):** Player **`EyeAngles`** bearing (not camera); filled triangle needle; white **BALL** label above widget.
+- **2026-06-09 (ball carrier UX wrap):** **`BallGrab`** → **`hold_R`** hand bone attach (human; replaces hip/`HandHoldPoint` IK). **`BallCompassHud`** overhaul shipped (ball tracking, ring-edge triangle, **BALL** hub, player bearing, team colors). **`BallCarrierOutline`** team pulse (white ↔ green/red); thinner outline. Ball art: **`ball_v2.vmat`** emissive gold + texture scroll (neutral albedo).
+- **2026-06-09 (ball carrier glow):** **`BallCarrierOutline`** — white ↔ **green** (teammate) / white ↔ **red** (enemy) pulse; matches compass semantics.
+- **2026-06-09 (ball compass polish):** Player **`EyeAngles`** bearing; ring-edge triangle marker; **BALL** hub centered in ring.
 - **2026-06-09 (ball compass overhaul):** Renamed **`BallCarrierOffscreenHud`** → **`BallCompassHud`**. Tracks **`main_ball`**; always-on; white/green/red by possession; needle hidden when local player carries. Ball glow team pulse deferred.
 - **2026-06-09 (ball carrier compass):** Edge arrow → bottom-left compass prototype (superseded by overhaul above).
 - **2026-06-09 (ball carrier UX):** **`BallCarrierOutline`** — gold colour-pulse outline + emissive breathe; hidden for carrier; no through-wall glow; ring width distance-scaled (no width pulse). **Throw trajectory** — 1:1 held-ball landing marker + `ball_translucent.vmat`; translucent grain fix (no tint-alpha on opaque). **Throw polish 2-window MP OK.**

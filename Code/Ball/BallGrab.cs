@@ -13,6 +13,10 @@ public sealed class BallGrab : Component
 	[Property] public float DropperNoPushRadius { get; set; } = 90f;
 	[Property] public float DropperMaxHorizontalSpeed { get; set; } = 60f;
 	[Property] public GameObject HoldAnchor { get; set; }
+	[Property] public SkinnedModelRenderer BodyRenderer { get; set; }
+	[Property] public string HoldBoneName { get; set; } = "hold_R";
+	[Property] public Vector3 HoldBoneLocalOffset { get; set; }
+	[Property] public Angles HoldBoneLocalAngles { get; set; }
 	[Property] public float DropSideOffset { get; set; } = 25f;
 	[Property, Range( 0f, 2f )] public float DropVelocityScale { get; set; } = 0.5f;
 	[Property] public string PromptText { get; set; } = "Pick Up With E";
@@ -44,6 +48,7 @@ public sealed class BallGrab : Component
 
 	protected override void OnStart()
 	{
+		ResolveBodyRenderer();
 		FindMainBall();
 	}
 
@@ -180,9 +185,7 @@ public sealed class BallGrab : Component
 
 		ballOriginalParent = ballObject.Parent;
 
-		var parentTarget = HoldAnchor.IsValid() ? HoldAnchor : GameObject;
-		ballObject.WorldPosition = parentTarget.WorldPosition;
-		ballObject.WorldRotation = parentTarget.WorldRotation;
+		ApplyHoldAnchorTransformToBall();
 
 		ballBodiesToRestore.Clear();
 		foreach ( var body in ballObject.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
@@ -295,11 +298,65 @@ public sealed class BallGrab : Component
 	/// <summary> Ball pivot on release before <see cref="BallThrow"/> throw offsets — used by throw trajectory preview. </summary>
 	public Vector3 GetPredictedThrowReleasePivotPosition()
 	{
+		if ( isHolding && TryGetHoldAnchorWorldTransform( out var position, out _ ) )
+			return position;
+
 		var playerController = Components.Get<PlayerController>();
 		var facingRotation = playerController.IsValid()
 			? Rotation.FromYaw( playerController.EyeAngles.yaw )
 			: GameObject.WorldRotation;
 		return GameObject.WorldPosition + (facingRotation.Right * DropSideOffset) + (Vector3.Up * 4f);
+	}
+
+	/// <summary> World hold pose — right-hand <see cref="HoldBoneName"/> when available, else <see cref="HoldAnchor"/>. </summary>
+	public bool TryGetHoldAnchorWorldTransform( out Vector3 position, out Rotation rotation )
+	{
+		position = default;
+		rotation = Rotation.Identity;
+
+		ResolveBodyRenderer();
+
+		if ( BodyRenderer.IsValid()
+			&& !string.IsNullOrWhiteSpace( HoldBoneName )
+			&& BodyRenderer.TryGetBoneTransform( HoldBoneName, out var boneTransform ) )
+		{
+			var localHold = new Transform( HoldBoneLocalOffset, HoldBoneLocalAngles.ToRotation() );
+			var worldHold = boneTransform.ToWorld( localHold );
+			position = worldHold.Position;
+			rotation = worldHold.Rotation;
+			return true;
+		}
+
+		if ( HoldAnchor.IsValid() )
+		{
+			position = HoldAnchor.WorldPosition;
+			rotation = HoldAnchor.WorldRotation;
+			return true;
+		}
+
+		position = GameObject.WorldPosition;
+		rotation = GameObject.WorldRotation;
+		return false;
+	}
+
+	void ResolveBodyRenderer()
+	{
+		if ( BodyRenderer.IsValid() )
+			return;
+
+		BodyRenderer = Components.Get<SkinnedModelRenderer>( FindMode.EverythingInDescendants );
+	}
+
+	void ApplyHoldAnchorTransformToBall()
+	{
+		if ( !ballObject.IsValid() )
+			return;
+
+		if ( !TryGetHoldAnchorWorldTransform( out var position, out var rotation ) )
+			return;
+
+		ballObject.WorldPosition = position;
+		ballObject.WorldRotation = rotation;
 	}
 
 	public GameObject ReleaseHeldBall( Vector3 playerVelocity = default )
@@ -342,29 +399,21 @@ public sealed class BallGrab : Component
 
 	private void KeepHeldBallAttachedToAnchor()
 	{
-		var parentTarget = HoldAnchor.IsValid() ? HoldAnchor : GameObject;
-		if ( !parentTarget.IsValid() )
-			return;
-
-		ballObject.WorldPosition = parentTarget.WorldPosition;
-		ballObject.WorldRotation = parentTarget.WorldRotation;
+		ApplyHoldAnchorTransformToBall();
 	}
 
 	private void ApplyClientHeldVisualState()
 	{
 		if ( isHolding )
 		{
-			var parentTarget = HoldAnchor.IsValid() ? HoldAnchor : GameObject;
-			if ( parentTarget.IsValid() )
+			if ( !TryGetHoldAnchorWorldTransform( out var position, out var rotation ) )
 			{
-				ballObject.WorldPosition = parentTarget.WorldPosition;
-				ballObject.WorldRotation = parentTarget.WorldRotation;
+				position = NetHeldBallWorldPosition;
+				rotation = NetHeldBallWorldRotation;
 			}
-			else
-			{
-				ballObject.WorldPosition = NetHeldBallWorldPosition;
-				ballObject.WorldRotation = NetHeldBallWorldRotation;
-			}
+
+			ballObject.WorldPosition = position;
+			ballObject.WorldRotation = rotation;
 
 			ApplyClientProxyBallState( ballObject, true );
 			appliedClientHeldProxyState = true;

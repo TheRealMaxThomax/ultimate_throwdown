@@ -7,8 +7,8 @@ Keep items short and clear.
 - **Gameplay polish + MP soak** — v1 match flow (slices 1–6) shipped. See [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md).
 
 ## TODO (Next Up)
-- [ ] **`BallCompassHud`** — 2-window playtest + tune margins/colors.
-- [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, match over, rematch, HUD sync.
+- [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, match over, rematch, HUD sync, **ball compass + glow + hand hold**.
+- [ ] **MP join flash** — host black mesh face on client join (cosmetics load?).
 - [ ] **Map vote** — 30s timer, all players vote `Slot1`–`N`, plurality wins, random tie-break among top (see MATCH_FLOW_PLAN → Later).
 - [ ] Improve free-ball client feel to better match host while keeping shared position consistency.
 - [ ] Tune `BallClientFeel` values (`FreeBallVisualFollowSharpness`, `ContactBoostSharpness`, `ContactBoostDuration`) with repeatable multiplayer push tests.
@@ -28,12 +28,18 @@ Keep items short and clear.
 
 ## Ideas (Later)
 - [ ] Final art pass on throw charge bar (red/yellow/green sections, smooth fill — replace placeholder vertical bar).
+- [ ] **Human hold/carry anim layer** on anim graph (arms around ball — bone attach done; was `citizen_holdball_test` on classic citizen).
+- [ ] **Ball compass / HUD** — Razor UI, B&W chrome, optional distance readout.
+- [ ] **Hero ball material** — panel lines or higher-detail mesh (on `ball_v2` emissive gold + scroll for now).
 - [ ] Add animation hooks for hold/throw.
 - [ ] Add catch-up sprint animation (head slightly down, arm up, charging posture) for the non-ball-carrier catch-up state.
 - [ ] Add sound effects for pickup/drop/throw.
 
 ## Done
-- [x] **Ball carrier glow** — `BallCarrierOutline`: gold colour-pulse outline + emissive breathe; non-carrier viewers only; no through walls; ring width distance-scaled.
+- [x] **Ball hand hold** — `BallGrab` attaches to **`hold_R`** bone (`TryGetHoldAnchorWorldTransform`); `BallClientFeel` sync; fallback `HoldAnchor`.
+- [x] **`BallCompassHud`** — tracks `main_ball`; ring-edge triangle; **BALL** hub; white/green/red; player `EyeAngles` bearing; renamed from `BallCarrierOffscreenHud`.
+- [x] **Ball carrier glow (team pulse)** — `BallCarrierOutline`: white ↔ green (teammate) / white ↔ red (enemy); thinner outline default; non-carrier only; no wallhack.
+- [x] **Ball carrier glow (v1)** — gold colour-pulse outline + emissive breathe (superseded by team pulse).
 - [x] **Throw polish MP (2026-06-09)** — 2-window OK: trajectory, charge camera, charge bar, tackle-while-charging.
 - [x] **Throw trajectory landing marker** — 1:1 held-ball clone + `ball_translucent.vmat`; client translucent grain fix.
 - [x] **Throw trajectory preview (polish)** — scrolling dashed arc, landing sphere, simulation-time dash scroll; `ThrowReleaseMath` physics match.

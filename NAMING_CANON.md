@@ -11,18 +11,18 @@
 
 | Name | Job |
 |------|-----|
-| `BallGrab` | Who holds the ball; pickup, drop, auto-grab |
+| `BallGrab` | Who holds the ball; pickup, drop, auto-grab; hold pose via **`hold_R`** bone (`HoldBoneName`, `TryGetHoldAnchorWorldTransform`) |
 | `BallThrow` | Throwing and charge |
 | `BallClientFeel` | Makes the ball look smooth on clients (not gameplay authority) |
 | `ThrowChargeBar` | Owner screen HUD while charging throw (vertical bar above dodge; placeholder) |
 | `ThrowTrajectoryPreview` | Owner-only dashed arc + first-hit landing sphere while charging throw |
-| `BallCarrierOutline` | Gold colour-pulse `HighlightOutline` + emissive breathe on held ball (non-carrier viewers; no wallhack) |
+| `BallCarrierOutline` | Team pulse `HighlightOutline` on held ball — white ↔ green (teammate) / white ↔ red (enemy); non-carrier viewers; no wallhack |
 | `ThrowReleaseMath` | Shared throw release + first-arc sim (`ComputeRelease`, `TryGetBallFlightParameters`, `TrySimulateFirstImpact`) |
 
-**Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `NetIsHolding`, `GetPredictedThrowReleasePivotPosition()`  
+**Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `HoldBoneName`, `BodyRenderer`, `HoldBoneLocalOffset`, `TryGetHoldAnchorWorldTransform()`, `GetPredictedThrowReleasePivotPosition()`  
 **Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `IsChargingThrow`, `NetIsChargingThrow`, `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`), `GetThrowChargeLerp()`, `TryGetThrowPreviewSnapshot()`  
 **Often-used on `ThrowTrajectoryPreview`:** `ArcDashScrollSpeed`, `LandingMarkerAlpha`, `TranslucentBallMaterialPath`, `LandingMarkerLift`  
-**Often-used on `BallCarrierOutline`:** `GlowColorDim`, `GlowColorBright`, `PulseSeconds`, `OutlineWidth`, `EnableEmissivePulse`, `EmissiveBrightnessMax`  
+**Often-used on `BallCarrierOutline`:** `PulseWhiteColor`, `FriendlyAccentColor`, `EnemyAccentColor`, `PulseSeconds`, `OutlineWidth`, `EnableEmissivePulse`, `EmissiveBrightnessMax`  
 **Often-used on `BallCompassHud`:** `LabelText`, `LabelFontSize`, `MarginLeft`, `MarginBottom`, `CompassSize`, `MarkerOrbitRadiusFraction`, `MarkerTipLength`, `MarkerHalfWidth`, `LooseColor`, `FriendlyColor`, `EnemyColor`, `LocalCarryRingColor` (player `EyeAngles` bearing; white hub label centered in ring; triangle orbits edge toward ball)
 
 ---
@@ -157,7 +157,7 @@ Shade examples: `eggshell_30lighter`, `grey_20lighter` (footpaths) — see `game
 <details>
 <summary>Click to expand — every named field (for AI or rare lookups)</summary>
 
-**BallGrab:** `HeldBall`, `MainBallName`, `InteractAction`, `HoldAnchor`, `PickupDelayAfterDrop`, `DropperNoPushWindow`, `DropSideOffset`, `DropVelocityScale`, `NetPickupBlockedRemain`, `ReleaseHeldBall()`, `BlockPickupForSeconds()`, …
+**BallGrab:** `HeldBall`, `MainBallName`, `InteractAction`, `HoldAnchor`, `BodyRenderer`, `HoldBoneName` (`hold_R`), `HoldBoneLocalOffset`, `HoldBoneLocalAngles`, `TryGetHoldAnchorWorldTransform()`, `PickupDelayAfterDrop`, `DropperNoPushWindow`, `DropSideOffset`, `DropVelocityScale`, `NetPickupBlockedRemain`, `ReleaseHeldBall()`, `BlockPickupForSeconds()`, …
 
 **BallThrow:** `ThrowAction`, `ThrowStartOffset`, `MinThrowChargeTime`, `MaxThrowChargeTime`, `ClearThrowChargeLocal()`, `TryGetThrowPreviewSnapshot()`, …
 

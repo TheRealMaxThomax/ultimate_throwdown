@@ -74,8 +74,8 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "Team0DisplayName": "Team A",
-              "Team1DisplayName": "Team B"
+              "Team0DisplayName": "Gassy Moe's",
+              "Team1DisplayName": "MorgsFuel"
             },
             {
               "__type": "GameNetworkManager",
@@ -395,6 +395,7 @@
               "__guid": "15fbf312-5840-45ed-9049-475a45d6eba3",
               "__enabled": true,
               "Flags": 0,
+              "BodyRenderer": null,
               "DropperMaxHorizontalSpeed": 60,
               "DropperNoPushRadius": 90,
               "DropperNoPushWindow": 0.75,
@@ -405,6 +406,9 @@
                 "_type": "gameobject",
                 "go": "90b6a6f2-820a-4618-bfa4-4393704dd84e"
               },
+              "HoldBoneLocalAngles": "0,0,0",
+              "HoldBoneLocalOffset": "0,0,0",
+              "HoldBoneName": "hold_R",
               "InteractAction": "use",
               "InteractDistance": 45,
               "MainBall": null,
@@ -492,8 +496,8 @@
               "__guid": "70835401-2765-4194-af7b-a51eee71b665",
               "__enabled": true,
               "Flags": 0,
-              "ExtraCameraDistanceAtFullCharge": 50,
-              "ExtraCameraHeightAtFullCharge": 20,
+              "ExtraCameraDistanceAtFullCharge": 90,
+              "ExtraCameraHeightAtFullCharge": 60,
               "ExtraFieldOfViewAtFullCharge": 7,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
@@ -2785,7 +2789,7 @@
                   ]
                 },
                 {
-                  "__guid": "e831f413-b8a7-436c-8c71-cfc86f47e3b5",
+                  "__guid": "91fa3a05-eb17-4968-9d70-1f237fd8ef80",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2802,7 +2806,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "fc5a5ad3-f9b6-422e-8e07-45b690a40cc0",
+                      "__guid": "1b9a58c5-a241-4a81-876c-2de6a6234d41",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -2936,7 +2940,7 @@
           "Name": "main_ball",
           "Position": "-775.093079,916.603394,-233.000549",
           "Rotation": "0,0,0,1",
-          "Scale": "0.400000006,0.400000006,0.400000006",
+          "Scale": "0.300000012,0.300000012,0.300000012",
           "Tags": "ball",
           "Enabled": true,
           "NetworkMode": 2,
@@ -2954,7 +2958,7 @@
               "CreateAttachments": false,
               "LodOverride": null,
               "MaterialGroup": null,
-              "MaterialOverride": "materials/turfwarspoly/ball.vmat",
+              "MaterialOverride": "materials/turfwarspoly/ball_gold.vmat",
               "Materials": null,
               "Model": "models/dev/sphere.vmdl",
               "OnComponentDestroy": null,
@@ -3043,10 +3047,10 @@
               "EmissiveScaleMax": 1.45,
               "EmissiveScaleMin": 0.95,
               "EnableEmissivePulse": true,
-              "GlowColorBright": "1,0.92,0.35,1",
-              "GlowColorDim": "1,0.75,0.2,0.55",
-              "GlowInsideColorBright": "1,0.82,0.25,0.4",
-              "GlowInsideColorDim": "1,0.7,0.18,0.2",
+              "EnemyAccentColor": "1,0.15,0.15,1",
+              "EnemyInsideAccentColor": "1,0.15,0.15,0.38",
+              "FriendlyAccentColor": "0.25,0.95,0.4,1",
+              "FriendlyInsideAccentColor": "0.25,0.95,0.4,0.38",
               "MaxWidthScale": 0.6,
               "MinWidthScale": 0.25,
               "OnComponentDestroy": null,
@@ -3057,6 +3061,8 @@
               "OnComponentUpdate": null,
               "OutlineWidth": 1,
               "PulseSeconds": 1.2,
+              "PulseWhiteColor": "0.95,0.95,0.95,0.9",
+              "PulseWhiteInsideColor": "1,1,1,0.22",
               "WidthReferenceDistance": 280
             }
           ],
@@ -3787,6 +3793,7 @@
               "__guid": "3821049b-53c9-4050-a2de-0f897517ed84",
               "__enabled": true,
               "Flags": 0,
+              "BodyRenderer": null,
               "DropperMaxHorizontalSpeed": 60,
               "DropperNoPushRadius": 90,
               "DropperNoPushWindow": 0.75,
@@ -3797,6 +3804,9 @@
                 "_type": "gameobject",
                 "go": "ae810efd-fdab-472b-ac83-0c7d58cdfc34"
               },
+              "HoldBoneLocalAngles": "0,0,0",
+              "HoldBoneLocalOffset": "0,0,0",
+              "HoldBoneName": "hold_R",
               "InteractAction": "use",
               "InteractDistance": 45,
               "MainBall": null,
@@ -6072,7 +6082,7 @@
                   ]
                 },
                 {
-                  "__guid": "0a410e73-d682-432f-981b-0c40add04e8d",
+                  "__guid": "417287a8-aaf4-43c8-acfd-894c73ed32bb",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6089,7 +6099,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "cee548fd-c430-4e16-9b52-3c090f6cd468",
+                      "__guid": "290a1ba2-10d1-4e1d-a549-043f91ae040a",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6415,6 +6425,7 @@
               "__guid": "d2c249f9-394f-4561-8555-a33c9443191a",
               "__enabled": true,
               "Flags": 0,
+              "BodyRenderer": null,
               "DropperMaxHorizontalSpeed": 60,
               "DropperNoPushRadius": 90,
               "DropperNoPushWindow": 0.75,
@@ -6425,6 +6436,9 @@
                 "_type": "gameobject",
                 "go": "334e0777-8c16-4c95-b4ed-98bef4f3f1bb"
               },
+              "HoldBoneLocalAngles": "0,0,0",
+              "HoldBoneLocalOffset": "0,0,0",
+              "HoldBoneName": "hold_R",
               "InteractAction": "use",
               "InteractDistance": 45,
               "MainBall": null,
@@ -8700,7 +8714,7 @@
                   ]
                 },
                 {
-                  "__guid": "df477edb-a48b-46d9-8aa0-8e1cf85737ad",
+                  "__guid": "3f4e9d9d-5719-4e20-839d-3157332926d4",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8717,7 +8731,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "9f881374-df9d-44a5-84fb-5e0bcf5cf464",
+                      "__guid": "bdd5c748-0fb4-4d44-8647-27fbd19ba1e4",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -9043,6 +9057,7 @@
               "__guid": "b4b1f569-bd7f-498c-aabb-78289ace71ff",
               "__enabled": true,
               "Flags": 0,
+              "BodyRenderer": null,
               "DropperMaxHorizontalSpeed": 60,
               "DropperNoPushRadius": 90,
               "DropperNoPushWindow": 0.75,
@@ -9053,6 +9068,9 @@
                 "_type": "gameobject",
                 "go": "2cf40f0e-8a3f-417c-bf47-209abe91a278"
               },
+              "HoldBoneLocalAngles": "0,0,0",
+              "HoldBoneLocalOffset": "0,0,0",
+              "HoldBoneName": "hold_R",
               "InteractAction": "use",
               "InteractDistance": 45,
               "MainBall": null,
@@ -11328,7 +11346,7 @@
                   ]
                 },
                 {
-                  "__guid": "2e1421f4-9d91-4875-9ed6-37f878be91d8",
+                  "__guid": "7c830d78-e248-4680-a430-e5ca672f0cc4",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11345,7 +11363,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "3edbd930-5f5b-4331-ae8d-4fbb020d7d08",
+                      "__guid": "561f649a-ea18-4506-82bb-1cfc722d07c3",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -87034,14 +87052,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
-      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
+        }
+      },
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
         }
       }
     }

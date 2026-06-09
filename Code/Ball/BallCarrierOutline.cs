@@ -3,20 +3,28 @@ using System.Collections.Generic;
 using Sandbox;
 
 /// <summary>
-/// Gold <see cref="HighlightOutline"/> on the ball while any player is carrying it.
-/// Hidden for the carrier, hidden through walls, colour pulse at all ranges.
-/// Optional emissive breathe for non-carrier viewers. Outline ring width scales with distance.
+/// Team-colour <see cref="HighlightOutline"/> on the ball while a player is carrying it.
+/// Pulses white ↔ green (teammate) or white ↔ red (enemy) for the local viewer.
+/// Hidden for the carrier, hidden through walls. Optional emissive breathe. Ring width scales with distance.
 /// Requires <see cref="Highlight"/> on the main camera (see <see cref="EnemyOutlineCameraSetup"/>).
 /// </summary>
 public sealed class BallCarrierOutline : Component
 {
+	enum CarrierGlowTeam
+	{
+		Teammate,
+		Enemy
+	}
+
 	const string FallbackBallMaterialPath = "materials/turfwarspoly/ball.vmat";
 
-	[Property] public Color GlowColorDim { get; set; } = new Color( 1f, 0.75f, 0.2f, 0.55f );
-	[Property] public Color GlowColorBright { get; set; } = new Color( 1f, 0.92f, 0.35f, 1f );
-	[Property] public Color GlowInsideColorDim { get; set; } = new Color( 1f, 0.7f, 0.18f, 0.2f );
-	[Property] public Color GlowInsideColorBright { get; set; } = new Color( 1f, 0.82f, 0.25f, 0.4f );
-	[Property] public float OutlineWidth { get; set; } = 2.5f;
+	[Property] public Color PulseWhiteColor { get; set; } = new Color( 0.95f, 0.95f, 0.95f, 0.9f );
+	[Property] public Color PulseWhiteInsideColor { get; set; } = new Color( 1f, 1f, 1f, 0.22f );
+	[Property] public Color FriendlyAccentColor { get; set; } = new Color( 0.25f, 0.95f, 0.4f, 1f );
+	[Property] public Color FriendlyInsideAccentColor { get; set; } = new Color( 0.25f, 0.95f, 0.4f, 0.38f );
+	[Property] public Color EnemyAccentColor { get; set; } = new Color( 1f, 0.15f, 0.15f, 1f );
+	[Property] public Color EnemyInsideAccentColor { get; set; } = new Color( 1f, 0.15f, 0.15f, 0.38f );
+	[Property] public float OutlineWidth { get; set; } = 1.5f;
 	[Property] public float PulseSeconds { get; set; } = 1.1f;
 	[Property] public float WidthReferenceDistance { get; set; } = 280f;
 	[Property] public float MinWidthScale { get; set; } = 0.28f;
@@ -60,12 +68,21 @@ public sealed class BallCarrierOutline : Component
 			return;
 		}
 
+		if ( !TryGetCarrierGlowTeam( carrier, out var glowTeam ) )
+		{
+			outline.Enabled = false;
+			RestoreBallMaterial();
+			return;
+		}
+
 		outline.Enabled = true;
 
 		var pulse = GetPulse01();
 		var distanceScale = GetDistanceWidthScale( GetDistanceToCamera() );
-		var ringColor = Color.Lerp( GlowColorDim, GlowColorBright, pulse );
-		var insideColor = Color.Lerp( GlowInsideColorDim, GlowInsideColorBright, pulse );
+		GetTeamPulseColors( glowTeam, out var whiteRing, out var accentRing, out var whiteInside, out var accentInside );
+
+		var ringColor = Color.Lerp( whiteRing, accentRing, pulse );
+		var insideColor = Color.Lerp( whiteInside, accentInside, pulse );
 
 		outline.Width = OutlineWidth * distanceScale;
 		outline.Color = ringColor;
@@ -77,6 +94,48 @@ public sealed class BallCarrierOutline : Component
 			ApplyEmissivePulse( pulse );
 		else
 			RestoreBallMaterial();
+	}
+
+	void GetTeamPulseColors(
+		CarrierGlowTeam glowTeam,
+		out Color whiteRing,
+		out Color accentRing,
+		out Color whiteInside,
+		out Color accentInside )
+	{
+		whiteRing = PulseWhiteColor;
+		whiteInside = PulseWhiteInsideColor;
+
+		if ( glowTeam == CarrierGlowTeam.Teammate )
+		{
+			accentRing = FriendlyAccentColor;
+			accentInside = FriendlyInsideAccentColor;
+			return;
+		}
+
+		accentRing = EnemyAccentColor;
+		accentInside = EnemyInsideAccentColor;
+	}
+
+	static bool TryGetCarrierGlowTeam( BallGrab carrier, out CarrierGlowTeam glowTeam )
+	{
+		glowTeam = CarrierGlowTeam.Enemy;
+
+		if ( !carrier.IsValid() )
+			return false;
+
+		var localTeamId = PlayerEnemyOutline.FindLocalViewerTeamId( carrier.Scene );
+		var holderTeam = carrier.Components.Get<PlayerTeam>();
+		if ( !holderTeam.IsValid()
+			|| !MatchTeamIds.IsValid( holderTeam.TeamId )
+			|| !MatchTeamIds.IsValid( localTeamId ) )
+			return false;
+
+		glowTeam = holderTeam.TeamId == localTeamId
+			? CarrierGlowTeam.Teammate
+			: CarrierGlowTeam.Enemy;
+
+		return true;
 	}
 
 	void CaptureOriginalMaterial()

@@ -71,12 +71,11 @@ public sealed class BallClientFeel : Component
 
 		if ( isHolding )
 		{
-			var holdAnchor = ballGrab.HoldAnchor;
-			if ( holdAnchor.IsValid() )
+			if ( ballGrab.TryGetHoldAnchorWorldTransform( out var position, out var rotation ) )
 			{
-				// Local visual snap keeps held ball locked to hand instead of appearing to float near it.
-				ball.WorldPosition = holdAnchor.WorldPosition;
-				ball.WorldRotation = holdAnchor.WorldRotation;
+				// Local visual snap keeps held ball locked to the hand bone instead of floating at the hip.
+				ball.WorldPosition = position;
+				ball.WorldRotation = rotation;
 			}
 			else
 			{

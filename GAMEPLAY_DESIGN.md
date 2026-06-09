@@ -27,8 +27,10 @@
 | Match over + rematch | **Built** — 10s celebration, then host **`1`** (`Slot1`) same-map rematch |
 | Map vote (30s, all players) | **Not built** — planned; see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) → Later |
 | Enemy team outline | **Built** — `Highlight` on camera + `HighlightOutline` on players; ragdoll copy via `RagdollEnemyOutline` |
-| Ball carrier glow (held ball) | **Built** — `BallCarrierOutline` on `main_ball`: gold colour-pulse outline + emissive breathe; everyone except carrier; line-of-sight only (no through walls) |
-| Ball compass HUD | **Built** — `BallCompassHud` on player; always-on bottom-left needle toward ball (white loose / green teammate / red enemy); panel stays when local player carries, needle hidden |
+| Ball carrier glow (held ball) | **Built** — `BallCarrierOutline` on `main_ball`: white ↔ green (teammate) / white ↔ red (enemy) pulse + emissive breathe; everyone except carrier; line-of-sight only (no through walls); tune `OutlineWidth` on ball |
+| Ball compass HUD | **Built** — `BallCompassHud`: **BALL** hub + ring-edge triangle toward `main_ball` (white / green / red by possession); player `EyeAngles` bearing; triangle hidden when you carry |
+| Held ball position | **Built** — `BallGrab` follows **`hold_R`** on Body `SkinnedModelRenderer` (right hand); `HoldAnchor` fallback. Carry **anim pose** not built (human graph) |
+| Ball visual (hero) | **WIP** — `ball_v2.vmat` emissive gold + texture scroll; neutral albedo; team read from glow + compass |
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives / ults | **Not built** (stats in `.cdata` mostly are) |
