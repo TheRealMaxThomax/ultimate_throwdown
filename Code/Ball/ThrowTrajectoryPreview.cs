@@ -3,30 +3,29 @@ using System;
 using System.Collections.Generic;
 
 /// <summary>
-/// Owner-only dashed throw arc + first-impact landing marker while <see cref="BallThrow.IsChargingThrow"/>.
+/// Owner-only dashed throw arc + first-hit landing marker while <see cref="BallThrow.IsChargingThrow"/>.
 /// </summary>
 [Order( 10002 )]
 public sealed class ThrowTrajectoryPreview : Component
 {
-	const string LandingSphereModelPath = "models/dev/sphere.vmdl";
-	const string FallbackBallMaterialPath = "materials/turfwarspoly/ball.vmat";
+	const string DefaultTranslucentBallMaterialPath = "materials/turfwarspoly/ball_translucent.vmat";
 
 	[Property] public Color ArcDashColor { get; set; } = new( 1f, 1f, 1f, 0.4f );
 	[Property] public float LandingMarkerAlpha { get; set; } = 0.4f;
+	[Property] public string TranslucentBallMaterialPath { get; set; } = DefaultTranslucentBallMaterialPath;
 	[Property] public float ArcDashLength { get; set; } = 14f;
 	[Property] public float ArcGapLength { get; set; } = 10f;
 	[Property] public float ArcDashScrollSpeed { get; set; } = 120f;
-	[Property] public float LandingMarkerRadius { get; set; } = 10f;
 	[Property] public float LandingMarkerLift { get; set; } = 1.5f;
 	[Property] public float SimulationStepSeconds { get; set; } = 0.02f;
 	[Property] public float MaxSimulationSeconds { get; set; } = 6f;
 
-	private static Model landingSphereModel;
-	private static Material fallbackBallMaterial;
+	private static Material translucentBallMaterialBase;
 
 	private BallThrow ballThrow;
 	private GameObject landingMarkerGo;
 	private ModelRenderer landingMarkerRenderer;
+	private Material landingMarkerMaterial;
 	private readonly List<Vector3> arcPoints = new();
 
 	protected override void OnStart()
@@ -89,7 +88,7 @@ public sealed class ThrowTrajectoryPreview : Component
 			ArcGapLength,
 			scrollPhase,
 			SimulationStepSeconds,
-			ArcDashColor );
+			ToOpaqueOverlayColor( ArcDashColor ) );
 
 		if ( !hit )
 		{
@@ -101,7 +100,6 @@ public sealed class ThrowTrajectoryPreview : Component
 		var groundContact = impactPosition - impactNormal * flight.TraceRadius;
 		UpdateLandingMarker(
 			groundContact + impactNormal * LandingMarkerLift,
-			LandingMarkerRadius,
 			snapshot.HeldBall );
 	}
 
@@ -110,13 +108,10 @@ public sealed class ThrowTrajectoryPreview : Component
 		if ( landingMarkerGo.IsValid() )
 			return;
 
-		landingSphereModel ??= Model.Load( LandingSphereModelPath );
-
 		landingMarkerGo = Scene.CreateObject();
 		landingMarkerGo.Name = "ThrowLandingMarker";
 
 		landingMarkerRenderer = landingMarkerGo.Components.Create<ModelRenderer>();
-		landingMarkerRenderer.Model = landingSphereModel;
 		landingMarkerRenderer.RenderOptions.Overlay = true;
 
 		if ( landingMarkerRenderer.SceneObject.IsValid() )
@@ -126,53 +121,66 @@ public sealed class ThrowTrajectoryPreview : Component
 		}
 	}
 
-	void UpdateLandingMarker( Vector3 position, float radius, GameObject ball )
+	void EnsureLandingMarkerMaterial()
 	{
+		if ( landingMarkerMaterial.IsValid() )
+			return;
+
+		var materialPath = string.IsNullOrWhiteSpace( TranslucentBallMaterialPath )
+			? DefaultTranslucentBallMaterialPath
+			: TranslucentBallMaterialPath;
+
+		translucentBallMaterialBase ??= Material.Load( materialPath );
+		if ( !translucentBallMaterialBase.IsValid() )
+			return;
+
+		landingMarkerMaterial = translucentBallMaterialBase.CreateCopy( "throw_landing_marker" );
+	}
+
+	void UpdateLandingMarker( Vector3 position, GameObject ball )
+	{
+		if ( !ball.IsValid() )
+		{
+			SetLandingMarkerVisible( false );
+			return;
+		}
+
+		var ballRenderer = ball.Components.Get<ModelRenderer>( FindMode.EverythingInSelfAndDescendants );
+		if ( !ballRenderer.IsValid() || !ballRenderer.Model.IsValid() )
+		{
+			SetLandingMarkerVisible( false );
+			return;
+		}
+
 		EnsureLandingMarker();
+		EnsureLandingMarkerMaterial();
 
-		var baseRadius = GetLandingSphereBaseRadius();
-		var uniformScale = baseRadius > 0.0001f ? radius / baseRadius : 1f;
-		var markerStyle = GetBallLandingMarkerStyle( ball );
-
+		landingMarkerRenderer.Model = ballRenderer.Model;
+		landingMarkerRenderer.Tint = ballRenderer.Tint;
 		landingMarkerGo.WorldPosition = position;
-		landingMarkerGo.WorldScale = uniformScale;
-		landingMarkerRenderer.MaterialOverride = markerStyle.Material;
-		landingMarkerRenderer.Tint = markerStyle.Tint.WithAlpha( LandingMarkerAlpha );
+		landingMarkerGo.WorldScale = ball.WorldScale;
+
+		if ( landingMarkerMaterial.IsValid() )
+		{
+			landingMarkerMaterial.Set( "g_flOpacityScale", LandingMarkerAlpha );
+			landingMarkerRenderer.MaterialOverride = landingMarkerMaterial;
+		}
+
 		landingMarkerGo.Enabled = true;
 	}
 
-	static (Color Tint, Material Material) GetBallLandingMarkerStyle( GameObject ball )
+	/// <summary>
+	/// Tint alpha on opaque/debug paths uses masked dithering (grainy). Bake alpha into RGB instead.
+	/// </summary>
+	static Color ToOpaqueOverlayColor( Color color )
 	{
-		fallbackBallMaterial ??= Material.Load( FallbackBallMaterialPath );
-
-		if ( ball.IsValid() )
-		{
-			var ballRenderer = ball.Components.Get<ModelRenderer>( FindMode.EverythingInSelfAndDescendants );
-			if ( ballRenderer.IsValid() )
-			{
-				return (
-					ballRenderer.Tint,
-					ballRenderer.MaterialOverride.IsValid() ? ballRenderer.MaterialOverride : fallbackBallMaterial );
-			}
-		}
-
-		return ( Color.White, fallbackBallMaterial );
+		return new Color( color.r * color.a, color.g * color.a, color.b * color.a, 1f );
 	}
 
 	void SetLandingMarkerVisible( bool visible )
 	{
 		if ( landingMarkerGo.IsValid() )
 			landingMarkerGo.Enabled = visible;
-	}
-
-	static float GetLandingSphereBaseRadius()
-	{
-		landingSphereModel ??= Model.Load( LandingSphereModelPath );
-		if ( !landingSphereModel.IsValid() )
-			return 32f;
-
-		var size = landingSphereModel.Bounds.Size;
-		return MathF.Max( size.x, MathF.Max( size.y, size.z ) ) * 0.5f;
 	}
 
 	void DrawDashedPolyline(

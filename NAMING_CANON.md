@@ -20,7 +20,7 @@
 
 **Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `NetIsHolding`, `GetPredictedThrowReleasePivotPosition()`  
 **Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `IsChargingThrow`, `NetIsChargingThrow`, `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`), `GetThrowChargeLerp()`, `TryGetThrowPreviewSnapshot()`  
-**Often-used on `ThrowTrajectoryPreview`:** `ArcDashScrollSpeed`, `LandingMarkerAlpha`, `LandingMarkerRadius`
+**Often-used on `ThrowTrajectoryPreview`:** `ArcDashScrollSpeed`, `LandingMarkerAlpha`, `TranslucentBallMaterialPath`, `LandingMarkerLift`
 
 ---
 
