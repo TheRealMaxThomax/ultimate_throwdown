@@ -248,6 +248,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		player.Components.GetOrCreate<PlayerDisableCrouch>();
 		player.Components.GetOrCreate<PlayerEnemyOutline>();
 		player.Components.GetOrCreate<BallCompassHud>();
+		player.Components.GetOrCreate<PlayerBallHoldAnim>();
 
 		player.NetworkSpawn( connection );
 

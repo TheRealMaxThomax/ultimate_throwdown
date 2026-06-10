@@ -11,6 +11,8 @@ public sealed class BallThrow : Component
 	[Property] public float ThrowUpForce { get; set; } = 150f;
 	[Property] public float ThrowStartOffset { get; set; } = 40f;
 	[Property] public float PickupDelayAfterThrow { get; set; } = 0.25f;
+	/// <summary> Seconds after button release before the host applies throw velocity — tune to the anim release frame. </summary>
+	[Property] public float ThrowReleaseDelaySeconds { get; set; } = 0.35f;
 	[Property] public GameObject ThrowDirectionSource { get; set; }
 	[Property] public float MinThrowChargeTime { get; set; } = 0.05f;
 	[Property] public float MaxThrowChargeTime { get; set; } = 3f;
@@ -22,13 +24,19 @@ public sealed class BallThrow : Component
 	private ThrowChargeBar throwChargeBar;
 	private PlayerClass playerClass;
 	private PlayerController playerController;
+	private PlayerBallHoldAnim playerBallHoldAnim;
 	private bool isChargingThrow;
+	private bool isPendingThrowRelease;
 	/// <summary> Owner writes; host reads for dodge validation. </summary>
 	[Sync] private bool NetIsChargingThrow { get; set; }
 	private float throwChargeStartedAt;
+	private float pendingThrowReleaseAt;
+	private float pendingChargeLerp;
+	private Vector3 pendingThrowDirection;
 	private bool inputControlsSuppressed;
 	private bool savedUseInputControls = true;
 	public bool IsChargingThrow => Network.IsOwner ? isChargingThrow : NetIsChargingThrow;
+	public bool IsPendingThrowRelease => Network.IsOwner && isPendingThrowRelease;
 
 	public readonly struct ThrowPreviewSnapshot
 	{
@@ -75,6 +83,7 @@ public sealed class BallThrow : Component
 		throwChargeBar = Components.Get<ThrowChargeBar>();
 		playerClass = Components.Get<PlayerClass>();
 		playerController = Components.Get<PlayerController>();
+		playerBallHoldAnim = Components.Get<PlayerBallHoldAnim>();
 	}
 
 	protected override void OnUpdate()
@@ -86,13 +95,19 @@ public sealed class BallThrow : Component
 
 		if ( !IsMatchGameplayInputAllowed() )
 		{
-			ClearThrowChargeLocal();
+			ClearLocalThrowState();
 			return;
 		}
 
 		if ( !ballGrab.IsHolding )
 		{
-			ClearThrowChargeLocal();
+			ClearLocalThrowState();
+			return;
+		}
+
+		if ( isPendingThrowRelease )
+		{
+			TickPendingThrowRelease();
 			return;
 		}
 
@@ -103,9 +118,7 @@ public sealed class BallThrow : Component
 
 		if ( isChargingThrow && Input.Released( ThrowAction ) )
 		{
-			var chargeLerp = GetThrowChargeLerp();
-			ClearThrowChargeLocal();
-			RequestThrowHeldBallOnHost( chargeLerp, GetThrowDirectionWorld() );
+			BeginThrowRelease( GetThrowChargeLerp(), GetThrowDirectionWorld() );
 		}
 
 		if ( isChargingThrow )
@@ -125,7 +138,7 @@ public sealed class BallThrow : Component
 		if ( !playerController.IsValid() )
 			return;
 
-		if ( isChargingThrow )
+		if ( isChargingThrow || isPendingThrowRelease )
 		{
 			if ( !inputControlsSuppressed )
 			{
@@ -139,6 +152,45 @@ public sealed class BallThrow : Component
 		}
 
 		RestoreInputControlsIfNeeded();
+	}
+
+	private void BeginThrowRelease( float chargeLerp, Vector3 throwDirection )
+	{
+		ClearThrowChargeLocal();
+		playerBallHoldAnim?.NotifyThrowReleased();
+
+		if ( ThrowReleaseDelaySeconds <= 0f )
+		{
+			RequestThrowHeldBallOnHost( chargeLerp, throwDirection );
+			return;
+		}
+
+		isPendingThrowRelease = true;
+		pendingThrowReleaseAt = Time.Now + ThrowReleaseDelaySeconds;
+		pendingChargeLerp = chargeLerp;
+		pendingThrowDirection = throwDirection;
+	}
+
+	private void TickPendingThrowRelease()
+	{
+		Input.AnalogMove = Vector3.Zero;
+
+		if ( Time.Now < pendingThrowReleaseAt )
+			return;
+
+		isPendingThrowRelease = false;
+		RequestThrowHeldBallOnHost( pendingChargeLerp, pendingThrowDirection );
+	}
+
+	private void ClearLocalThrowState()
+	{
+		ClearThrowChargeLocal();
+		CancelPendingThrowRelease();
+	}
+
+	private void CancelPendingThrowRelease()
+	{
+		isPendingThrowRelease = false;
 	}
 
 	private void StartThrowCharge()

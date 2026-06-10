@@ -442,6 +442,7 @@
               "ThrowAction": "attack1",
               "ThrowDirectionSource": null,
               "ThrowForce": 1000,
+              "ThrowReleaseDelaySeconds": 0.25,
               "ThrowStartOffset": 40,
               "ThrowUpForce": 150
             },
@@ -506,6 +507,28 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "ReleaseCameraBlendDuration": 0.35
+            },
+            {
+              "__type": "PlayerBallHoldAnim",
+              "__guid": "6ff8f808-188e-42c8-97ae-c7bdd1bc3d60",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyRenderer": {
+                "_type": "component",
+                "component_id": "8569e7f8-05f7-48ff-8ddc-d84b7695abf4",
+                "go": "1fd410e6-7794-4786-86cc-25ad691cdd92",
+                "component_type": "SkinnedModelRenderer"
+              },
+              "IdleHoldPoseHand": 0.1,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "ThrowAttackStrong": 1,
+              "ThrowPlaybackRate": 0.7,
+              "ThrowPoseHoldSeconds": 0.9
             },
             {
               "__type": "BallClientFeel",
@@ -2789,7 +2812,7 @@
                   ]
                 },
                 {
-                  "__guid": "91fa3a05-eb17-4968-9d70-1f237fd8ef80",
+                  "__guid": "58a5a012-1873-4bf4-952a-58cb828fc175",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2806,7 +2829,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "1b9a58c5-a241-4a81-876c-2de6a6234d41",
+                      "__guid": "d9ab20d7-f015-4f73-ba71-964fd8c93f0d",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -3865,6 +3888,7 @@
               "ThrowAction": "attack1",
               "ThrowDirectionSource": null,
               "ThrowForce": 1200,
+              "ThrowReleaseDelaySeconds": 0.35,
               "ThrowStartOffset": 40,
               "ThrowUpForce": 120
             },
@@ -6082,7 +6106,7 @@
                   ]
                 },
                 {
-                  "__guid": "417287a8-aaf4-43c8-acfd-894c73ed32bb",
+                  "__guid": "4d95174a-d477-4b3f-b9ff-a3b7b8cd643a",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6099,7 +6123,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "290a1ba2-10d1-4e1d-a549-043f91ae040a",
+                      "__guid": "be0f6041-af5d-45d2-b609-9ec79035f0bb",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6497,6 +6521,7 @@
               "ThrowAction": "attack1",
               "ThrowDirectionSource": null,
               "ThrowForce": 1200,
+              "ThrowReleaseDelaySeconds": 0.35,
               "ThrowStartOffset": 40,
               "ThrowUpForce": 120
             },
@@ -8714,7 +8739,7 @@
                   ]
                 },
                 {
-                  "__guid": "3f4e9d9d-5719-4e20-839d-3157332926d4",
+                  "__guid": "8c961d18-eb8c-492d-8949-b70322e73f17",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8731,7 +8756,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "bdd5c748-0fb4-4d44-8647-27fbd19ba1e4",
+                      "__guid": "0088db97-4804-4638-b3bd-00243feeb2ae",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -9129,6 +9154,7 @@
               "ThrowAction": "attack1",
               "ThrowDirectionSource": null,
               "ThrowForce": 1200,
+              "ThrowReleaseDelaySeconds": 0.35,
               "ThrowStartOffset": 40,
               "ThrowUpForce": 120
             },
@@ -11346,7 +11372,7 @@
                   ]
                 },
                 {
-                  "__guid": "7c830d78-e248-4680-a430-e5ca672f0cc4",
+                  "__guid": "7e79cfa9-7376-4f3d-a5a7-c552b7ae13e5",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11363,7 +11389,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "561f649a-ea18-4506-82bb-1cfc722d07c3",
+                      "__guid": "7225c6d3-4d20-48ab-94bc-4fa8d1209b6d",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,

@@ -20,7 +20,7 @@
 | `ThrowReleaseMath` | Shared throw release + first-arc sim (`ComputeRelease`, `TryGetBallFlightParameters`, `TrySimulateFirstImpact`) |
 
 **Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `HoldBoneName`, `BodyRenderer`, `HoldBoneLocalOffset`, `TryGetHoldAnchorWorldTransform()`, `GetPredictedThrowReleasePivotPosition()`  
-**Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `IsChargingThrow`, `NetIsChargingThrow`, `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`), `GetThrowChargeLerp()`, `TryGetThrowPreviewSnapshot()`  
+**Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `ThrowReleaseDelaySeconds` (default `0.35` — ball velocity after anim wind-up), `IsChargingThrow`, `IsPendingThrowRelease`, `NetIsChargingThrow`, `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`), `GetThrowChargeLerp()`, `TryGetThrowPreviewSnapshot()`  
 **Often-used on `ThrowTrajectoryPreview`:** `ArcDashScrollSpeed`, `LandingMarkerAlpha`, `TranslucentBallMaterialPath`, `LandingMarkerLift`  
 **Often-used on `BallCarrierOutline`:** `PulseWhiteColor`, `FriendlyAccentColor`, `EnemyAccentColor`, `PulseSeconds`, `OutlineWidth`, `EnableEmissivePulse`, `EmissiveBrightnessMax`  
 **Often-used on `BallCompassHud`:** `LabelText`, `LabelFontSize`, `MarginLeft`, `MarginBottom`, `CompassSize`, `MarkerOrbitRadiusFraction`, `MarkerTipLength`, `MarkerHalfWidth`, `LooseColor`, `FriendlyColor`, `EnemyColor`, `LocalCarryRingColor` (player `EyeAngles` bearing; white hub label centered in ring; triangle orbits edge toward ball)
@@ -63,6 +63,7 @@
 | `PlayerCosmeticsSync` | Outfits / avatar look only |
 | `PlayerDisableCrouch` | Blocks duck/crouch on `PlayerController` |
 | `ThrowChargeCamera` | Owner-only throw-charge third-person pullback + mild FOV widen (scales with charge lerp) |
+| `PlayerBallHoldAnim` | Built-in citizen `holditem` RH hold + throw on release (`holdtype`, `holdtype_pose_hand`, `holdtype_attack`, `b_attack`); pairs with `BallThrow.ThrowReleaseDelaySeconds` for ball detach timing |
 | `PlayerEnemyOutline` | Enables red `HighlightOutline` for enemies (local viewer); off while ragdolled |
 | `RagdollEnemyOutline` | Outline on host-spawned tackle ragdoll; copies victim `HighlightOutline` |
 | `EnemyOutlineCameraSetup` | Ensures main camera has `Highlight` post-process |
@@ -72,6 +73,8 @@
 **Often-used on `RagdollEnemyOutline`:** `NetVictimTeamId` (synced), `ConfigureFromVictim()` (host, before network spawn)
 
 **Often-used on `ThrowChargeCamera`:** `ExtraCameraDistanceAtFullCharge`, `ExtraCameraHeightAtFullCharge`, `ExtraFieldOfViewAtFullCharge`, `ReleaseCameraBlendDuration` — skips when `PlayerTackle.IsRagdolled` or `IsStandUpCameraBlending`
+
+**Often-used on `PlayerBallHoldAnim`:** `BodyRenderer`, `IdleHoldPoseHand` (default `0.1`), `ThrowAttackStrong` (default `0` = medium throw; `1` = strong), `ThrowPoseHoldSeconds` (default `0.9`), `ThrowPlaybackRate` (default `0.7` during throw window), `NotifyThrowReleased()`
 
 **Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay` (max poll for bodies → impulse → `NetworkSpawn` + `RagdollEnemyOutline`); `ApplyKnockdownFromHost()` (traffic/hazards); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg)  
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  

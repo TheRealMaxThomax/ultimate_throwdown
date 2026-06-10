@@ -19,11 +19,12 @@
 
 **Next session (priority order):**
 1. **MP join flash** — host sees brief black mesh face when client joins (likely cosmetics load; investigate).
-2. Longer soak (15–20 min, two windows); map vote when ready.
-3. **Human hold anim** — carry pose on anim graph (bone attach OK; arms don’t curl yet).
+2. **2-window MP** — hold/throw anim + **`ThrowReleaseDelaySeconds`** sync (solo timing OK); tune prefab if needed.
+3. Longer soak (15–20 min, two windows); map vote when ready.
+4. **Later:** throw **charge pose** (arm up while `IsChargingThrow`) → blend into release — custom Blender clips in `Assets/Animation/` (see **Open decisions**).
 
 **Works today:**
-- Ball grab/throw — held ball on **`hold_R`** hand bone (`BallGrab` + `BallClientFeel`); **throw trajectory preview** (`ThrowTrajectoryPreview` + `ThrowReleaseMath`); **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **throw polish 2-window MP OK**; **ball carrier glow** — `BallCarrierOutline` (white ↔ green / red team pulse; thinner default outline); **`BallCompassHud`** — ring + **BALL** hub + ring-edge triangle (player bearing; green/red/white); **`main_ball`** art WIP — emissive gold `ball_v2.vmat` + scroll (neutral vs team cues on glow/compass); tackles/ragdolls; dodge; **crouch disabled**
+- Ball grab/throw — held ball on **`hold_R`** (`BallGrab` + `BallClientFeel`); **throw trajectory preview** + **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **`BallThrow.ThrowReleaseDelaySeconds`** — anim fires on release, ball stays on hand until delay elapses (tune to release frame); **`PlayerBallHoldAnim`** — built-in `holditem` RH hold + medium throw (`holdtype_attack` 0) + `ThrowPoseHoldSeconds` / `ThrowPlaybackRate`; **ball carrier glow** (`BallCarrierOutline`); **`BallCompassHud`**; **`main_ball`** art WIP (`ball_v2.vmat`); tackles/ragdolls; dodge; **crouch disabled**
 - **Teams + spawns** (balance on join, ground-snapped spawns)
 - **`MatchDirector`** — phases, 10:00 match clock (`M.SS`), goal celebration / intermission, **OVERTIME**, **match over**
 - **`GoalZone`** dwell scoring
@@ -66,7 +67,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | Folder | What’s in it |
 |--------|----------------|
 | `Code/Ball/` | Ball pickup, throw, charge bar, trajectory preview (`ThrowReleaseMath`), **`BallCarrierOutline`**, smooth ball on clients |
-| `Code/Player/` | Movement, dodge, tackle, team, class, cosmetics, **no crouch** |
+| `Code/Player/` | Movement, dodge, tackle, team, class, cosmetics, **`PlayerBallHoldAnim`** (built-in hold/throw), **no crouch** |
 | `Code/Network/` | Spawning players when people join |
 | `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig` |
 | `Code/UI/` | Match HUD + placeholder owner HUDs (dodge/ramp) + **`BallCompassHud`** |
@@ -94,6 +95,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Ball compass:** `BallCompassHud` — bottom-left panel + ring; white **`LabelText`** hub centered in ring (default **BALL**); small **triangle** orbits ring edge (360°) toward **`main_ball`** (held or loose). **White** loose · **green** teammate · **red** enemy. **Needle hidden** when you carry (label + panel + dim ring stay). Bearing = **player position + `EyeAngles` yaw** (not camera). Auto-added on network spawn (`GameNetworkManager.GetOrCreate`). Tune: `MarginLeft` / `MarginBottom` / `CompassSize` / `NeedleTipRadius` / colours.
 - **Throw charge camera:** `ThrowChargeCamera` lerps `PlayerController.CameraOffset` + main-camera FOV with `BallThrow.GetThrowChargeLerp()`; quick smoothstep blend on throw/cancel. **Does not run** while ragdolled or during `PlayerTackle` stand-up camera blend — ragdoll orbit is applied in `PlayerTackle.OnPreRender` last.
 - **Walk into the ball = pick it up.** No kick button. While held, ball follows **`hold_R`** on **Body** `SkinnedModelRenderer` (`BallGrab.HoldBoneName`; falls back to `HoldAnchor`). Old `HandHoldPoint` + `citizen_holdball_test` IK was for classic citizen — human uses bone attach.
+- **Ball carrier hold/throw anim (v1):** **`PlayerBallHoldAnim`** — **`holditem`** + **RH** + **`holdtype_pose_hand`** (default **0.1**) while holding; on release pulses **`b_attack`** (`holdtype_attack` default **0** = medium throw). Keeps hold pose **`ThrowPoseHoldSeconds`** so clip isn’t cut off; optional **`ThrowPlaybackRate`** slowdown. **`BallThrow`** — anim immediate, host throw velocity after **`ThrowReleaseDelaySeconds`** (default **0.35**); ball stays on **`hold_R`** during delay. **No charge wind-up pose yet** — same idle hold while `IsChargingThrow`; arm-up charge + blend = custom Blender later (`Assets/Animation/human@*.fbx`). Body needs **`citizen_human_m.vanmgrph`**. Auto-added on network spawn.
 - **Online: the host is the referee** — clients request; host decides.
 - **Tackles:** Only at full charge speed. Host spawns **ragdoll object**; clients **request** via RPC. Launch = pelvis `ApplyImpulse` on host **before** `NetworkSpawn` (poll `RagdollPhysicsInitDelay` max). Juggernaut bonus: owner mirror sent in RPC so client tackles aren’t weaker.
 - **Dodge:** Double-tap A or D. Tackle iframe only.
@@ -116,7 +118,8 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 5. **Ball carrier glow:** teammate = white ↔ green; enemy = white ↔ red; **you carry** — no glow; behind wall — no glow.
 6. **Ball compass:** triangle orbits ring toward ball; green / red / white by possession; you carry → **BALL** hub + ring, no triangle.
 7. **Held ball:** sits on carrier’s **right hand** (`hold_R`), not hip; both windows agree.
-8. Spam actions once to probe desync.
+8. **Hold/throw anim:** **holditem** while carrying; throw motion on release; **ball leaves hand** after **`ThrowReleaseDelaySeconds`** (not on button-up); remote sees anim (`PlayerBallHoldAnim` RPC).
+9. Spam actions once to probe desync.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
 
@@ -169,8 +172,9 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **`HighlightOutline`** — tune colors/width here (ragdoll copies this exact component); optional **`PlayerEnemyOutline`** (auto at spawn)
 - `DodgeCooldownHud`, `MovementRampHud`, **`BallCompassHud`**, **`ThrowChargeBar`**, **`ThrowTrajectoryPreview`**, **`ThrowChargeCamera`**
 - **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
+- **`PlayerBallHoldAnim`** — auto-added on network spawn; optional on prefab for solo NPCs. Tune `IdleHoldPoseHand` (~0.1), `ThrowAttackStrong` (0 = medium, 1 = strong), `ThrowPoseHoldSeconds` (~0.9), `ThrowPlaybackRate` (~0.7)
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
-- **`BallThrow` → Throw Direction Source** optional; if empty, throw uses **`PlayerController.EyeAngles`** (look while charging)
+- **`BallThrow`** — tune **`ThrowReleaseDelaySeconds`** (~0.35) to match anim release frame; **`Throw Direction Source`** optional (else **`PlayerController.EyeAngles`**)
 
 **`main_ball`:**
 - `ModelRenderer` — e.g. **`ball_v2.vmat`** (emissive gold + pattern scroll; team read from glow/compass not ball albedo)
@@ -197,7 +201,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 ## Open decisions (not chosen yet)
 
-- **Player body for v1:** **`citizen_human_*`** (branch tested) vs classic **`citizen.vmdl`** — leaning **human** (audience + looks good); citizen fits chaotic meme tone. No custom rig (account cosmetics). **Human hold/throw anim graph** still TBD after body is locked.
+- **Player body for v1:** **`citizen_human_*`** (branch tested) vs classic **`citizen.vmdl`** — leaning **human** (audience + looks good); citizen fits chaotic meme tone. No custom rig (account cosmetics).
 - Holding forward + backward while charging — exploit or cool fake-out?
 - Closed roof on arena vs open roof + sun for lighting
 - Small screen shake on tackle hit — yes or no?
@@ -205,7 +209,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **Traffic knockdown tuning:** **`KnockdownLaunchSpeed`** / hit box vs dodgeability
 - **Ball compass polish:** optional distance readout on `BallCompassHud`
 - **Hero asset art:** maps/props low poly; **players + ball** may get higher-detail models later — ball on **`ball_v2.vmat`** (emissive gold + scroll) for now; `BallCarrierOutline` still copies ball material for carry breathe
-- **Human hold/throw anim graph** — bone attach shipped; posed carry layer still TBD (was `citizen_holdball_test` on classic citizen)
+- **Throw charge pose → release blend:** arm-up “charging” pose while `BallThrow.IsChargingThrow`, then blend into throw on release — custom Blender clips (`human@hold_ready` / `charge_*` / `throw_release` in `Assets/Animation/`) + upper-body layer vs built-in `holditem` only (`holdtype_pose_hand` = grip, not full wind-up); `ThrowReleaseDelaySeconds` on `BallThrow` already syncs ball detach to anim release frame
 
 ---
 
@@ -217,18 +221,21 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 **`BallGrab` hold — shipped:** Ball follows **`hold_R`** on Body `SkinnedModelRenderer` (`TryGetBoneTransform`); falls back to `HoldAnchor`. Human avatar — no `citizen_holdball_test` IK.
 
-**Abandoned:** Edge-of-screen compass arrow.
+**`PlayerBallHoldAnim` + `BallThrow` — shipped (solo timing OK):** **`holditem` RH** idle hold + throw on release (`b_attack`, medium throw default); **`ThrowPoseHoldSeconds`** / **`ThrowPlaybackRate`** so clip isn’t cut short; **`ThrowReleaseDelaySeconds`** delays host ball velocity until release frame. Tune on player prefab. MP 2-window verify pending.
 
-**Future:** B&W HUD chrome; Razor UI; optional compass distance readout; human **carry anim layer**.
+**Abandoned:** Edge-of-screen compass arrow; custom FBX for v1 throw only (built-in `HoldItem_RH_*` works); `holdtype_pose_hand` / `ik.hand_right` for full-arm charge (fingers/IK only).
 
-**Code:** `Code/UI/BallCompassHud.cs`, `Code/Ball/BallCarrierOutline.cs`, `Code/Ball/BallGrab.cs`
+**Future:** **Charge pose** while `IsChargingThrow` (arm up) → blend into throw; custom Blender (`human@hold_ready` / `charge_*` / `throw_release` in `Assets/Animation/`). B&W HUD chrome; compass distance readout.
+
+**Code:** `Code/UI/BallCompassHud.cs`, `Code/Ball/BallCarrierOutline.cs`, `Code/Ball/BallGrab.cs`, `Code/Ball/BallThrow.cs`, `Code/Player/PlayerBallHoldAnim.cs`
 
 ---
 
 ## Known issues
 
 - [ ] Throw strength still needs playtest tuning
-- [ ] Walk/run animations while charging throw (can’t move)
+- [ ] Walk/run animations while charging throw (legs still locomote in place — `PlayerBallHoldAnim` does not fix; charge blocks move input)
+- [ ] **Hold/throw anim MP verify** — solo timing OK (`ThrowReleaseDelaySeconds` + `PlayerBallHoldAnim`); confirm both windows see throw + ball detach sync
 - [ ] **MP join visual glitch (host)** — brief **black mesh face** flash when client joins; stops when client leaves; likely joining player **`PlayerCosmeticsSync`** / human body before `ClothingContainer.ApplyAsync` (~0.25s delay) — **unconfirmed**; not caused by compass HUD (lines only)
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
 - [ ] **Clutter** sometimes missing after **engine reload** — save scene after paint; check clutter **Volume** bounds; verify in **Play** (not only editor flycam)
@@ -241,9 +248,10 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md. Match flow slices 1–6 are done (MATCH_FLOW_PLAN.md). Do not edit .scene files unless I ask.
-Prefer inspector / existing engine components (e.g. Move Mode Walk Step Up Height) — do not add code that only mirrors a property Max can set on the player template.
-Ball carrier UX: BallCarrierOutline (team pulse glow) + BallCompassHud (compass) + BallGrab hold_R bone — see “Ball carrier UX” section.
+Read SESSION_NOTES.md. Match flow slices 1–6 done. Do not edit .scene files unless I ask.
+Ball carrier: BallGrab hold_R + BallCompassHud + BallCarrierOutline + PlayerBallHoldAnim (holditem RH + throw on release) + BallThrow.ThrowReleaseDelaySeconds (ball detach synced to anim).
+Custom Blender FBXs in Assets/Animation/ — not wired; charge pose + blend deferred (Open decisions).
+Next: MP join flash; 2-window hold/throw verify; longer soak.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -252,6 +260,8 @@ Ball carrier UX: BallCarrierOutline (team pulse glow) + BallCompassHud (compass)
 
 ## Recent session notes
 
+- **2026-06-10 (throw anim timing):** Throw felt too fast — root cause: **`holdtype` cleared same frame** as `b_attack`. **`PlayerBallHoldAnim`**: keep hold pose **`ThrowPoseHoldSeconds`**, default medium throw (`ThrowAttackStrong` 0), **`ThrowPlaybackRate`** during throw window. **`BallThrow.ThrowReleaseDelaySeconds`** — anim on button-up, host ball velocity after delay (ball stays on **`hold_R`**); solo looks good. **Next:** charge wind-up pose + blend (custom FBX); MP verify.
+- **2026-06-10 (ball hold/throw anim v1):** Explored Blender custom throws (`Assets/Animation/human@*.fbx`) — staging FBX ships embedded right-arm keys (re-import with **Animation OFF**). Found built-in **`HoldItem_RH_Throw_*`** + **`holdtype`** / **`holdtype_pose_hand`** on `citizen_human_m.vanmgrph`; pose_hand = fingers/grip only (not arm wind-up); `ik.hand_right.*` = manual IK (deferred). Shipped **`PlayerBallHoldAnim`**: holditem + RH + pose_hand 0.1 while holding; `b_attack` on release; RPC for remote viewers. **`GameNetworkManager`** auto-adds component.
 - **2026-06-09 (ball carrier UX wrap):** **`BallGrab`** → **`hold_R`** hand bone attach (human; replaces hip/`HandHoldPoint` IK). **`BallCompassHud`** overhaul shipped (ball tracking, ring-edge triangle, **BALL** hub, player bearing, team colors). **`BallCarrierOutline`** team pulse (white ↔ green/red); thinner outline. Ball art: **`ball_v2.vmat`** emissive gold + texture scroll (neutral albedo).
 - **2026-06-09 (ball carrier glow):** **`BallCarrierOutline`** — white ↔ **green** (teammate) / white ↔ **red** (enemy) pulse; matches compass semantics.
 - **2026-06-09 (ball compass polish):** Player **`EyeAngles`** bearing; ring-edge triangle marker; **BALL** hub centered in ring.
