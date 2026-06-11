@@ -520,24 +520,13 @@
                 "component_type": "SkinnedModelRenderer"
               },
               "ChargeCycleParamName": "throw_charge",
-              "ChargeHoldPoseHandEnd": 0.1,
-              "ChargeHoldPoseHandStart": 0.1,
-              "ChargeHoldReadyPhaseEnd": 0.2,
-              "ChargeHoldTypePoseEnd": 3,
-              "ChargeHoldTypePoseStart": 0,
-              "ChargeMaxSequenceName": "charge_max",
-              "ChargeMinPhaseEnd": 0.5,
-              "ChargeMinSequenceName": "charge_min",
-              "ChargeSequenceDeltaSuffix": "_delta",
               "ChargeWeightBlendInSeconds": 0.12,
               "ChargeWeightBlendOutSeconds": 0.15,
               "ChargeWeightParamName": "throw_charge_weight",
-              "ChargeWindupSequenceName": "charge_windup",
+              "ChargeWindupCycleEnd": 0.3,
+              "ChargeWindupCycleStart": 0,
               "CustomAnimGraphPath": "animation/utd_citizen_human_m.vanmgrph",
               "CustomBodyModelPath": "animation/utd_citizen_human_throw.vmdl",
-              "EnableBuiltInChargeWindup": true,
-              "EnableCustomChargePose": true,
-              "HoldReadySequenceName": "hold_ready",
               "IdleHoldPoseHand": 0.1,
               "IdleHoldTypePose": 0,
               "OnComponentDestroy": null,
@@ -549,8 +538,7 @@
               "ThrowAttackStrong": 1,
               "ThrowPlaybackRate": 0.7,
               "ThrowPoseHoldSeconds": 0.9,
-              "UseAnimGraphChargePose": true,
-              "UseDeltaChargeSequences": true
+              "UseAnimGraphChargePose": true
             },
             {
               "__type": "BallClientFeel",
@@ -623,6 +611,25 @@
               "StartMoveSpeed": 140,
               "TimeToCatchUpSpeed": 4,
               "TimeToSprintSpeed": 2
+            },
+            {
+              "__type": "PlayerChargeRunAnim",
+              "__guid": "4137954b-c158-41bc-8d82-33453db55d55",
+              "__enabled": true,
+              "Flags": 0,
+              "BodyRenderer": null,
+              "ChargeRunCycle": 0,
+              "ChargeRunCycleParamName": "charge_run_cycle",
+              "ChargeRunWeightBlendInSeconds": 0.8,
+              "ChargeRunWeightBlendOutSeconds": 0.15,
+              "ChargeRunWeightParamName": "charge_run_weight",
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "UseAnimGraphChargeRunPose": true
             },
             {
               "__type": "MovementRampHud",
@@ -2834,7 +2841,7 @@
                   ]
                 },
                 {
-                  "__guid": "0e161b72-714e-48fa-bc16-3c596b0d9847",
+                  "__guid": "9676e62c-e51b-4e7b-986e-d7b386fc07aa",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2851,7 +2858,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "ad859198-1c88-4653-89f0-4c147b9b2add",
+                      "__guid": "6a045f4f-8403-418a-9387-9dccf180b981",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6128,7 +6135,7 @@
                   ]
                 },
                 {
-                  "__guid": "fdffdac9-9981-4a70-9085-f2df34837616",
+                  "__guid": "c67fa05c-28d7-44fb-8a12-71f0c11fb377",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6145,7 +6152,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "c8b36dfb-39e5-4e1a-bd74-dd62c1a89386",
+                      "__guid": "67868901-a94f-4bea-a83c-dc7cfb3cf2f2",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8761,7 +8768,7 @@
                   ]
                 },
                 {
-                  "__guid": "b911be3c-6c3b-4157-a5e3-087d0b44e2e7",
+                  "__guid": "89b53a05-1443-4a92-80b2-fed67c21261c",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8778,7 +8785,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "72639a37-e7e6-4acd-a21a-2f9f9d41ec63",
+                      "__guid": "ca707881-0bc6-40ef-8c8a-3aa1efaaabce",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11394,7 +11401,7 @@
                   ]
                 },
                 {
-                  "__guid": "178f44d4-da68-4af6-80dd-0b88d03f48fa",
+                  "__guid": "4d9dc8e9-e03a-4437-8e2d-352f1ca9e201",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11411,7 +11418,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "c53ea213-dc55-4b61-8822-cf139f5e950f",
+                      "__guid": "8483b246-cc96-4e3f-a772-73bf79c56421",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,

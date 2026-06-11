@@ -37,6 +37,7 @@
 - **Street lamps (Turf Wars)** — `streetlight.vmdl` + warm spots; **`streetlight_broken.vmdl`** for dead poles (no spot/emissive). Optional **`StreetLightFlicker`** on a **per-lamp parent** empty (child model + child spot) — syncs spot + bulb emissive (`goldenearth_streetlight_off.vmat` on **`light.vmat`** slot, auto index `-1`)
 - **Petrol station lights** — optional **`StationLightFlicker`** on a parent empty (child `Spot Light` + child block mesh). Keeps mesh visible and flickers via `Spot.Enabled` + mesh `Color` (`VisualOnColor`/`VisualOffColor`)
 - **Road traffic (Turf Wars — Road0 + Road1)** — **`TrafficSpawner`** + disabled **`TrafficCarTemplate`**. **3 car models per lane** via **`CarModelVariants`** (red Road0 / blue Road1); host applies random **Body renderer + Model Collider** **after** **`NetworkSpawn`** + **`Network.Refresh`**. **Physics mesh** on each `.vmdl`; **ball bounce** on host. Knockdown via code hit box + **`PlayerTackle.ApplyKnockdownFromHost`**. **Engine sounds** — idle = cruise/slow, drive = accel only. **`Game.IsPlaying`** guard (no editor spawn spam). **2-window MP OK**.
+- **Movement charge overlay** — **`PlayerChargeRunAnim`** + masked `charge_run` layer (`charge_run_weight` / `charge_run_cycle` on **`utd_citizen_human_m.vanmgrph`**) — plays only at top movement ramp tier (**Charge**, no ball); walk/sprint/idle = off — **solo verified 2026-06-11**
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -69,7 +70,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | Folder | What’s in it |
 |--------|----------------|
 | `Code/Ball/` | Ball pickup, throw, charge bar, trajectory preview (`ThrowReleaseMath`), **`BallCarrierOutline`**, smooth ball on clients |
-| `Code/Player/` | Movement, dodge, tackle, team, class, cosmetics, **`PlayerBallHoldAnim`** (built-in hold/throw), **no crouch** |
+| `Code/Player/` | Movement, dodge, tackle, team, class, cosmetics, **`PlayerBallHoldAnim`** (hold/throw), **`PlayerChargeRunAnim`** (charge-speed overlay), **no crouch** |
 | `Code/Network/` | Spawning players when people join |
 | `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig` |
 | `Code/UI/` | Match HUD + placeholder owner HUDs (dodge/ramp) + **`BallCompassHud`** |
@@ -77,7 +78,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 
 **Scene you play in:** `scenes/throwdown_turf_wars.scene` (Turf Wars WIP). `throwdown_prototype.scene` = older greybox fallback.
 
-**Important:** AI should **not** edit `.scene` files unless you ask — you wire components in the s&box editor.
+**Important:** AI should **not** edit `.scene`, `.vmdl`, `.vanmgrph`, or other editor-owned assets unless you **explicitly give permission** — see `.cursor/rules/editor-asset-ownership.mdc`. Give steps; you wire in the s&box editor.
 
 ---
 
@@ -97,7 +98,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Ball compass:** `BallCompassHud` — bottom-left panel + ring; white **`LabelText`** hub centered in ring (default **BALL**); small **triangle** orbits ring edge (360°) toward **`main_ball`** (held or loose). **White** loose · **green** teammate · **red** enemy. **Needle hidden** when you carry (label + panel + dim ring stay). Bearing = **player position + `EyeAngles` yaw** (not camera). Auto-added on network spawn (`GameNetworkManager.GetOrCreate`). Tune: `MarginLeft` / `MarginBottom` / `CompassSize` / `NeedleTipRadius` / colours.
 - **Throw charge camera:** `ThrowChargeCamera` lerps `PlayerController.CameraOffset` + main-camera FOV with `BallThrow.GetThrowChargeLerp()`; quick smoothstep blend on throw/cancel. **Does not run** while ragdolled or during `PlayerTackle` stand-up camera blend — ragdoll orbit is applied in `PlayerTackle.OnPreRender` last.
 - **Walk into the ball = pick it up.** No kick button. While held, ball follows **`hold_R`** on **Body** `SkinnedModelRenderer` (`BallGrab.HoldBoneName`; falls back to `HoldAnchor`). Old `HandHoldPoint` + `citizen_holdball_test` IK was for classic citizen — human uses bone attach.
-- **Ball carrier hold/throw anim (v1):** **`PlayerBallHoldAnim`** — **`holditem`** + **RH** while holding; on release **`b_attack`** (built-in medium throw). **`ThrowPoseHoldSeconds`** / **`ThrowPlaybackRate`**; **`BallThrow.ThrowReleaseDelaySeconds`** delays ball velocity. Charge currently uses custom DirectPlayback sequence **`throw_windup`** (`Assets/Animation/throw_windup.fbx`) on `utd_citizen_human_throw.vmdl`; runtime migrates old `charge_windup` settings to `throw_windup`. Anim graph **`citizen_human_m.vanmgrph`**. Auto-added on network spawn.
+- **Ball carrier hold/throw anim (v1):** **`PlayerBallHoldAnim`** — **`holditem`** + **RH** while holding; on release **`b_attack`** (built-in medium throw). **`ThrowPoseHoldSeconds`** / **`ThrowPlaybackRate`**; **`BallThrow.ThrowReleaseDelaySeconds`** delays ball velocity. Charge = masked **`throw_windup`** layer on forked **`utd_citizen_human_m.vanmgrph`** (`throw_charge` / `throw_charge_weight`; body alive). Sequences on **`utd_citizen_human_throw.vmdl`**. Auto-added on network spawn.
 - **Online: the host is the referee** — clients request; host decides.
 - **Tackles:** Only at full charge speed. Host spawns **ragdoll object**; clients **request** via RPC. Launch = pelvis `ApplyImpulse` on host **before** `NetworkSpawn` (poll `RagdollPhysicsInitDelay` max). Juggernaut bonus: owner mirror sent in RPC so client tackles aren’t weaker.
 - **Dodge:** Double-tap A or D. Tackle iframe only.
@@ -121,7 +122,8 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 6. **Ball compass:** triangle orbits ring toward ball; green / red / white by possession; you carry → **BALL** hub + ring, no triangle.
 7. **Held ball:** sits on carrier’s **right hand** (`hold_R`), not hip; both windows agree.
 8. **Hold/throw anim:** **holditem** while carrying; throw motion on release; **ball leaves hand** after **`ThrowReleaseDelaySeconds`** (not on button-up); remote sees anim (`PlayerBallHoldAnim` RPC).
-9. Spam actions once to probe desync.
+9. **Charge run overlay:** no ball, hold W to **Charge** tier — `charge_run` pose on; walk/sprint/idle/ball carrier = off; remote matches.
+10. Spam actions once to probe desync.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
 
@@ -174,7 +176,8 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **`HighlightOutline`** — tune colors/width here (ragdoll copies this exact component); optional **`PlayerEnemyOutline`** (auto at spawn)
 - `DodgeCooldownHud`, `MovementRampHud`, **`BallCompassHud`**, **`ThrowChargeBar`**, **`ThrowTrajectoryPreview`**, **`ThrowChargeCamera`**
 - **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
-- **`PlayerBallHoldAnim`** — auto-added on network spawn. Tune `IdleHoldPoseHand` (~0.1), `ThrowAttackStrong`, `ThrowPoseHoldSeconds` (~0.9), `ThrowPlaybackRate` (~0.7). **Charge (working):** `UseAnimGraphChargePose` on — drives `throw_charge`/`throw_charge_weight` on **`utd_citizen_human_m.vanmgrph`** (forked graph: Clip `throw_windup` → Cycle Control → Bone Mask → 1D Blendspace, spliced before "Restore helpers"); code force re-applies graph after cosmetics (cosmetics silently resets it). `utd_citizen_human_throw.vmdl` AnimFile points at `animation/throw_windup.fbx`. Never DirectPlayback masks/deltas. Full pipeline → [`CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md)
+- **`PlayerBallHoldAnim`** — auto-added on network spawn. Tune `IdleHoldPoseHand` (~0.1), `ThrowAttackStrong`, `ThrowPoseHoldSeconds` (~0.9), `ThrowPlaybackRate` (~0.7). **Throw charge:** `UseAnimGraphChargePose` on — `throw_charge`/`throw_charge_weight` on **`utd_citizen_human_m.vanmgrph`**; tune **`ChargeWindupCycleEnd`** if wind-up finishes before bar is full (or spread keys in Blender ~3 s). Graph re-applied after cosmetics.
+- **`PlayerChargeRunAnim`** — auto-added on network spawn. **`UseAnimGraphChargeRunPose`** on; drives `charge_run_weight` when movement HUD tier = **Charge** (max speed, no ball). Graph wiring → [`CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md) (**animgraph = default route for almost all custom anims**)
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
 - **`BallThrow`** — tune **`ThrowReleaseDelaySeconds`** (~0.35) to match anim release frame; **`Throw Direction Source`** optional (else **`PlayerController.EyeAngles`**)
 
@@ -243,6 +246,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
 - [ ] **Clutter** sometimes missing after **engine reload** — save scene after paint; check clutter **Volume** bounds; verify in **Play** (not only editor flycam)
 - [ ] **Traffic engine loops** — seam click in-game vs clean Audacity preview; re-export with DC offset remove + zero-crossing trim if needed
+- [ ] **Tackle ragdoll after ModelDoc changes** — if victims freeze ~8s with no flop (`ApplyRagdollLocally` in console but no physics ragdoll), try **editor reboot** or `utd_citizen_human_throw.vmdl` Save + Full Compile before chasing code. Stale compiled extension cache suspected (2026-06-11 — reboot fixed). Code fallback (spawn ragdoll on base `citizen_human_*`) deferred unless it returns.
 
 ---
 
@@ -251,10 +255,11 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md. Match flow slices 1–6 done. Do not edit .scene files unless I ask.
+Read SESSION_NOTES.md. Match flow slices 1–6 done. Do not edit .scene / .vmdl / .vanmgrph / ModelDoc unless I explicitly say yes.
 Ball carrier: BallGrab hold_R + BallCompassHud + BallCarrierOutline + PlayerBallHoldAnim (holditem RH + built-in throw on release) + BallThrow.ThrowReleaseDelaySeconds.
-Throw charge: forked animgraph route — `PlayerBallHoldAnim.UseAnimGraphChargePose` sets `throw_charge`/`throw_charge_weight` on `utd_citizen_human_m.vanmgrph` (masked layer plays `throw_windup`; body keeps locomotion/look-at). DirectPlayback = full-body emotes only (frozen body); never DirectPlayback deltas/weight lists (pancake).
-Next: charge pose polish; 2-window MP; MP join flash; longer soak.
+Throw charge: `PlayerBallHoldAnim` → `throw_charge`/`throw_charge_weight` + `throw_windup`. Charge run (no ball, movement tier Charge only): `PlayerChargeRunAnim` → `charge_run_weight`/`charge_run_cycle` + `charge_run` — separate graph stack; solo OK. DirectPlayback = full-body emotes only.
+`utd_citizen_human_throw.vmdl` — only `throw_windup` + `charge_run` AnimFiles (legacy hold_ready/charge_min/charge_max removed).
+Next: throw charge MP + polish; charge_run MP; 2-window soak; MP join flash.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -263,6 +268,10 @@ Next: charge pose polish; 2-window MP; MP join flash; longer soak.
 
 ## Recent session notes
 
+- **2026-06-11 (end of session — anim cleanup + editor rules):** **`utd_citizen_human_throw.vmdl`** trimmed to **`throw_windup`** + **`charge_run`** only (legacy `hold_ready` / `charge_min` / `charge_max` AnimFiles + FBX removed from ModelDoc). **`charge_run`** graph wiring fixed in editor (`1D Blendspace B`: entry 0 = `1D Blendspace A`, entry 1 = bone mask, blend keys **0.0** / **1.0**). **`.cursor/rules/editor-asset-ownership.mdc`** — agents must not patch scenes/models/animgraphs without explicit permission. **`PlayerChargeRunAnim`**: `OnLateUpdate` reverted to **`OnUpdate`** (s&box has no `OnLateUpdate`). **Tackle quirk:** after ModelDoc edits, ragdoll logic ran (`ApplyRagdollLocally` / ~8s `StandUpLocally`) but physics flop missing until **editor reboot** — logged under Known issues.
+- **2026-06-11 (`charge_run` overlay — solo SHIPPED):** Masked `charge_run` layer works in Play — only at movement **Charge** tier (max speed, no ball); off for walk/sprint/idle. **`PlayerChargeRunAnim`** gates on `MovementRampTier.Charge` (same label as **`MovementRampHud`**); `[Order(10005)]` **`OnUpdate`** after **`CatchUpSpeedBoost`** (`[Order(10003)]`). Graph: second stack in `utd_citizen_human_m.vanmgrph` — **`1D Blendspace B`** after throw's **`1D Blendspace A`**; entry **0** = Blendspace A passthrough, entry **1** = `UTD_Charge_Overlay` bone mask (both blend keys must be **0.0** and **1.0**). **Gotcha:** wiring only the bone mask to entry 0 = always on; both entries at 0.0 = never on. Auto-added on network spawn. **Next:** 2-window MP verify for charge_run.
+- **2026-06-11 (`charge_run` anim shipped in code):** **`PlayerChargeRunAnim`** — separate masked layer from throw wind-up; plays `charge_run` via `charge_run_weight` / `charge_run_cycle` when at catch-up/charge/max speed and **not** holding ball. Ball carriers cap at sprint and **never** reach charge speed — they never play `charge_run`. Throw wind-up stays on **`PlayerBallHoldAnim`** (`throw_charge` / `throw_windup`). Graph: two independent blend stacks in `utd_citizen_human_m.vanmgrph`. Auto-added on network spawn.
+- **2026-06-11 (charge cleanup + bar sync):** Removed legacy DirectPlayback / built-in charge wind-up code from **`PlayerBallHoldAnim`** (~300 lines) — animgraph route only. Added **`ChargeWindupCycleStart`** / **`ChargeWindupCycleEnd`** to map charge bar → clip cycle sub-range. Wind-up finishing early = motion packed at start of clip → spread keys in Blender (~`MaxThrowChargeTime` 3 s) or lower `ChargeWindupCycleEnd`. **`CITIZEN_ANIMATION_WORKFLOW.md`** now leads with **"Choose how to play it"** — animgraph masked layer = default for almost all custom anims.
 - **2026-06-11 (charge wind-up — animgraph fork SHIPPED & WORKING solo):** Masked-layer charge wind-up verified in game — body keeps locomotion/look-at while right arm scrubs `throw_windup` with the charge bar. **Graph fork** (Max built in editor): `utd_citizen_human_m.vanmgrph` = copy of Facepunch graph + Float params `throw_charge`/`throw_charge_weight` + Clip (`throw_windup`, added via **Add Clip**) → Cycle Control (Value Source = Parameter) → Bone Mask (`Blend_UpperBody_HalfSpine_FullArms`, Input 2 = layer) → **1D Blendspace** (entries 0/1 — this is the "Blend" node) spliced into "Restore helpers to clean state" Input 1. **Code:** `PlayerBallHoldAnim.UseAnimGraphChargePose` sets the params; **gotcha fixed:** cosmetics rebuilds the scene model on the default graph and silently drops the override — `EnsureCustomAnimGraph()` now **force re-assigns** (`null` → graph) on every model ensure; never trust the property compare. Editor naming traps: "Sequence" node = **Add Clip**; plain "Blend" = **1D Blendspace**; Single Frame = fixed frame only (wrong node). Full recipe: [`CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md). DirectPlayback demoted to full-body emote tool. **Next:** 2-window MP verify; clip polish in Blender (overwrite FBX, recompile, done).
 - **2026-06-11 (charge T-pose root cause):** `throw_windup` T-posed body because the clip is **arm-only** — DirectPlayback bind-poses unkeyed bones. Fix is **Blender-only**: bake `Human@IdlePose_Default.fbx` pose onto all unkeyed bones (copy/paste pose, 1 key at frame 1), re-export armature-only, recompile `utd_citizen_human_throw.vmdl`. No code change — scrub + release already work. Steps in [`CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md) → "Full-body wind-up". Animgraph masked branch = later upgrade only.
 - **2026-06-10 (custom charge wind-up — solo plays):** FBX pipeline working — **armature-only** export, **ScaleAndMirror 0.3937** on extension `.vmdl`, Body **Model** = `utd_citizen_human_throw`. **`PlayerBallHoldAnim`** maps charge bar across three sequences (`ChargeHoldReadyPhaseEnd` / `ChargeMinPhaseEnd`); built-in `b_attack` on release. **`EnsureCustomBodyModel()`** after cosmetics. Guide: [`CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md). **Next:** polish transitions/timing; MP verify.

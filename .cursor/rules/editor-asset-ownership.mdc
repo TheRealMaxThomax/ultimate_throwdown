@@ -1,0 +1,31 @@
+---
+description: User owns all s&box editor assets; agent must ask permission before editing them
+alwaysApply: true
+---
+
+# Editor Asset Ownership — Do Not Edit Without Permission
+
+Max owns **all in-editor and serialized s&box assets**. The agent must **not** modify them unless Max **explicitly gives permission** in that chat (e.g. "yes, edit the animgraph" or "go ahead and patch the scene").
+
+## Never edit without permission
+
+- **Scenes / prefabs:** `*.scene`, `*.prefab`, scene `_c` / `_d` companions
+- **Models / ModelDoc:** `*.vmdl`, `*.vmat`, compiled `_c` variants
+- **Animation:** `*.vanmgrph`, animgraph `_c` companions, ModelDoc sequence wiring
+- **Other editor-serialized assets** under `Assets/` that are normally changed in the s&box editor
+
+## What the agent should do instead
+
+1. **Describe** what to change — where to click, which asset, which node/property, what values, how to wire it.
+2. **Keep steps beginner-friendly** (numbered, named nodes, expected result).
+3. **Code** under `Code/` is still fair game when Max asks for implementation help — as long as the task does not require silently patching editor assets to finish.
+
+## If Max says no, or does not answer
+
+- Do **not** patch those files "to help."
+- Do **not** revert or "fix" editor assets unless Max asks.
+
+## Good vs bad
+
+- **Good:** "Open `utd_citizen_human_m.vanmgrph`, select `1D Blendspace B`, wire Blend1 @ 0 to `1D Blendspace A` output, Blend2 @ 1 to the charge_run Bone Mask — I'll wait for you to save."
+- **Bad:** Patching `utd_citizen_human_m.vanmgrph` or `throwdown_turf_wars.scene` without being told to.

@@ -11,6 +11,7 @@ public enum MovementRampTier : byte
 /// <summary>
 /// Walk / sprint / charge tiers: when <see cref="PlayerClass.CurrentClass"/> is set, tier speeds and ramp durations read from that <see cref="ClassData"/> asset; “Fallback” inspector fields apply only if no class is assigned (or for quick tests).
 /// </summary>
+[Order( 10003 )]
 public sealed class CatchUpSpeedBoost : Component
 {
 	/// <summary> Must match Input action name (<c>Input.config</c> uses <c>Forward</c>; scene uses lowercase <c>forward</c>).</summary>

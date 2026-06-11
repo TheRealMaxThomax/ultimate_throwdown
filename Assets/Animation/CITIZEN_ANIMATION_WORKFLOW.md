@@ -2,7 +2,45 @@
 
 **Use this when:** You add new Blender animations for the human avatar (throw charge, stand-up, hit, wave, emotes, etc.) and need them to work in s&box without breaking the rig.
 
-**Related code:** `Code/Player/PlayerBallHoldAnim.cs` (throw charge poses via direct playback). Other mechanics (tackle stand-up, emotes) will get their own components later but **the same ModelDoc + FBX rules apply**.
+**Related code:** `Code/Player/PlayerBallHoldAnim.cs` (throw wind-up), `Code/Player/PlayerChargeRunAnim.cs` (catch-up speed overlay). Other mechanics (tackle stand-up, emotes) will get their own components later but **the same ModelDoc + FBX + animgraph rules apply**.
+
+---
+
+## Choose how to play it (read this first)
+
+Almost every custom human animation you make for this game should use **one of these three routes**. Pick based on whether the body must keep moving.
+
+| Route | When to use | Body during playback | How |
+|-------|-------------|----------------------|-----|
+| **① Animgraph masked layer** | Custom motion **on top of** locomotion / look-at / idle (throw charge, aim overlays, partial gestures) | **Alive** — legs, spine look, head track | Fork `utd_citizen_human_m.vanmgrph` → Clip → Cycle Control → Bone Mask → 1D Blendspace → splice before final output. Drive float params from code. **This is the default for most of your work.** |
+| **② Built-in graph params** | Facepunch already has it (hold item, throw release, locomotion) | Alive | `renderer.Set( "holdtype", … )`, `b_attack`, etc. Prefer this when it looks good. |
+| **③ DirectPlayback** | Full-body **one-shot** emotes (wave, death, celebration) where a frozen body is OK | **Frozen** — whole skeleton replaced | `SceneModel.DirectPlayback.Play( "wave" )` in code. **Do not use for charge wind-up or anything that must layer on movement.** |
+
+**Rule of thumb:** If you need the player to walk, turn, or look around while your animation plays → **animgraph fork (①)**. DirectPlayback (③) will T-pose or freeze the body.
+
+**Project assets for route ①:**
+- Sequences: `utd_citizen_human_throw.vmdl` (all custom FBX clips)
+- Graph: `utd_citizen_human_m.vanmgrph` (fork of Facepunch `citizen_human_m.vanmgrph` + your masked layers)
+
+### Shipped custom layers (two independent stacks — do not merge)
+
+| Layer | Sequence | Graph params | Code | When it plays |
+|-------|----------|--------------|------|----------------|
+| **Throw wind-up** | `throw_windup` | `throw_charge`, `throw_charge_weight` | `PlayerBallHoldAnim` | Holding ball + charging throw (`BallThrow.IsChargingThrow`). Movement blocked. |
+| **Charge run** | `charge_run` | `charge_run_cycle`, `charge_run_weight` | `PlayerChargeRunAnim` | **Not** holding ball + movement ramp tier **Charge** only (max of walk/sprint/charge — same label as `MovementRampHud`). |
+
+**These never overlap:** throw charge blocks movement and ball carriers **cannot** reach charge speed (sprint cap while holding). **Separate** Clip → Cycle Control → Bone Mask → 1D Blendspace chains in `utd_citizen_human_m.vanmgrph`, wired **in series** before `"Restore helpers to clean state"` (`1D Blendspace A` = throw → `1D Blendspace B` = charge_run → restore helpers). Do **not** replace one clip with the other on a shared node.
+
+**`charge_run` mask:** custom weight list `UTD_Charge_Overlay` (right arm + spine + head; **no** left arm so run swing stays on the base graph).
+
+**`1D Blendspace B` wiring (charge_run) — verified 2026-06-11:**
+
+| Blend entry | User value | Wire to |
+|-------------|------------|---------|
+| First | **0.0** | **`1D Blendspace A`** output (normal locomotion + throw layer) |
+| Second | **1.0** | **Bone Mask** (`UTD_Charge_Overlay`) above the `charge_run` clip |
+
+Parameter = `charge_run_weight`. **Common mistakes:** second entry still at **0.0** → overlay never shows at charge speed; bone mask on entry **0** only → overlay always on.
 
 ---
 
@@ -12,7 +50,8 @@
 2. Export FBX: **armature only, no mesh**.
 3. Add an **AnimFile** sequence to `utd_citizen_human_throw.vmdl` (name it clearly, e.g. `wave`, `hit_react`).
 4. Keep **ScaleAndMirror 0.3937** on that `.vmdl`.
-5. **Compile** → preview in ModelDoc → wire in code or anim graph.
+5. **Compile** → preview in ModelDoc.
+6. **Wire in the animgraph fork** (route ①) for layered anims, or code `Set` / DirectPlayback for the other routes.
 
 ---
 
@@ -21,9 +60,10 @@
 | File | Purpose |
 |------|---------|
 | `throw_anim_work.blend` | Blender working file |
-| `citizen_human_male_REF_personal.fbx` | Your reference import (verify scale vs official) |
-| `human@*.fbx` | Exported animation clips |
-| `utd_citizen_human_throw.vmdl` | **Extension model** — adds custom sequences on top of `citizen_human_male` |
+| `citizen_human_male_REF_personal.fbx` | Optional Blender reference import |
+| `throw_windup.fbx`, `charge_run.fbx` | **Active** exported clips (in ModelDoc) |
+| `utd_citizen_human_throw.vmdl` | **Extension model** — custom sequences on `citizen_human_male` (currently **`throw_windup`** + **`charge_run`** only) |
+| `utd_citizen_human_m.vanmgrph` | Forked animgraph (masked layers) |
 | This doc | Workflow + troubleshooting |
 
 **Note:** The `.vmdl` filename says “throw” but it is the **shared bucket** for all custom human sequences (wave, hit, stand-up, etc.). Add new **AnimFile** nodes here; you do not need a new `.vmdl` per animation.
@@ -42,8 +82,8 @@ utd_citizen_human_throw.vmdl     ← YOUR extra sequences only + ScaleAndMirror 
 
 **Player prefab (when using custom sequences):**
 
-- **Animation Graph** = `citizen_human_m.vanmgrph` (unchanged)
-- **Body Model** — `PlayerBallHoldAnim.CustomBodyModelPath` (default `animation/utd_citizen_human_throw.vmdl`) re-applies the extension model on spawn and **after cosmetics** (`ClothingContainer.ApplyAsync` resets Body to plain `citizen_human_male`). You do not need to hand-wire the Model on the prefab unless you use a different `.vmdl` path.
+- **Animation Graph** — code applies `utd_citizen_human_m.vanmgrph` via `PlayerBallHoldAnim` (no prefab wiring needed; re-applied after cosmetics).
+- **Body Model** — `PlayerBallHoldAnim.CustomBodyModelPath` (default `animation/utd_citizen_human_throw.vmdl`) re-applies the extension model on spawn and **after cosmetics** (`ClothingContainer.ApplyAsync` resets Body to plain `citizen_human_male`).
 
 While debugging a new clip, use ModelDoc preview on the extension `.vmdl` until sequences look correct.
 
@@ -107,8 +147,9 @@ Naming: `human@<sequence_name>.fbx` (e.g. `human@wave.fbx`). The **sequence name
 
 - Use **unique, lowercase_with_underscores** names (`charge_max`, `stand_up`, `wave`).
 - Avoid colliding with built-in citizen sequence names.
-- **Throw charge (current):** one merged sequence **`throw_windup`** — `PlayerBallHoldAnim` scrubs charge bar **0→1** across the whole clip (no pops between phases).
-- **Legacy fallback:** `hold_ready`, `charge_min`, `charge_max` if `throw_windup` is missing. Tune `ChargeHoldReadyPhaseEnd` / `ChargeMinPhaseEnd`.
+- **Throw charge (current):** one merged sequence **`throw_windup`** — `PlayerBallHoldAnim` scrubs charge bar **0→1** via animgraph (`throw_charge` / `throw_charge_weight`).
+- **Movement charge overlay:** **`charge_run`** — `PlayerChargeRunAnim` at movement tier **Charge** only.
+- **Removed 2026-06-11:** legacy three-phase `hold_ready` / `charge_min` / `charge_max` (DirectPlayback era) — delete AnimFiles before deleting FBX sources.
 
 ### Throw charge — seamless wind-up + idle body (important)
 
@@ -154,7 +195,7 @@ Overwrite-and-go — no graph or code changes needed:
 3. The asset system usually recompiles `utd_citizen_human_throw.vmdl` on demand; if the change doesn't show, open it in ModelDoc → Save + Full Compile.
 4. The charge bar maps 0→1 across the **whole clip length**, whatever it is.
 
-Same sequence name = nothing else to touch. New sequence name = update the AnimFile node name + `PlayerBallHoldAnim.ChargeWindupSequenceName` + the Clip node in the graph.
+Same sequence name = nothing else to touch. New sequence name = update the AnimFile node name + the Clip node in the graph + any code that drives it.
 
 #### Custom anim layered over a LIVE body (animgraph fork — the real partial-body solution)
 
@@ -181,7 +222,19 @@ This is how you get "my custom arm wind-up plays, but the body still walks/turns
 6. Wire: Clip → Cycle Control → Bone Mask **Input 2**. X → Bone Mask **Input 1**. X → Blendspace entry **0.0**; Bone Mask → Blendspace entry **1.0**. Blendspace → "Restore helpers to clean state" Input 1.
 7. Save (Ctrl+S), then **test in the editor before Play**: drag the `throw_charge_weight` slider to 1 in the Parameters panel and scrub `throw_charge` — preview body should stay alive while the masked bones run the wind-up.
 
-**Code side (already implemented):** `PlayerBallHoldAnim.UseAnimGraphChargePose` (default on) sets `throw_charge` to the charge lerp and ramps `throw_charge_weight` 0→1 while charging (in/out blend times tunable). If the graph file is missing it logs once and charge shows the plain holditem stance (no T-pose).
+**Code side (already implemented):** `PlayerBallHoldAnim.UseAnimGraphChargePose` (default on) sets `throw_charge` from the same 0→1 value as the throw charge bar (`BallThrow.GetThrowChargeLerp()` / `NetThrowChargeLerp` on remotes) and ramps `throw_charge_weight` 0→1 while charging. If the graph file is missing it logs once and charge shows the plain holditem stance (no T-pose).
+
+#### Sync wind-up speed with the charge bar
+
+`throw_charge` is **not a playback clock** — it is a **scrub position** (0 = start of clip, 1 = end). The charge bar and the anim use the **same** lerp, so they stay in sync **as long as the clip is authored correctly**.
+
+| Symptom | Cause | Fix |
+|---------|--------|-----|
+| Wind-up finishes while the bar is still filling | All motion is packed into the **first part** of the clip (e.g. wind-up in frames 1–20, hold pose for frames 21–90) | **Best:** in Blender, spread the wind-up keys across the **full timeline** (~3 s to match `BallThrow.MaxThrowChargeTime`). Delete trailing hold frames at max pose. |
+| Same, quick inspector fix | Motion only uses the first ~25% of the clip cycle | On `PlayerBallHoldAnim`, lower **`ChargeWindupCycleEnd`** (e.g. `0.25`) so a full charge bar maps to that sub-range only |
+| Bar and preview slider match but in-game feels off | Clip **Playback Speed** on the Animation Clip node is not 0 | Set clip **Playback Speed = 0**; only Cycle Control drives position |
+
+**Blender target:** one continuous wind-up from frame 1 → last frame, **no** long hold at max pose at the end. Re-export → recompile → done.
 
 **CRITICAL runtime gotcha (cost us an hour):** clothing/cosmetics (`ClothingContainer.ApplyAsync`) swaps the Body model, which **rebuilds the renderer's scene model on the model's DEFAULT graph** — silently dropping the custom-graph override even though the component property still reports it as set. Symptoms: graph perfect in editor preview, parameters set in game, **nothing happens in game**. Fix (in `EnsureCustomAnimGraph`): **force re-assignment** (`renderer.AnimationGraph = null;` then `= customGraph;`) every time the Body model is ensured — never trust `renderer.AnimationGraph != customGraph` as an "already applied" check. `EnsureCustomBodyModel()` runs this on spawn and again after cosmetics.
 
@@ -219,6 +272,9 @@ This is how you get "my custom arm wind-up plays, but the body still walks/turns
 | Sequence missing in game | Wrong Body model or name mismatch | Body = `utd_citizen_human_throw`; names match code |
 | Console warning from `PlayerBallHoldAnim` | Sequence not compiled / wrong name | Compile `.vmdl`; check spelling |
 | Graph layer works in **editor preview** but does nothing **in game** | Cosmetics rebuilt the scene model on the default graph — custom graph override silently dropped | Force re-assign the graph after every model change (`AnimationGraph = null` then the custom graph) — already done in `EnsureCustomAnimGraph()` |
+| `charge_run` always on (walk/sprint/idle) | `1D Blendspace B` entry **0** wired to bone mask, or only one entry connected | Entry **0** = `1D Blendspace A`; entry **1** = bone mask; values **0.0** / **1.0** |
+| `charge_run` never on at charge speed | Both blend entries at **0.0**, or `charge_run_weight` not reaching 1 | Set second entry user value to **1.0**; test in graph sim with `charge_run_weight` = 1 |
+| Tackle: frozen ~8s, console shows `ApplyRagdollLocally` but no flop | Stale compiled extension after ModelDoc save; tackle state OK, physics ragdoll not | **Reboot editor** or open `utd_citizen_human_throw.vmdl` → Save + Full Compile; re-test. Enable `PlayerTackle.EnableTackleDebugLogs` → look for `Impulse failed` |
 | Anim only plays after unticking **NLA Strips** on FBX export | Action lives on an NLA track — exporter bakes strips, not the active action | Untick **NLA Strips** (keep Bake Animation on, All Actions off) |
 
 **Isolation test:** Disable all custom AnimFile nodes → compile → preview should be normal citizen. Re-enable one clip at a time.
@@ -227,40 +283,48 @@ This is how you get "my custom arm wind-up plays, but the body still walks/turns
 
 ## Playing animations in code (patterns)
 
-### Direct playback (overlay on anim graph)
+### ① Animgraph params (layered custom anims — default)
 
-Experimental only for **throw charge** in `PlayerBallHoldAnim`:
+**Throw wind-up** (`PlayerBallHoldAnim` — ball carrier, charging throw):
 
 ```csharp
-// Preferred: one merged clip scrubbed by charge lerp
-renderer.SceneModel.DirectPlayback.Play( "throw_windup" );
-// Scrub: DirectPlayback.StartTime = Time.Now - (chargeLerp * Duration);
+renderer.Set( "throw_charge", cycle );       // 0→1 = throw charge bar
+renderer.Set( "throw_charge_weight", weight );
+```
+
+**Charge run** (`PlayerChargeRunAnim` — no ball, at catch-up/charge/max speed only):
+
+```csharp
+renderer.Set( "charge_run_cycle", 0f );     // static pose; scrub if clip has motion
+renderer.Set( "charge_run_weight", weight );
+```
+
+- Clips on `utd_citizen_human_throw.vmdl`; layers on `utd_citizen_human_m.vanmgrph` — **one independent stack per anim** (do not share nodes between `throw_windup` and `charge_run`).
+- Remotes: `NetThrowChargeLerp` for throw; charge run uses same ramp tier logic (`MovementRampTier.Charge` / `CatchUpSpeedBoost.NetAtChargeSpeed`).
+
+### ② Built-in anim graph (`renderer.Set(...)`)
+
+Hold item, throw release, locomotion — `holdtype`, `b_attack`, etc. Prefer when Facepunch already has it.
+
+### ③ DirectPlayback (full-body emotes only)
+
+```csharp
+renderer.SceneModel.DirectPlayback.Play( "wave" );
 renderer.SceneModel.DirectPlayback.Cancel();
 ```
 
-- Requires sequences on the Body **Model** (the extension `.vmdl`).
-- The clip **must key every bone** (full-body). Bake the idle pose onto unkeyed bones — see "Full-body wind-up" above. Arm-only clips T-pose the rest of the body.
-- **If revisiting custom graph-driven charge later:** prefer **`throw_windup`** (single clip). Legacy three-clip mode needs matching poses at joins.
-- **Do not** scrub `*_delta` sequences or charge AnimFile weight-list experiments through DirectPlayback (pancake risk). Deltas are for holdtype graph Add nodes.
-- Look during charge: `BallThrow` keeps look input enabled; movement stays blocked separately.
-- Remotes need synced state if the pose must match (throw uses `NetThrowChargeLerp`).
+- **Frozen body** — whole skeleton replaced. Good for wave / celebration / short reactions.
+- **Not** for charge wind-up or anything that must layer on movement (T-pose / pancake history).
+- Clip must be full-body if you use this route.
 
-### Built-in anim graph (`renderer.Set(...)`)
+### Future examples
 
-Used for **throw release** today: `holdtype`, `b_attack`, etc. on `citizen_human_m.vanmgrph`.
-
-- Good for: hold/throw, locomotion, anything the graph already supports.
-- Prefer built-in when it looks good (throw release stayed built-in).
-
-### Future examples (not wired yet)
-
-| Animation | Likely owner | Notes |
-|-----------|----------------|-------|
-| Stand up | `PlayerTackle` or ragdoll feel | May blend from ragdoll; test MP early |
-| Hit / flinch | Combat / ball interact | Short one-shot direct playback or graph param |
-| Wave / emote | New small component or emote RPC | Broadcast `Play` + sequence name for remotes |
-
-When adding a new system, reuse: **same `.vmdl`**, new **Name**, new component or method that calls `DirectPlayback.Play( "your_name" )`.
+| Animation | Route | Notes |
+|-----------|-------|-------|
+| Throw charge | ① Animgraph | Shipped — `throw_charge` / `throw_charge_weight` |
+| Stand up | ① or ③ | Ragdoll blend may need graph; test MP early |
+| Hit / flinch | ① | Short masked layer or graph one-shot |
+| Wave / emote | ③ | Full-body DirectPlayback + RPC for remotes |
 
 ---
 

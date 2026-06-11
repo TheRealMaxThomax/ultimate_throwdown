@@ -5,7 +5,7 @@ alwaysApply: true
 
 # In-Engine and Scene Ownership
 
-- **Do not edit** serialized s&box scene/prefab assets (for example `*.scene` under `Assets/`, or other editor-owned serialized files) unless the user **explicitly** asks the agent to change them.
+- **Do not edit** serialized s&box scene/prefab assets (for example `*.scene` under `Assets/`, or other editor-owned serialized files) unless the user **explicitly gives permission** in that chat. Same for **models, animgraphs, materials** (`*.vmdl`, `*.vanmgrph`, `*.vmat`, etc.) — see `editor-asset-ownership.mdc`.
 - The user is learning the engine; they should perform **in-editor** setup (components, references, properties, hierarchy) themselves.
 - When a change needs to happen in the engine, **describe what to do** in clear steps: where to click, which object, which component, which property values, what to wire up. Keep instructions beginner-friendly.
 - **Code** (for example `Code/**/*.cs`) may still be edited when the user requests implementation help, as long as it does not require silently editing scene files to complete the task.

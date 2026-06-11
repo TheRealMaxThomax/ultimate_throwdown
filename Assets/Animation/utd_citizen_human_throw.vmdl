@@ -27,75 +27,6 @@
 				[
 					{
 						_class = "AnimFile"
-						name = "hold_ready"
-						activity_name = ""
-						activity_weight = 1
-						weight_list_name = ""
-						fade_in_time = 0.2
-						fade_out_time = 0.2
-						looping = false
-						delta = false
-						worldSpace = false
-						hidden = false
-						anim_markup_ordered = false
-						disable_compression = false
-						disable_interpolation = false
-						enable_scale = false
-						source_filename = "animation/human@hold_ready.fbx"
-						start_frame = -1
-						end_frame = -1
-						framerate = -1.0
-						take = 0
-						reverse = false
-					},
-					{
-						_class = "AnimFile"
-						name = "charge_min"
-						activity_name = ""
-						activity_weight = 1
-						weight_list_name = ""
-						fade_in_time = 0.2
-						fade_out_time = 0.2
-						looping = false
-						delta = false
-						worldSpace = false
-						hidden = false
-						anim_markup_ordered = false
-						disable_compression = false
-						disable_interpolation = false
-						enable_scale = false
-						source_filename = "animation/human@charge_min.fbx"
-						start_frame = -1
-						end_frame = -1
-						framerate = -1.0
-						take = 0
-						reverse = false
-					},
-					{
-						_class = "AnimFile"
-						name = "charge_max"
-						activity_name = ""
-						activity_weight = 1
-						weight_list_name = ""
-						fade_in_time = 0.2
-						fade_out_time = 0.2
-						looping = false
-						delta = false
-						worldSpace = false
-						hidden = false
-						anim_markup_ordered = false
-						disable_compression = false
-						disable_interpolation = false
-						enable_scale = false
-						source_filename = "animation/human@charge_max.fbx"
-						start_frame = -1
-						end_frame = -1
-						framerate = -1.0
-						take = 0
-						reverse = false
-					},
-					{
-						_class = "AnimFile"
 						name = "throw_windup"
 						activity_name = ""
 						activity_weight = 1
@@ -117,8 +48,83 @@
 						take = 0
 						reverse = false
 					},
+					{
+						_class = "AnimFile"
+						name = "charge_run"
+						activity_name = ""
+						activity_weight = 1
+						weight_list_name = ""
+						fade_in_time = 0.2
+						fade_out_time = 0.2
+						looping = false
+						delta = false
+						worldSpace = false
+						hidden = false
+						anim_markup_ordered = false
+						disable_compression = false
+						disable_interpolation = false
+						enable_scale = false
+						source_filename = "Animation/charge_run.fbx"
+						start_frame = -1
+						end_frame = -1
+						framerate = -1.0
+						take = 0
+						reverse = false
+					},
 				]
 				default_root_bone_name = "pelvis"
+			},
+			{
+				_class = "WeightListList"
+				children = 
+				[
+					{
+						_class = "WeightList"
+						name = "UTD_Charge_Overlay"
+						default_weight = 0.0
+						weights = 
+						[
+							{
+								bone = "clavicle_L"
+								weight = 0.0
+							},
+							{
+								bone = "clavicle_R"
+								weight = 1.0
+							},
+							{
+								bone = "eye_L"
+								weight = 0.0
+							},
+							{
+								bone = "eye_R"
+								weight = 0.0
+							},
+							{
+								bone = "head"
+								weight = 1.0
+							},
+							{
+								bone = "neck_0"
+								weight = 1.0
+							},
+							{
+								bone = "spine_0"
+								weight = 1.0
+							},
+							{
+								bone = "spine_1"
+								weight = 1.0
+							},
+							{
+								bone = "spine_2"
+								weight = 1.0
+							},
+						]
+						master_morph_weight = -1.0
+						morph_weights = [  ]
+					},
+				]
 			},
 		]
 		model_archetype = ""
