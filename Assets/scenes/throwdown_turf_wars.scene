@@ -519,7 +519,27 @@
                 "go": "1fd410e6-7794-4786-86cc-25ad691cdd92",
                 "component_type": "SkinnedModelRenderer"
               },
+              "ChargeCycleParamName": "throw_charge",
+              "ChargeHoldPoseHandEnd": 0.1,
+              "ChargeHoldPoseHandStart": 0.1,
+              "ChargeHoldReadyPhaseEnd": 0.2,
+              "ChargeHoldTypePoseEnd": 3,
+              "ChargeHoldTypePoseStart": 0,
+              "ChargeMaxSequenceName": "charge_max",
+              "ChargeMinPhaseEnd": 0.5,
+              "ChargeMinSequenceName": "charge_min",
+              "ChargeSequenceDeltaSuffix": "_delta",
+              "ChargeWeightBlendInSeconds": 0.12,
+              "ChargeWeightBlendOutSeconds": 0.15,
+              "ChargeWeightParamName": "throw_charge_weight",
+              "ChargeWindupSequenceName": "charge_windup",
+              "CustomAnimGraphPath": "animation/utd_citizen_human_m.vanmgrph",
+              "CustomBodyModelPath": "animation/utd_citizen_human_throw.vmdl",
+              "EnableBuiltInChargeWindup": true,
+              "EnableCustomChargePose": true,
+              "HoldReadySequenceName": "hold_ready",
               "IdleHoldPoseHand": 0.1,
+              "IdleHoldTypePose": 0,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -528,7 +548,9 @@
               "OnComponentUpdate": null,
               "ThrowAttackStrong": 1,
               "ThrowPlaybackRate": 0.7,
-              "ThrowPoseHoldSeconds": 0.9
+              "ThrowPoseHoldSeconds": 0.9,
+              "UseAnimGraphChargePose": true,
+              "UseDeltaChargeSequences": true
             },
             {
               "__type": "BallClientFeel",
@@ -762,7 +784,7 @@
                   "MaterialGroup": "default",
                   "MaterialOverride": null,
                   "Materials": null,
-                  "Model": "models/citizen_human/citizen_human_male.vmdl",
+                  "Model": "animation/utd_citizen_human_throw.vmdl",
                   "Morphs": {},
                   "OnComponentDestroy": null,
                   "OnComponentDisabled": null,
@@ -2812,7 +2834,7 @@
                   ]
                 },
                 {
-                  "__guid": "58a5a012-1873-4bf4-952a-58cb828fc175",
+                  "__guid": "0e161b72-714e-48fa-bc16-3c596b0d9847",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2829,7 +2851,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "d9ab20d7-f015-4f73-ba71-964fd8c93f0d",
+                      "__guid": "ad859198-1c88-4653-89f0-4c147b9b2add",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6106,7 +6128,7 @@
                   ]
                 },
                 {
-                  "__guid": "4d95174a-d477-4b3f-b9ff-a3b7b8cd643a",
+                  "__guid": "fdffdac9-9981-4a70-9085-f2df34837616",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6123,7 +6145,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "be0f6041-af5d-45d2-b609-9ec79035f0bb",
+                      "__guid": "c8b36dfb-39e5-4e1a-bd74-dd62c1a89386",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8739,7 +8761,7 @@
                   ]
                 },
                 {
-                  "__guid": "8c961d18-eb8c-492d-8949-b70322e73f17",
+                  "__guid": "b911be3c-6c3b-4157-a5e3-087d0b44e2e7",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8756,7 +8778,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "0088db97-4804-4638-b3bd-00243feeb2ae",
+                      "__guid": "72639a37-e7e6-4acd-a21a-2f9f9d41ec63",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11372,7 +11394,7 @@
                   ]
                 },
                 {
-                  "__guid": "7e79cfa9-7376-4f3d-a5a7-c552b7ae13e5",
+                  "__guid": "178f44d4-da68-4af6-80dd-0b88d03f48fa",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11389,7 +11411,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "7225c6d3-4d20-48ab-94bc-4fa8d1209b6d",
+                      "__guid": "c53ea213-dc55-4b61-8822-cf139f5e950f",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,

@@ -117,6 +117,7 @@ public sealed class PlayerCosmeticsSync : Component
 			}
 
 			Components.Get<PlayerClass>()?.ApplyClassAppearance();
+			Components.Get<PlayerBallHoldAnim>()?.EnsureCustomBodyModel();
 
 			appliedSuccessfully = true;
 			if ( EnableDebugLogs )

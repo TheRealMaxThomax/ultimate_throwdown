@@ -29,12 +29,12 @@ public sealed class BallThrow : Component
 	private bool isPendingThrowRelease;
 	/// <summary> Owner writes; host reads for dodge validation. </summary>
 	[Sync] private bool NetIsChargingThrow { get; set; }
+	/// <summary> Owner writes each frame while charging so remotes can scrub custom charge poses. </summary>
+	[Sync] private float NetThrowChargeLerp { get; set; }
 	private float throwChargeStartedAt;
 	private float pendingThrowReleaseAt;
 	private float pendingChargeLerp;
 	private Vector3 pendingThrowDirection;
-	private bool inputControlsSuppressed;
-	private bool savedUseInputControls = true;
 	public bool IsChargingThrow => Network.IsOwner ? isChargingThrow : NetIsChargingThrow;
 	public bool IsPendingThrowRelease => Network.IsOwner && isPendingThrowRelease;
 
@@ -125,7 +125,9 @@ public sealed class BallThrow : Component
 		{
 			// Block locomotion input; <see cref="OnFixedUpdate"/> disables built-in jump/move on <see cref="PlayerController"/>.
 			Input.AnalogMove = Vector3.Zero;
-			throwChargeBar?.SetCharge( GetThrowChargeLerp() );
+			var chargeLerp = GetThrowChargeLerp();
+			NetThrowChargeLerp = chargeLerp;
+			throwChargeBar?.SetCharge( chargeLerp );
 		}
 	}
 
@@ -140,18 +142,9 @@ public sealed class BallThrow : Component
 
 		if ( isChargingThrow || isPendingThrowRelease )
 		{
-			if ( !inputControlsSuppressed )
-			{
-				savedUseInputControls = playerController.UseInputControls;
-				inputControlsSuppressed = true;
-			}
-
-			playerController.UseInputControls = false;
+			// Keep look / aim alive; movement is blocked via AnalogMove + CatchUpSpeedBoost zeroing speeds.
 			playerController.WishVelocity = Vector3.Zero;
-			return;
 		}
-
-		RestoreInputControlsIfNeeded();
 	}
 
 	private void BeginThrowRelease( float chargeLerp, Vector3 throwDirection )
@@ -261,20 +254,8 @@ public sealed class BallThrow : Component
 	{
 		isChargingThrow = false;
 		NetIsChargingThrow = false;
+		NetThrowChargeLerp = 0f;
 		throwChargeBar?.Hide();
-		RestoreInputControlsIfNeeded();
-	}
-
-	private void RestoreInputControlsIfNeeded()
-	{
-		if ( !inputControlsSuppressed )
-			return;
-
-		playerController ??= Components.Get<PlayerController>();
-		if ( playerController.IsValid() )
-			playerController.UseInputControls = savedUseInputControls;
-
-		inputControlsSuppressed = false;
 	}
 
 	private bool IsMatchGameplayInputAllowed()
@@ -283,11 +264,19 @@ public sealed class BallThrow : Component
 		return team is null || team.IsMatchGameplayInputAllowed;
 	}
 
-	public float GetThrowChargeLerp() => ThrowReleaseMath.GetChargeLerp(
-		throwChargeStartedAt,
-		MinThrowChargeTime,
-		MaxThrowChargeTime,
-		playerClass?.CurrentClass?.ThrowChargeSpeedScale ?? 1f );
+	public float GetThrowChargeLerp()
+	{
+		if ( Network.IsOwner )
+		{
+			return ThrowReleaseMath.GetChargeLerp(
+				throwChargeStartedAt,
+				MinThrowChargeTime,
+				MaxThrowChargeTime,
+				playerClass?.CurrentClass?.ThrowChargeSpeedScale ?? 1f );
+		}
+
+		return NetIsChargingThrow ? NetThrowChargeLerp : 0f;
+	}
 
 	/// <summary>
 	/// World throw direction at release. Prefers <see cref="ThrowDirectionSource"/> when wired; otherwise
