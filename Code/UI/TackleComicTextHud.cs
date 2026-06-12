@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using Sandbox;
-using Sandbox.Rendering;
+using Sandbox.UI;
 
 /// <summary>
-/// World-anchored comic words (POW!, BAM!, …) drawn on the main camera HUD for every client.
-/// Host broadcasts on tackle / knockdown connect; uses Les Flos tier fonts when configured.
+/// Spawns short-lived <see cref="TackleComicBurst"/> world panels on knockdown (all clients via broadcast).
+/// Settings live here; bursts are created at runtime — no scene wiring required.
 /// </summary>
 public sealed class TackleComicTextHud : Component
 {
@@ -17,18 +17,14 @@ public sealed class TackleComicTextHud : Component
 		Chaos = 2
 	}
 
-	private struct ActiveBurst
+	/// <summary>Diagonal offset for the black duplicate layer (3D comic depth, not a uniform outline).</summary>
+	public enum ComicShadowDirection
 	{
-		public Vector3 WorldPosition;
-		public string Text;
-		public ComicFontTier Tier;
-		public Color FillColor;
-		public float StartTime;
-		public float Duration;
-		public float ShakeSeed;
+		BottomRight = 0,
+		BottomLeft = 1,
+		TopRight = 2,
+		TopLeft = 3
 	}
-
-	private readonly List<ActiveBurst> activeBursts = new();
 
 	[Property] public bool EnableComicText { get; set; } = true;
 
@@ -45,28 +41,34 @@ public sealed class TackleComicTextHud : Component
 		"ZAP!"
 	};
 
-	/// <summary>Flat letters — light hits / traffic knockdowns.</summary>
+	/// <summary>Flat letters — light player tackles (yellow).</summary>
 	[Property] public string FontSage { get; set; } = "Les Flos Sage";
-	/// <summary>Letters tilted left/right — medium hits.</summary>
+	/// <summary>Letters tilted left/right — medium hits (orange).</summary>
 	[Property] public string FontSans { get; set; } = "Les Flos Sans";
-	/// <summary>Stronger tilt than Sans — heavy / juggernaut hits.</summary>
+	/// <summary>Stronger tilt than Sans — heavy / juggernaut hits (red).</summary>
 	[Property] public string FontChaos { get; set; } = "Les Flos Chaos";
 
-	[Property] public int BaseFontSize { get; set; } = 72;
-	[Property] public int ChaosFontSizeBonus { get; set; } = 18;
+	[Property] public Vector2 BurstPanelSize { get; set; } = new( 1280f, 420f );
+	[Property] public float BurstPanelWidthPerCharacter { get; set; } = 120f;
+	[Property] public float BurstPanelMinWidth { get; set; } = 960f;
 	[Property] public float WorldHeightOffset { get; set; } = 52f;
 	[Property] public float FloatUpSpeed { get; set; } = 42f;
 	[Property] public float LifetimeSeconds { get; set; } = 0.95f;
-	[Property] public float PopInSeconds { get; set; } = 0.12f;
-	[Property] public float ShakeDurationSeconds { get; set; } = 0.14f;
-	[Property] public float ShakeAmplitudePixels { get; set; } = 10f;
-	[Property] public Vector2 ShadowOffsetPixels { get; set; } = new( 5f, 6f );
-	[Property] public Color FillColor { get; set; } = new( 1f, 0.92f, 0.18f );
-	[Property] public Color ShadowColor { get; set; } = new( 0.02f, 0.02f, 0.02f );
-	/// <summary>Tackle power at or above this uses <see cref="FontSans"/> (tilted). Below uses flat <see cref="FontSage"/>.</summary>
+
+	/// <summary>Fixed world size — perspective already shrinks with distance. Tune if words feel too big/small up close.</summary>
+	[Property] public float RenderScale { get; set; } = 1f;
+	[Property] public float ChaosRenderScaleMultiplier { get; set; } = 1.12f;
+	[Property] public Vector2 ShadowOffsetPixels { get; set; } = new( 10f, 12f );
+
+	/// <summary>Tackle power at or above this uses <see cref="FontSans"/> (tilted, orange). Below uses flat <see cref="FontSage"/> (yellow).</summary>
 	[Property] public float SansImpactThreshold { get; set; } = 1.12f;
-	/// <summary>Tackle power at or above this uses <see cref="FontChaos"/> (max tilt).</summary>
+	/// <summary>Tackle power at or above this uses <see cref="FontChaos"/> (max tilt, red).</summary>
 	[Property] public float ChaosImpactThreshold { get; set; } = 1.45f;
+
+	/// <summary>Max random whole-word rotation (± degrees) — host picks once per burst; Sage stays subtle.</summary>
+	[Property] public float WordTiltMaxDegreesSage { get; set; } = 4f;
+	[Property] public float WordTiltMaxDegreesSans { get; set; } = 7f;
+	[Property] public float WordTiltMaxDegreesChaos { get; set; } = 12f;
 
 	public static TackleComicTextHud FindInScene( Scene scene )
 	{
@@ -112,7 +114,35 @@ public sealed class TackleComicTextHud : Component
 		if ( string.IsNullOrWhiteSpace( text ) )
 			return;
 
-		hud.BroadcastSpawnRpc( worldPosition, (int)tier, text );
+		var shadowDir = Game.Random.Int( 0, 3 );
+		var wordTiltDegrees = hud.PickRandomWordTiltDegrees( tier );
+		hud.BroadcastSpawnRpc( worldPosition, (int)tier, text, shadowDir, wordTiltDegrees );
+	}
+
+	public static void ResolveShadowOffset( ComicShadowDirection direction, Vector2 magnitude, out float offsetX, out float offsetY )
+	{
+		var magX = MathF.Abs( magnitude.x );
+		var magY = MathF.Abs( magnitude.y );
+
+		switch ( direction )
+		{
+			case ComicShadowDirection.BottomLeft:
+				offsetX = -magX;
+				offsetY = magY;
+				return;
+			case ComicShadowDirection.TopRight:
+				offsetX = magX;
+				offsetY = -magY;
+				return;
+			case ComicShadowDirection.TopLeft:
+				offsetX = -magX;
+				offsetY = -magY;
+				return;
+			default:
+				offsetX = magX;
+				offsetY = magY;
+				return;
+		}
 	}
 
 	static ComicFontTier ResolveTier( float tacklePower, float sansThreshold, float chaosThreshold )
@@ -145,148 +175,76 @@ public sealed class TackleComicTextHud : Component
 	}
 
 	[Rpc.Broadcast]
-	private void BroadcastSpawnRpc( Vector3 worldPosition, int tier, string text )
+	private void BroadcastSpawnRpc( Vector3 worldPosition, int tier, string text, int shadowDirection, float wordTiltDegrees )
 	{
 		if ( !EnableComicText || string.IsNullOrWhiteSpace( text ) )
 			return;
 
-		SpawnLocal( worldPosition, (ComicFontTier)tier, text.Trim() );
+		var dir = (ComicShadowDirection)MathX.Clamp( shadowDirection, 0, 3 );
+		SpawnBurst( worldPosition, (ComicFontTier)tier, text.Trim(), dir, wordTiltDegrees );
 	}
 
-	void SpawnLocal( Vector3 worldPosition, ComicFontTier tier, string text )
+	void SpawnBurst( Vector3 worldPosition, ComicFontTier tier, string text, ComicShadowDirection shadowDirection, float wordTiltDegrees )
 	{
-		activeBursts.Add( new ActiveBurst
-		{
-			WorldPosition = worldPosition + Vector3.Up * WorldHeightOffset,
-			Text = text,
-			Tier = tier,
-			FillColor = FillColor,
-			StartTime = Time.Now,
-			Duration = LifetimeSeconds,
-			ShakeSeed = Game.Random.Float( 0f, 1000f )
-		} );
+		var burstGo = new GameObject( true, "TackleComicBurst" );
+		burstGo.WorldPosition = worldPosition + Vector3.Up * WorldHeightOffset;
+
+		var worldPanel = burstGo.Components.Create<Sandbox.WorldPanel>();
+		worldPanel.PanelSize = ResolveBurstPanelSize( text, tier, wordTiltDegrees );
+		worldPanel.LookAtCamera = true;
+
+		var burst = burstGo.Components.Create<TackleComicBurst>();
+		burst.Configure( this, tier, text, shadowDirection, wordTiltDegrees );
 	}
 
-	string ResolveFontFamily( ComicFontTier tier )
+	float PickRandomWordTiltDegrees( ComicFontTier tier )
+	{
+		var max = tier switch
+		{
+			ComicFontTier.Chaos => WordTiltMaxDegreesChaos,
+			ComicFontTier.Sans => WordTiltMaxDegreesSans,
+			_ => WordTiltMaxDegreesSage
+		};
+
+		if ( max <= 0f )
+			return 0f;
+
+		return Game.Random.Float( -max, max );
+	}
+
+	Vector2 ResolveBurstPanelSize( string text, ComicFontTier tier, float wordTiltDegrees )
+	{
+		const float baseFontSize = 112f;
+		const float chaosFontSize = 128f;
+		const float popPeakScale = 1.16f;
+
+		var charCount = MathF.Max( 1, text?.Length ?? 1 );
+		var fontScale = tier == ComicFontTier.Chaos ? chaosFontSize / baseFontSize : 1f;
+		var tierRenderScale = tier == ComicFontTier.Chaos ? ChaosRenderScaleMultiplier : 1f;
+		var layoutScale = fontScale * tierRenderScale * popPeakScale;
+
+		var width = MathF.Max( BurstPanelMinWidth, charCount * BurstPanelWidthPerCharacter ) * layoutScale;
+
+		// Rotated glyphs + pop overshoot need extra room than flat width estimate.
+		var textHeight = baseFontSize * layoutScale;
+		var tiltRadians = MathF.Abs( wordTiltDegrees ) * MathF.PI / 180f;
+		width += textHeight * MathF.Sin( tiltRadians ) * 2f;
+
+		var shadowPad = MathF.Max( MathF.Abs( ShadowOffsetPixels.x ), MathF.Abs( ShadowOffsetPixels.y ) ) * 2f;
+		width += shadowPad;
+
+		var height = BurstPanelSize.y * layoutScale + shadowPad;
+
+		return new Vector2( width, height );
+	}
+
+	public string ResolveFontFamily( ComicFontTier tier )
 	{
 		return tier switch
 		{
 			ComicFontTier.Chaos => FontChaos,
-			ComicFontTier.Sage => FontSage,
-			_ => FontSans
+			ComicFontTier.Sans => FontSans,
+			_ => FontSage
 		};
-	}
-
-	protected override void OnUpdate()
-	{
-		if ( Scene.Camera is null || activeBursts.Count == 0 )
-			return;
-
-		var hud = Scene.Camera.Hud;
-		var camera = Scene.Camera;
-		var now = Time.Now;
-
-		for ( var i = activeBursts.Count - 1; i >= 0; i-- )
-		{
-			var burst = activeBursts[i];
-			var elapsed = now - burst.StartTime;
-			if ( elapsed >= burst.Duration )
-			{
-				activeBursts.RemoveAt( i );
-				continue;
-			}
-
-			DrawBurst( hud, camera, burst, elapsed );
-		}
-	}
-
-	void DrawBurst( HudPainter hud, CameraComponent camera, ActiveBurst burst, float elapsed )
-	{
-		var worldPos = burst.WorldPosition + Vector3.Up * (FloatUpSpeed * elapsed );
-		var toPoint = worldPos - camera.WorldPosition;
-		if ( Vector3.Dot( camera.WorldRotation.Forward, toPoint ) <= 0f )
-			return;
-
-		var screenPos = camera.PointToScreenPixels( worldPos );
-		var alpha = ComputeAlpha( elapsed, burst.Duration );
-		if ( alpha <= 0.001f )
-			return;
-
-		var scale = ComputePopScale( elapsed );
-		var shake = ComputeShakeOffset( elapsed, burst.ShakeSeed );
-		screenPos += shake;
-
-		var fontSize = (int)MathF.Round( BaseFontSize * scale );
-		if ( burst.Tier == ComicFontTier.Chaos )
-			fontSize += ChaosFontSizeBonus;
-
-		var fontFamily = ResolveFontFamily( burst.Tier );
-		var fillColor = burst.FillColor.WithAlpha( alpha );
-		var shadowColor = ShadowColor.WithAlpha( alpha );
-		var shadowOffset = ShadowOffsetPixels * scale;
-
-		DrawCenteredComicText( hud, burst.Text, fontFamily, fontSize, screenPos + shadowOffset, shadowColor );
-		DrawCenteredComicText( hud, burst.Text, fontFamily, fontSize, screenPos, fillColor );
-	}
-
-	static float ComputeAlpha( float elapsed, float duration )
-	{
-		if ( duration <= 0.0001f )
-			return 0f;
-
-		var t = elapsed / duration;
-		if ( t < 0.12f )
-			return 1f;
-
-		if ( t < 0.55f )
-			return 1f;
-
-		var fadeT = MathX.Clamp( (t - 0.55f) / 0.45f, 0f, 1f );
-		return 1f - fadeT;
-	}
-
-	float ComputePopScale( float elapsed )
-	{
-		if ( PopInSeconds <= 0.0001f )
-			return 1f;
-
-		var t = MathX.Clamp( elapsed / PopInSeconds, 0f, 1f );
-		if ( t < 0.55f )
-		{
-			var popT = t / 0.55f;
-			return MathX.Lerp( 0.35f, 1.18f, popT );
-		}
-
-		var settleT = (t - 0.55f) / 0.45f;
-		return MathX.Lerp( 1.18f, 1f, settleT );
-	}
-
-	Vector2 ComputeShakeOffset( float elapsed, float shakeSeed )
-	{
-		if ( ShakeDurationSeconds <= 0.0001f || elapsed > ShakeDurationSeconds )
-			return Vector2.Zero;
-
-		var t = 1f - MathX.Clamp( elapsed / ShakeDurationSeconds, 0f, 1f );
-		var amp = ShakeAmplitudePixels * t;
-		var wobble = elapsed * 48f + shakeSeed;
-		return new Vector2(
-			MathF.Sin( wobble ) * amp,
-			MathF.Cos( wobble * 1.17f ) * amp * 0.75f );
-	}
-
-	static void DrawCenteredComicText( HudPainter hud, string text, string fontFamily, int fontSize, Vector2 screenPos, Color color )
-	{
-		var scope = string.IsNullOrWhiteSpace( fontFamily )
-			? new TextRendering.Scope( text, color, fontSize )
-			: new TextRendering.Scope( text, color, fontSize, fontFamily, 400 );
-
-		var measured = scope.Measure();
-		var rect = new Rect(
-			screenPos.x - measured.x * 0.5f,
-			screenPos.y - measured.y * 0.5f,
-			measured.x,
-			measured.y );
-
-		hud.DrawText( scope, rect, TextFlag.Left );
 	}
 }

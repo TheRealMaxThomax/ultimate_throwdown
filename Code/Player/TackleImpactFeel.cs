@@ -31,9 +31,12 @@ public sealed class TackleImpactFeel : Component
 	}
 
 	private PlayerController playerController;
+	private PlayerTackle playerTackle;
 	private CameraComponent activeCamera;
 
 	private ImpactRole activeRole = ImpactRole.None;
+	private bool impactUseHitstop = true;
+	private bool impactIsHazard;
 	private float impactStartTime = -1f;
 
 	private Vector3 frozenCameraPosition;
@@ -48,25 +51,34 @@ public sealed class TackleImpactFeel : Component
 	public bool IsHitstopActive { get; private set; }
 	public bool IsShakeActive { get; private set; }
 	public bool IsImpactFeelActive => activeRole != ImpactRole.None && impactStartTime >= 0f && Time.Now < GetImpactEndTime();
+	/// <summary>True while a traffic/hazard knockdown impact is active (car-specific camera path).</summary>
+	public bool IsHazardImpact => activeRole != ImpactRole.None && impactIsHazard;
 
-	float EffectiveHitstopDuration => EnableHitstop ? HitstopDurationSeconds : 0f;
+	float EffectiveHitstopDuration => EnableHitstop && impactUseHitstop ? HitstopDurationSeconds : 0f;
 
 	protected override void OnStart()
 	{
 		playerController = Components.Get<PlayerController>();
+		playerTackle = Components.Get<PlayerTackle>();
 		TryFindActiveCamera();
 	}
 
 	/// <summary> Owning client: landed a player tackle. </summary>
 	public void TriggerAsAttacker()
 	{
-		BeginImpact( ImpactRole.Attacker );
+		BeginImpact( ImpactRole.Attacker, useHitstop: true, isHazard: false );
 	}
 
-	/// <summary> Owning client: got tackled or knocked down. </summary>
+	/// <summary> Owning client: got tackled by another player. </summary>
 	public void TriggerAsVictim()
 	{
-		BeginImpact( ImpactRole.Victim );
+		BeginImpact( ImpactRole.Victim, useHitstop: true, isHazard: false );
+	}
+
+	/// <summary> Owning client: hazard knockdown (traffic, etc.) — shake only, no camera hitstop. </summary>
+	public void TriggerAsHazardVictim()
+	{
+		BeginImpact( ImpactRole.Victim, useHitstop: false, isHazard: true );
 	}
 
 	protected override void OnUpdate()
@@ -88,13 +100,20 @@ public sealed class TackleImpactFeel : Component
 			return;
 		}
 
+		playerTackle ??= Components.Get<PlayerTackle>();
+		if ( !impactIsHazard && activeRole == ImpactRole.Victim && playerTackle.IsValid() && playerTackle.IsRagdolled )
+		{
+			EndImpact( restoreCamera: true );
+			return;
+		}
+
 		IsShakeActive = ShouldShakeForRole( activeRole ) && elapsed < hitstopDuration + ShakeDurationSeconds;
 
 		if ( activeRole == ImpactRole.Attacker )
 			ApplyAttackerPunch( elapsed - hitstopDuration );
 
 		if ( Time.Now >= GetImpactEndTime() )
-			EndImpact();
+			EndImpact( restoreCamera: true );
 	}
 
 	protected override void OnPreRender()
@@ -118,25 +137,42 @@ public sealed class TackleImpactFeel : Component
 		var falloff = 1f - t;
 		var amp = ShakePositionAmplitude * falloff;
 		var rotAmp = ShakeRotationAmplitudeDegrees * falloff;
-
-		var right = activeCamera.WorldRotation.Right;
-		var up = activeCamera.WorldRotation.Up;
-		var forward = activeCamera.WorldRotation.Forward;
 		var wobble = afterHitstop;
-
-		var offset =
-			right * (MathF.Sin( wobble * 47f ) * amp)
-			+ up * (MathF.Cos( wobble * 53f ) * amp * 0.55f)
-			+ forward * (MathF.Sin( wobble * 39f ) * amp * 0.25f );
-
-		activeCamera.WorldPosition += offset;
 
 		var pitch = MathF.Sin( wobble * 61f ) * rotAmp;
 		var yaw = MathF.Cos( wobble * 57f ) * rotAmp * 0.65f;
-		activeCamera.WorldRotation *= Rotation.From( pitch, yaw, 0f );
+		var wobbleRot = Rotation.From( pitch, yaw, 0f );
+
+		if ( activeRole == ImpactRole.Attacker )
+		{
+			var right = activeCamera.WorldRotation.Right;
+			var up = activeCamera.WorldRotation.Up;
+			var forward = activeCamera.WorldRotation.Forward;
+			var offset =
+				right * (MathF.Sin( wobble * 47f ) * amp)
+				+ up * (MathF.Cos( wobble * 53f ) * amp * 0.55f)
+				+ forward * (MathF.Sin( wobble * 39f ) * amp * 0.25f );
+
+			activeCamera.WorldPosition += offset;
+			activeCamera.WorldRotation *= wobbleRot;
+			return;
+		}
+
+		TryGetShakeBaseline( out var basePosition, out var baseRotation );
+
+		var shakeRight = baseRotation.Right;
+		var shakeUp = baseRotation.Up;
+		var shakeForward = baseRotation.Forward;
+		var victimOffset =
+			shakeRight * (MathF.Sin( wobble * 47f ) * amp)
+			+ shakeUp * (MathF.Cos( wobble * 53f ) * amp * 0.55f)
+			+ shakeForward * (MathF.Sin( wobble * 39f ) * amp * 0.25f );
+
+		activeCamera.WorldPosition = basePosition + victimOffset;
+		activeCamera.WorldRotation = baseRotation * wobbleRot;
 	}
 
-	void BeginImpact( ImpactRole role )
+	void BeginImpact( ImpactRole role, bool useHitstop, bool isHazard )
 	{
 		if ( !Network.IsOwner || role == ImpactRole.None )
 			return;
@@ -144,6 +180,8 @@ public sealed class TackleImpactFeel : Component
 		if ( !TryEnsureReady() )
 			return;
 
+		impactUseHitstop = useHitstop;
+		impactIsHazard = isHazard;
 		CaptureFrozenCameraState();
 		punchBaselineCaptured = false;
 
@@ -153,13 +191,34 @@ public sealed class TackleImpactFeel : Component
 		IsShakeActive = false;
 	}
 
-	void EndImpact()
+	void EndImpact( bool restoreCamera = false )
 	{
+		playerTackle ??= Components.Get<PlayerTackle>();
+		var skipRestore = restoreCamera
+			&& impactIsHazard
+			&& activeRole == ImpactRole.Victim
+			&& playerTackle.IsValid()
+			&& playerTackle.IsRagdolled;
+
+		if ( restoreCamera && !skipRestore )
+			RestoreCapturedCameraState();
+
 		activeRole = ImpactRole.None;
+		impactUseHitstop = true;
+		impactIsHazard = false;
 		impactStartTime = -1f;
 		IsHitstopActive = false;
 		IsShakeActive = false;
 		punchBaselineCaptured = false;
+	}
+
+	void RestoreCapturedCameraState()
+	{
+		if ( playerController.IsValid() )
+			playerController.CameraOffset = frozenCameraOffset;
+
+		if ( activeCamera.IsValid() )
+			activeCamera.FieldOfView = frozenFieldOfView;
 	}
 
 	float GetImpactEndTime()
@@ -183,6 +242,16 @@ public sealed class TackleImpactFeel : Component
 			ImpactRole.Victim => ShakeForVictim,
 			_ => false
 		};
+	}
+
+	void TryGetShakeBaseline( out Vector3 basePosition, out Rotation baseRotation )
+	{
+		playerTackle ??= Components.Get<PlayerTackle>();
+		if ( impactIsHazard && activeRole == ImpactRole.Victim && playerTackle.IsValid() && playerTackle.TryGetRagdollOrbitCamera( out basePosition, out baseRotation ) )
+			return;
+
+		basePosition = frozenCameraPosition;
+		baseRotation = frozenCameraRotation;
 	}
 
 	void CaptureFrozenCameraState()
@@ -239,6 +308,7 @@ public sealed class TackleImpactFeel : Component
 	bool TryEnsureReady()
 	{
 		playerController ??= Components.Get<PlayerController>();
+		playerTackle ??= Components.Get<PlayerTackle>();
 		TryFindActiveCamera();
 		return playerController.IsValid();
 	}

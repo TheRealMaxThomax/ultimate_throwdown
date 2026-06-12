@@ -41,7 +41,7 @@
 
 **Often-used on `MatchDirector`:** `CurrentPhase`, `IsGameplayInputAllowed`, `BallSpawn`, `RegisterGoal()`, `PushMatchHudStateToPlayers()`, `HostRequestRematch()`, `MatchOverCelebrationSeconds`, `NetTeam0RoundWins`, `NetTeam1RoundWins`, `NetMatchTimeRemaining`, `NetPhaseTimeRemaining`, `NetLastGoalScoringTeamId`, `NetIsOvertime`, `NetMatchWinnerTeamId`, `EnableDebugForceGoal`, `DebugForceGoalAction` (`DebugForceGoal` → `,` in `Input.config`)
 
-**Often-used on `PlayerTackle`:** `ForceStandUpFromHost()` (match reset)
+**Often-used on `PlayerTackle`:** `ForceStandUpFromHost()` (match reset), `HazardKnockdownComicPower` (traffic/hazard comic tier + ball knock-off; default Chaos), `TryGetRagdollOrbitCamera()` (impact shake baseline while ragdolled)
 
 **Often-used on `GoalZone`:** `DefendingTeam`, `BoxSize`, `ScoreDwellSeconds`, `EnableGoalZoneDebugLogs`
 
@@ -76,7 +76,7 @@
 
 **Often-used on `ThrowChargeCamera`:** `ExtraCameraDistanceAtFullCharge`, `ExtraCameraHeightAtFullCharge`, `ExtraFieldOfViewAtFullCharge`, `ReleaseCameraBlendDuration` — skips when `PlayerTackle.IsRagdolled`, `IsStandUpCameraBlending`, or `TackleImpactFeel.IsImpactFeelActive`
 
-**Often-used on `TackleImpactFeel`:** `EnableHitstop`, `HitstopDurationSeconds` (default `0.055`), `ShakeForAttacker` / `ShakeForVictim` (default both on), `ShakeDurationSeconds`, `ShakePositionAmplitude`, `AttackerFovPunchDegrees`, `AttackerCameraOffsetPunchX` / `AttackerCameraOffsetPunchZ`, `AttackerPunchDurationSeconds`, `IsImpactFeelActive`, `TriggerAsAttacker()` / `TriggerAsVictim()`
+**Often-used on `TackleImpactFeel`:** `EnableHitstop`, `HitstopDurationSeconds` (default `0.055`), `ShakeForAttacker` / `ShakeForVictim` (default both on), `ShakeDurationSeconds`, `ShakePositionAmplitude`, `AttackerFovPunchDegrees`, `AttackerCameraOffsetPunchX` / `AttackerCameraOffsetPunchZ`, `AttackerPunchDurationSeconds`, `IsImpactFeelActive`, `IsHazardImpact`, `TriggerAsAttacker()` / `TriggerAsVictim()` (player tackle) / `TriggerAsHazardVictim()` (traffic — shake only, no hitstop, car camera path)
 
 **Often-used on `PlayerBallHoldAnim`:** `BodyRenderer`, `IdleHoldPoseHand` (default `0.1`), `IdleHoldTypePose`, `ThrowAttackStrong` (default `0` = medium throw; `1` = strong), `ThrowPoseHoldSeconds` (default `0.9`), `ThrowPlaybackRate` (default `0.7` during throw window), `CustomBodyModelPath` (default `animation/utd_citizen_human_throw.vmdl`), `EnsureCustomBodyModel()` (re-applies Body model + custom animgraph after cosmetics), **`UseAnimGraphChargePose`** (default `true`), **`CustomAnimGraphPath`** (default `animation/utd_citizen_human_m.vanmgrph`), **`ChargeCycleParamName`** (default `throw_charge`), **`ChargeWeightParamName`** (default `throw_charge_weight`), **`ChargeWindupCycleStart`** / **`ChargeWindupCycleEnd`** (default `0` / `1` — map charge bar 0→1 to a clip sub-range; lower `End` if wind-up motion only uses the start of the clip), **`ChargeWeightBlendInSeconds`** (default `0.12`), **`ChargeWeightBlendOutSeconds`** (default `0.15`), `NotifyThrowReleased()`
 
@@ -104,7 +104,8 @@
 | `IntermissionHud` | "Resuming in N…" during intermission |
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
 | `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |
-| `TackleComicTextHud` | Broadcast comic impact words at knockdown world position (`ComicWords` pool; Les Flos Sage/Sans/Chaos tier fonts; shadow layer + pop/shake; auto on main camera via `GameNetworkManager`) |
+| `TackleComicTextHud` | Knockdown comic-word spawner (`ComicWords` pool; broadcasts tier + text + shadow dir + `WordTiltMaxDegrees*`; auto on main camera via `GameNetworkManager`) |
+| `TackleComicBurst` | Short-lived `WorldPanel` + Razor burst (distance scale, occlusion, tier colors; spawned by `TackleComicTextHud`) |
 
 ---
 

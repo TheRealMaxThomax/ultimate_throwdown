@@ -1,0 +1,112 @@
+@using System
+@using Sandbox
+@using Sandbox.UI
+@inherits PanelComponent
+
+<root class="tackle-comic-burst tier-@TierClass">
+	<div class="word-tilt" style="transform: rotate(@WordRotationStyle)">
+		<div class="word-stack">
+			<div class="word shadow" style="font-family: @FontFamily; transform: translate(@ShadowTransform)">@DisplayText</div>
+			<div class="word fill" style="font-family: @FontFamily">@DisplayText</div>
+		</div>
+	</div>
+</root>
+
+@code
+{
+	private Sandbox.WorldPanel worldPanel;
+	private TackleComicTextHud settings;
+	private Vector3 driftOrigin;
+	private float startTime;
+	private bool configured;
+
+	public string DisplayText { get; set; } = "";
+	public string TierClass { get; set; } = "sage";
+	public string FontFamily { get; set; } = "Poppins";
+	public string ShadowTransform { get; set; } = "10px, 12px";
+	public string WordRotationStyle { get; set; } = "0deg";
+
+	public void Configure( TackleComicTextHud hud, TackleComicTextHud.ComicFontTier tier, string text, TackleComicTextHud.ComicShadowDirection shadowDirection, float wordTiltDegrees )
+	{
+		settings = hud;
+		DisplayText = text;
+		TierClass = TierToClass( tier );
+		FontFamily = hud.ResolveFontFamily( tier );
+		TackleComicTextHud.ResolveShadowOffset( shadowDirection, hud.ShadowOffsetPixels, out var offsetX, out var offsetY );
+		ShadowTransform = $"{offsetX:0}px, {offsetY:0}px";
+		WordRotationStyle = $"{wordTiltDegrees:0.##}deg";
+		driftOrigin = GameObject.WorldPosition;
+		startTime = Time.Now;
+		configured = true;
+		StateHasChanged();
+	}
+
+	protected override void OnStart()
+	{
+		worldPanel = Components.Get<Sandbox.WorldPanel>();
+		ApplyRenderScale();
+	}
+
+	protected override void OnUpdate()
+	{
+		if ( !configured || !settings.IsValid() )
+			return;
+
+		var elapsed = Time.Now - startTime;
+		if ( elapsed >= settings.LifetimeSeconds )
+		{
+			GameObject.Destroy();
+			return;
+		}
+
+		GameObject.WorldPosition = driftOrigin + Vector3.Up * (settings.FloatUpSpeed * elapsed);
+		UpdateOpacity( elapsed );
+	}
+
+	protected override int BuildHash()
+		=> System.HashCode.Combine( DisplayText, TierClass, FontFamily, ShadowTransform, WordRotationStyle );
+
+	static string TierToClass( TackleComicTextHud.ComicFontTier tier )
+	{
+		return tier switch
+		{
+			TackleComicTextHud.ComicFontTier.Chaos => "chaos",
+			TackleComicTextHud.ComicFontTier.Sans => "sans",
+			_ => "sage"
+		};
+	}
+
+	void ApplyRenderScale()
+	{
+		if ( !worldPanel.IsValid() || !settings.IsValid() )
+			return;
+
+		var scale = settings.RenderScale;
+		if ( TierClass == "chaos" )
+			scale *= settings.ChaosRenderScaleMultiplier;
+
+		worldPanel.RenderScale = scale;
+	}
+
+	void UpdateOpacity( float elapsed )
+	{
+		if ( Panel is null )
+			return;
+
+		Panel.Style.Opacity = ComputeAlpha( elapsed, settings.LifetimeSeconds );
+		Panel.Style.Dirty();
+	}
+
+	static float ComputeAlpha( float elapsed, float duration )
+	{
+		if ( duration <= 0.0001f )
+			return 0f;
+
+		var t = elapsed / duration;
+		if ( t < 0.55f )
+			return 1f;
+
+		var fadeT = MathX.Clamp( (t - 0.55f ) / 0.45f, 0f, 1f );
+		return 1f - fadeT;
+	}
+}

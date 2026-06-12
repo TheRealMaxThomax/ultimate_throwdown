@@ -198,9 +198,11 @@
               "__guid": "6998c38f-3ed3-4c62-b9f3-0c14cd846ec0",
               "__enabled": true,
               "Flags": 0,
-              "BaseFontSize": 72,
-              "ChaosFontSizeBonus": 18,
+              "BurstPanelMinWidth": 960,
+              "BurstPanelSize": "640,280",
+              "BurstPanelWidthPerCharacter": 120,
               "ChaosImpactThreshold": 1.45,
+              "ChaosRenderScaleMultiplier": 1.12,
               "ComicWords": [
                 "POW!",
                 "BAM!",
@@ -211,25 +213,24 @@
                 "SMACK!"
               ],
               "EnableComicText": true,
-              "FillColor": "1,0.92,0.18,1",
               "FloatUpSpeed": 42,
               "FontChaos": "Les Flos Chaos",
               "FontSage": "Les Flos Sage",
               "FontSans": "Les Flos Sans",
-              "LifetimeSeconds": 0.95,
+              "LifetimeSeconds": 1.5,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PopInSeconds": 0.12,
+              "RenderScale": 1,
               "SansImpactThreshold": 1.12,
-              "ShadowColor": "0.02,0.02,0.02,1",
-              "ShadowOffsetPixels": "5,6",
-              "ShakeAmplitudePixels": 10,
-              "ShakeDurationSeconds": 0.14,
-              "WorldHeightOffset": 52
+              "ShadowOffsetPixels": "10,12",
+              "WordTiltMaxDegreesChaos": 12,
+              "WordTiltMaxDegreesSage": 4,
+              "WordTiltMaxDegreesSans": 7,
+              "WorldHeightOffset": 62
             }
           ],
           "Children": []
@@ -531,22 +532,6 @@
               "TranslucentBallMaterialPath": "materials/turfwarspoly/ball_translucent.vmat"
             },
             {
-              "__type": "ThrowChargeCamera",
-              "__guid": "70835401-2765-4194-af7b-a51eee71b665",
-              "__enabled": true,
-              "Flags": 0,
-              "ExtraCameraDistanceAtFullCharge": 90,
-              "ExtraCameraHeightAtFullCharge": 60,
-              "ExtraFieldOfViewAtFullCharge": 7,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "ReleaseCameraBlendDuration": 0.35
-            },
-            {
               "__type": "PlayerBallHoldAnim",
               "__guid": "6ff8f808-188e-42c8-97ae-c7bdd1bc3d60",
               "__enabled": true,
@@ -600,7 +585,7 @@
               "__guid": "17add8f1-8bee-4e70-9cc2-280662ff35ac",
               "__enabled": true,
               "Flags": 0,
-              "CurrentClass": "classes/sniper.cdata",
+              "CurrentClass": "classes/juggernaut.cdata",
               "ModelScaleRetrySeconds": 3,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
@@ -697,6 +682,7 @@
               "Flags": 0,
               "AttackerPickupLockoutAfterCarrierTackle": 0.45,
               "EnableTackleDebugLogs": false,
+              "HazardKnockdownComicPower": 1.55,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -734,7 +720,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "ShakeDurationSeconds": 0.14,
+              "ShakeDurationSeconds": 0.2,
               "ShakeForAttacker": true,
               "ShakeForVictim": true,
               "ShakePositionAmplitude": 7,
@@ -2903,7 +2889,7 @@
                   ]
                 },
                 {
-                  "__guid": "d66e3a71-9423-428e-91b8-1bcb81ea18fe",
+                  "__guid": "4234d538-24ef-4811-80f3-7788636a4dd3",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2920,7 +2906,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "8b23ec82-9e31-4f1b-8f1a-90382778ab37",
+                      "__guid": "4159a3e5-8b8b-4f87-b032-9aaba3cca480",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -4062,6 +4048,7 @@
               "Flags": 0,
               "AttackerPickupLockoutAfterCarrierTackle": 0.45,
               "EnableTackleDebugLogs": false,
+              "HazardKnockdownComicPower": 1.55,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -6198,7 +6185,7 @@
                   ]
                 },
                 {
-                  "__guid": "f22c23b6-1294-477a-a7a6-ec2778b5d115",
+                  "__guid": "7ab19e6f-786e-4b63-b87b-991275019fb2",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6215,7 +6202,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "1bc230e5-9037-4f10-9ce4-6ffaba389021",
+                      "__guid": "ac9f7063-ec4b-4f59-a489-5e9ee49cb4d8",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6696,6 +6683,7 @@
               "Flags": 0,
               "AttackerPickupLockoutAfterCarrierTackle": 0.45,
               "EnableTackleDebugLogs": false,
+              "HazardKnockdownComicPower": 1.55,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -8832,7 +8820,7 @@
                   ]
                 },
                 {
-                  "__guid": "ca5d97b1-8fd0-4f5c-9908-1ba11f1447d4",
+                  "__guid": "76c87959-bf43-4bd6-9fd9-709941daac00",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8849,7 +8837,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "f956fef9-67b7-4c9d-91a2-b1e8054a7671",
+                      "__guid": "a8ae711d-de2a-42f7-b341-ad3f05f9d061",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -9330,6 +9318,7 @@
               "Flags": 0,
               "AttackerPickupLockoutAfterCarrierTackle": 0.45,
               "EnableTackleDebugLogs": false,
+              "HazardKnockdownComicPower": 1.55,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -11466,7 +11455,7 @@
                   ]
                 },
                 {
-                  "__guid": "a06421c3-77c2-4794-9f08-3c79fdf0e763",
+                  "__guid": "492fb799-a294-49c8-ab1f-45127b47d906",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11483,7 +11472,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "99886d87-d2b6-4b64-8c68-758bf7c08df0",
+                      "__guid": "f718001b-fddb-41a5-8e1e-a4d64d535fe6",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -87198,14 +87187,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
-        }
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
+        }
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
         }
       }
     }

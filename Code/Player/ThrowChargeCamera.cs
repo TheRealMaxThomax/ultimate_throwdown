@@ -23,6 +23,7 @@ public sealed class ThrowChargeCamera : Component
 	private bool baselineCaptured;
 
 	private bool wasChargingThrow;
+	private bool wasKnockedDown;
 	private float releaseBlendStartTime = -1f;
 	private Vector3 releaseBlendFromOffset;
 	private float releaseBlendFromFieldOfView;
@@ -40,6 +41,12 @@ public sealed class ThrowChargeCamera : Component
 	{
 		if ( !Network.IsOwner )
 			return;
+
+		playerTackle ??= Components.Get<PlayerTackle>();
+		var knockedDown = playerTackle.IsValid() && (playerTackle.IsKnockedDown || playerTackle.IsStandUpCameraBlending);
+		if ( wasKnockedDown && !knockedDown && TryEnsureReady() )
+			RefreshBaselineFromController();
+		wasKnockedDown = knockedDown;
 
 		if ( !TryEnsureReady() )
 			return;
@@ -83,7 +90,23 @@ public sealed class ThrowChargeCamera : Component
 		if ( !playerTackle.IsValid() )
 			return false;
 
-		return playerTackle.IsRagdolled || playerTackle.IsStandUpCameraBlending;
+		return playerTackle.IsKnockedDown || playerTackle.IsStandUpCameraBlending;
+	}
+
+	void RefreshBaselineFromController()
+	{
+		if ( !playerController.IsValid() )
+			return;
+
+		baselineCameraOffset = playerController.CameraOffset;
+		baselineCaptured = true;
+
+		TryFindActiveCamera();
+		if ( activeCamera.IsValid() )
+			baselineFieldOfView = activeCamera.FieldOfView;
+
+		releaseBlendStartTime = -1f;
+		ApplyBaseline();
 	}
 
 	void TryCaptureBaseline()

@@ -37,6 +37,8 @@ public sealed class PlayerTackle : Component
 	[Property] public float RagdollPhysicsInitDelay { get; set; } = 0.08f;
 	/// <summary>Host: seconds to hold the ragdoll frozen after <c>NetworkSpawn</c> before <c>ApplyImpulse</c>. Everyone sees a brief hang; <b>0</b> = legacy impulse-then-spawn. Try ~0.05 with <see cref="TackleImpactFeel.HitstopDurationSeconds"/>.</summary>
 	[Property] public float PreLaunchPauseSeconds { get; set; } = 0.05f;
+	/// <summary>Comic text + ball knock-off power for hazard knockdowns (traffic, etc.). Default above <see cref="TackleComicTextHud.ChaosImpactThreshold"/> — tune down for Sans.</summary>
+	[Property] public float HazardKnockdownComicPower { get; set; } = 1.55f;
 	/// <summary>Seconds to ease main camera from ragdoll orbit to normal third-person after stand-up. 0 = hand off immediately.</summary>
 	[Property] public float StandUpCameraBlendDuration { get; set; } = 0.6f;
 	/// <summary>Host: after stand-up from ragdoll, for this many seconds use <see cref="ClassData.TimeToCatchUpSpeedAfterRagdoll"/> for charge ramp when that value &gt; 0.</summary>
@@ -111,6 +113,7 @@ public sealed class PlayerTackle : Component
 	private CatchUpSpeedBoost speedBoost;
 	private PlayerClass playerClass;
 	private PlayerController playerController;
+	private TackleImpactFeel tackleImpactFeel;
 	private CameraComponent activeCamera;
 
 	// Last ragdoll orbit camera (owner); used as blend start when standing up
@@ -120,6 +123,10 @@ public sealed class PlayerTackle : Component
 	private Rotation standUpCameraBlendFromRot;
 	/// <summary>&lt; 0 = not blending. Otherwise Time.Now when stand-up blend started.</summary>
 	private float standUpCameraBlendStartTime = -1f;
+	private Vector3 ragdollEnterBlendFromPos;
+	private Rotation ragdollEnterBlendFromRot;
+	private float ragdollEnterBlendStartTime = -1f;
+	private bool deferringRagdollCamForImpactFeel;
 
 	public bool IsTackleImmune => isTackleImmune;
 	public bool IsRagdolled => isRagdolled;
@@ -153,11 +160,27 @@ public sealed class PlayerTackle : Component
 
 	// Pelvis world position synced from host; RagdollClientFeel reads this on owning clients
 	public Vector3 SyncedRagdollPelvisPosition => NetRagdollPosition;
+
+	/// <summary>Owner: ragdoll third-person orbit target (used by <see cref="TackleImpactFeel"/> shake baseline).</summary>
+	public bool TryGetRagdollOrbitCamera( out Vector3 position, out Rotation rotation )
+	{
+		if ( !isRagdolled )
+		{
+			position = default;
+			rotation = default;
+			return false;
+		}
+
+		ComputeRagdollOrbitCamera( out position, out rotation );
+		return true;
+	}
+
 	protected override void OnStart()
 	{
 		speedBoost = Components.Get<CatchUpSpeedBoost>();
 		playerClass = Components.Get<PlayerClass>();
 		playerController = Components.Get<PlayerController>();
+		tackleImpactFeel = Components.Get<TackleImpactFeel>();
 
 		foreach ( var cam in Scene.GetAllComponents<CameraComponent>() )
 		{
@@ -265,18 +288,49 @@ public sealed class PlayerTackle : Component
 			return;
 
 		// Place ragdoll orbit last so later components (e.g. charge camera offset restore) cannot overwrite it.
+		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
 		if ( isRagdolled )
 		{
-			var lookRot = playerController.IsValid()
-				? playerController.EyeAngles.ToRotation()
-				: WorldRotation;
-			var orbit = -lookRot.Forward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
-			activeCamera.WorldPosition = WorldPosition + orbit;
-			activeCamera.WorldRotation = lookRot;
+			if ( tackleImpactFeel?.IsHazardImpact == true )
+			{
+				deferringRagdollCamForImpactFeel = true;
+				return;
+			}
+
+			ComputeRagdollOrbitCamera( out var targetPos, out var targetRot );
+
+			if ( deferringRagdollCamForImpactFeel )
+			{
+				ragdollEnterBlendFromPos = activeCamera.WorldPosition;
+				ragdollEnterBlendFromRot = activeCamera.WorldRotation;
+				ragdollEnterBlendStartTime = Time.Now;
+				deferringRagdollCamForImpactFeel = false;
+			}
+
+			const float enterBlendDuration = 0.2f;
+			if ( ragdollEnterBlendStartTime >= 0f )
+			{
+				var enterElapsed = Time.Now - ragdollEnterBlendStartTime;
+				var enterTLin = MathX.Clamp( enterElapsed / enterBlendDuration, 0f, 1f );
+				var enterT = enterTLin * enterTLin * (3f - 2f * enterTLin );
+				activeCamera.WorldPosition = Vector3.Lerp( ragdollEnterBlendFromPos, targetPos, enterT );
+				activeCamera.WorldRotation = Rotation.Slerp( ragdollEnterBlendFromRot, targetRot, enterT );
+				if ( enterTLin >= 1f )
+					ragdollEnterBlendStartTime = -1f;
+			}
+			else
+			{
+				activeCamera.WorldPosition = targetPos;
+				activeCamera.WorldRotation = targetRot;
+			}
+
 			lastRagdollCameraPos = activeCamera.WorldPosition;
 			lastRagdollCameraRot = activeCamera.WorldRotation;
 			return;
 		}
+
+		deferringRagdollCamForImpactFeel = false;
+		ragdollEnterBlendStartTime = -1f;
 
 		// After all updates, PlayerController has already placed the camera. Lerp toward that exact
 		// transform so we match its third-person math (CameraOffset, collision, etc.) — avoids a snap at t=1.
@@ -520,7 +574,7 @@ public sealed class PlayerTackle : Component
 			return false;
 
 		var arc = launchArc >= 0f ? launchArc : TackleLaunchArc;
-		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, tacklePowerForBall: 1f, attackerGrabForCarrierLockout: null, attacker: null );
+		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, HazardKnockdownComicPower, attackerGrabForCarrierLockout: null, attacker: null );
 		return true;
 	}
 
@@ -607,7 +661,11 @@ public sealed class PlayerTackle : Component
 			victim.NetPostAttackSlowCatchUpUntil = 0f;
 		}
 
-		var usePreLaunchPause = PreLaunchPauseSeconds > 0.0001f;
+		NotifyTackleImpactFeel( attacker, victim );
+		TackleComicTextHud.NotifyHostKnockdown( Scene, victim.WorldPosition, tacklePowerForBall );
+
+		// Moving hazards (traffic) skip pause — freeze holds the victim in world space while the car drives through.
+		var usePreLaunchPause = attacker.IsValid() && PreLaunchPauseSeconds > 0.0001f;
 		if ( usePreLaunchPause )
 		{
 			victim.NetKnockdownFreezePosition = victim.WorldPosition;
@@ -617,9 +675,6 @@ public sealed class PlayerTackle : Component
 		{
 			victim.NetIsRagdolled = true;
 		}
-
-		NotifyTackleImpactFeel( attacker, victim );
-		TackleComicTextHud.NotifyHostKnockdown( Scene, victim.WorldPosition, tacklePowerForBall );
 
 		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc, usePreLaunchPause );
 		HandleRagdollRecovery( victim );
@@ -635,7 +690,7 @@ public sealed class PlayerTackle : Component
 			attacker.TriggerTackleImpactFeelAsAttackerRpc();
 
 		if ( victim.IsValid() )
-			victim.TriggerTackleImpactFeelAsVictimRpc();
+			victim.TriggerTackleImpactFeelAsVictimRpc( hazardKnockdown: !attacker.IsValid() );
 	}
 
 	[Rpc.Owner]
@@ -645,9 +700,16 @@ public sealed class PlayerTackle : Component
 	}
 
 	[Rpc.Owner]
-	private void TriggerTackleImpactFeelAsVictimRpc()
+	private void TriggerTackleImpactFeelAsVictimRpc( bool hazardKnockdown )
 	{
-		Components.Get<TackleImpactFeel>()?.TriggerAsVictim();
+		var feel = Components.Get<TackleImpactFeel>();
+		if ( !feel.IsValid() )
+			return;
+
+		if ( hazardKnockdown )
+			feel.TriggerAsHazardVictim();
+		else
+			feel.TriggerAsVictim();
 	}
 
 	private static void CapturePracticeNpcPreTacklePoseIfTagged( PlayerTackle victim )
@@ -1077,6 +1139,8 @@ public sealed class PlayerTackle : Component
 
 		ClearKnockdownAwaitingFreezeLocally();
 		standUpCameraBlendStartTime = -1f;
+		ragdollEnterBlendStartTime = -1f;
+		deferringRagdollCamForImpactFeel = false;
 
 		// Cache all renderers at tackle time — cosmetics are loaded by now, unlike at OnStart
 		hiddenRenderers.Clear();
@@ -1129,5 +1193,15 @@ public sealed class PlayerTackle : Component
 			standUpCameraBlendStartTime = -1f;
 
 		Log.Info( $"[Tackle] StandUpLocally on {GameObject.Name} | IsProxy={IsProxy}" );
+	}
+
+	void ComputeRagdollOrbitCamera( out Vector3 position, out Rotation rotation )
+	{
+		var lookRot = playerController.IsValid()
+			? playerController.EyeAngles.ToRotation()
+			: WorldRotation;
+		var orbit = -lookRot.Forward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
+		position = WorldPosition + orbit;
+		rotation = lookRot;
 	}
 }

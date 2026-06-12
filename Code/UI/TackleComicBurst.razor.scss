@@ -1,0 +1,106 @@
+TackleComicBurst {
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	font-family: Poppins;
+	pointer-events: none;
+	justify-content: center;
+	align-items: center;
+
+	.word-tilt {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		overflow: visible;
+	}
+
+	.word-stack {
+		position: relative;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		overflow: visible;
+		animation: tackle-comic-pop 0.14s ease-out, tackle-comic-shake 0.16s ease-out;
+	}
+
+	.word {
+		position: absolute;
+		font-size: 112px;
+		font-weight: 800;
+		line-height: 1;
+		white-space: nowrap;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+	}
+
+	// Solid black duplicate behind the fill — offset gives comic 3D depth (direction set per burst in code).
+	.shadow {
+		color: #0a0a0a;
+		z-index: 0;
+	}
+
+	.fill {
+		color: white;
+		z-index: 1;
+	}
+
+	&.tier-sage .fill {
+		color: #ffe82e;
+	}
+
+	&.tier-sans .fill {
+		color: #ff8c1a;
+	}
+
+	&.tier-chaos .fill {
+		color: #ff3b30;
+		font-size: 128px;
+	}
+
+	&.tier-chaos .shadow {
+		font-size: 128px;
+	}
+}
+
+@keyframes tackle-comic-pop {
+	0% {
+		transform: scale(0.35);
+		opacity: 0.2;
+	}
+
+	55% {
+		transform: scale(1.16);
+		opacity: 1;
+	}
+
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+@keyframes tackle-comic-shake {
+	0% {
+		transform: translate(0, 0) scale(1);
+	}
+
+	20% {
+		transform: translate(-5px, 3px) scale(1);
+	}
+
+	40% {
+		transform: translate(4px, -4px) scale(1);
+	}
+
+	60% {
+		transform: translate(-3px, -2px) scale(1);
+	}
+
+	80% {
+		transform: translate(2px, 2px) scale(1);
+	}
+
+	100% {
+		transform: translate(0, 0) scale(1);
+	}
+}

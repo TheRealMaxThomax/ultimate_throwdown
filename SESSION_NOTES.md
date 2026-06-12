@@ -22,7 +22,7 @@
 
 **Next session (priority order):**
 1. **Throw charge MP + polish** — wind-up **solo OK**; 2-window verify `NetThrowChargeLerp` + release; Blender `throw_windup` / bone mask if wanted (see **Open decisions**).
-2. **Tackle juice tune** — **`TackleImpactFeel`** + **`PreLaunchPauseSeconds`** initial 2-window OK; **`TackleComicTextHud`** (Les Flos fonts — wire + 2-window verify); victim **oof/grunt** SFX later; **attacker body freeze** reserved for ults (not normal tackles).
+2. **Tackle comic text polish** — (1) word tilt shipped; next: (2) per-letter jitter → (3) stagger pop → (4) impact shake → (5) highlight extrusion + exit anims (see roadmap). **`TackleImpactFeel`** tune + victim **oof/grunt** SFX later.
 3. **MP join flash** — host brief black mesh face on client join (cosmetics load?).
 4. **Practice / training scene** — moving + charging `practice_npc` dummies for solo tackle/anim regression (MP tests idle-only when you control one pawn).
 5. Longer soak (15–20 min, two windows); map vote when ready.
@@ -41,8 +41,9 @@
 - **Petrol station lights** — optional **`StationLightFlicker`** on a parent empty (child `Spot Light` + child block mesh). Keeps mesh visible and flickers via `Spot.Enabled` + mesh `Color` (`VisualOnColor`/`VisualOffColor`)
 - **Road traffic (Turf Wars — Road0 + Road1)** — **`TrafficSpawner`** + disabled **`TrafficCarTemplate`**. **3 car models per lane** via **`CarModelVariants`** (red Road0 / blue Road1); host applies random **Body renderer + Model Collider** **after** **`NetworkSpawn`** + **`Network.Refresh`**. **Physics mesh** on each `.vmdl`; **ball bounce** on host. Knockdown via code hit box + **`PlayerTackle.ApplyKnockdownFromHost`**. **Engine sounds** — idle = cruise/slow, drive = accel only. **`Game.IsPlaying`** guard (no editor spawn spam). **2-window MP OK**.
 - **Movement charge overlay** — **`PlayerChargeRunAnim`** + masked `charge_run` (`charge_run_weight` / `charge_run_cycle`); gates on synced **`CatchUpSpeedBoost.IsAtChargeSpeed`** — remotes see overlay — **2-window MP OK (2026-06-12)**
-- **Tackle impact feel** — **`TackleImpactFeel`**: owner camera **hitstop**, **shake** (`ShakeForAttacker` / `ShakeForVictim`), attacker **FOV/offset punch**; **`PlayerTackle.PreLaunchPauseSeconds`** (~0.05): victim **body frozen visible** (`NetAwaitingRagdollLaunch`) → impulse + ragdoll; **`0`** = legacy — **initial 2-window OK (2026-06-12)**; tune vs moving victims when practice scene exists
-- **Tackle comic text** — **`TackleComicTextHud`**: host-broadcast POW/BAM/… at knockdown (shadow layer + pop/shake); Les Flos tier fonts — **import + 2-window verify pending**
+- **Tackle impact feel** — **`TackleImpactFeel`**: owner camera **hitstop**, **shake** (`ShakeForAttacker` / `ShakeForVictim`), attacker **FOV/offset punch**; traffic/car knockdowns use victim path too; **`PlayerTackle.PreLaunchPauseSeconds`** (~0.05): victim **body frozen visible** (`NetAwaitingRagdollLaunch`) → impulse + ragdoll; **`0`** = legacy — **initial 2-window OK (2026-06-12)**; tune vs moving victims when practice scene exists
+- **Traffic knockdown** — no pre-launch pause; **`HazardKnockdownComicPower`** default **1.55** (Chaos/red); **`TriggerAsHazardVictim()`** + **`IsHazardImpact`** car camera path (defer ragdoll cam, orbit shake baseline, enter blend). **Player tackles** use simpler path — hitstop during freeze, ragdoll cam when `isRagdolled`
+- **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** (`WorldPanel` + Razor): world-occluded; fixed **`RenderScale`** (no extra distance scale); diagonal **offset shadow** (random corner, host-synced); Sage/Sans/Chaos = yellow/orange/red + Les Flos tiers; **`ComicWords`** list on Main Camera — **2-window verify pending**
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -105,7 +106,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Walk into the ball = pick it up.** No kick button. While held, ball follows **`hold_R`** on **Body** `SkinnedModelRenderer` (`BallGrab.HoldBoneName`; falls back to `HoldAnchor`). Old `HandHoldPoint` + `citizen_holdball_test` IK was for classic citizen — human uses bone attach.
 - **Ball carrier hold/throw anim (v1):** **`PlayerBallHoldAnim`** — **`holditem`** + **RH** while holding; on release **`b_attack`** (built-in medium throw). **`ThrowPoseHoldSeconds`** / **`ThrowPlaybackRate`**; **`BallThrow.ThrowReleaseDelaySeconds`** delays ball velocity. Charge = masked **`throw_windup`** layer on forked **`utd_citizen_human_m.vanmgrph`** (`throw_charge` / `throw_charge_weight`; body alive). Sequences on **`utd_citizen_human_throw.vmdl`**. Auto-added on network spawn.
 - **Online: the host is the referee** — clients request; host decides.
-- **Tackles:** Only at full charge speed (`NetAtChargeSpeed`). Host ragdoll + client **request** RPC. **`PreLaunchPauseSeconds` > 0:** **`NetAwaitingRagdollLaunch`** — victim **visible + frozen**, hidden host ragdoll, then impulse + **`NetworkSpawn`** + **`NetIsRagdolled`**; **`0`** = impulse-then-spawn. **`TackleImpactFeel`** = owner-only camera juice (not global slow-mo). Juggernaut bonus in RPC. Built-in ragdoll collision audio; victim grunt SFX later.
+- **Tackles:** Only at full charge speed (`NetAtChargeSpeed`). Host ragdoll + client **request** RPC. **`PreLaunchPauseSeconds` > 0:** **`NetAwaitingRagdollLaunch`** — victim **visible + frozen**, hidden host ragdoll, then impulse + **`NetworkSpawn`** + **`NetIsRagdolled`**; **`0`** = impulse-then-spawn. **Traffic/hazards** skip pause (attacker-less knockdown). **`TackleImpactFeel`** = owner-only camera juice; ragdoll orbit waits while `IsImpactFeelActive`. Juggernaut bonus in RPC. Built-in ragdoll collision audio; victim grunt SFX later.
 - **Charge run overlay:** **`PlayerChargeRunAnim`** drives graph params when **`IsAtChargeSpeed`** (synced) — not owner-only ramp HUD.
 - **Dodge:** Double-tap A or D. Tackle iframe only.
 - **Crouch:** Disabled — do not rebind `Duck` without re-enabling intentionally.
@@ -228,6 +229,26 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 ---
 
+## Tackle comic text — shipped + roadmap
+
+**Shipped (2026-06):** **`TackleComicTextHud`** (spawner/settings on Main Camera, auto via **`GameNetworkManager`**) + **`TackleComicBurst`** (`.razor` / `.razor.scss`). Host broadcasts word + tier + **`ComicShadowDirection`**; no scene wiring. Tackle power → tier: Sage (flat/yellow) / Sans (tilted/orange) / Chaos (max tilt/red). Black duplicate layer offset to a random corner — **not** a uniform stroke.
+
+**MP rule:** Host picks random values (word, shadow corner, future tilt/seeds); broadcast to clients — do not re-roll per machine.
+
+**Polish plan (in order — do not reorder):**
+1. ~~**Random whole-word rotation**~~ — **shipped:** host-synced ±° per burst; tune `WordTiltMaxDegreesSage` / `Sans` / `Chaos` on Main Camera.
+2. **Per-letter size + baseline + spacing** — `<span>` per char; host-synced seed; cap jitter on Sage for readability.
+3. **Staggered letter pop-in** — optional; short delay per letter on spawn (very comic).
+4. **Per-letter shake on impact** — keyed wobble while the word lives.
+5. **Highlight extrusion + exit animations** — **not either/or:**
+   - **Highlight extrusion** = third duplicate layer (white/pale yellow) offset **opposite** the black shadow — thick ink look while the word is visible; can ship on all tiers.
+   - **Exit motion** = how the word leaves (host-synced pick per tier or random): **spin-vanish** (first target), scatter, slam/deflate, launch drift, rubber snap, tackle-directed drift, ink puff (art-heavy).
+   - A burst can use **both** — extrusion layer for the whole lifetime, then an exit style on fade-out.
+
+**Tune on Main Camera → `TackleComicTextHud`:** `ComicWords`, font family names, `RenderScale`, `ShadowOffsetPixels`, impact thresholds.
+
+---
+
 ## Ball carrier UX — shipped (2026-06)
 
 **`BallCompassHud`** + **`BallCarrierOutline`** + **`hold_R`** hold + **`PlayerBallHoldAnim`** / **`BallThrow`** (holditem RH, `throw_windup` masked layer, `ThrowReleaseDelaySeconds`). 2-window MP OK for compass/glow/trajectory; throw charge MP still on checklist. Abandoned: edge arrow, full-arm IK charge. Future: HUD chrome, compass distance, more clips on `utd_citizen_human_throw.vmdl`.
@@ -236,7 +257,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 ## Known issues
 
-- [ ] **Tackle comic text** — import **Les Flos** (Sans / Sage / Chaos) into `Assets/fonts/`; set exact **font family** names on **`TackleComicTextHud`** (Main Camera, auto-added); 2-window MP verify
+- [ ] **Tackle comic text** — Les Flos import + font names on **`TackleComicTextHud`**; 2-window MP verify; then roadmap steps 1–5 above
 - [ ] **Tackle juice — moving victims** — pause reads best vs runners; solo MP idle-only so far — revisit after practice scene or live 2P; tune **`PreLaunchPauseSeconds`** vs **`HitstopDurationSeconds`** (set pause **0** if hang feels like delay)
 - [ ] **Throw charge wind-up — MP verify + polish** — ✅ **WORKS solo (2026-06-11)**: masked layer in forked graph `utd_citizen_human_m.vanmgrph`; body keeps locomotion/look-at while arm winds up. Remaining: 2-window MP check (remotes scrub via `NetThrowChargeLerp`); improve the wind-up clip in Blender if wanted (overwrite `throw_windup.fbx` — see workflow doc "Iterating on a clip"); pick final bone mask (see Open decisions).
 - [ ] Throw strength still needs playtest tuning
@@ -258,9 +279,9 @@ Paste at the start of a new chat:
 Read SESSION_NOTES.md. Match flow slices 1–6 done. Do not edit .scene / .vmdl / .vanmgrph / ModelDoc unless I explicitly say yes.
 Ball carrier: BallGrab hold_R + BallCompassHud + BallCarrierOutline + PlayerBallHoldAnim + BallThrow.ThrowReleaseDelaySeconds.
 Throw charge: `PlayerBallHoldAnim` → `throw_charge`/`throw_charge_weight` + `throw_windup` (MP verify pending). Charge run: `PlayerChargeRunAnim` → `charge_run_*` via `IsAtChargeSpeed` — 2-window OK.
-Tackle juice: `TackleImpactFeel` (owner camera) + `PreLaunchPauseSeconds` + `NetAwaitingRagdollLaunch` (victim visible freeze). Attacker body freeze = ults only, not normal tackles.
+Tackle juice: `TackleImpactFeel` + `PreLaunchPauseSeconds` + `NetAwaitingRagdollLaunch`. Comic text: `TackleComicTextHud` + `TackleComicBurst` (WorldPanel/Razor, offset shadow, fixed RenderScale) — see **Tackle comic text — shipped + roadmap**.
 `utd_citizen_human_throw.vmdl` — `throw_windup` + `charge_run` only.
-Next: throw charge MP; tackle tune / comic text; practice scene; MP join flash; soak.
+Next: comic text polish steps 1–5; throw charge MP; practice scene; MP join flash; soak.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -269,7 +290,8 @@ Next: throw charge MP; tackle tune / comic text; practice scene; MP join flash; 
 
 ## Recent session notes
 
-- **2026-06-12 (tackle juice + charge_run MP):** Shipped **`TackleImpactFeel`** (owner camera hitstop / shake / attacker punch) + **`PreLaunchPauseSeconds`** with **`NetAwaitingRagdollLaunch`** (victim visible freeze, not collapsed air ragdoll). **`PlayerChargeRunAnim`** fixed for remotes — **`IsAtChargeSpeed`** / **`NetAtChargeSpeed`** (was owner-only **`GetMovementRampDisplay`**). Initial 2-window OK. Attacker **body** freeze deferred to ults.
+- **2026-06-12 (comic text WorldPanel):** **`TackleComicBurst`** Razor world panels — offset shadow (random corner), tier colors, fixed scale; camera restore fix in **`TackleImpactFeel`** / **`ThrowChargeCamera`**. Roadmap steps 1–5 in **Tackle comic text** section.
+- **2026-06-12 (tackle juice + charge_run MP):** **`TackleImpactFeel`** + **`PreLaunchPauseSeconds`** / **`NetAwaitingRagdollLaunch`**; **`PlayerChargeRunAnim`** remote fix — 2-window initial OK.
 - **2026-06-11 (human anim graph):** Extension `.vmdl` = **`throw_windup`** + **`charge_run`** only; **`charge_run`** masked layer in **`utd_citizen_human_m.vanmgrph`**; throw wind-up masked layer solo OK; editor-asset ownership rule. Details → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) (2026-06 chronicle).
 
 Older dated bullets → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
