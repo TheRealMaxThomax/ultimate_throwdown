@@ -104,6 +104,7 @@
 | `IntermissionHud` | "Resuming in N…" during intermission |
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
 | `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |
+| `TackleComicTextHud` | Broadcast comic impact words at knockdown world position (`ComicWords` pool; Les Flos Sage/Sans/Chaos tier fonts; shadow layer + pop/shake; auto on main camera via `GameNetworkManager`) |
 
 ---
 

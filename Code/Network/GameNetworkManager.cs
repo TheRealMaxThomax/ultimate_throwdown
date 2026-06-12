@@ -61,6 +61,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		}
 
 		EnsurePlayersForActiveConnections();
+		TackleComicTextHud.EnsureOnMainCamera( Scene );
 		nextEnsurePlayersAt = Time.Now + 1f;
 		CitizenAvatarLod.SceneWideLockEnabled = LockPlayerModelLodInPreRender;
 		CitizenAvatarLod.ApplyLodLockToBoneMergedSkinnedMeshes = LockBoneMergedSkinnedMeshLod;

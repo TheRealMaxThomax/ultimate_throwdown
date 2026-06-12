@@ -9,7 +9,7 @@ Keep items short and clear.
 ## TODO (Next Up)
 - [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, match over, rematch, HUD sync, **tackle juice**, throw charge MP.
 - [ ] **Practice / training scene** — moving + charging `practice_npc` for solo tackle/anim regression.
-- [ ] **Tackle comic text** — POW / WHOP / BAM on connect (optional juice).
+- [ ] **Tackle comic text** — `TackleComicTextHud` shipped in code; import Les Flos + 2-window verify.
 - [ ] **MP join flash** — host black mesh face on client join (cosmetics load?).
 - [ ] **Map vote** — 30s timer, all players vote `Slot1`–`N`, plurality wins, random tie-break among top (see MATCH_FLOW_PLAN → Later).
 - [ ] Improve free-ball client feel to better match host while keeping shared position consistency.

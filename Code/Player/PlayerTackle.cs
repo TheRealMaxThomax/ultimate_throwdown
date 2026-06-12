@@ -619,6 +619,7 @@ public sealed class PlayerTackle : Component
 		}
 
 		NotifyTackleImpactFeel( attacker, victim );
+		TackleComicTextHud.NotifyHostKnockdown( Scene, victim.WorldPosition, tacklePowerForBall );
 
 		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc, usePreLaunchPause );
 		HandleRagdollRecovery( victim );

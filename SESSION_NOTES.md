@@ -22,7 +22,7 @@
 
 **Next session (priority order):**
 1. **Throw charge MP + polish** — wind-up **solo OK**; 2-window verify `NetThrowChargeLerp` + release; Blender `throw_windup` / bone mask if wanted (see **Open decisions**).
-2. **Tackle juice tune** — **`TackleImpactFeel`** + **`PreLaunchPauseSeconds`** initial 2-window OK; optional comic **POW** text; victim **oof/grunt** SFX later; **attacker body freeze** reserved for ults (not normal tackles).
+2. **Tackle juice tune** — **`TackleImpactFeel`** + **`PreLaunchPauseSeconds`** initial 2-window OK; **`TackleComicTextHud`** (Les Flos fonts — wire + 2-window verify); victim **oof/grunt** SFX later; **attacker body freeze** reserved for ults (not normal tackles).
 3. **MP join flash** — host brief black mesh face on client join (cosmetics load?).
 4. **Practice / training scene** — moving + charging `practice_npc` dummies for solo tackle/anim regression (MP tests idle-only when you control one pawn).
 5. Longer soak (15–20 min, two windows); map vote when ready.
@@ -42,6 +42,7 @@
 - **Road traffic (Turf Wars — Road0 + Road1)** — **`TrafficSpawner`** + disabled **`TrafficCarTemplate`**. **3 car models per lane** via **`CarModelVariants`** (red Road0 / blue Road1); host applies random **Body renderer + Model Collider** **after** **`NetworkSpawn`** + **`Network.Refresh`**. **Physics mesh** on each `.vmdl`; **ball bounce** on host. Knockdown via code hit box + **`PlayerTackle.ApplyKnockdownFromHost`**. **Engine sounds** — idle = cruise/slow, drive = accel only. **`Game.IsPlaying`** guard (no editor spawn spam). **2-window MP OK**.
 - **Movement charge overlay** — **`PlayerChargeRunAnim`** + masked `charge_run` (`charge_run_weight` / `charge_run_cycle`); gates on synced **`CatchUpSpeedBoost.IsAtChargeSpeed`** — remotes see overlay — **2-window MP OK (2026-06-12)**
 - **Tackle impact feel** — **`TackleImpactFeel`**: owner camera **hitstop**, **shake** (`ShakeForAttacker` / `ShakeForVictim`), attacker **FOV/offset punch**; **`PlayerTackle.PreLaunchPauseSeconds`** (~0.05): victim **body frozen visible** (`NetAwaitingRagdollLaunch`) → impulse + ragdoll; **`0`** = legacy — **initial 2-window OK (2026-06-12)**; tune vs moving victims when practice scene exists
+- **Tackle comic text** — **`TackleComicTextHud`**: host-broadcast POW/BAM/… at knockdown (shadow layer + pop/shake); Les Flos tier fonts — **import + 2-window verify pending**
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -218,7 +219,6 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - Holding forward + backward while charging — exploit or cool fake-out?
 - Closed roof on arena vs open roof + sun for lighting
 - **Tackle victim oof/grunt** — layered on built-in ragdoll collision audio (not shipped)
-- **Tackle comic text** — floating POW / WHOP / BAM on connect (all clients see; deferred)
 - **Practice / training scene** — moving + charging `practice_npc` for solo tackle/anim tests (MP idle-only when controlling one pawn)
 - Map vote: allow changing vote during the 30s window?
 - **Traffic knockdown tuning:** **`KnockdownLaunchSpeed`** / hit box vs dodgeability
@@ -236,6 +236,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 ## Known issues
 
+- [ ] **Tackle comic text** — import **Les Flos** (Sans / Sage / Chaos) into `Assets/fonts/`; set exact **font family** names on **`TackleComicTextHud`** (Main Camera, auto-added); 2-window MP verify
 - [ ] **Tackle juice — moving victims** — pause reads best vs runners; solo MP idle-only so far — revisit after practice scene or live 2P; tune **`PreLaunchPauseSeconds`** vs **`HitstopDurationSeconds`** (set pause **0** if hang feels like delay)
 - [ ] **Throw charge wind-up — MP verify + polish** — ✅ **WORKS solo (2026-06-11)**: masked layer in forked graph `utd_citizen_human_m.vanmgrph`; body keeps locomotion/look-at while arm winds up. Remaining: 2-window MP check (remotes scrub via `NetThrowChargeLerp`); improve the wind-up clip in Blender if wanted (overwrite `throw_windup.fbx` — see workflow doc "Iterating on a clip"); pick final bone mask (see Open decisions).
 - [ ] Throw strength still needs playtest tuning
