@@ -84,7 +84,7 @@
 
 **Custom citizen animation assets:** `Assets/Animation/utd_citizen_human_throw.vmdl` (sequences + optional custom weight lists e.g. `UTD_Charge_Overlay`) and `Assets/Animation/utd_citizen_human_m.vanmgrph` (forked graph: independent masked layers for `throw_windup` and `charge_run`). Workflow: [`Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md)
 
-**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay` (max poll for bodies → impulse → `NetworkSpawn` + `RagdollEnemyOutline`); `ApplyKnockdownFromHost()` (traffic/hazards); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg); owner RPCs `TriggerTackleImpactFeelAsAttackerRpc` / `TriggerTackleImpactFeelAsVictimRpc` → `TackleImpactFeel`  
+**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, **`IsAwaitingRagdollLaunch`**, **`IsKnockedDown`** (ragdolled or awaiting launch), `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay` (body poll timeout), **`PreLaunchPauseSeconds`** (default `0.05` — victim frozen visible → pause → impulse + spawn; **`0`** = legacy impulse-then-spawn); `ApplyKnockdownFromHost()` (traffic/hazards); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg); owner RPCs `TriggerTackleImpactFeelAsAttackerRpc` / `TriggerTackleImpactFeelAsVictimRpc` → `TackleImpactFeel`  
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
 **Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`  
 **Tag for test dummies only:** `practice_npc`

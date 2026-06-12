@@ -35,6 +35,8 @@ public sealed class PlayerTackle : Component
 	[Property] public float TackleRpcRadiusFudge { get; set; } = 1.12f;
 	/// <summary>Host: max seconds to poll for ragdoll physics bodies before launch + <c>NetworkSpawn</c>. Impulse runs as soon as bodies exist (often &lt; 1 frame). Too low can miss launch; too high delays replication.</summary>
 	[Property] public float RagdollPhysicsInitDelay { get; set; } = 0.08f;
+	/// <summary>Host: seconds to hold the ragdoll frozen after <c>NetworkSpawn</c> before <c>ApplyImpulse</c>. Everyone sees a brief hang; <b>0</b> = legacy impulse-then-spawn. Try ~0.05 with <see cref="TackleImpactFeel.HitstopDurationSeconds"/>.</summary>
+	[Property] public float PreLaunchPauseSeconds { get; set; } = 0.05f;
 	/// <summary>Seconds to ease main camera from ragdoll orbit to normal third-person after stand-up. 0 = hand off immediately.</summary>
 	[Property] public float StandUpCameraBlendDuration { get; set; } = 0.6f;
 	/// <summary>Host: after stand-up from ragdoll, for this many seconds use <see cref="ClassData.TimeToCatchUpSpeedAfterRagdoll"/> for charge ramp when that value &gt; 0.</summary>
@@ -45,6 +47,11 @@ public sealed class PlayerTackle : Component
 	// Host writes, all machines read
 	private bool isRagdolled;
 	[Sync( SyncFlags.FromHost )] private bool NetIsRagdolled { get => isRagdolled; set => isRagdolled = value; }
+	/// <summary>Host: victim frozen in place with body visible while <see cref="PreLaunchPauseSeconds"/> runs before ragdoll spawn.</summary>
+	private bool netAwaitingRagdollLaunch;
+	[Sync( SyncFlags.FromHost )]
+	private bool NetAwaitingRagdollLaunch { get => netAwaitingRagdollLaunch; set => netAwaitingRagdollLaunch = value; }
+	[Sync( SyncFlags.FromHost )] private Vector3 NetKnockdownFreezePosition { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetRagdollPosition { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetStandUpPosition { get; set; }
 	/// <summary>Used only for <see cref="PracticeNpcTag"/> dummies: eye angles to restore after stand-up (host sets with pre-tackle snapshot).</summary>
@@ -97,6 +104,10 @@ public sealed class PlayerTackle : Component
 	// Colliders disabled during ragdoll — re-enabled on stand-up
 	private readonly List<Collider> disabledColliders = new();
 
+	// Pre-launch pause: controller/colliders off but renderers stay visible until ragdoll launches.
+	private bool knockdownAwaitingFreezeApplied;
+	private readonly List<Collider> awaitingDisabledColliders = new();
+
 	private CatchUpSpeedBoost speedBoost;
 	private PlayerClass playerClass;
 	private PlayerController playerController;
@@ -112,6 +123,10 @@ public sealed class PlayerTackle : Component
 
 	public bool IsTackleImmune => isTackleImmune;
 	public bool IsRagdolled => isRagdolled;
+	/// <summary>Host pause window: down for tackles, body still visible (not ragdoll mesh yet).</summary>
+	public bool IsAwaitingRagdollLaunch => netAwaitingRagdollLaunch;
+	/// <summary>Ragdolled or in pre-launch knockdown freeze (cannot be tackled again).</summary>
+	public bool IsKnockedDown => isRagdolled || netAwaitingRagdollLaunch;
 	/// <summary> Owning client: easing main camera from ragdoll orbit back to <see cref="PlayerController"/> third-person. </summary>
 	public bool IsStandUpCameraBlending => standUpCameraBlendStartTime >= 0f;
 	/// <summary>Host bumps after successful tackles; <see cref="CatchUpSpeedBoost"/> consumes changes to strip charge speed.</summary>
@@ -122,12 +137,17 @@ public sealed class PlayerTackle : Component
 	/// <summary> Host: end ragdoll immediately (match reset). Skips post-tackle invincibility. </summary>
 	public void ForceStandUpFromHost()
 	{
-		if ( !Networking.IsHost || !isRagdolled )
+		if ( !Networking.IsHost || !IsKnockedDown )
 			return;
 
-		NetStandUpPosition = ComputeStandUpPositionFromRagdoll();
+		if ( isRagdolled )
+			NetStandUpPosition = ComputeStandUpPositionFromRagdoll();
+		else
+			NetStandUpPosition = NetKnockdownFreezePosition;
+
 		DestroyRagdollObjectOnHost();
 		NetPostRagdollSlowCatchUpUntil = 0f;
+		NetAwaitingRagdollLaunch = false;
 		NetIsRagdolled = false;
 	}
 
@@ -176,6 +196,14 @@ public sealed class PlayerTackle : Component
 		if ( isRagdolled )
 			foreach ( var r in hiddenRenderers )
 				if ( r.IsValid() ) r.Enabled = false;
+
+		if ( netAwaitingRagdollLaunch && !isRagdolled )
+		{
+			ApplyKnockdownAwaitingFreezeLocally();
+			WorldPosition = NetKnockdownFreezePosition;
+		}
+		else if ( knockdownAwaitingFreezeApplied )
+			ClearKnockdownAwaitingFreezeLocally();
 
 		// Ragdoll root: host snaps to pelvis; owning client smoothing is handled by RagdollClientFeel.
 		// MainCamera orbit + AnalogLook apply only when this networked object IsOwner — scene NPCs share one MainCamera and must not hijack the player's view when tackled.
@@ -360,7 +388,7 @@ public sealed class PlayerTackle : Component
 			break;
 		}
 
-		if ( victim is null || victim == this || victim.GameObject == GameObject || victim.IsTackleImmune || victim.IsRagdolled
+		if ( victim is null || victim == this || victim.GameObject == GameObject || victim.IsTackleImmune || victim.IsKnockedDown
 			|| victim.Components.Get<PlayerDodge>() is { IsImmuneToTackle: true } )
 		{
 			if ( EnableTackleDebugLogs )
@@ -458,7 +486,7 @@ public sealed class PlayerTackle : Component
 				continue;
 			if ( candidate.Components.Get<PlayerDodge>() is { IsImmuneToTackle: true } )
 				continue;
-			if ( candidate.IsRagdolled )
+			if ( candidate.IsKnockedDown )
 				continue;
 
 			var distance = Vector3.DistanceBetween( attackerWorldPos, candidate.WorldPosition );
@@ -487,7 +515,7 @@ public sealed class PlayerTackle : Component
 		if ( !Networking.IsHost )
 			return false;
 
-		if ( IsTackleImmune || IsRagdolled
+		if ( IsTackleImmune || IsKnockedDown
 			|| Components.Get<PlayerDodge>() is { IsImmuneToTackle: true } )
 			return false;
 
@@ -579,11 +607,20 @@ public sealed class PlayerTackle : Component
 			victim.NetPostAttackSlowCatchUpUntil = 0f;
 		}
 
-		victim.NetIsRagdolled = true;
+		var usePreLaunchPause = PreLaunchPauseSeconds > 0.0001f;
+		if ( usePreLaunchPause )
+		{
+			victim.NetKnockdownFreezePosition = victim.WorldPosition;
+			victim.NetAwaitingRagdollLaunch = true;
+		}
+		else
+		{
+			victim.NetIsRagdolled = true;
+		}
 
 		NotifyTackleImpactFeel( attacker, victim );
 
-		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc );
+		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc, usePreLaunchPause );
 		HandleRagdollRecovery( victim );
 	}
 
@@ -631,10 +668,11 @@ public sealed class PlayerTackle : Component
 	// Spawns a host-owned physics ragdoll at the victim's position.
 	// NetworkSpawn makes it visible on all clients automatically.
 	// Physics runs on the host without client transform ownership conflicts.
-	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 tackleDir, float effectiveLaunchSpeed, float launchArc )
+	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 tackleDir, float effectiveLaunchSpeed, float launchArc, bool usePreLaunchPause )
 	{
 		var ragdollGo = new GameObject( true, "PlayerRagdoll" );
-		ragdollGo.WorldPosition = victim.WorldPosition + Vector3.Up * 10f;
+		var spawnPos = usePreLaunchPause ? victim.NetKnockdownFreezePosition : victim.WorldPosition + Vector3.Up * 10f;
+		ragdollGo.WorldPosition = spawnPos;
 		ragdollGo.WorldRotation = victim.WorldRotation;
 
 		var modelScale = victim.playerClass?.CurrentClass?.ModelScale ?? 1f;
@@ -653,7 +691,7 @@ public sealed class PlayerTackle : Component
 
 		var ragdollPhysics = ragdollGo.AddComponent<ModelPhysics>();
 		ragdollPhysics.Renderer = primaryRenderer;
-		ragdollPhysics.MotionEnabled = true;
+		ragdollPhysics.MotionEnabled = false;
 		ragdollPhysics.IgnoreRoot = false;
 		ragdollPhysics.Enabled = true;
 
@@ -663,56 +701,147 @@ public sealed class PlayerTackle : Component
 		if ( baseVictimRenderer != null )
 			AddVictimClothingToRagdoll( victim, ragdollGo, primaryRenderer, baseVictimRenderer );
 
-		// Impulse on host while still local, then NetworkSpawn — clients' first ragdoll snapshot
-		// should already be in flight (avoids a stationary ragdoll + late launch on replication).
+		if ( usePreLaunchPause )
+			SetRagdollRenderersEnabled( ragdollGo, false );
+
 		ragdollGo.Tags.Add( "ragdoll" );
 		victim.ragdollObject = ragdollGo;
 		ragdollGo.Components.GetOrCreate<RagdollEnemyOutline>().ConfigureFromVictim( victim );
 
+		ragdollPhysics.MotionEnabled = true;
+
 		var waitForBodies = RagdollPhysicsInitDelay.Clamp( 0.01f, 0.25f );
-		var launched = await TryApplyRagdollLaunchImpulseAsync( ragdollGo, tackleDir, effectiveLaunchSpeed, launchArc, waitForBodies );
+		var bodiesReady = await WaitForRagdollBodiesAsync( ragdollGo, waitForBodies );
 		if ( !ragdollGo.IsValid() )
 			return;
 
-		if ( EnableTackleDebugLogs )
-			Log.Info( $"[Tackle] NetworkSpawn after impulse | launched={launched}" );
+		var pause = PreLaunchPauseSeconds.Clamp( 0f, 1f );
+		if ( usePreLaunchPause && pause > 0.0001f )
+		{
+			if ( baseVictimRenderer != null )
+				ragdollPhysics.CopyBonesFrom( baseVictimRenderer, true );
 
-		ragdollGo.NetworkSpawn();
+			FreezeRagdollPhysics( ragdollPhysics );
+
+			if ( EnableTackleDebugLogs )
+				Log.Info( $"[Tackle] Pre-launch pause | bodies={bodiesReady} pause={pause * 1000f:F0}ms victim-visible" );
+
+			await GameTask.DelaySeconds( pause );
+			if ( !ragdollGo.IsValid() || !victim.IsValid() )
+				return;
+
+			SetRagdollRenderersEnabled( ragdollGo, true );
+			ragdollPhysics.MotionEnabled = true;
+			var launched = TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, launchArc, out var bodyCount );
+			ragdollGo.NetworkSpawn();
+
+			victim.NetAwaitingRagdollLaunch = false;
+			victim.NetRagdollPosition = ragdollGo.WorldPosition;
+			victim.NetIsRagdolled = true;
+
+			if ( EnableTackleDebugLogs )
+				Log.Info( $"[Tackle] Post-pause impulse + spawn | launched={launched} bodies={bodyCount}" );
+		}
+		else
+		{
+			// Legacy: impulse on host while still local, then NetworkSpawn — first snapshot already in flight.
+			var launched = bodiesReady && TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, launchArc, out _ );
+			if ( !ragdollGo.IsValid() )
+				return;
+
+			if ( EnableTackleDebugLogs )
+				Log.Info( $"[Tackle] NetworkSpawn after impulse | launched={launched}" );
+
+			ragdollGo.NetworkSpawn();
+		}
 	}
 
-	/// <summary>Poll until <see cref="ModelPhysics"/> bodies exist, apply pelvis impulse, tag bodies. Returns false if timed out.</summary>
-	private async Task<bool> TryApplyRagdollLaunchImpulseAsync(
-		GameObject ragdollGo,
-		Vector3 tackleDir,
-		float effectiveLaunchSpeed,
-		float launchArc,
-		float maxWaitSeconds )
+	/// <summary>Poll until <see cref="ModelPhysics"/> bodies exist (no impulse).</summary>
+	private async Task<bool> WaitForRagdollBodiesAsync( GameObject ragdollGo, float maxWaitSeconds )
 	{
 		const float pollStepSeconds = 0.008f;
 		var started = Time.Now;
 
 		while ( ragdollGo.IsValid() && Time.Now - started < maxWaitSeconds )
 		{
-			if ( TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, launchArc, out var bodyCount ) )
+			if ( HasRagdollLaunchBodies( ragdollGo ) )
 			{
 				if ( EnableTackleDebugLogs )
-					Log.Info( $"[Tackle] Impulse ready in {(Time.Now - started) * 1000f:F0}ms | Bodies={bodyCount}" );
+					Log.Info( $"[Tackle] Bodies ready in {(Time.Now - started) * 1000f:F0}ms" );
 				return true;
 			}
 
 			await GameTask.DelaySeconds( pollStepSeconds );
 		}
 
-		if ( ragdollGo.IsValid() && TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, launchArc, out var finalBodies ) )
-		{
-			if ( EnableTackleDebugLogs )
-				Log.Info( $"[Tackle] Impulse on timeout edge | Bodies={finalBodies}" );
-			return true;
-		}
+		return ragdollGo.IsValid() && HasRagdollLaunchBodies( ragdollGo );
+	}
 
-		if ( EnableTackleDebugLogs )
-			Log.Warning( $"[Tackle] Impulse failed after {maxWaitSeconds * 1000f:F0}ms — spawning without launch" );
-		return false;
+	private static bool HasRagdollLaunchBodies( GameObject ragdollGo )
+	{
+		var mp = ragdollGo.Components.Get<ModelPhysics>();
+		if ( mp == null || mp.Bodies.Count == 0 )
+			return false;
+
+		return mp.Bodies[0].Component?.PhysicsBody != null;
+	}
+
+	private static void SetRagdollRenderersEnabled( GameObject ragdollGo, bool enabled )
+	{
+		foreach ( var renderer in ragdollGo.Components.GetAll<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants ) )
+		{
+			if ( renderer.IsValid() )
+				renderer.Enabled = enabled;
+		}
+	}
+
+	private void ApplyKnockdownAwaitingFreezeLocally()
+	{
+		if ( knockdownAwaitingFreezeApplied )
+			return;
+
+		knockdownAwaitingFreezeApplied = true;
+
+		awaitingDisabledColliders.Clear();
+		awaitingDisabledColliders.AddRange( Components.GetAll<Collider>( FindMode.EverythingInSelfAndDescendants ) );
+		foreach ( var col in awaitingDisabledColliders )
+			if ( col.IsValid() ) col.Enabled = false;
+
+		if ( playerController.IsValid() )
+			playerController.Enabled = false;
+	}
+
+	private void ClearKnockdownAwaitingFreezeLocally()
+	{
+		if ( !knockdownAwaitingFreezeApplied )
+			return;
+
+		knockdownAwaitingFreezeApplied = false;
+
+		foreach ( var col in awaitingDisabledColliders )
+			if ( col.IsValid() ) col.Enabled = true;
+		awaitingDisabledColliders.Clear();
+
+		if ( playerController.IsValid() && !isRagdolled )
+			playerController.Enabled = true;
+	}
+
+	private static void FreezeRagdollPhysics( ModelPhysics ragdollPhysics )
+	{
+		if ( ragdollPhysics == null )
+			return;
+
+		ragdollPhysics.MotionEnabled = false;
+
+		foreach ( var body in ragdollPhysics.Bodies )
+		{
+			var pb = body.Component?.PhysicsBody;
+			if ( pb == null )
+				continue;
+
+			pb.Velocity = Vector3.Zero;
+			pb.AngularVelocity = Vector3.Zero;
+		}
 	}
 
 	private bool TryApplyRagdollLaunchImpulse(
@@ -794,6 +923,9 @@ public sealed class PlayerTackle : Component
 		var started = Time.Now;
 		var groundedAccum = 0f;
 		const float pollSeconds = 0.05f;
+
+		while ( victim.IsValid() && victim.IsAwaitingRagdollLaunch && !victim.IsRagdolled && Time.Now - started < 3f )
+			await GameTask.DelaySeconds( pollSeconds );
 
 		// SpawnRagdollObject is async; wait briefly so ragdollObject exists on the host.
 		while ( victim.IsValid() && victim.IsRagdolled && !victim.ragdollObject.IsValid() && Time.Now - started < 2f )
@@ -942,6 +1074,7 @@ public sealed class PlayerTackle : Component
 	{
 		Log.Info( $"[Tackle] ApplyRagdollLocally on {GameObject.Name} | IsProxy={IsProxy}" );
 
+		ClearKnockdownAwaitingFreezeLocally();
 		standUpCameraBlendStartTime = -1f;
 
 		// Cache all renderers at tackle time — cosmetics are loaded by now, unlike at OnStart
@@ -964,6 +1097,8 @@ public sealed class PlayerTackle : Component
 
 	private void StandUpLocally()
 	{
+		ClearKnockdownAwaitingFreezeLocally();
+
 		// Snap to ragdoll landing position before re-enabling the controller
 		if ( !IsProxy )
 			WorldPosition = NetStandUpPosition;
