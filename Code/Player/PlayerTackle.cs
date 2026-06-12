@@ -492,7 +492,7 @@ public sealed class PlayerTackle : Component
 			return false;
 
 		var arc = launchArc >= 0f ? launchArc : TackleLaunchArc;
-		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, tacklePowerForBall: 1f, attackerGrabForCarrierLockout: null );
+		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, tacklePowerForBall: 1f, attackerGrabForCarrierLockout: null, attacker: null );
 		return true;
 	}
 
@@ -525,7 +525,7 @@ public sealed class PlayerTackle : Component
 		if ( EnableTackleDebugLogs )
 			Log.Info( $"[Tackle] Power massRatio={massRatio:F2} chargeBonus={chargeBonus:F3} juggMult={juggMult:F2} → launchSpeed={effectiveLaunchSpeed:F0}" );
 
-		ApplyVictimKnockdownFromHost( victim, tackleDir, effectiveLaunchSpeed, TackleLaunchArc, tacklePower, Components.Get<BallGrab>() );
+		ApplyVictimKnockdownFromHost( victim, tackleDir, effectiveLaunchSpeed, TackleLaunchArc, tacklePower, Components.Get<BallGrab>(), this );
 	}
 
 	private void ApplyVictimKnockdownFromHost(
@@ -534,7 +534,8 @@ public sealed class PlayerTackle : Component
 		float effectiveLaunchSpeed,
 		float launchArc,
 		float tacklePowerForBall,
-		BallGrab attackerGrabForCarrierLockout )
+		BallGrab attackerGrabForCarrierLockout,
+		PlayerTackle attacker )
 	{
 		CapturePracticeNpcPreTacklePoseIfTagged( victim );
 
@@ -580,8 +581,35 @@ public sealed class PlayerTackle : Component
 
 		victim.NetIsRagdolled = true;
 
+		NotifyTackleImpactFeel( attacker, victim );
+
 		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc );
 		HandleRagdollRecovery( victim );
+	}
+
+	/// <summary>Host: owner-only hitstop / shake / punch on attacker and victim clients.</summary>
+	private static void NotifyTackleImpactFeel( PlayerTackle attacker, PlayerTackle victim )
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		if ( attacker.IsValid() && attacker != victim )
+			attacker.TriggerTackleImpactFeelAsAttackerRpc();
+
+		if ( victim.IsValid() )
+			victim.TriggerTackleImpactFeelAsVictimRpc();
+	}
+
+	[Rpc.Owner]
+	private void TriggerTackleImpactFeelAsAttackerRpc()
+	{
+		Components.Get<TackleImpactFeel>()?.TriggerAsAttacker();
+	}
+
+	[Rpc.Owner]
+	private void TriggerTackleImpactFeelAsVictimRpc()
+	{
+		Components.Get<TackleImpactFeel>()?.TriggerAsVictim();
 	}
 
 	private static void CapturePracticeNpcPreTacklePoseIfTagged( PlayerTackle victim )

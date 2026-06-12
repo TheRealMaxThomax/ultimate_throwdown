@@ -63,6 +63,7 @@
 | `PlayerCosmeticsSync` | Outfits / avatar look only |
 | `PlayerDisableCrouch` | Blocks duck/crouch on `PlayerController` |
 | `ThrowChargeCamera` | Owner-only throw-charge third-person pullback + mild FOV widen (scales with charge lerp) |
+| `TackleImpactFeel` | Owner-only tackle connect juice — local camera hitstop, screen shake, attacker FOV/offset punch (`PlayerTackle` owner RPCs) |
 | `PlayerBallHoldAnim` | Built-in citizen `holditem` RH hold + throw on release (`holdtype`, `holdtype_pose_hand`, `holdtype_attack`, `b_attack`); throw wind-up via forked animgraph (`throw_charge` / `throw_charge_weight`); pairs with `BallThrow.ThrowReleaseDelaySeconds` for ball detach timing |
 | `PlayerChargeRunAnim` | Movement **Charge**-tier overlay (`charge_run` masked layer via `charge_run_weight` / `charge_run_cycle`); only when `CatchUpSpeedBoost.GetMovementRampDisplay` tier is `MovementRampTier.Charge` and **not** holding the ball — ball carriers never reach charge speed by design |
 | `PlayerEnemyOutline` | Enables red `HighlightOutline` for enemies (local viewer); off while ragdolled |
@@ -73,7 +74,9 @@
 
 **Often-used on `RagdollEnemyOutline`:** `NetVictimTeamId` (synced), `ConfigureFromVictim()` (host, before network spawn)
 
-**Often-used on `ThrowChargeCamera`:** `ExtraCameraDistanceAtFullCharge`, `ExtraCameraHeightAtFullCharge`, `ExtraFieldOfViewAtFullCharge`, `ReleaseCameraBlendDuration` — skips when `PlayerTackle.IsRagdolled` or `IsStandUpCameraBlending`
+**Often-used on `ThrowChargeCamera`:** `ExtraCameraDistanceAtFullCharge`, `ExtraCameraHeightAtFullCharge`, `ExtraFieldOfViewAtFullCharge`, `ReleaseCameraBlendDuration` — skips when `PlayerTackle.IsRagdolled`, `IsStandUpCameraBlending`, or `TackleImpactFeel.IsImpactFeelActive`
+
+**Often-used on `TackleImpactFeel`:** `EnableHitstop`, `HitstopDurationSeconds` (default `0.055`), `ShakeForAttacker` / `ShakeForVictim` (default both on), `ShakeDurationSeconds`, `ShakePositionAmplitude`, `AttackerFovPunchDegrees`, `AttackerCameraOffsetPunchX` / `AttackerCameraOffsetPunchZ`, `AttackerPunchDurationSeconds`, `IsImpactFeelActive`, `TriggerAsAttacker()` / `TriggerAsVictim()`
 
 **Often-used on `PlayerBallHoldAnim`:** `BodyRenderer`, `IdleHoldPoseHand` (default `0.1`), `IdleHoldTypePose`, `ThrowAttackStrong` (default `0` = medium throw; `1` = strong), `ThrowPoseHoldSeconds` (default `0.9`), `ThrowPlaybackRate` (default `0.7` during throw window), `CustomBodyModelPath` (default `animation/utd_citizen_human_throw.vmdl`), `EnsureCustomBodyModel()` (re-applies Body model + custom animgraph after cosmetics), **`UseAnimGraphChargePose`** (default `true`), **`CustomAnimGraphPath`** (default `animation/utd_citizen_human_m.vanmgrph`), **`ChargeCycleParamName`** (default `throw_charge`), **`ChargeWeightParamName`** (default `throw_charge_weight`), **`ChargeWindupCycleStart`** / **`ChargeWindupCycleEnd`** (default `0` / `1` — map charge bar 0→1 to a clip sub-range; lower `End` if wind-up motion only uses the start of the clip), **`ChargeWeightBlendInSeconds`** (default `0.12`), **`ChargeWeightBlendOutSeconds`** (default `0.15`), `NotifyThrowReleased()`
 
@@ -81,7 +84,7 @@
 
 **Custom citizen animation assets:** `Assets/Animation/utd_citizen_human_throw.vmdl` (sequences + optional custom weight lists e.g. `UTD_Charge_Overlay`) and `Assets/Animation/utd_citizen_human_m.vanmgrph` (forked graph: independent masked layers for `throw_windup` and `charge_run`). Workflow: [`Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md)
 
-**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay` (max poll for bodies → impulse → `NetworkSpawn` + `RagdollEnemyOutline`); `ApplyKnockdownFromHost()` (traffic/hazards); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg)  
+**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay` (max poll for bodies → impulse → `NetworkSpawn` + `RagdollEnemyOutline`); `ApplyKnockdownFromHost()` (traffic/hazards); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg); owner RPCs `TriggerTackleImpactFeelAsAttackerRpc` / `TriggerTackleImpactFeelAsVictimRpc` → `TackleImpactFeel`  
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
 **Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`  
 **Tag for test dummies only:** `practice_npc`

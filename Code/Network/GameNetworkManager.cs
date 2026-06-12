@@ -250,6 +250,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		player.Components.GetOrCreate<BallCompassHud>();
 		player.Components.GetOrCreate<PlayerBallHoldAnim>();
 		player.Components.GetOrCreate<PlayerChargeRunAnim>();
+		player.Components.GetOrCreate<TackleImpactFeel>();
 
 		player.NetworkSpawn( connection );
 

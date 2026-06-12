@@ -14,6 +14,7 @@ public sealed class ThrowChargeCamera : Component
 
 	private BallThrow ballThrow;
 	private PlayerTackle playerTackle;
+	private TackleImpactFeel tackleImpactFeel;
 	private PlayerController playerController;
 	private CameraComponent activeCamera;
 
@@ -30,6 +31,7 @@ public sealed class ThrowChargeCamera : Component
 	{
 		ballThrow = Components.Get<BallThrow>();
 		playerTackle = Components.Get<PlayerTackle>();
+		tackleImpactFeel = Components.Get<TackleImpactFeel>();
 		playerController = Components.Get<PlayerController>();
 		TryCaptureBaseline();
 	}
@@ -74,6 +76,10 @@ public sealed class ThrowChargeCamera : Component
 
 	bool ShouldLeaveCameraAlone()
 	{
+		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
+		if ( tackleImpactFeel?.IsImpactFeelActive == true )
+			return true;
+
 		if ( !playerTackle.IsValid() )
 			return false;
 
