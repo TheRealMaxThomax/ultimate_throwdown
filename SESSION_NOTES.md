@@ -22,7 +22,7 @@
 
 **Next session (priority order):**
 1. **Throw charge MP + polish** — wind-up **solo OK**; 2-window verify `NetThrowChargeLerp` + release; Blender `throw_windup` / bone mask if wanted (see **Open decisions**).
-2. **Tackle comic text polish** — (1) word tilt shipped; (2) per-letter jitter shipped; (3) stagger pop shipped; (4) per-letter impact shake shipped (`EnableLetterImpactShake`); next: (5) highlight extrusion + exit anims (see roadmap). **`TackleImpactFeel`** tune + victim **oof/grunt** SFX later.
+2. **Tackle comic text** — roadmap **complete** (steps 1–5: tilt, jitter, stagger, impact shake, highlight extrusion + exit anims). Remaining: Les Flos font import + **2-window MP verify**. **`TackleImpactFeel`** tune + victim **oof/grunt** SFX later.
 3. **MP join flash** — host brief black mesh face on client join (cosmetics load?).
 4. **Practice / training scene** — moving + charging `practice_npc` dummies for solo tackle/anim regression (MP tests idle-only when you control one pawn).
 5. Longer soak (15–20 min, two windows); map vote when ready.
@@ -43,7 +43,7 @@
 - **Movement charge overlay** — **`PlayerChargeRunAnim`** + masked `charge_run` (`charge_run_weight` / `charge_run_cycle`); gates on synced **`CatchUpSpeedBoost.IsAtChargeSpeed`** — remotes see overlay — **2-window MP OK (2026-06-12)**
 - **Tackle impact feel** — **`TackleImpactFeel`**: owner camera **hitstop**, **shake** (`ShakeForAttacker` / `ShakeForVictim`), attacker **FOV/offset punch**; traffic/car knockdowns use victim path too; **`PlayerTackle.PreLaunchPauseSeconds`** (~0.05): victim **body frozen visible** (`NetAwaitingRagdollLaunch`) → impulse + ragdoll; **`0`** = legacy — **initial 2-window OK (2026-06-12)**; tune vs moving victims when practice scene exists
 - **Traffic knockdown** — no pre-launch pause; **`HazardKnockdownComicPower`** default **1.55** (Chaos/red); **`TriggerAsHazardVictim()`** + **`IsHazardImpact`** car camera path (defer ragdoll cam, orbit shake baseline, enter blend). **Player tackles** use simpler path — hitstop during freeze, ragdoll cam when `isRagdolled`
-- **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** (`WorldPanel` + Razor): word tilt; per-letter jitter (`LetterJitterSeed`); stagger pop (`EnableLetterPopStagger`); per-letter impact shake (`EnableLetterImpactShake` + `LetterImpactShakeDurationSeconds`); offset shadow; tier colors; **`BurstPanelPadding`** (~64) — **2-window MP verify pending**
+- **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** (`WorldPanel` + Razor): word tilt; per-letter jitter; stagger pop; impact shake; **highlight extrusion** (`EnableHighlightExtrusion`); **exit anims** (`ComicExitStyle` + `ExitDriftOctant`); offset shadow; tier colors — **2-window MP verify pending**
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -242,12 +242,9 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 2. ~~**Per-letter size + baseline + spacing**~~ — **shipped:** `div.letter` per char; host-synced `LetterJitterSeed`; tier caps `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*`; `BurstPanelPadding` for clip headroom.
 3. ~~**Staggered letter pop-in**~~ — **shipped:** `EnableLetterPopStagger` + `LetterPopStaggerMilliseconds` (per-index delay; off = whole-word pop).
 4. ~~**Per-letter shake on impact**~~ — **shipped:** `EnableLetterImpactShake` + `LetterImpactShakeDurationSeconds`; tier `tackle-letter-pop-shake-*` / `tackle-letter-shake-*` keyframes (`margin-left` wobble); off = whole-word `.word-stack` shake only.
-5. **Highlight extrusion + exit animations** — **not either/or:**
-   - **Highlight extrusion** = third duplicate layer (white/pale yellow) offset **opposite** the black shadow — thick ink look while the word is visible; can ship on all tiers.
-   - **Exit motion** = how the word leaves (host-synced pick per tier or random): **spin-vanish** (first target), scatter, slam/deflate, launch drift, rubber snap, tackle-directed drift, ink puff (art-heavy).
-   - A burst can use **both** — extrusion layer for the whole lifetime, then an exit style on fade-out.
+5. ~~**Highlight extrusion + exit animations**~~ — **shipped:** `.word.highlight` opposite shadow (`EnableHighlightExtrusion` / `HighlightExtrusionPixels`); host-synced `ComicExitStyle` on `.word-exit` (`SpinVanish`, `Scatter`, `SlamDeflate`, `LaunchDrift`, `RubberSnap`, `TackleDirectedDrift` + `ExitDriftOctant` from tackle `launchDir`, `InkPuff`). Toggle `EnableComicExitAnimations`; tune `ExitFadeStartFraction` / `ExitFadeDurationFraction`.
 
-**Tune on Main Camera → `TackleComicTextHud`:** `ComicWords`, font family names, `RenderScale`, `ShadowOffsetPixels`, impact thresholds, `BurstPanelPadding`, `EnableLetterPopStagger`, `LetterPopStaggerMilliseconds`, `EnableLetterImpactShake`, `LetterImpactShakeDurationSeconds`.
+**Tune on Main Camera → `TackleComicTextHud`:** `ComicWords`, font family names, `RenderScale`, `ShadowOffsetPixels`, `EnableHighlightExtrusion`, `EnableComicExitAnimations`, `ExitStylePick` (Random or force one style), impact thresholds, `BurstPanelPadding` / `ExitAnimationPaddingPixels` if clipped, letter pop/shake toggles.
 
 ---
 
@@ -259,7 +256,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 ## Known issues
 
-- [ ] **Tackle comic text** — Les Flos import + font names on **`TackleComicTextHud`**; 2-window MP verify; roadmap step **5** (highlight extrusion + exit anims) remaining
+- [ ] **Tackle comic text** — Les Flos import + font names on **`TackleComicTextHud`**; **2-window MP verify** (roadmap steps 1–5 shipped)
 - [ ] **Tackle juice — moving victims** — pause reads best vs runners; solo MP idle-only so far — revisit after practice scene or live 2P; tune **`PreLaunchPauseSeconds`** vs **`HitstopDurationSeconds`** (set pause **0** if hang feels like delay)
 - [ ] **Throw charge wind-up — MP verify + polish** — ✅ **WORKS solo (2026-06-11)**: masked layer in forked graph `utd_citizen_human_m.vanmgrph`; body keeps locomotion/look-at while arm winds up. Remaining: 2-window MP check (remotes scrub via `NetThrowChargeLerp`); improve the wind-up clip in Blender if wanted (overwrite `throw_windup.fbx` — see workflow doc "Iterating on a clip"); pick final bone mask (see Open decisions).
 - [ ] Throw strength still needs playtest tuning
@@ -281,9 +278,9 @@ Paste at the start of a new chat:
 Read SESSION_NOTES.md. Match flow slices 1–6 done. Do not edit .scene / .vmdl / .vanmgrph / ModelDoc unless I explicitly say yes.
 Ball carrier: BallGrab hold_R + BallCompassHud + BallCarrierOutline + PlayerBallHoldAnim + BallThrow.ThrowReleaseDelaySeconds.
 Throw charge: `PlayerBallHoldAnim` → `throw_charge`/`throw_charge_weight` + `throw_windup` (MP verify pending). Charge run: `PlayerChargeRunAnim` → `charge_run_*` via `IsAtChargeSpeed` — 2-window OK.
-Tackle juice: `TackleImpactFeel` + `PreLaunchPauseSeconds` + `NetAwaitingRagdollLaunch`. Comic text: `TackleComicTextHud` + `TackleComicBurst` — roadmap steps 1–4 shipped (see **Tackle comic text — shipped + roadmap** + s&box UI gotchas there).
+Tackle juice: `TackleImpactFeel` + `PreLaunchPauseSeconds` + `NetAwaitingRagdollLaunch`. Comic text: `TackleComicTextHud` + `TackleComicBurst` — roadmap **complete** (highlight extrusion + `ComicExitStyle` exit anims); MP verify pending.
 `utd_citizen_human_throw.vmdl` — `throw_windup` + `charge_run` only.
-Next: comic text step 5 (extrusion + exit); throw charge MP; practice scene; MP join flash; soak.
+Next: throw charge MP; comic text MP verify; practice scene; MP join flash; soak.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -292,7 +289,8 @@ Next: comic text step 5 (extrusion + exit); throw charge MP; practice scene; MP 
 
 ## Recent session notes
 
-- **2026-06-12 (comic text polish 2–4):** Per-letter jitter (`LetterJitterSeed`), stagger pop, impact shake; `BurstPanelPadding`; `ApplySpawnData` spawn path; s&box animation rules documented in **Tackle comic text** section. Step **5** (extrusion + exit) next.
+- **2026-06-12 (comic text step 5):** Highlight extrusion layer + host-synced `ComicExitStyle` exit anims (`ExitDriftOctant` from tackle `launchDir`); `EnableHighlightExtrusion` / `EnableComicExitAnimations` on Main Camera.
+- **2026-06-12 (comic text polish 2–4):** Per-letter jitter (`LetterJitterSeed`), stagger pop, impact shake; `BurstPanelPadding`; `ApplySpawnData` spawn path; s&box animation rules documented in **Tackle comic text** section.
 - **2026-06-12 (comic text WorldPanel):** **`TackleComicBurst`** Razor world panels — offset shadow, tier colors, fixed scale. Details → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) if needed.
 - **2026-06-12 (tackle juice + charge_run MP):** **`TackleImpactFeel`** + **`PreLaunchPauseSeconds`** / **`NetAwaitingRagdollLaunch`**; **`PlayerChargeRunAnim`** remote fix — 2-window initial OK.
 - **2026-06-11 (human anim graph):** Extension `.vmdl` = **`throw_windup`** + **`charge_run`** only; **`charge_run`** masked layer in **`utd_citizen_human_m.vanmgrph`**; throw wind-up masked layer solo OK; editor-asset ownership rule. Details → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) (2026-06 chronicle).

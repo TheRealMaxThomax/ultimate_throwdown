@@ -14,6 +14,74 @@ TackleComicBurst {
 		overflow: visible;
 	}
 
+	.word-exit {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		overflow: visible;
+	}
+
+	&.has-exit-anim .word-exit {
+		animation-fill-mode: forwards;
+		animation-timing-function: ease-in;
+	}
+
+	&.has-exit-anim.exit-spin-vanish .word-exit {
+		animation-name: tackle-exit-spin-vanish;
+	}
+
+	&.has-exit-anim.exit-scatter .word-exit {
+		animation-name: tackle-exit-scatter;
+	}
+
+	&.has-exit-anim.exit-slam-deflate .word-exit {
+		animation-name: tackle-exit-slam-deflate;
+	}
+
+	&.has-exit-anim.exit-launch-drift .word-exit {
+		animation-name: tackle-exit-launch-drift;
+	}
+
+	&.has-exit-anim.exit-rubber-snap .word-exit {
+		animation-name: tackle-exit-rubber-snap;
+	}
+
+	&.has-exit-anim.exit-ink-puff .word-exit {
+		animation-name: tackle-exit-ink-puff;
+	}
+
+	&.has-exit-anim.exit-tackle-drift.drift-octant-0 .word-exit {
+		animation-name: tackle-exit-drift-e;
+	}
+
+	&.has-exit-anim.exit-tackle-drift.drift-octant-1 .word-exit {
+		animation-name: tackle-exit-drift-ne;
+	}
+
+	&.has-exit-anim.exit-tackle-drift.drift-octant-2 .word-exit {
+		animation-name: tackle-exit-drift-n;
+	}
+
+	&.has-exit-anim.exit-tackle-drift.drift-octant-3 .word-exit {
+		animation-name: tackle-exit-drift-nw;
+	}
+
+	&.has-exit-anim.exit-tackle-drift.drift-octant-4 .word-exit {
+		animation-name: tackle-exit-drift-w;
+	}
+
+	&.has-exit-anim.exit-tackle-drift.drift-octant-5 .word-exit {
+		animation-name: tackle-exit-drift-sw;
+	}
+
+	&.has-exit-anim.exit-tackle-drift.drift-octant-6 .word-exit {
+		animation-name: tackle-exit-drift-s;
+	}
+
+	&.has-exit-anim.exit-tackle-drift.drift-octant-7 .word-exit {
+		animation-name: tackle-exit-drift-se;
+	}
+
 	.word-stack {
 		position: relative;
 		display: flex;
@@ -107,9 +175,14 @@ TackleComicBurst {
 		z-index: 0;
 	}
 
+	.highlight {
+		color: #fff9c4;
+		z-index: 1;
+	}
+
 	.fill {
 		color: white;
-		z-index: 1;
+		z-index: 2;
 	}
 
 	&.tier-sage .fill {
@@ -362,5 +435,198 @@ TackleComicBurst {
 		transform: scale(1);
 		margin-left: 0px;
 		opacity: 1;
+	}
+}
+
+@keyframes tackle-exit-spin-vanish {
+	0% {
+		transform: rotate(0deg) scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: rotate(180deg) scale(0.15);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-scatter {
+	0% {
+		transform: scale(1) rotate(0deg);
+		opacity: 1;
+	}
+
+	35% {
+		transform: scale(1.28) rotate(-8deg);
+		opacity: 1;
+	}
+
+	100% {
+		transform: scale(0.2) rotate(22deg);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-slam-deflate {
+	0% {
+		transform: scale(1, 1);
+		opacity: 1;
+	}
+
+	45% {
+		transform: scale(1.08, 0.72);
+		opacity: 1;
+	}
+
+	100% {
+		transform: scale(1.2, 0.05);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-launch-drift {
+	0% {
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: translate(0, -96px) scale(0.85);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-rubber-snap {
+	0% {
+		transform: scale(1);
+		opacity: 1;
+	}
+
+	28% {
+		transform: scale(1.34);
+		opacity: 1;
+	}
+
+	55% {
+		transform: scale(0.88);
+		opacity: 0.9;
+	}
+
+	100% {
+		transform: scale(0.05);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-ink-puff {
+	0% {
+		transform: scale(1);
+		opacity: 1;
+	}
+
+	40% {
+		transform: scale(1.42);
+		opacity: 0.75;
+	}
+
+	100% {
+		transform: scale(1.65);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-drift-e {
+	0% {
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: translate(88px, 0) scale(0.75);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-drift-ne {
+	0% {
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: translate(72px, -72px) scale(0.75);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-drift-n {
+	0% {
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: translate(0, -88px) scale(0.75);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-drift-nw {
+	0% {
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: translate(-72px, -72px) scale(0.75);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-drift-w {
+	0% {
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: translate(-88px, 0) scale(0.75);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-drift-sw {
+	0% {
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: translate(-72px, 72px) scale(0.75);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-drift-s {
+	0% {
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: translate(0, 88px) scale(0.75);
+		opacity: 0;
+	}
+}
+
+@keyframes tackle-exit-drift-se {
+	0% {
+		transform: translate(0, 0) scale(1);
+		opacity: 1;
+	}
+
+	100% {
+		transform: translate(72px, 72px) scale(0.75);
+		opacity: 0;
 	}
 }

@@ -664,7 +664,7 @@ public sealed class PlayerTackle : Component
 		NotifyTackleImpactFeel( attacker, victim );
 		try
 		{
-			TackleComicTextHud.NotifyHostKnockdown( Scene, victim.WorldPosition, tacklePowerForBall );
+			TackleComicTextHud.NotifyHostKnockdown( Scene, victim.WorldPosition, tacklePowerForBall, launchDir );
 		}
 		catch ( System.Exception ex )
 		{

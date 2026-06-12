@@ -26,6 +26,31 @@ public sealed class TackleComicTextHud : Component
 		TopLeft = 3
 	}
 
+	/// <summary>Host-synced fade-out motion — plays on <c>.word-exit</c> after <see cref="ExitFadeStartFraction"/> of <see cref="LifetimeSeconds"/>.</summary>
+	public enum ComicExitStyle
+	{
+		SpinVanish = 0,
+		Scatter = 1,
+		SlamDeflate = 2,
+		LaunchDrift = 3,
+		RubberSnap = 4,
+		TackleDirectedDrift = 5,
+		InkPuff = 6
+	}
+
+	/// <summary>Inspector pick for exit motion — <see cref="Random"/> rolls per knockdown; otherwise every burst uses that style (MP-synced).</summary>
+	public enum ComicExitStylePick
+	{
+		Random,
+		SpinVanish,
+		Scatter,
+		SlamDeflate,
+		LaunchDrift,
+		RubberSnap,
+		TackleDirectedDrift,
+		InkPuff
+	}
+
 	[Property] public bool EnableComicText { get; set; } = true;
 
 	/// <summary>Random pool — host picks one entry per knockdown and broadcasts the text.</summary>
@@ -48,11 +73,15 @@ public sealed class TackleComicTextHud : Component
 	/// <summary>Stronger tilt than Sans — heavy / juggernaut hits (red).</summary>
 	[Property] public string FontChaos { get; set; } = "Les Flos Chaos";
 
-	[Property] public Vector2 BurstPanelSize { get; set; } = new( 1280f, 420f );
-	[Property] public float BurstPanelWidthPerCharacter { get; set; } = 120f;
-	[Property] public float BurstPanelMinWidth { get; set; } = 960f;
+	[Property] public Vector2 BurstPanelSize { get; set; } = new( 1920f, 640f );
+	[Property] public float BurstPanelWidthPerCharacter { get; set; } = 140f;
+	[Property] public float BurstPanelMinWidth { get; set; } = 1280f;
 	/// <summary>Extra pad on each side of measured letter bounds — WorldPanel clips hard; jitter + pop/shake need headroom.</summary>
-	[Property] public float BurstPanelPadding { get; set; } = 48f;
+	[Property] public float BurstPanelPadding { get; set; } = 128f;
+	/// <summary>Extra pad per side for exit translate (drift / launch) — bump if fade-out still clips.</summary>
+	[Property] public float ExitAnimationPaddingPixels { get; set; } = 180f;
+	/// <summary>Worst-case exit scale overshoot (ink puff ~1.65) — extra margin = (peak − 1) × half word size.</summary>
+	[Property] public float ExitAnimationPeakScale { get; set; } = 1.7f;
 	[Property] public float WorldHeightOffset { get; set; } = 52f;
 	[Property] public float FloatUpSpeed { get; set; } = 42f;
 	[Property] public float LifetimeSeconds { get; set; } = 0.95f;
@@ -97,6 +126,17 @@ public sealed class TackleComicTextHud : Component
 	[Property] public bool EnableLetterImpactShake { get; set; } = true;
 	[Property] public float LetterImpactShakeDurationSeconds { get; set; } = 0.55f;
 
+	/// <summary>White/pale duplicate behind fill, offset opposite the black shadow — thick ink edge.</summary>
+	[Property] public bool EnableHighlightExtrusion { get; set; } = true;
+	[Property] public Vector2 HighlightExtrusionPixels { get; set; } = new( 12f, 14f );
+
+	/// <summary>Fade-out motion on <c>.word-exit</c> — off = legacy whole-panel opacity fade only.</summary>
+	[Property] public bool EnableComicExitAnimations { get; set; } = true;
+	/// <summary><see cref="ComicExitStylePick.Random"/> = host rolls each knockdown; pick a style to preview it every tackle.</summary>
+	[Property] public ComicExitStylePick ExitStylePick { get; set; } = ComicExitStylePick.Random;
+	[Property] public float ExitFadeStartFraction { get; set; } = 0.55f;
+	[Property] public float ExitFadeDurationFraction { get; set; } = 0.45f;
+
 	[Property] public bool EnableComicDebugLogs { get; set; }
 
 	public static TackleComicTextHud FindInScene( Scene scene )
@@ -129,7 +169,7 @@ public sealed class TackleComicTextHud : Component
 	}
 
 	/// <summary>Host: pick word + font tier from tackle power and broadcast to all clients.</summary>
-	public static void NotifyHostKnockdown( Scene scene, Vector3 worldPosition, float tacklePower )
+	public static void NotifyHostKnockdown( Scene scene, Vector3 worldPosition, float tacklePower, Vector3 launchDirection = default )
 	{
 		if ( !Networking.IsHost )
 			return;
@@ -145,9 +185,11 @@ public sealed class TackleComicTextHud : Component
 
 		var shadowDir = Game.Random.Int( 0, 3 );
 		var wordTiltDegrees = hud.PickRandomWordTiltDegrees( tier );
+		var exitStyle = hud.ResolveExitStyle();
+		var exitDriftOctant = ResolveExitDriftOctant( launchDirection );
 		// Stay below int.MaxValue — inclusive Random.Int(max+1) overflows and throws.
 		var letterJitterSeed = Game.Random.Int( 1, 2_000_000_000 );
-		hud.BroadcastSpawnRpc( worldPosition, (int)tier, text, shadowDir, wordTiltDegrees, letterJitterSeed );
+		hud.BroadcastSpawnRpc( worldPosition, (int)tier, text, shadowDir, wordTiltDegrees, letterJitterSeed, (int)exitStyle, exitDriftOctant );
 	}
 
 	public static void ResolveShadowOffset( ComicShadowDirection direction, Vector2 magnitude, out float offsetX, out float offsetY )
@@ -174,6 +216,31 @@ public sealed class TackleComicTextHud : Component
 				offsetY = magY;
 				return;
 		}
+	}
+
+	/// <summary>Highlight sits opposite the black shadow — same corner enum, negated offset.</summary>
+	public static void ResolveHighlightOffset( ComicShadowDirection shadowDirection, Vector2 magnitude, out float offsetX, out float offsetY )
+	{
+		ResolveShadowOffset( shadowDirection, magnitude, out offsetX, out offsetY );
+		offsetX = -offsetX;
+		offsetY = -offsetY;
+	}
+
+	/// <summary>XZ launch bearing → 0–7 octant for <see cref="ComicExitStyle.TackleDirectedDrift"/> CSS classes.</summary>
+	public static int ResolveExitDriftOctant( Vector3 launchDirection )
+	{
+		var hx = launchDirection.x;
+		var hz = launchDirection.z;
+		var lenSq = hx * hx + hz * hz;
+		if ( lenSq < 0.0001f )
+			return 0;
+
+		var angle = MathF.Atan2( hz, hx ) * (180f / MathF.PI);
+		var octant = (int)MathF.Floor( (angle + 180f + 22.5f) / 45f ) % 8;
+		if ( octant < 0 )
+			octant += 8;
+
+		return octant;
 	}
 
 	static ComicFontTier ResolveTier( float tacklePower, float sansThreshold, float chaosThreshold )
@@ -209,16 +276,18 @@ public sealed class TackleComicTextHud : Component
 	}
 
 	[Rpc.Broadcast]
-	private void BroadcastSpawnRpc( Vector3 worldPosition, int tier, string text, int shadowDirection, float wordTiltDegrees, int letterJitterSeed )
+	private void BroadcastSpawnRpc( Vector3 worldPosition, int tier, string text, int shadowDirection, float wordTiltDegrees, int letterJitterSeed, int exitStyle, int exitDriftOctant )
 	{
 		if ( !EnableComicText || string.IsNullOrWhiteSpace( text ) )
 			return;
 
 		var dir = (ComicShadowDirection)MathX.Clamp( shadowDirection, 0, 3 );
-		SpawnBurst( worldPosition, (ComicFontTier)tier, text.Trim(), dir, wordTiltDegrees, letterJitterSeed );
+		var style = (ComicExitStyle)(int)MathX.Clamp( exitStyle, 0, (int)ComicExitStyle.InkPuff );
+		var octant = (int)MathX.Clamp( exitDriftOctant, 0, 7 );
+		SpawnBurst( worldPosition, (ComicFontTier)tier, text.Trim(), dir, wordTiltDegrees, letterJitterSeed, style, octant );
 	}
 
-	void SpawnBurst( Vector3 worldPosition, ComicFontTier tier, string text, ComicShadowDirection shadowDirection, float wordTiltDegrees, int letterJitterSeed )
+	void SpawnBurst( Vector3 worldPosition, ComicFontTier tier, string text, ComicShadowDirection shadowDirection, float wordTiltDegrees, int letterJitterSeed, ComicExitStyle exitStyle, int exitDriftOctant )
 	{
 		var letterStyles = BuildLetterStyles( text, tier, letterJitterSeed );
 
@@ -237,7 +306,9 @@ public sealed class TackleComicTextHud : Component
 			ShadowDirection = shadowDirection,
 			WordTiltDegrees = wordTiltDegrees,
 			LetterJitterSeed = letterJitterSeed,
-			LetterStyles = letterStyles
+			LetterStyles = letterStyles,
+			ExitStyle = exitStyle,
+			ExitDriftOctant = exitDriftOctant
 		};
 
 		var burst = burstGo.Components.Create<TackleComicBurst>();
@@ -262,6 +333,26 @@ public sealed class TackleComicTextHud : Component
 		return Game.Random.Float( -max, max );
 	}
 
+	ComicExitStyle ResolveExitStyle()
+	{
+		if ( !EnableComicExitAnimations )
+			return ComicExitStyle.SpinVanish;
+
+		if ( ExitStylePick == ComicExitStylePick.Random )
+			return (ComicExitStyle)Game.Random.Int( 0, (int)ComicExitStyle.InkPuff );
+
+		return ExitStylePick switch
+		{
+			ComicExitStylePick.Scatter => ComicExitStyle.Scatter,
+			ComicExitStylePick.SlamDeflate => ComicExitStyle.SlamDeflate,
+			ComicExitStylePick.LaunchDrift => ComicExitStyle.LaunchDrift,
+			ComicExitStylePick.RubberSnap => ComicExitStyle.RubberSnap,
+			ComicExitStylePick.TackleDirectedDrift => ComicExitStyle.TackleDirectedDrift,
+			ComicExitStylePick.InkPuff => ComicExitStyle.InkPuff,
+			_ => ComicExitStyle.SpinVanish
+		};
+	}
+
 	Vector2 ResolveBurstPanelSize( string text, ComicFontTier tier, float wordTiltDegrees, IReadOnlyList<ComicLetterStyle> letterStyles )
 	{
 		const float popPeakScale = 1.16f;
@@ -276,8 +367,24 @@ public sealed class TackleComicTextHud : Component
 
 		var shadowPadX = MathF.Abs( ShadowOffsetPixels.x );
 		var shadowPadY = MathF.Abs( ShadowOffsetPixels.y );
-		var contentWidth = rowWidth + shadowPadX + shakePadding * 2f;
-		var contentHeight = rowHeight + shadowPadY + shakePadding * 2f;
+		var highlightPadX = EnableHighlightExtrusion ? MathF.Abs( HighlightExtrusionPixels.x ) : 0f;
+		var highlightPadY = EnableHighlightExtrusion ? MathF.Abs( HighlightExtrusionPixels.y ) : 0f;
+		var exitTranslatePad = EnableComicExitAnimations ? ExitAnimationPaddingPixels : 0f;
+		var exitScaleOvershoot = EnableComicExitAnimations
+			? MathF.Max( 0f, ExitAnimationPeakScale - 1f )
+			: 0f;
+		var exitScalePadW = rowWidth * exitScaleOvershoot * 0.5f;
+		var exitScalePadH = rowHeight * exitScaleOvershoot * 0.5f;
+		var contentWidth = rowWidth
+			+ MathF.Max( shadowPadX, highlightPadX ) * 2f
+			+ shakePadding * 2f
+			+ exitTranslatePad * 2f
+			+ exitScalePadW * 2f;
+		var contentHeight = rowHeight
+			+ MathF.Max( shadowPadY, highlightPadY ) * 2f
+			+ shakePadding * 2f
+			+ exitTranslatePad * 2f
+			+ exitScalePadH * 2f;
 
 		var tiltRadians = MathF.Abs( wordTiltDegrees ) * MathF.PI / 180f;
 		contentWidth += rowHeight * MathF.Sin( tiltRadians ) * 2f;
@@ -452,6 +559,8 @@ public sealed class ComicBurstSpawnData
 	public float WordTiltDegrees { get; init; }
 	public int LetterJitterSeed { get; init; }
 	public IReadOnlyList<ComicLetterStyle> LetterStyles { get; init; }
+	public TackleComicTextHud.ComicExitStyle ExitStyle { get; init; }
+	public int ExitDriftOctant { get; init; }
 }
 
 /// <summary>One glyph in a <see cref="TackleComicBurst"/> — layout + optional pop/shake animations in <see cref="ContainerStyle"/>.</summary>

@@ -199,7 +199,7 @@
               "__enabled": true,
               "Flags": 0,
               "BurstPanelMinWidth": 960,
-              "BurstPanelPadding": 74,
+              "BurstPanelPadding": 128,
               "BurstPanelSize": "640,280",
               "BurstPanelWidthPerCharacter": 120,
               "ChaosImpactThreshold": 1.45,
@@ -214,13 +214,21 @@
                 "SMACK!"
               ],
               "EnableComicDebugLogs": true,
+              "EnableComicExitAnimations": true,
               "EnableComicText": true,
+              "EnableHighlightExtrusion": true,
               "EnableLetterImpactShake": true,
               "EnableLetterPopStagger": true,
+              "ExitAnimationPaddingPixels": 180,
+              "ExitAnimationPeakScale": 1.7,
+              "ExitFadeDurationFraction": 0.45,
+              "ExitFadeStartFraction": 0.55,
+              "ExitStylePick": "InkPuff",
               "FloatUpSpeed": 42,
               "FontChaos": "Les Flos Chaos",
               "FontSage": "Les Flos Sage",
               "FontSans": "Les Flos Sans",
+              "HighlightExtrusionPixels": "12,14",
               "LetterBaselineJitterChaos": 14,
               "LetterBaselineJitterSage": 3,
               "LetterBaselineJitterSans": 8,
@@ -2905,7 +2913,7 @@
                   ]
                 },
                 {
-                  "__guid": "3cbc47a8-ed95-45aa-9dde-86a797fb47c8",
+                  "__guid": "8bd06b02-6bbc-4e16-af42-216b3f9c0610",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2922,7 +2930,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "6d0d8dd1-df73-451c-ac69-9acff76b0d18",
+                      "__guid": "5b6d3934-aed9-498a-bffd-bd06b7eeb570",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6201,7 +6209,7 @@
                   ]
                 },
                 {
-                  "__guid": "e0d2672c-f861-47c9-9233-dac5789499f6",
+                  "__guid": "5307a6ea-03ed-4285-a09c-53f1a068f1fd",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6218,7 +6226,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "6d0bb6f2-ced7-4d93-ad2c-6e8b70f83bc6",
+                      "__guid": "e61100d1-2f35-475f-b1c7-14df67c7080a",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8836,7 +8844,7 @@
                   ]
                 },
                 {
-                  "__guid": "ccc8dec3-57ae-4a23-8aec-ff3181fe3a99",
+                  "__guid": "def5df9a-5f6b-4fcc-8b5d-64d6994b56bb",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8853,7 +8861,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "359a12aa-98dc-4ba6-9a1b-ad1174d3d2a1",
+                      "__guid": "c0c6af60-3271-4e40-a6e1-8337392fbbca",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11471,7 +11479,7 @@
                   ]
                 },
                 {
-                  "__guid": "3239931f-28d4-4d61-b696-a65d7ac5f5a3",
+                  "__guid": "5c410118-66b6-4391-992b-e17ed703dab0",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11488,7 +11496,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "b7a93b73-d481-4334-874f-31731dbf9765",
+                      "__guid": "335138cb-3412-4010-9386-662935982059",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,

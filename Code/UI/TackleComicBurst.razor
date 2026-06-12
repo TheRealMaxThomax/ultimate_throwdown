@@ -4,34 +4,52 @@
 @using Sandbox.UI
 @inherits PanelComponent
 
-<root class="tackle-comic-burst tier-@TierClass @(UseLetterPopStagger ? "stagger-pop" : "") @(UseLetterImpactShake ? "letter-impact-shake" : "")">
+<root class="tackle-comic-burst tier-@TierClass @(UseHighlightExtrusion ? "has-highlight" : "") @(UseComicExitAnimations ? "has-exit-anim" : "") @(UseLetterPopStagger ? "stagger-pop" : "") @(UseLetterImpactShake ? "letter-impact-shake" : "") @ExitStyleClass @ExitDriftClass">
 	<div class="word-tilt" style="transform: rotate(@WordRotationStyle)">
-		<div class="word-stack">
-			<div class="word shadow" style="font-family: @FontFamily; transform: translate(@ShadowTransform)">
-				@if ( Letters.Count > 0 )
-				{
-					@foreach ( var letter in Letters )
+		<div class="word-exit" style="@ExitAnimationStyle">
+			<div class="word-stack">
+				<div class="word shadow" style="font-family: @FontFamily; transform: translate(@ShadowTransform)">
+					@if ( Letters.Count > 0 )
 					{
-						<div class="letter" style="@letter.ContainerStyle">@letter.Character</div>
+						@foreach ( var letter in Letters )
+						{
+							<div class="letter" style="@letter.ContainerStyle">@letter.Character</div>
+						}
 					}
-				}
-				else
-				{
-					@DisplayText
-				}
-			</div>
-			<div class="word fill" style="font-family: @FontFamily">
-				@if ( Letters.Count > 0 )
-				{
-					@foreach ( var letter in Letters )
+					else
 					{
-						<div class="letter" style="@letter.ContainerStyle">@letter.Character</div>
+						@DisplayText
 					}
-				}
-				else
+				</div>
+				@if ( UseHighlightExtrusion )
 				{
-					@DisplayText
+					<div class="word highlight" style="font-family: @FontFamily; transform: translate(@HighlightTransform)">
+						@if ( Letters.Count > 0 )
+						{
+							@foreach ( var letter in Letters )
+							{
+								<div class="letter" style="@letter.ContainerStyle">@letter.Character</div>
+							}
+						}
+						else
+						{
+							@DisplayText
+						}
+					</div>
 				}
+				<div class="word fill" style="font-family: @FontFamily">
+					@if ( Letters.Count > 0 )
+					{
+						@foreach ( var letter in Letters )
+						{
+							<div class="letter" style="@letter.ContainerStyle">@letter.Character</div>
+						}
+					}
+					else
+					{
+						@DisplayText
+					}
+				</div>
 			</div>
 		</div>
 	</div>
@@ -50,8 +68,14 @@
 	public string TierClass { get; private set; } = "sage";
 	public string FontFamily { get; private set; } = "Poppins";
 	public string ShadowTransform { get; private set; } = "10px, 12px";
+	public string HighlightTransform { get; private set; } = "-10px, -12px";
 	public string WordRotationStyle { get; private set; } = "0deg";
+	public string ExitStyleClass { get; private set; } = "";
+	public string ExitDriftClass { get; private set; } = "";
+	public string ExitAnimationStyle { get; private set; } = "";
 	public int LetterJitterSeed { get; private set; }
+	public bool UseHighlightExtrusion { get; private set; }
+	public bool UseComicExitAnimations { get; private set; }
 	public bool UseLetterPopStagger { get; private set; }
 	public bool UseLetterImpactShake { get; private set; }
 
@@ -62,12 +86,21 @@
 		TierClass = TierToClass( data.Tier );
 		FontFamily = data.Hud.ResolveFontFamily( data.Tier );
 		LetterJitterSeed = data.LetterJitterSeed;
+		UseHighlightExtrusion = data.Hud.EnableHighlightExtrusion;
+		UseComicExitAnimations = data.Hud.EnableComicExitAnimations;
 		UseLetterPopStagger = data.Hud.EnableLetterPopStagger;
 		UseLetterImpactShake = data.Hud.EnableLetterImpactShake;
 		Letters = data.LetterStyles ?? data.Hud.BuildLetterStyles( data.Text, data.Tier, data.LetterJitterSeed );
 		TackleComicTextHud.ResolveShadowOffset( data.ShadowDirection, data.Hud.ShadowOffsetPixels, out var offsetX, out var offsetY );
 		ShadowTransform = $"{offsetX:0}px, {offsetY:0}px";
+		TackleComicTextHud.ResolveHighlightOffset( data.ShadowDirection, data.Hud.HighlightExtrusionPixels, out var highlightX, out var highlightY );
+		HighlightTransform = $"{highlightX:0}px, {highlightY:0}px";
 		WordRotationStyle = $"{data.WordTiltDegrees:0.##}deg";
+		ExitStyleClass = ResolveExitStyleClass( data.ExitStyle );
+		ExitDriftClass = data.ExitStyle == TackleComicTextHud.ComicExitStyle.TackleDirectedDrift
+			? $"drift-octant-{MathX.Clamp( data.ExitDriftOctant, 0, 7 )}"
+			: "";
+		ExitAnimationStyle = BuildExitAnimationStyle( data.Hud );
 		driftOrigin = GameObject.WorldPosition;
 		startTime = Time.Now;
 		configured = true;
@@ -111,8 +144,14 @@
 		hash.Add( TierClass );
 		hash.Add( FontFamily );
 		hash.Add( ShadowTransform );
+		hash.Add( HighlightTransform );
 		hash.Add( WordRotationStyle );
+		hash.Add( ExitStyleClass );
+		hash.Add( ExitDriftClass );
+		hash.Add( ExitAnimationStyle );
 		hash.Add( LetterJitterSeed );
+		hash.Add( UseHighlightExtrusion );
+		hash.Add( UseComicExitAnimations );
 		hash.Add( UseLetterPopStagger );
 		hash.Add( UseLetterImpactShake );
 
@@ -143,6 +182,31 @@
 		};
 	}
 
+	static string ResolveExitStyleClass( TackleComicTextHud.ComicExitStyle style )
+	{
+		return style switch
+		{
+			TackleComicTextHud.ComicExitStyle.Scatter => "exit-scatter",
+			TackleComicTextHud.ComicExitStyle.SlamDeflate => "exit-slam-deflate",
+			TackleComicTextHud.ComicExitStyle.LaunchDrift => "exit-launch-drift",
+			TackleComicTextHud.ComicExitStyle.RubberSnap => "exit-rubber-snap",
+			TackleComicTextHud.ComicExitStyle.TackleDirectedDrift => "exit-tackle-drift",
+			TackleComicTextHud.ComicExitStyle.InkPuff => "exit-ink-puff",
+			_ => "exit-spin-vanish"
+		};
+	}
+
+	string BuildExitAnimationStyle( TackleComicTextHud hud )
+	{
+		if ( !hud.EnableComicExitAnimations )
+			return "";
+
+		var lifetime = MathF.Max( hud.LifetimeSeconds, 0.0001f );
+		var delay = lifetime * MathX.Clamp( hud.ExitFadeStartFraction, 0f, 0.95f );
+		var duration = lifetime * MathX.Clamp( hud.ExitFadeDurationFraction, 0.05f, 1f );
+		return $"animation-duration: {duration:0.###}s; animation-delay: {delay:0.###}s;";
+	}
+
 	void ApplyRenderScale()
 	{
 		if ( !worldPanel.IsValid() || !settings.IsValid() )
@@ -160,20 +224,29 @@
 		if ( Panel is null )
 			return;
 
-		Panel.Style.Opacity = ComputeAlpha( elapsed, settings.LifetimeSeconds );
+		if ( UseComicExitAnimations )
+		{
+			Panel.Style.Opacity = 1f;
+		}
+		else
+		{
+			Panel.Style.Opacity = ComputeAlpha( elapsed, settings.LifetimeSeconds, settings.ExitFadeStartFraction, settings.ExitFadeDurationFraction );
+		}
+
 		Panel.Style.Dirty();
 	}
 
-	static float ComputeAlpha( float elapsed, float duration )
+	static float ComputeAlpha( float elapsed, float duration, float fadeStartFraction, float fadeDurationFraction )
 	{
 		if ( duration <= 0.0001f )
 			return 0f;
 
-		var t = elapsed / duration;
-		if ( t < 0.55f )
+		var fadeStart = duration * MathX.Clamp( fadeStartFraction, 0f, 0.95f );
+		if ( elapsed < fadeStart )
 			return 1f;
 
-		var fadeT = MathX.Clamp( (t - 0.55f ) / 0.45f, 0f, 1f );
+		var fadeWindow = duration * MathX.Clamp( fadeDurationFraction, 0.05f, 1f );
+		var fadeT = MathX.Clamp( (elapsed - fadeStart) / MathF.Max( fadeWindow, 0.0001f ), 0f, 1f );
 		return 1f - fadeT;
 	}
 }

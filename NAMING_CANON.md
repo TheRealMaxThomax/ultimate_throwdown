@@ -104,8 +104,15 @@
 | `IntermissionHud` | "Resuming in N…" during intermission |
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
 | `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |
-| `TackleComicTextHud` | Knockdown comic-word spawner (`ComicWords` pool; broadcasts tier + text + shadow dir + `WordTiltMaxDegrees*` + `LetterJitterSeed`; `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*` per tier; `BurstPanelPadding` for WorldPanel clip headroom; auto on main camera via `GameNetworkManager`) |
-| `TackleComicBurst` | Short-lived `WorldPanel` + Razor burst (`div.letter` + `ComicLetterStyle`; SCSS letter anims; `ApplySpawnData` on spawn; spawned by `TackleComicTextHud`) |
+| `TackleComicTextHud` | Knockdown comic-word spawner (`ComicWords` pool; broadcasts tier + text + shadow dir + `WordTiltMaxDegrees*` + `LetterJitterSeed` + `ComicExitStyle` + `ExitDriftOctant`; `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*` per tier; `EnableHighlightExtrusion` / `EnableComicExitAnimations`; `BurstPanelPadding` for WorldPanel clip headroom; auto on main camera via `GameNetworkManager`) |
+| `TackleComicBurst` | Short-lived `WorldPanel` + Razor burst (`div.letter` + `ComicLetterStyle`; shadow + highlight + fill layers; SCSS letter + exit anims; `ApplySpawnData` on spawn; spawned by `TackleComicTextHud`) |
+| `ComicExitStyle` | Host-synced fade-out motion enum on `TackleComicTextHud` (`SpinVanish`, `Scatter`, `SlamDeflate`, `LaunchDrift`, `RubberSnap`, `TackleDirectedDrift`, `InkPuff`) |
+| `ComicExitStylePick` | Inspector dropdown on `TackleComicTextHud` — `Random` or force one `ComicExitStyle` per burst (`ExitStylePick`) |
+| `ExitAnimationPaddingPixels` | WorldPanel extra pad per side for exit translate (drift / launch) |
+| `ExitAnimationPeakScale` | Worst-case exit scale overshoot for panel size math (ink puff ~1.65) |
+| `EnableHighlightExtrusion` | `TackleComicTextHud` — pale duplicate layer opposite black shadow |
+| `EnableComicExitAnimations` | `TackleComicTextHud` — CSS exit on `.word-exit` during fade window; off = legacy panel opacity fade |
+| `ExitDriftOctant` | Host-synced 0–7 bearing for `TackleDirectedDrift` (from tackle `launchDir` XZ) |
 | `ComicBurstSpawnData` | Runtime burst payload passed to `TackleComicBurst.ApplySpawnData` on spawn |
 | `ComicLetterStyle` | One glyph layout in a burst — `ContainerStyle` (font-size + margin-top/right; from host `LetterJitterSeed`) |
 | `EnableLetterPopStagger` | `TackleComicTextHud` — per-letter pop delay; off = whole-word pop on `.word-stack` |
