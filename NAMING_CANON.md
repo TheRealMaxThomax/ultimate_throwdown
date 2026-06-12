@@ -108,6 +108,8 @@
 | `TackleComicBurst` | Short-lived `WorldPanel` + Razor burst (per-letter `ComicLetterStyle` spans; distance scale, occlusion, tier colors; spawned by `TackleComicTextHud`) |
 | `ComicBurstSpawnData` | Runtime burst payload passed to `TackleComicBurst.ApplySpawnData` on spawn |
 | `ComicLetterStyle` | One glyph layout in a burst — `ContainerStyle` (font-size + margin-top/right; from host `LetterJitterSeed`) |
+| `EnableLetterPopStagger` | `TackleComicTextHud` — per-letter pop delay; off = whole-word pop on `.word-stack` |
+| `LetterPopStaggerMilliseconds` | Delay between each glyph pop when stagger is on |
 | `EnableComicDebugLogs` | `TackleComicTextHud` — log each burst spawn to console |
 | `LetterJitterSeed` | Host-synced int seed for deterministic per-letter size/baseline/spacing jitter |
 

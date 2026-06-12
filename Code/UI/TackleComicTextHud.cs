@@ -89,6 +89,10 @@ public sealed class TackleComicTextHud : Component
 
 	[Property] public float LetterSpacingBasePixels { get; set; } = 4f;
 
+	/// <summary>Each glyph pops in after the previous — off = whole word pops together (legacy).</summary>
+	[Property] public bool EnableLetterPopStagger { get; set; } = true;
+	[Property] public float LetterPopStaggerMilliseconds { get; set; } = 40f;
+
 	[Property] public bool EnableComicDebugLogs { get; set; }
 
 	public static TackleComicTextHud FindInScene( Scene scene )
@@ -332,12 +336,15 @@ public sealed class TackleComicTextHud : Component
 				? 0f
 				: LetterSpacingBasePixels + SampleSignedJitter( letterJitterSeed, i, 2, spacingJitter );
 
+			var popDelayMs = EnableLetterPopStagger ? LetterPopStaggerMilliseconds * i : 0f;
+
 			letters.Add( new ComicLetterStyle
 			{
 				Character = ch,
 				FontSizePx = baseFontSize * sizeMul,
 				BaselineOffsetPx = baseline,
-				SpacingAfterPx = spacingAfter
+				SpacingAfterPx = spacingAfter,
+				PopDelayMs = popDelayMs
 			} );
 		}
 
@@ -424,7 +431,17 @@ public sealed class ComicLetterStyle
 	public float FontSizePx { get; init; }
 	public float BaselineOffsetPx { get; init; }
 	public float SpacingAfterPx { get; init; }
+	public float PopDelayMs { get; init; }
 
-	public string ContainerStyle =>
-		$"font-size: {FontSizePx:0.#}px; margin-top: {BaselineOffsetPx:0.#}px; margin-right: {SpacingAfterPx:0.#}px;";
+	public string ContainerStyle
+	{
+		get
+		{
+			var style = $"font-size: {FontSizePx:0.#}px; margin-top: {BaselineOffsetPx:0.#}px; margin-right: {SpacingAfterPx:0.#}px;";
+			if ( PopDelayMs > 0.01f )
+				style += $" animation-delay: {PopDelayMs:0.#}ms;";
+
+			return style;
+		}
+	}
 }

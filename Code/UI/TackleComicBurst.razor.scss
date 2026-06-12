@@ -23,6 +23,15 @@ TackleComicBurst {
 		animation: tackle-comic-pop 0.14s ease-out, tackle-comic-shake 0.16s ease-out;
 	}
 
+	&.stagger-pop .word-stack {
+		animation: tackle-comic-shake 0.16s ease-out;
+	}
+
+	&.stagger-pop .letter {
+		opacity: 0;
+		animation: tackle-comic-pop 0.14s ease-out both;
+	}
+
 	.word {
 		position: absolute;
 		display: flex;

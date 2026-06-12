@@ -4,7 +4,7 @@
 @using Sandbox.UI
 @inherits PanelComponent
 
-<root class="tackle-comic-burst tier-@TierClass">
+<root class="tackle-comic-burst tier-@TierClass @(UseLetterPopStagger ? "stagger-pop" : "")">
 	<div class="word-tilt" style="transform: rotate(@WordRotationStyle)">
 		<div class="word-stack">
 			<div class="word shadow" style="font-family: @FontFamily; transform: translate(@ShadowTransform)">
@@ -52,6 +52,7 @@
 	public string ShadowTransform { get; private set; } = "10px, 12px";
 	public string WordRotationStyle { get; private set; } = "0deg";
 	public int LetterJitterSeed { get; private set; }
+	public bool UseLetterPopStagger { get; private set; }
 
 	public void ApplySpawnData( ComicBurstSpawnData data )
 	{
@@ -60,6 +61,7 @@
 		TierClass = TierToClass( data.Tier );
 		FontFamily = data.Hud.ResolveFontFamily( data.Tier );
 		LetterJitterSeed = data.LetterJitterSeed;
+		UseLetterPopStagger = data.Hud.EnableLetterPopStagger;
 		Letters = data.LetterStyles ?? data.Hud.BuildLetterStyles( data.Text, data.Tier, data.LetterJitterSeed );
 		TackleComicTextHud.ResolveShadowOffset( data.ShadowDirection, data.Hud.ShadowOffsetPixels, out var offsetX, out var offsetY );
 		ShadowTransform = $"{offsetX:0}px, {offsetY:0}px";
@@ -109,6 +111,7 @@
 		hash.Add( ShadowTransform );
 		hash.Add( WordRotationStyle );
 		hash.Add( LetterJitterSeed );
+		hash.Add( UseLetterPopStagger );
 
 		foreach ( var letter in Letters )
 		{

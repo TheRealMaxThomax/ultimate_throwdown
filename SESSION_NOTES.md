@@ -22,7 +22,7 @@
 
 **Next session (priority order):**
 1. **Throw charge MP + polish** — wind-up **solo OK**; 2-window verify `NetThrowChargeLerp` + release; Blender `throw_windup` / bone mask if wanted (see **Open decisions**).
-2. **Tackle comic text polish** — (1) word tilt shipped; (2) per-letter size/baseline/spacing shipped; next: (3) stagger pop → (4) impact shake → (5) highlight extrusion + exit anims (see roadmap). **`TackleImpactFeel`** tune + victim **oof/grunt** SFX later.
+2. **Tackle comic text polish** — (1) word tilt shipped; (2) per-letter jitter shipped; (3) stagger pop shipped (`EnableLetterPopStagger`); next: (4) impact shake → (5) highlight extrusion + exit anims (see roadmap). **`TackleImpactFeel`** tune + victim **oof/grunt** SFX later.
 3. **MP join flash** — host brief black mesh face on client join (cosmetics load?).
 4. **Practice / training scene** — moving + charging `practice_npc` dummies for solo tackle/anim regression (MP tests idle-only when you control one pawn).
 5. Longer soak (15–20 min, two windows); map vote when ready.
@@ -238,7 +238,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 **Polish plan (in order — do not reorder):**
 1. ~~**Random whole-word rotation**~~ — **shipped:** host-synced ±° per burst; tune `WordTiltMaxDegreesSage` / `Sans` / `Chaos` on Main Camera.
 2. ~~**Per-letter size + baseline + spacing**~~ — **shipped:** `<span>` per char; host-synced `LetterJitterSeed`; tier caps `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*`.
-3. **Staggered letter pop-in** — optional; short delay per letter on spawn (very comic).
+3. ~~**Staggered letter pop-in**~~ — **shipped:** `EnableLetterPopStagger` + `LetterPopStaggerMilliseconds` (per-index delay; off = whole-word pop).
 4. **Per-letter shake on impact** — keyed wobble while the word lives.
 5. **Highlight extrusion + exit animations** — **not either/or:**
    - **Highlight extrusion** = third duplicate layer (white/pale yellow) offset **opposite** the black shadow — thick ink look while the word is visible; can ship on all tiers.
