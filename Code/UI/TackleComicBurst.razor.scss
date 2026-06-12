@@ -23,13 +23,62 @@ TackleComicBurst {
 		animation: tackle-comic-pop 0.14s ease-out, tackle-comic-shake 0.16s ease-out;
 	}
 
-	&.stagger-pop .word-stack {
+	&.letter-impact-shake:not(.stagger-pop) .word-stack {
+		animation: tackle-comic-pop 0.14s ease-out;
+	}
+
+	&.stagger-pop:not(.letter-impact-shake) .word-stack {
 		animation: tackle-comic-shake 0.16s ease-out;
 	}
 
-	&.stagger-pop .letter {
+	&.stagger-pop.letter-impact-shake .word-stack {
+		animation: none;
+	}
+
+	&.stagger-pop:not(.letter-impact-shake) .letter {
 		opacity: 0;
-		animation: tackle-comic-pop 0.14s ease-out both;
+		animation-name: tackle-comic-pop;
+		animation-timing-function: ease-out;
+		animation-fill-mode: both;
+	}
+
+	&.stagger-pop.letter-impact-shake.tier-sage .letter {
+		opacity: 0;
+		animation-name: tackle-letter-pop-shake-sage;
+		animation-timing-function: ease-out;
+		animation-fill-mode: both;
+	}
+
+	&.stagger-pop.letter-impact-shake.tier-sans .letter {
+		opacity: 0;
+		animation-name: tackle-letter-pop-shake-sans;
+		animation-timing-function: ease-out;
+		animation-fill-mode: both;
+	}
+
+	&.stagger-pop.letter-impact-shake.tier-chaos .letter {
+		opacity: 0;
+		animation-name: tackle-letter-pop-shake-chaos;
+		animation-timing-function: ease-out;
+		animation-fill-mode: both;
+	}
+
+	&.letter-impact-shake:not(.stagger-pop).tier-sage .letter {
+		animation-name: tackle-letter-shake-sage;
+		animation-timing-function: ease-out;
+		animation-fill-mode: both;
+	}
+
+	&.letter-impact-shake:not(.stagger-pop).tier-sans .letter {
+		animation-name: tackle-letter-shake-sans;
+		animation-timing-function: ease-out;
+		animation-fill-mode: both;
+	}
+
+	&.letter-impact-shake:not(.stagger-pop).tier-chaos .letter {
+		animation-name: tackle-letter-shake-chaos;
+		animation-timing-function: ease-out;
+		animation-fill-mode: both;
 	}
 
 	.word {
@@ -53,7 +102,6 @@ TackleComicBurst {
 		white-space: pre;
 	}
 
-	// Solid black duplicate behind the fill — offset gives comic 3D depth (direction set per burst in code).
 	.shadow {
 		color: #0a0a0a;
 		z-index: 0;
@@ -121,5 +169,198 @@ TackleComicBurst {
 
 	100% {
 		transform: translate(0, 0) scale(1);
+	}
+}
+
+@keyframes tackle-letter-shake-sage {
+	0%, 100% {
+		margin-left: 0px;
+	}
+
+	20% {
+		margin-left: -4px;
+	}
+
+	40% {
+		margin-left: 4px;
+	}
+
+	60% {
+		margin-left: -3px;
+	}
+
+	80% {
+		margin-left: 3px;
+	}
+}
+
+@keyframes tackle-letter-shake-sans {
+	0%, 100% {
+		margin-left: 0px;
+	}
+
+	20% {
+		margin-left: -6px;
+	}
+
+	40% {
+		margin-left: 6px;
+	}
+
+	60% {
+		margin-left: -5px;
+	}
+
+	80% {
+		margin-left: 4px;
+	}
+}
+
+@keyframes tackle-letter-shake-chaos {
+	0%, 100% {
+		margin-left: 0px;
+	}
+
+	20% {
+		margin-left: -9px;
+	}
+
+	40% {
+		margin-left: 9px;
+	}
+
+	60% {
+		margin-left: -7px;
+	}
+
+	80% {
+		margin-left: 6px;
+	}
+}
+
+// Stagger + impact: one timeline (pop then wobble) — s&box allows only one animation on .letter.
+@keyframes tackle-letter-pop-shake-sage {
+	0% {
+		transform: scale(0.35);
+		opacity: 0.2;
+	}
+
+	12% {
+		transform: scale(1.16);
+		opacity: 1;
+	}
+
+	20% {
+		transform: scale(1);
+		margin-left: 0px;
+		opacity: 1;
+	}
+
+	40% {
+		transform: scale(1);
+		margin-left: -4px;
+		opacity: 1;
+	}
+
+	60% {
+		transform: scale(1);
+		margin-left: 4px;
+		opacity: 1;
+	}
+
+	80% {
+		transform: scale(1);
+		margin-left: -3px;
+		opacity: 1;
+	}
+
+	100% {
+		transform: scale(1);
+		margin-left: 0px;
+		opacity: 1;
+	}
+}
+
+@keyframes tackle-letter-pop-shake-sans {
+	0% {
+		transform: scale(0.35);
+		opacity: 0.2;
+	}
+
+	12% {
+		transform: scale(1.16);
+		opacity: 1;
+	}
+
+	20% {
+		transform: scale(1);
+		margin-left: 0px;
+		opacity: 1;
+	}
+
+	40% {
+		transform: scale(1);
+		margin-left: -6px;
+		opacity: 1;
+	}
+
+	60% {
+		transform: scale(1);
+		margin-left: 6px;
+		opacity: 1;
+	}
+
+	80% {
+		transform: scale(1);
+		margin-left: -5px;
+		opacity: 1;
+	}
+
+	100% {
+		transform: scale(1);
+		margin-left: 0px;
+		opacity: 1;
+	}
+}
+
+@keyframes tackle-letter-pop-shake-chaos {
+	0% {
+		transform: scale(0.35);
+		opacity: 0.2;
+	}
+
+	12% {
+		transform: scale(1.16);
+		opacity: 1;
+	}
+
+	20% {
+		transform: scale(1);
+		margin-left: 0px;
+		opacity: 1;
+	}
+
+	40% {
+		transform: scale(1);
+		margin-left: -9px;
+		opacity: 1;
+	}
+
+	60% {
+		transform: scale(1);
+		margin-left: 9px;
+		opacity: 1;
+	}
+
+	80% {
+		transform: scale(1);
+		margin-left: -7px;
+		opacity: 1;
+	}
+
+	100% {
+		transform: scale(1);
+		margin-left: 0px;
+		opacity: 1;
 	}
 }

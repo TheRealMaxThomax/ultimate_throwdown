@@ -105,11 +105,14 @@
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
 | `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |
 | `TackleComicTextHud` | Knockdown comic-word spawner (`ComicWords` pool; broadcasts tier + text + shadow dir + `WordTiltMaxDegrees*` + `LetterJitterSeed`; `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*` per tier; `BurstPanelPadding` for WorldPanel clip headroom; auto on main camera via `GameNetworkManager`) |
-| `TackleComicBurst` | Short-lived `WorldPanel` + Razor burst (per-letter `ComicLetterStyle` spans; distance scale, occlusion, tier colors; spawned by `TackleComicTextHud`) |
+| `TackleComicBurst` | Short-lived `WorldPanel` + Razor burst (`div.letter` + `ComicLetterStyle`; SCSS letter anims; `ApplySpawnData` on spawn; spawned by `TackleComicTextHud`) |
 | `ComicBurstSpawnData` | Runtime burst payload passed to `TackleComicBurst.ApplySpawnData` on spawn |
 | `ComicLetterStyle` | One glyph layout in a burst — `ContainerStyle` (font-size + margin-top/right; from host `LetterJitterSeed`) |
 | `EnableLetterPopStagger` | `TackleComicTextHud` — per-letter pop delay; off = whole-word pop on `.word-stack` |
 | `LetterPopStaggerMilliseconds` | Delay between each glyph pop when stagger is on |
+| `EnableLetterImpactShake` | Per-letter impact wobble (`tackle-letter-shake-*` / `tackle-letter-pop-shake-*`); off = whole-word shake on `.word-stack` only |
+| `LetterImpactShakeDurationSeconds` | Shake segment length; inline `animation-duration` (+ 0.14s pop when stagger on) |
+| `BurstPanelPadding` | Extra WorldPanel pad per side — jitter + anims clip without it |
 | `EnableComicDebugLogs` | `TackleComicTextHud` — log each burst spawn to console |
 | `LetterJitterSeed` | Host-synced int seed for deterministic per-letter size/baseline/spacing jitter |
 

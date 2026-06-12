@@ -93,6 +93,10 @@ public sealed class TackleComicTextHud : Component
 	[Property] public bool EnableLetterPopStagger { get; set; } = true;
 	[Property] public float LetterPopStaggerMilliseconds { get; set; } = 40f;
 
+	/// <summary>Per-letter wobble after impact — off = whole-word shake on <c>.word-stack</c> only.</summary>
+	[Property] public bool EnableLetterImpactShake { get; set; } = true;
+	[Property] public float LetterImpactShakeDurationSeconds { get; set; } = 0.55f;
+
 	[Property] public bool EnableComicDebugLogs { get; set; }
 
 	public static TackleComicTextHud FindInScene( Scene scene )
@@ -261,7 +265,7 @@ public sealed class TackleComicTextHud : Component
 	Vector2 ResolveBurstPanelSize( string text, ComicFontTier tier, float wordTiltDegrees, IReadOnlyList<ComicLetterStyle> letterStyles )
 	{
 		const float popPeakScale = 1.16f;
-		const float shakePadding = 14f;
+		var shakePadding = 14f + (EnableLetterImpactShake ? 6f : 0f);
 		const float glyphWidthRatio = 0.82f;
 
 		var charCount = Math.Max( 1, text?.Length ?? 1 );
@@ -338,17 +342,43 @@ public sealed class TackleComicTextHud : Component
 
 			var popDelayMs = EnableLetterPopStagger ? LetterPopStaggerMilliseconds * i : 0f;
 
+			var fontSizePx = baseFontSize * sizeMul;
 			letters.Add( new ComicLetterStyle
 			{
 				Character = ch,
-				FontSizePx = baseFontSize * sizeMul,
+				FontSizePx = fontSizePx,
 				BaselineOffsetPx = baseline,
 				SpacingAfterPx = spacingAfter,
-				PopDelayMs = popDelayMs
+				ContainerStyle = BuildLetterContainerStyle( tier, letterJitterSeed, i, fontSizePx, baseline, spacingAfter, popDelayMs )
 			} );
 		}
 
 		return letters;
+	}
+
+	string BuildLetterContainerStyle( ComicFontTier tier, int letterJitterSeed, int letterIndex, float fontSizePx, float baselineOffsetPx, float spacingAfterPx, float popDelayMs )
+	{
+		const float popSeconds = 0.14f;
+
+		var style = $"font-size: {fontSizePx:0.#}px; margin-top: {baselineOffsetPx:0.#}px; margin-right: {spacingAfterPx:0.#}px;";
+
+		// s&box UI: animation name/timing in SCSS; inline duration + delay only (full animation: shorthand breaks).
+		if ( EnableLetterPopStagger && EnableLetterImpactShake )
+		{
+			var duration = popSeconds + LetterImpactShakeDurationSeconds;
+			style += $" animation-duration: {duration:0.###}s; animation-delay: {popDelayMs:0.#}ms;";
+		}
+		else if ( EnableLetterPopStagger )
+		{
+			style += $" animation-duration: {popSeconds:0.###}s; animation-delay: {popDelayMs:0.#}ms;";
+		}
+		else if ( EnableLetterImpactShake )
+		{
+			var shakeStart = 80f + SampleUnit( letterJitterSeed, letterIndex, 3 ) * 35f;
+			style += $" animation-duration: {LetterImpactShakeDurationSeconds:0.###}s; animation-delay: {shakeStart:0.#}ms;";
+		}
+
+		return style;
 	}
 
 	static float ResolveBaseFontSizePx( ComicFontTier tier )
@@ -424,24 +454,12 @@ public sealed class ComicBurstSpawnData
 	public IReadOnlyList<ComicLetterStyle> LetterStyles { get; init; }
 }
 
-/// <summary>One glyph in a <see cref="TackleComicBurst"/> — size, baseline, and trailing gap.</summary>
+/// <summary>One glyph in a <see cref="TackleComicBurst"/> — layout + optional pop/shake animations in <see cref="ContainerStyle"/>.</summary>
 public sealed class ComicLetterStyle
 {
 	public char Character { get; init; }
 	public float FontSizePx { get; init; }
 	public float BaselineOffsetPx { get; init; }
 	public float SpacingAfterPx { get; init; }
-	public float PopDelayMs { get; init; }
-
-	public string ContainerStyle
-	{
-		get
-		{
-			var style = $"font-size: {FontSizePx:0.#}px; margin-top: {BaselineOffsetPx:0.#}px; margin-right: {SpacingAfterPx:0.#}px;";
-			if ( PopDelayMs > 0.01f )
-				style += $" animation-delay: {PopDelayMs:0.#}ms;";
-
-			return style;
-		}
-	}
+	public string ContainerStyle { get; init; }
 }
