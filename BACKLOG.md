@@ -7,7 +7,9 @@ Keep items short and clear.
 - **Gameplay polish + MP soak** — v1 match flow (slices 1–6) shipped. See [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md).
 
 ## TODO (Next Up)
-- [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, match over, rematch, HUD sync, **ball compass + glow + hand hold**.
+- [ ] Run extended 2-window multiplayer stress pass (15-20 min): goals, OT, intermission, match over, rematch, HUD sync, **tackle juice**, throw charge MP.
+- [ ] **Practice / training scene** — moving + charging `practice_npc` for solo tackle/anim regression.
+- [ ] **Tackle comic text** — POW / WHOP / BAM on connect (optional juice).
 - [ ] **MP join flash** — host black mesh face on client join (cosmetics load?).
 - [ ] **Map vote** — 30s timer, all players vote `Slot1`–`N`, plurality wins, random tie-break among top (see MATCH_FLOW_PLAN → Later).
 - [ ] Improve free-ball client feel to better match host while keeping shared position consistency.
@@ -36,6 +38,8 @@ Keep items short and clear.
 - [ ] Add sound effects for pickup/drop/throw.
 
 ## Done
+- [x] **`TackleImpactFeel` + pre-launch pause (2026-06-12)** — owner camera hitstop/shake/punch; `PreLaunchPauseSeconds` + `NetAwaitingRagdollLaunch` victim visible freeze; 2-window initial OK.
+- [x] **`charge_run` MP visibility (2026-06-12)** — `PlayerChargeRunAnim` uses `IsAtChargeSpeed` / `NetAtChargeSpeed` for remotes.
 - [x] **Ball hand hold** — `BallGrab` attaches to **`hold_R`** bone (`TryGetHoldAnchorWorldTransform`); `BallClientFeel` sync; fallback `HoldAnchor`.
 - [x] **`BallCompassHud`** — tracks `main_ball`; ring-edge triangle; **BALL** hub; white/green/red; player `EyeAngles` bearing; renamed from `BallCarrierOffscreenHud`.
 - [x] **Ball carrier glow (team pulse)** — `BallCarrierOutline`: white ↔ green (teammate) / white ↔ red (enemy); thinner outline default; non-carrier only; no wallhack.

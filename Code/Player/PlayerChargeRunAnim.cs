@@ -54,7 +54,7 @@ public sealed class PlayerChargeRunAnim : Component
 		UpdateChargeRunPose( renderer, wantPose );
 	}
 
-	/// <summary> Top movement ramp tier only — same "Charge" label as <see cref="MovementRampHud"/>. </summary>
+	/// <summary> Top movement ramp tier — uses <see cref="CatchUpSpeedBoost.IsAtChargeSpeed"/> so remotes see the overlay (ramp timers + input are owner-only). </summary>
 	private bool ShouldShowChargeRunPose()
 	{
 		if ( ShouldSkipAnim() )
@@ -69,8 +69,7 @@ public sealed class PlayerChargeRunAnim : Component
 		if ( catchUpSpeedBoost is null )
 			return false;
 
-		catchUpSpeedBoost.GetMovementRampDisplay( out var tier, out _ );
-		return tier == MovementRampTier.Charge;
+		return catchUpSpeedBoost.IsAtChargeSpeed;
 	}
 
 	private void UpdateChargeRunPose( SkinnedModelRenderer renderer, bool wantPose )

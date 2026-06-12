@@ -65,7 +65,7 @@
 | `ThrowChargeCamera` | Owner-only throw-charge third-person pullback + mild FOV widen (scales with charge lerp) |
 | `TackleImpactFeel` | Owner-only tackle connect juice — local camera hitstop, screen shake, attacker FOV/offset punch (`PlayerTackle` owner RPCs) |
 | `PlayerBallHoldAnim` | Built-in citizen `holditem` RH hold + throw on release (`holdtype`, `holdtype_pose_hand`, `holdtype_attack`, `b_attack`); throw wind-up via forked animgraph (`throw_charge` / `throw_charge_weight`); pairs with `BallThrow.ThrowReleaseDelaySeconds` for ball detach timing |
-| `PlayerChargeRunAnim` | Movement **Charge**-tier overlay (`charge_run` masked layer via `charge_run_weight` / `charge_run_cycle`); only when `CatchUpSpeedBoost.GetMovementRampDisplay` tier is `MovementRampTier.Charge` and **not** holding the ball — ball carriers never reach charge speed by design |
+| `PlayerChargeRunAnim` | Movement **Charge**-tier overlay (`charge_run` masked layer via `charge_run_weight` / `charge_run_cycle`); when `CatchUpSpeedBoost.IsAtChargeSpeed` and **not** holding/charging throw — uses synced `NetAtChargeSpeed` so remotes see the pose |
 | `PlayerEnemyOutline` | Enables red `HighlightOutline` for enemies (local viewer); off while ragdolled |
 | `RagdollEnemyOutline` | Outline on host-spawned tackle ragdoll; copies victim `HighlightOutline` |
 | `EnemyOutlineCameraSetup` | Ensures main camera has `Highlight` post-process |

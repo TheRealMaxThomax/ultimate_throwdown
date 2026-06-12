@@ -10,7 +10,7 @@
 
 - **Ball:** `BallGrab` owns hold state; `BallThrow` is separate. Online = host approves grab/drop/throw.
 - **No kicking / no body-push:** Auto-grab when you touch the ball (like Extreme Football Throwdown). Pushing the ball on all clients was too unreliable.
-- **Tackle:** Don’t ragdoll the player object — spawn a **host-owned ragdoll** object. Host applies **pelvis `ApplyImpulse`**, then **`NetworkSpawn`** (poll until bodies exist). Disable victim collider **immediately** on host. Client tackles send owner charge bonus in RPC.
+- **Tackle:** Don’t ragdoll the player object — spawn a **host-owned ragdoll** object. Host applies **pelvis `ApplyImpulse`**, then **`NetworkSpawn`** (poll until bodies exist). Disable victim collider **immediately** on host. Client tackles send owner charge bonus in RPC. **`PreLaunchPauseSeconds` > 0:** **`NetAwaitingRagdollLaunch`** — victim body **visible + frozen**, hidden host ragdoll, then impulse + spawn + **`NetIsRagdolled`**; **`0`** = legacy impulse-then-spawn. **`TackleImpactFeel`** = owner-only camera juice.
 - **Dodge:** Double-tap strafe; shove uses look direction (`EyeAngles`), not body rotation.
 - **Cosmetics:** Own component; don’t mix with spawn logic. Use `CreateFromConnection(..., false)` for other players’ clothes.
 - **Classes:** Stats in `.cdata` / `ClassData` in `PlayerClass.cs` — don’t split into extra files (caused compile errors before).
@@ -89,5 +89,21 @@
 - **06/05** — Switched to separate ragdoll object; both screens see ragdoll.
 - **06/05** — Launch direction, capsule disable, `TackleLaunchSpeed` too low (150) vs working (~600+).
 - **06/05** — Stand-up hover fixed with `ragdoll` tag on limb colliders.
+
+</details>
+
+---
+
+## 2026-06 session chronicle (moved from SESSION_NOTES)
+
+<details>
+<summary>Expand — throw anim, ball carrier UX, traffic, charge_run dev log</summary>
+
+- **2026-06-11** — `utd_citizen_human_throw.vmdl` trimmed to `throw_windup` + `charge_run`; graph `1D Blendspace B` wiring; `PlayerBallHoldAnim` animgraph-only charge; `EnsureCustomAnimGraph()` force re-assign after cosmetics; ModelDoc stale cache → editor reboot (ragdoll flop missing).
+- **2026-06-10** — `PlayerBallHoldAnim` hold/throw + `ThrowReleaseDelaySeconds`; FBX pipeline in `CITIZEN_ANIMATION_WORKFLOW.md` (ScaleAndMirror 0.3937).
+- **2026-06-09** — Ball carrier UX: `hold_R`, `BallCompassHud`, `BallCarrierOutline`, `ball_v2.vmat`; throw polish 2-window MP OK.
+- **2026-06-08** — `ThrowTrajectoryPreview`, `ThrowChargeCamera`; ragdoll cam → `PlayerTackle.OnPreRender`.
+- **2026-06-05–07** — Road0/Road1 traffic MP; sign flicker removed.
+- **2026-06-02** — `feature/human-avatar` branch; citizen_human body.
 
 </details>
