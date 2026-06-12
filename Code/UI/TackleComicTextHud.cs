@@ -51,6 +51,8 @@ public sealed class TackleComicTextHud : Component
 	[Property] public Vector2 BurstPanelSize { get; set; } = new( 1280f, 420f );
 	[Property] public float BurstPanelWidthPerCharacter { get; set; } = 120f;
 	[Property] public float BurstPanelMinWidth { get; set; } = 960f;
+	/// <summary>Extra pad on each side of measured letter bounds — WorldPanel clips hard; jitter + pop/shake need headroom.</summary>
+	[Property] public float BurstPanelPadding { get; set; } = 48f;
 	[Property] public float WorldHeightOffset { get; set; } = 52f;
 	[Property] public float FloatUpSpeed { get; set; } = 42f;
 	[Property] public float LifetimeSeconds { get; set; } = 0.95f;
@@ -254,55 +256,60 @@ public sealed class TackleComicTextHud : Component
 
 	Vector2 ResolveBurstPanelSize( string text, ComicFontTier tier, float wordTiltDegrees, IReadOnlyList<ComicLetterStyle> letterStyles )
 	{
-		const float baseFontSize = 112f;
 		const float popPeakScale = 1.16f;
+		const float shakePadding = 14f;
+		const float glyphWidthRatio = 0.82f;
 
-		var charCount = MathF.Max( 1, text?.Length ?? 1 );
+		var charCount = Math.Max( 1, text?.Length ?? 1 );
 		var tierRenderScale = tier == ComicFontTier.Chaos ? ChaosRenderScaleMultiplier : 1f;
-		var layoutScale = tierRenderScale * popPeakScale;
+		var baseFontSize = ResolveBaseFontSizePx( tier );
 
-		var width = MathF.Max( BurstPanelMinWidth, charCount * BurstPanelWidthPerCharacter ) * layoutScale;
+		MeasureLetterRowBounds( letterStyles, glyphWidthRatio, baseFontSize, charCount, out var rowWidth, out var rowHeight );
 
-		if ( letterStyles is not null && letterStyles.Count > 0 )
-		{
-			var letterWidth = 0f;
-			var letterHeight = 0f;
-
-			foreach ( var letter in letterStyles )
-			{
-				letterWidth += letter.FontSizePx * 0.62f + letter.SpacingAfterPx;
-				letterHeight = MathF.Max( letterHeight, letter.FontSizePx + MathF.Abs( letter.BaselineOffsetPx ) );
-			}
-
-			width = MathF.Max( width, letterWidth * layoutScale );
-			width = MathF.Max( width, BurstPanelMinWidth * layoutScale * 0.5f );
-		}
-
-		// Rotated glyphs + pop overshoot need extra room than flat width estimate.
-		var textHeight = baseFontSize * layoutScale;
-		if ( letterStyles is not null && letterStyles.Count > 0 )
-		{
-			foreach ( var letter in letterStyles )
-				textHeight = MathF.Max( textHeight, letter.FontSizePx * layoutScale );
-		}
+		var shadowPadX = MathF.Abs( ShadowOffsetPixels.x );
+		var shadowPadY = MathF.Abs( ShadowOffsetPixels.y );
+		var contentWidth = rowWidth + shadowPadX + shakePadding * 2f;
+		var contentHeight = rowHeight + shadowPadY + shakePadding * 2f;
 
 		var tiltRadians = MathF.Abs( wordTiltDegrees ) * MathF.PI / 180f;
-		width += textHeight * MathF.Sin( tiltRadians ) * 2f;
+		contentWidth += rowHeight * MathF.Sin( tiltRadians ) * 2f;
+		contentHeight += rowWidth * MathF.Sin( tiltRadians ) * 0.35f;
 
-		var shadowPad = MathF.Max( MathF.Abs( ShadowOffsetPixels.x ), MathF.Abs( ShadowOffsetPixels.y ) ) * 2f;
-		width += shadowPad;
+		var width = contentWidth * popPeakScale * tierRenderScale + BurstPanelPadding * 2f;
+		var height = contentHeight * popPeakScale * tierRenderScale + BurstPanelPadding * 2f;
 
-		var height = MathF.Max( BurstPanelSize.y * layoutScale, textHeight + shadowPad );
+		var legacyWidth = MathF.Max( BurstPanelMinWidth, charCount * BurstPanelWidthPerCharacter ) * popPeakScale * tierRenderScale;
+		var legacyHeight = BurstPanelSize.y * popPeakScale * tierRenderScale;
+
+		return new Vector2( MathF.Max( width, legacyWidth ), MathF.Max( height, legacyHeight ) );
+	}
+
+	static void MeasureLetterRowBounds( IReadOnlyList<ComicLetterStyle> letterStyles, float glyphWidthRatio, float fallbackFontSize, int charCount, out float rowWidth, out float rowHeight )
+	{
+		rowWidth = 0f;
+		var maxFontSize = fallbackFontSize;
+		var padTop = 0f;
+		var padBottom = 0f;
+
 		if ( letterStyles is not null && letterStyles.Count > 0 )
 		{
-			var maxBaseline = 0f;
 			foreach ( var letter in letterStyles )
-				maxBaseline = MathF.Max( maxBaseline, MathF.Abs( letter.BaselineOffsetPx ) );
+			{
+				rowWidth += letter.FontSizePx * glyphWidthRatio + letter.SpacingAfterPx;
+				maxFontSize = MathF.Max( maxFontSize, letter.FontSizePx );
 
-			height = MathF.Max( height, (textHeight + maxBaseline * 2f) * layoutScale + shadowPad );
+				if ( letter.BaselineOffsetPx > 0f )
+					padBottom = MathF.Max( padBottom, letter.BaselineOffsetPx );
+				else
+					padTop = MathF.Max( padTop, -letter.BaselineOffsetPx );
+			}
+		}
+		else
+		{
+			rowWidth = charCount * fallbackFontSize * glyphWidthRatio;
 		}
 
-		return new Vector2( width, height );
+		rowHeight = maxFontSize + padTop + padBottom;
 	}
 
 	/// <summary>Deterministic per-glyph layout from host-synced <paramref name="letterJitterSeed"/>.</summary>
