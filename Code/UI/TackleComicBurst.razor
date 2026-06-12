@@ -1,4 +1,5 @@
 @using System
+@using System.Collections.Generic
 @using Sandbox
 @using Sandbox.UI
 @inherits PanelComponent
@@ -6,8 +7,32 @@
 <root class="tackle-comic-burst tier-@TierClass">
 	<div class="word-tilt" style="transform: rotate(@WordRotationStyle)">
 		<div class="word-stack">
-			<div class="word shadow" style="font-family: @FontFamily; transform: translate(@ShadowTransform)">@DisplayText</div>
-			<div class="word fill" style="font-family: @FontFamily">@DisplayText</div>
+			<div class="word shadow" style="font-family: @FontFamily; transform: translate(@ShadowTransform)">
+				@if ( Letters.Count > 0 )
+				{
+					@foreach ( var letter in Letters )
+					{
+						<div class="letter" style="@letter.ContainerStyle">@letter.Character</div>
+					}
+				}
+				else
+				{
+					@DisplayText
+				}
+			</div>
+			<div class="word fill" style="font-family: @FontFamily">
+				@if ( Letters.Count > 0 )
+				{
+					@foreach ( var letter in Letters )
+					{
+						<div class="letter" style="@letter.ContainerStyle">@letter.Character</div>
+					}
+				}
+				else
+				{
+					@DisplayText
+				}
+			</div>
 		</div>
 	</div>
 </root>
@@ -20,31 +45,43 @@
 	private float startTime;
 	private bool configured;
 
-	public string DisplayText { get; set; } = "";
-	public string TierClass { get; set; } = "sage";
-	public string FontFamily { get; set; } = "Poppins";
-	public string ShadowTransform { get; set; } = "10px, 12px";
-	public string WordRotationStyle { get; set; } = "0deg";
+	public IReadOnlyList<ComicLetterStyle> Letters { get; private set; } = Array.Empty<ComicLetterStyle>();
+	public string DisplayText { get; private set; } = "";
+	public string TierClass { get; private set; } = "sage";
+	public string FontFamily { get; private set; } = "Poppins";
+	public string ShadowTransform { get; private set; } = "10px, 12px";
+	public string WordRotationStyle { get; private set; } = "0deg";
+	public int LetterJitterSeed { get; private set; }
 
-	public void Configure( TackleComicTextHud hud, TackleComicTextHud.ComicFontTier tier, string text, TackleComicTextHud.ComicShadowDirection shadowDirection, float wordTiltDegrees )
+	public void ApplySpawnData( ComicBurstSpawnData data )
 	{
-		settings = hud;
-		DisplayText = text;
-		TierClass = TierToClass( tier );
-		FontFamily = hud.ResolveFontFamily( tier );
-		TackleComicTextHud.ResolveShadowOffset( shadowDirection, hud.ShadowOffsetPixels, out var offsetX, out var offsetY );
+		settings = data.Hud;
+		DisplayText = data.Text ?? "";
+		TierClass = TierToClass( data.Tier );
+		FontFamily = data.Hud.ResolveFontFamily( data.Tier );
+		LetterJitterSeed = data.LetterJitterSeed;
+		Letters = data.LetterStyles ?? data.Hud.BuildLetterStyles( data.Text, data.Tier, data.LetterJitterSeed );
+		TackleComicTextHud.ResolveShadowOffset( data.ShadowDirection, data.Hud.ShadowOffsetPixels, out var offsetX, out var offsetY );
 		ShadowTransform = $"{offsetX:0}px, {offsetY:0}px";
-		WordRotationStyle = $"{wordTiltDegrees:0.##}deg";
+		WordRotationStyle = $"{data.WordTiltDegrees:0.##}deg";
 		driftOrigin = GameObject.WorldPosition;
 		startTime = Time.Now;
 		configured = true;
-		StateHasChanged();
+		RequestPanelRefresh();
 	}
 
 	protected override void OnStart()
 	{
 		worldPanel = Components.Get<Sandbox.WorldPanel>();
 		ApplyRenderScale();
+		RequestPanelRefresh();
+	}
+
+	protected override void OnTreeFirstBuilt()
+	{
+		base.OnTreeFirstBuilt();
+		ApplyRenderScale();
+		RequestPanelRefresh();
 	}
 
 	protected override void OnUpdate()
@@ -64,7 +101,31 @@
 	}
 
 	protected override int BuildHash()
-		=> System.HashCode.Combine( DisplayText, TierClass, FontFamily, ShadowTransform, WordRotationStyle );
+	{
+		var hash = new HashCode();
+		hash.Add( DisplayText );
+		hash.Add( TierClass );
+		hash.Add( FontFamily );
+		hash.Add( ShadowTransform );
+		hash.Add( WordRotationStyle );
+		hash.Add( LetterJitterSeed );
+
+		foreach ( var letter in Letters )
+		{
+			hash.Add( letter.Character );
+			hash.Add( letter.ContainerStyle );
+		}
+
+		return hash.ToHashCode();
+	}
+
+	void RequestPanelRefresh()
+	{
+		if ( !configured || Panel is null )
+			return;
+
+		StateHasChanged();
+	}
 
 	static string TierToClass( TackleComicTextHud.ComicFontTier tier )
 	{

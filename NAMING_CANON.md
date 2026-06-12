@@ -104,8 +104,12 @@
 | `IntermissionHud` | "Resuming in N…" during intermission |
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
 | `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |
-| `TackleComicTextHud` | Knockdown comic-word spawner (`ComicWords` pool; broadcasts tier + text + shadow dir + `WordTiltMaxDegrees*`; auto on main camera via `GameNetworkManager`) |
-| `TackleComicBurst` | Short-lived `WorldPanel` + Razor burst (distance scale, occlusion, tier colors; spawned by `TackleComicTextHud`) |
+| `TackleComicTextHud` | Knockdown comic-word spawner (`ComicWords` pool; broadcasts tier + text + shadow dir + `WordTiltMaxDegrees*` + `LetterJitterSeed`; `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*` per tier; auto on main camera via `GameNetworkManager`) |
+| `TackleComicBurst` | Short-lived `WorldPanel` + Razor burst (per-letter `ComicLetterStyle` spans; distance scale, occlusion, tier colors; spawned by `TackleComicTextHud`) |
+| `ComicBurstSpawnData` | Runtime burst payload passed to `TackleComicBurst.ApplySpawnData` on spawn |
+| `ComicLetterStyle` | One glyph layout in a burst — `ContainerStyle` (font-size + margin-top/right; from host `LetterJitterSeed`) |
+| `EnableComicDebugLogs` | `TackleComicTextHud` — log each burst spawn to console |
+| `LetterJitterSeed` | Host-synced int seed for deterministic per-letter size/baseline/spacing jitter |
 
 ---
 

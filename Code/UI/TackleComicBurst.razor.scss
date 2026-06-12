@@ -25,12 +25,23 @@ TackleComicBurst {
 
 	.word {
 		position: absolute;
+		display: flex;
+		flex-direction: row;
+		align-items: flex-end;
 		font-size: 112px;
 		font-weight: 800;
 		line-height: 1;
-		white-space: nowrap;
 		text-transform: uppercase;
-		letter-spacing: 0.02em;
+		overflow: visible;
+	}
+
+	.letter {
+		display: flex;
+		flex-shrink: 0;
+		align-items: flex-end;
+		line-height: 1;
+		text-transform: uppercase;
+		white-space: pre;
 	}
 
 	// Solid black duplicate behind the fill — offset gives comic 3D depth (direction set per burst in code).
@@ -54,10 +65,9 @@ TackleComicBurst {
 
 	&.tier-chaos .fill {
 		color: #ff3b30;
-		font-size: 128px;
 	}
 
-	&.tier-chaos .shadow {
+	&.tier-chaos .word {
 		font-size: 128px;
 	}
 }

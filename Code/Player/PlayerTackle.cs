@@ -662,7 +662,14 @@ public sealed class PlayerTackle : Component
 		}
 
 		NotifyTackleImpactFeel( attacker, victim );
-		TackleComicTextHud.NotifyHostKnockdown( Scene, victim.WorldPosition, tacklePowerForBall );
+		try
+		{
+			TackleComicTextHud.NotifyHostKnockdown( Scene, victim.WorldPosition, tacklePowerForBall );
+		}
+		catch ( System.Exception ex )
+		{
+			Log.Warning( $"[Tackle] Comic text spawn failed: {ex.Message}" );
+		}
 
 		// Moving hazards (traffic) skip pause — freeze holds the victim in world space while the car drives through.
 		var usePreLaunchPause = attacker.IsValid() && PreLaunchPauseSeconds > 0.0001f;
