@@ -641,6 +641,7 @@
               "__guid": "1962ef8e-25cd-4d47-9587-cadffd1bbfdc",
               "__enabled": true,
               "Flags": 0,
+              "BackwardAction": "Backward",
               "CatchUpMoveSpeed": 320,
               "ChargeLookCompensatePreferencesSensitivity": true,
               "ChargeLookSensitivityMax": 0.2,
@@ -2972,7 +2973,7 @@
                   ]
                 },
                 {
-                  "__guid": "ad894074-222b-4258-8c58-528fc1d08575",
+                  "__guid": "6160ff84-a68e-464f-8eaf-722161740bbb",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2989,7 +2990,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "6c227a9f-a379-4fef-9bc7-cc227a051894",
+                      "__guid": "035967c5-42eb-43fb-b35f-0973eb9b2b95",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -3002,7 +3003,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": 0,
+                      "LodOverride": null,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -4105,6 +4106,7 @@
               "__guid": "e4252a34-73c2-4d37-ac33-115216b0736c",
               "__enabled": true,
               "Flags": 0,
+              "BackwardAction": "Backward",
               "CatchUpMoveSpeed": 320,
               "ChargeLookCompensatePreferencesSensitivity": true,
               "ChargeLookSensitivityMax": 0.2,
@@ -6268,7 +6270,7 @@
                   ]
                 },
                 {
-                  "__guid": "ca734018-3cbc-44e7-a445-e5fa1de301ae",
+                  "__guid": "827481cb-033c-47b4-ab9b-4b43cb19e5b4",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6285,7 +6287,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "725c75bd-f311-4499-8139-2d70dde90839",
+                      "__guid": "4188a9d1-5f84-4832-b610-267398913c41",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6298,7 +6300,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": 0,
+                      "LodOverride": null,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -6740,6 +6742,7 @@
               "__guid": "73419427-59b3-4d7c-94b5-4d3efd1fc5b7",
               "__enabled": true,
               "Flags": 0,
+              "BackwardAction": "Backward",
               "CatchUpMoveSpeed": 320,
               "ChargeLookCompensatePreferencesSensitivity": true,
               "ChargeLookSensitivityMax": 0.2,
@@ -8903,7 +8906,7 @@
                   ]
                 },
                 {
-                  "__guid": "18cab095-3d7e-4fb3-b09f-657be060b0fc",
+                  "__guid": "6d7f0e3c-8045-490f-b14b-a5b8d80979d1",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8920,7 +8923,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "f9b9e7d3-db4b-44ce-8bd5-160f4057d948",
+                      "__guid": "153468a7-d077-4613-9fe9-d1cad5bf2421",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8933,7 +8936,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": 0,
+                      "LodOverride": null,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -9375,6 +9378,7 @@
               "__guid": "7ea01e2b-e7b9-4fdf-a40c-3a7430928588",
               "__enabled": true,
               "Flags": 0,
+              "BackwardAction": "Backward",
               "CatchUpMoveSpeed": 320,
               "ChargeLookCompensatePreferencesSensitivity": true,
               "ChargeLookSensitivityMax": 0.2,
@@ -11538,7 +11542,7 @@
                   ]
                 },
                 {
-                  "__guid": "4820c312-52f5-42d9-a4e5-423a79dbbde4",
+                  "__guid": "9e9fabd6-f8d0-40c6-96ba-c6747aec04ef",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11555,7 +11559,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "f2a0a2e0-308e-49ff-a767-8b6a357287e0",
+                      "__guid": "11e8f97e-1a62-43da-a25a-628c416d62d1",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11568,7 +11572,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": 0,
+                      "LodOverride": null,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -87270,14 +87274,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
-      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
+        }
+      },
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
         }
       }
     }

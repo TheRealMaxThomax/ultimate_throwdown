@@ -237,7 +237,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **Ult charge point values** — goal / tackle / passive rates TBD in playtest (`PlayerUltCharge` inspector defaults are placeholders).
 - **Charge tier + backward (S) while W held:** **✅ Fixed** — mutex was writing forward/back on `AnalogMove.y` (strafe axis); s&box uses `.x` for forward/back. W wins when both held.
 - **Speed Blitz dash speed vs tunneling:** `DashSpeed` default 2000 — lower in inspector if thin props clip at high speed (2c tuning).
-- **Speed Blitz commit input (2b):** slice 2a ships **tap X**; hold-to-preview / release-to-commit is slice 2b.
+- **Speed Blitz aim preview v3 (2c+):** replace dev-box corridor/end with **custom translucent blue `.vmat`** + **`Model.Plane`** or **`DecalRenderer`** (SMITE-like ground telegraph); Max authors material in editor — not blocking current segmented-box preview.
 
 ---
 
@@ -296,10 +296,12 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 #### Slice 2b — Speed Blitz **hold/release + owner preview**
 
-- [ ] **Hold X** at 100% → owner-only preview: **dash line**, **hit width**, **end marker**
-- [ ] Preview geometry **must match** host hit test (“between the lines = hit” at dash time)
-- [ ] **Release X** → commit (same as 2a wind-up → dash)
-- [ ] Aim locked on **release** (not end of wind-up)
+- [x] **Hold X** at 100% → owner-only preview: segmented corridor + end marker (dev boxes; blue tint)
+- [x] **Release X** → commit (same as 2a wind-up → dash)
+- [x] **Right-click** cancel while aiming (release X before re-aim)
+- [ ] Preview geometry **must match** host hit test (“between the lines = hit” at dash time) — playtest sign-off
+- [ ] **Width mismatch (finish 2b):** playtest shows hits landing **outside** the preview corridor — pick one: **narrow** host dash hit (`HitHalfWidth` / corridor check) **or** **widen** aim preview (`SpeedBlitzAimPreview` corridor scale) so lines match knockdowns
+- [ ] Aim locked on **release** (not end of wind-up) — verify feel
 
 #### Slice 2c — Speed Blitz **polish**
 

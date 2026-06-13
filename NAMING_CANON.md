@@ -96,9 +96,10 @@
 | Name | Job |
 |------|-----|
 | `PlayerUltCharge` | Host-authoritative 0–100% ult meter — passive regen (`Playing` only), goal/tackle bumps, rematch reset; `TrySpendFullChargeOnHost()` for ult commit |
-| `SpeedsterSpeedBlitzUlt` | *(slice 2a)* Speedster **Speed Blitz** — tap `Ultimate` → wind-up → dash. Owner drives the dash through `PlayerController` (Rigidbody velocity → wall slide / step-up / ground-stick / running legs); host validates commit, times phases, runs corridor hit-detection + knockdown, keeps dasher tackle-immune, blocks charge gain |
+| `SpeedsterSpeedBlitzUlt` | *(slice 2a)* Speedster **Speed Blitz** — hold/release `Ultimate` (2b) → wind-up → dash. Owner drives the dash through `PlayerController` (Rigidbody velocity → wall slide / step-up / ground-stick / running legs); host validates commit, times phases, runs corridor hit-detection + knockdown, keeps dasher tackle-immune, blocks charge gain |
 
-**Often-used on `SpeedsterSpeedBlitzUlt`:** `IsActive`, `IsWindUp`, `IsDashing`, `BlocksBallPickup`, `CancelBlitzOnHost()`, `CancelAllInScene(scene)`; tune `WindUpDurationSeconds`, `DashRange`, `DashSpeed` (dash duration = range/speed), `HitHalfWidth`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`  
+**Often-used on `SpeedsterSpeedBlitzUlt`:** `IsActive`, `IsWindUp`, `IsDashing`, `IsAiming`, `GetAimPreviewParams()`, `BlocksBallPickup`, `CancelBlitzOnHost()`, `CancelAllInScene(scene)`; tune `WindUpDurationSeconds`, `DashRange`, `DashSpeed` (dash duration = range/speed), `HitHalfWidth`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`  
+**Often-used on `SpeedBlitzAimPreview`:** `CorridorTint`, `CorridorAlpha`, `CorridorHeight`, `CorridorLift`, `SegmentSpacing`, `MaxSegments`, `MarkerTint`, `MarkerAlpha`, `MarkerHeight`, `MarkerLift`, `MarkerMaterialPath` (see UI table)  
 **Often-used on `PlayerUltCharge`:** `MaxChargePoints`, `PassivePointsPerSecond`, `GoalChargePoints`, `TackleChargePoints`, `NetChargePercent`, `ChargePercent`, `IsFullyCharged`, `GrantGoalChargeOnHost()`, `TryGrantTackleChargeOnHost()`, `TrySpendFullChargeOnHost()`, `SetHostChargeGainBlocked(bool)` (no charge gain while an ult is active), `ResetAllPlayersInScene()`  
 **Often-used on `UltChargeHud`:** `ReadyHighlightDelaySeconds`, floored `ChargePercent` display, left of `MovementRampHud`
 **Input:** `Ultimate` → **X** (`Input.config`)
@@ -114,6 +115,7 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 | `DodgeCooldownHud` | Placeholder dodge cooldown timer (owner HUD) |
 | `UltChargeHud` | Owner ult charge % only (placeholder; circular ring UI later) |
 | `MovementRampHud` | Placeholder walk / sprint / charge ramp bar (owner HUD) |
+| `SpeedBlitzAimPreview` | Speed Blitz owner-only aim corridor strip + end marker while holding `Ultimate` (slice 2b) |
 | `MatchHudDraw` | Shared HUD read/draw helpers (`FormatMatchClock`, `TryGetHudState`, `IsMatchOverCelebrating`) |
 | `MatchScoreHud` | Top bar: team names + round wins |
 | `MatchClockHud` | Match timer `M.SS` (10.00, 9.59, …); `OVERTIME` label |

@@ -70,6 +70,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private bool ownerControllerInputSuppressed;
 	private bool ownerSavedUseInputControls = true;
 	private bool ownerWasInDashPhase;
+	private bool ownerBlockedAimUntilUltimateRelease;
 
 	private PlayerUltCharge ultCharge;
 	private PlayerClass playerClass;
@@ -83,6 +84,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	public bool IsActive => NetPhase != SpeedBlitzPhase.None;
 	public bool IsWindUp => NetPhase == SpeedBlitzPhase.WindUp;
 	public bool IsDashing => NetPhase == SpeedBlitzPhase.Dash;
+
+	/// <summary> Owner-only: holding <see cref="UltimateAction"/> at full charge before commit (slice 2b preview). </summary>
+	public bool IsAiming { get; private set; }
 
 	/// <summary> While true, ball pickup is blocked (BallGrab) and dodge is suppressed (PlayerDodge). </summary>
 	public bool BlocksBallPickup => IsActive;
@@ -371,9 +375,11 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 			ownerLookLocked = false;
 			RestoreOwnerController();
-			TryOwnerCommitInput();
+			OwnerUpdateAimAndCommit();
 			return;
 		}
+
+		IsAiming = false;
 
 		// Take over the controller so its own input can't move/strafe the player during the ult.
 		SuppressOwnerController();
@@ -381,18 +387,37 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		ApplyOwnerLookLock();
 	}
 
-	private void TryOwnerCommitInput()
+	private void OwnerUpdateAimAndCommit()
 	{
-		if ( !Input.Pressed( UltimateAction ) )
+		if ( ownerBlockedAimUntilUltimateRelease )
+		{
+			if ( Input.Released( UltimateAction ) )
+				ownerBlockedAimUntilUltimateRelease = false;
+
+			IsAiming = false;
+			return;
+		}
+
+		var canAim = PassesCommitPrecheck() && AllowsUltActivation();
+		IsAiming = canAim && Input.Down( UltimateAction );
+
+		if ( IsAiming && Input.Down( "Attack2" ) )
+		{
+			ownerBlockedAimUntilUltimateRelease = true;
+			IsAiming = false;
+			return;
+		}
+
+		if ( !Input.Released( UltimateAction ) )
 			return;
 
 		if ( Time.Now < nextCommitRequestAt )
 			return;
 
-		if ( !PassesCommitPrecheck() || !AllowsUltActivation() )
+		if ( !canAim )
 		{
 			if ( EnableSpeedBlitzDebugLogs )
-				Log.Info( $"[SpeedBlitz] {GameObject.Name}: X pressed but commit blocked (speedster={IsSpeedsterClass()} full={ultCharge?.IsFullyCharged} holdingBall={ballGrab?.IsHolding} phaseOk={AllowsUltActivation()})" );
+				Log.Info( $"[SpeedBlitz] {GameObject.Name}: X released but commit blocked (speedster={IsSpeedsterClass()} full={ultCharge?.IsFullyCharged} holdingBall={ballGrab?.IsHolding} phaseOk={AllowsUltActivation()})" );
 			return;
 		}
 
@@ -413,6 +438,19 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		// Lock movement immediately so there's no walk window before the phase syncs back.
 		SuppressOwnerController();
+	}
+
+	/// <summary> Owner preview: horizontal aim from eye forward, dash tuning from ult properties. </summary>
+	public void GetAimPreviewParams(
+		out Vector3 origin,
+		out Vector3 direction,
+		out float dashRange,
+		out float hitHalfWidth )
+	{
+		origin = GameObject.WorldPosition;
+		direction = GetHorizontalCommitDirection();
+		dashRange = DashRange;
+		hitHalfWidth = HitHalfWidth;
 	}
 
 	/// <summary> Owner: disable the controller's own input handling so only the ult drives movement. </summary>
