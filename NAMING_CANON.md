@@ -99,7 +99,7 @@
 | `SpeedsterSpeedBlitzUlt` | *(slice 2)* Speedster **Speed Blitz** — hold/release `Ultimate`, wind-up, dash |
 
 **Often-used on `PlayerUltCharge`:** `MaxChargePoints`, `PassivePointsPerSecond`, `GoalChargePoints`, `TackleChargePoints`, `NetChargePercent`, `ChargePercent`, `IsFullyCharged`, `GrantGoalChargeOnHost()`, `TryGrantTackleChargeOnHost()`, `TrySpendFullChargeOnHost()`, `ResetAllPlayersInScene()`  
-**Often-used on `UltChargeHud`:** owner ult % readout (left of `MovementRampHud`; circular ring UI later)  
+**Often-used on `UltChargeHud`:** `ReadyHighlightDelaySeconds`, floored `ChargePercent` display, left of `MovementRampHud`
 **Input:** `Ultimate` → **X** (`Input.config`)
 
 Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. Ult comic burst: distinct **blue** palette — later.

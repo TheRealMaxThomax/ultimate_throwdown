@@ -34,7 +34,7 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Partial** — `PlayerUltCharge` + HUD built; Speed Blitz not built |
+| Ultimates (charge + Speed Blitz) | **Partial** — `PlayerUltCharge` + `UltChargeHud` shipped; Speed Blitz in progress — permanent rules in **Ultimates** below |
 
 ---
 
@@ -153,7 +153,7 @@ Every player carries **0% → 100%** ult charge. At **100%** they can use their 
 | **Passive regen** | Holder | Playing only; rate TBD (points per second) |
 | **Goal** | **Scorer only** | Large bump; exact points TBD |
 | **Tackle** | **Attacker only** | Enemy victims only — **no charge on friendly-fire tackles** |
-| **Assist** | TBD | Not v1; tied to goals (pass → teammate scores within ~10s; void rules TBD) |
+| **Assist** | TBD | Not v1; pass → teammate scores within ~**10 s**. **Void** if an enemy touches the ball in that window, or if a teammate receives a relay pass and scores (credit goes to the immediate passer, not the original passer) |
 | **Throw** | — | **Not planned** — throwing does not grant charge |
 
 Point values for goal / tackle / passive are **not chosen yet** — tune in playtests.
@@ -172,6 +172,12 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 - Host owns charge truth and ult validation (same “host is referee” rule as tackles).
 - Clients request; host decides. Sync charge % to all machines.
 - Ult logic lives in **`Code/Ultimates/`** — not in `MatchDirector`.
+- **`PlayerUltCharge`** + class ult components on **player prefab** — **manual** wiring; **do not** auto-add via `GameNetworkManager`.
+
+### Spend charge (all ults)
+
+- Charge drops to **0%** on **commit** (e.g. release **X** after aim) — **`TrySpendFullChargeOnHost()`** — not when the effect connects.
+- If the player is interrupted during a committed wind-up (e.g. tackled during Speed Blitz’s 3 s channel), the ult **fizzles** but charge is **already spent**.
 
 ### Input
 
@@ -185,8 +191,24 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 ### Feedback (v1 vs later)
 
-- v1: charge bar HUD; Speed Blitz owner-only ground preview (path + hit width).
+- v1: **`UltChargeHud`** — floored **%** (e.g. `99.9` → `99%`); panel left of `MovementRampHud`; at 100% stays **white** for **`ReadyHighlightDelaySeconds`** (~0.4 s) then **blue** while still charged.
+- v1: Speed Blitz owner-only ground preview (path + hit width).
+- Later: **circular** ult meter — % in center, clockwise ring fill, ult icon unfade.
 - Later: ult comic burst (distinct **blue** palette — not tackle yellow/orange/red); SFX.
+
+### Voided / not planned
+
+- **Speedster dodge-reward** / stay-at-run-speed ult — voided (no tackle-whiff system).
+- **Throw** granting ult charge — not planned.
+
+### Ship order (first pass)
+
+1. Shared charge + HUD (`PlayerUltCharge`, `UltChargeHud`)  
+2. Speedster **Speed Blitz** — core dash → hold/release preview → polish  
+3. Assist charge  
+4. Per-class `maxPoints` balance (optional)  
+5. **Juggernaut** stomp → **Sniper** path zones  
+6. **Weapons** (after all three first ults)
 
 ---
 
