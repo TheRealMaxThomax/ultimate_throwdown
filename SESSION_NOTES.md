@@ -242,9 +242,9 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 2. ~~**Per-letter size + baseline + spacing**~~ — **shipped:** `div.letter` per char; host-synced `LetterJitterSeed`; tier caps `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*`; `BurstPanelPadding` for clip headroom.
 3. ~~**Staggered letter pop-in**~~ — **shipped:** `EnableLetterPopStagger` + `LetterPopStaggerMilliseconds` (per-index delay; off = whole-word pop).
 4. ~~**Per-letter shake on impact**~~ — **shipped:** `EnableLetterImpactShake` + `LetterImpactShakeDurationSeconds`; tier `tackle-letter-pop-shake-*` / `tackle-letter-shake-*` keyframes (`margin-left` wobble); off = whole-word `.word-stack` shake only.
-5. ~~**Highlight extrusion + exit animations**~~ — **shipped:** `.word.highlight` opposite shadow; whole-word CSS exits (`SpinVanish`, `Scatter`, `SlamDeflate`, `TackleDirectedDrift`, `InkPuff`); **+** C# letter exits `LetterSuckInVortex` / `LetterTypingErase` (`ComicLetterExitMotion`). `ExitStylePick` on Main Camera; tune `ExitAnimationPaddingPixels` if clipped. **`LetterSnake` cut** — flex-row letters + per-letter margins couldn't read as a trailing snake in playtest.
+5. ~~**Highlight extrusion + exit animations**~~ — **shipped:** `.word.highlight` opposite shadow; whole-word CSS exits (`SpinVanish`, `Scatter`, `SlamDeflate`, `TackleDirectedDrift`, `InkPuff`); **+** C# letter exits `LetterSuckInVortex` (sequential), `LetterTypingErase`, `LetterDominoTip`, `LetterPopOffScatter` (`ComicLetterExitMotion`). `ExitStylePick` on Main Camera; tune `ExitAnimationPaddingPixels` if clipped. **`LetterSnake` cut** — flex-row letters + per-letter margins couldn't read as a trailing snake in playtest.
 
-**Tune on Main Camera → `TackleComicTextHud`:** `ComicWords`, font family names, `RenderScale`, `ShadowOffsetPixels`, `EnableHighlightExtrusion`, `EnableComicExitAnimations`, `ExitStylePick` (Random or force one style), impact thresholds, `BurstPanelPadding` / `ExitAnimationPaddingPixels` if clipped, letter pop/shake toggles.
+**Tune on Main Camera → `TackleComicTextHud`:** `ComicWords`, font family names, `RenderScale`, `ShadowOffsetPixels`, `EnableHighlightExtrusion`, `EnableComicExitAnimations`, `ExitStylePick` (Random or force one style), `LifetimeSeconds`, `ExitFadeStartFraction`, `ExitFadeDurationFraction`, `ExitTailSeconds` (letter stagger runway), impact thresholds, `BurstPanelPadding` / `ExitAnimationPaddingPixels` if clipped, letter pop/shake toggles.
 
 ---
 
@@ -289,7 +289,7 @@ Next: throw charge MP; comic text MP verify; practice scene; MP join flash; soak
 
 ## Recent session notes
 
-- **2026-06-13 (comic text):** **`LetterSnake` exit cut** — removed from `ComicExitStyle` / random pool; vortex + typing-erase + CSS exits remain.
+- **2026-06-13 (comic text exits):** Sequential vortex upgrade + **`LetterDominoTip`** + **`LetterPopOffScatter`**; **`LetterSnake` cut**.
 - **2026-06-12 (comic text polish 2–4):** Per-letter jitter (`LetterJitterSeed`), stagger pop, impact shake; `BurstPanelPadding`; `ApplySpawnData` spawn path; s&box animation rules documented in **Tackle comic text** section.
 - **2026-06-12 (comic text WorldPanel):** **`TackleComicBurst`** Razor world panels — offset shadow, tier colors, fixed scale. Details → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) if needed.
 - **2026-06-12 (tackle juice + charge_run MP):** **`TackleImpactFeel`** + **`PreLaunchPauseSeconds`** / **`NetAwaitingRagdollLaunch`**; **`PlayerChargeRunAnim`** remote fix — 2-window initial OK.

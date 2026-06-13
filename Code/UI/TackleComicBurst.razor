@@ -145,7 +145,8 @@
 			return;
 
 		var elapsed = Time.Now - startTime;
-		if ( elapsed >= settings.LifetimeSeconds )
+		settings.ResolveBurstTiming( usesLetterExit, out var destroyAt, out _, out _ );
+		if ( elapsed >= destroyAt )
 		{
 			GameObject.Destroy();
 			return;
@@ -199,8 +200,7 @@
 
 	void UpdateLetterExitMotion( float elapsed )
 	{
-		var lifetime = MathF.Max( settings.LifetimeSeconds, 0.0001f );
-		var fadeStart = lifetime * MathX.Clamp( settings.ExitFadeStartFraction, 0f, 0.95f );
+		settings.ResolveBurstTiming( true, out _, out var fadeStart, out var fadeWindow );
 		if ( elapsed < fadeStart )
 		{
 			inExitPhase = false;
@@ -208,7 +208,6 @@
 		}
 
 		inExitPhase = true;
-		var fadeWindow = lifetime * MathX.Clamp( settings.ExitFadeDurationFraction, 0.05f, 1f );
 		var exitT = MathX.Clamp( (elapsed - fadeStart) / MathF.Max( fadeWindow, 0.0001f ), 0f, 1f );
 
 		for ( var i = 0; i < Letters.Count; i++ )
@@ -251,6 +250,8 @@
 			TackleComicTextHud.ComicExitStyle.InkPuff => "exit-ink-puff",
 			TackleComicTextHud.ComicExitStyle.LetterSuckInVortex => "exit-letter-vortex",
 			TackleComicTextHud.ComicExitStyle.LetterTypingErase => "exit-letter-erase",
+			TackleComicTextHud.ComicExitStyle.LetterDominoTip => "exit-letter-domino",
+			TackleComicTextHud.ComicExitStyle.LetterPopOffScatter => "exit-letter-pop-scatter",
 			_ => "exit-spin-vanish"
 		};
 	}

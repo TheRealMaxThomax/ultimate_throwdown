@@ -35,7 +35,9 @@ public sealed class TackleComicTextHud : Component
 		TackleDirectedDrift = 3,
 		InkPuff = 4,
 		LetterSuckInVortex = 5,
-		LetterTypingErase = 6
+		LetterTypingErase = 6,
+		LetterDominoTip = 7,
+		LetterPopOffScatter = 8
 	}
 
 	/// <summary>Inspector pick for exit motion — <see cref="Random"/> rolls per knockdown; otherwise every burst uses that style (MP-synced).</summary>
@@ -48,7 +50,9 @@ public sealed class TackleComicTextHud : Component
 		TackleDirectedDrift,
 		InkPuff,
 		LetterSuckInVortex,
-		LetterTypingErase
+		LetterTypingErase,
+		LetterDominoTip,
+		LetterPopOffScatter
 	}
 
 	[Property] public bool EnableComicText { get; set; } = true;
@@ -84,7 +88,7 @@ public sealed class TackleComicTextHud : Component
 	[Property] public float ExitAnimationPeakScale { get; set; } = 1.7f;
 	[Property] public float WorldHeightOffset { get; set; } = 52f;
 	[Property] public float FloatUpSpeed { get; set; } = 42f;
-	[Property] public float LifetimeSeconds { get; set; } = 0.95f;
+	[Property] public float LifetimeSeconds { get; set; } = 1.25f;
 
 	/// <summary>Fixed world size — perspective already shrinks with distance. Tune if words feel too big/small up close.</summary>
 	[Property] public float RenderScale { get; set; } = 1f;
@@ -134,8 +138,12 @@ public sealed class TackleComicTextHud : Component
 	[Property] public bool EnableComicExitAnimations { get; set; } = true;
 	/// <summary><see cref="ComicExitStylePick.Random"/> = host rolls each knockdown; pick a style to preview it every tackle.</summary>
 	[Property] public ComicExitStylePick ExitStylePick { get; set; } = ComicExitStylePick.Random;
-	[Property] public float ExitFadeStartFraction { get; set; } = 0.55f;
-	[Property] public float ExitFadeDurationFraction { get; set; } = 0.45f;
+	/// <summary>Fraction of <see cref="LifetimeSeconds"/> before exit starts — higher = word holds longer at full strength.</summary>
+	[Property] public float ExitFadeStartFraction { get; set; } = 0.48f;
+	/// <summary>Fraction of <see cref="LifetimeSeconds"/> for exit timeline (letter stagger + CSS exit length).</summary>
+	[Property] public float ExitFadeDurationFraction { get; set; } = 0.52f;
+	/// <summary>Extra exit seconds for C# letter exits — last stagger slots (e.g. vortex center) need more runway.</summary>
+	[Property] public float ExitTailSeconds { get; set; } = 0.22f;
 
 	[Property] public bool EnableComicDebugLogs { get; set; }
 
@@ -226,6 +234,18 @@ public sealed class TackleComicTextHud : Component
 		offsetY = -offsetY;
 	}
 
+	/// <summary>Hold, exit window, and destroy time — letter exits add <see cref="ExitTailSeconds"/> to the fade window.</summary>
+	public void ResolveBurstTiming( bool usesLetterExit, out float destroyAtSeconds, out float fadeStartSeconds, out float fadeWindowSeconds )
+	{
+		var lifetime = MathF.Max( LifetimeSeconds, 0.0001f );
+		fadeStartSeconds = lifetime * MathX.Clamp( ExitFadeStartFraction, 0f, 0.95f );
+		fadeWindowSeconds = lifetime * MathX.Clamp( ExitFadeDurationFraction, 0.05f, 1f );
+		if ( usesLetterExit )
+			fadeWindowSeconds += MathF.Max( ExitTailSeconds, 0f );
+
+		destroyAtSeconds = fadeStartSeconds + fadeWindowSeconds;
+	}
+
 	/// <summary>XZ launch bearing → 0–7 octant for <see cref="ComicExitStyle.TackleDirectedDrift"/> CSS classes.</summary>
 	public static int ResolveExitDriftOctant( Vector3 launchDirection )
 	{
@@ -282,7 +302,7 @@ public sealed class TackleComicTextHud : Component
 			return;
 
 		var dir = (ComicShadowDirection)MathX.Clamp( shadowDirection, 0, 3 );
-		var style = (ComicExitStyle)(int)MathX.Clamp( exitStyle, 0, (int)ComicExitStyle.LetterTypingErase );
+		var style = (ComicExitStyle)(int)MathX.Clamp( exitStyle, 0, (int)ComicExitStyle.LetterPopOffScatter );
 		var octant = (int)MathX.Clamp( exitDriftOctant, 0, 7 );
 		SpawnBurst( worldPosition, (ComicFontTier)tier, text.Trim(), dir, wordTiltDegrees, letterJitterSeed, style, octant );
 	}
@@ -339,7 +359,7 @@ public sealed class TackleComicTextHud : Component
 			return ComicExitStyle.SpinVanish;
 
 		if ( ExitStylePick == ComicExitStylePick.Random )
-			return (ComicExitStyle)Game.Random.Int( 0, (int)ComicExitStyle.LetterTypingErase );
+			return (ComicExitStyle)Game.Random.Int( 0, (int)ComicExitStyle.LetterPopOffScatter );
 
 		return ExitStylePick switch
 		{
@@ -349,6 +369,8 @@ public sealed class TackleComicTextHud : Component
 			ComicExitStylePick.InkPuff => ComicExitStyle.InkPuff,
 			ComicExitStylePick.LetterSuckInVortex => ComicExitStyle.LetterSuckInVortex,
 			ComicExitStylePick.LetterTypingErase => ComicExitStyle.LetterTypingErase,
+			ComicExitStylePick.LetterDominoTip => ComicExitStyle.LetterDominoTip,
+			ComicExitStylePick.LetterPopOffScatter => ComicExitStyle.LetterPopOffScatter,
 			_ => ComicExitStyle.SpinVanish
 		};
 	}
