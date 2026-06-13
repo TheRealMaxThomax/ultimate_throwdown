@@ -46,6 +46,7 @@ public sealed class CatchUpSpeedBoost : Component
 	private PlayerDodge playerDodge;
 	private int dodgeRampApplySeqHandled;
 	private int tackleRampStripSeqHandled;
+	private int forceWalkRampSeqHandled;
 	private float forwardMoveTime;
 	private float nonHoldingSprintTime;
 
@@ -104,6 +105,20 @@ public sealed class CatchUpSpeedBoost : Component
 	private bool ownerAtChargeSpeed;
 	[Sync] private bool NetAtChargeSpeed { get; set; }
 	public bool IsAtChargeSpeed => Network.IsOwner ? ownerAtChargeSpeed : NetAtChargeSpeed;
+
+	/// <summary> Host bumps to force owner ramp back to walk (e.g. Speed Blitz miss). </summary>
+	private int netForceWalkRampId;
+	[Sync( SyncFlags.FromHost )]
+	private int NetForceWalkRampId { get => netForceWalkRampId; set => netForceWalkRampId = value; }
+
+	/// <summary> Host: reset movement ramp to walk tier on the owning client (synced pulse). </summary>
+	public void TriggerForceWalkRampOnHost()
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		NetForceWalkRampId++;
+	}
 
 	/// <summary> Owner HUD: walk → sprint → charge segment and fill 0–1 for the active segment. </summary>
 	public void GetMovementRampDisplay( out MovementRampTier tier, out float progress01 )
@@ -172,6 +187,7 @@ public sealed class CatchUpSpeedBoost : Component
 		dodgeRampApplySeqHandled = playerDodge?.DodgeApplySequence ?? 0;
 		playerTackle = Components.Get<PlayerTackle>();
 		tackleRampStripSeqHandled = playerTackle?.TackleStripRampSequence ?? 0;
+		forceWalkRampSeqHandled = NetForceWalkRampId;
 		if ( playerController.IsValid() )
 		{
 			var y = playerController.EyeAngles.yaw;
@@ -214,6 +230,7 @@ public sealed class CatchUpSpeedBoost : Component
 
 		ApplySyncedDodgeRampPulse();
 		ApplySyncedTackleStripPulse();
+		ApplySyncedForceWalkRampPulse();
 
 		var isHoldingBall = ballGrab?.IsHolding ?? false;
 		var isChargingThrow = ballThrow?.IsChargingThrow ?? false;
@@ -509,5 +526,19 @@ public sealed class CatchUpSpeedBoost : Component
 			return;
 		tackleRampStripSeqHandled = seq;
 		nonHoldingSprintTime = 0f;
+	}
+
+	/// <summary>Host bumps force-walk counter (e.g. Speed Blitz miss); owner resets full ramp to walk.</summary>
+	private void ApplySyncedForceWalkRampPulse()
+	{
+		var seq = NetForceWalkRampId;
+		if ( seq == forceWalkRampSeqHandled )
+			return;
+		forceWalkRampSeqHandled = seq;
+
+		forwardMoveTime = 0f;
+		nonHoldingSprintTime = 0f;
+		ownerAtChargeSpeed = false;
+		NetAtChargeSpeed = false;
 	}
 }

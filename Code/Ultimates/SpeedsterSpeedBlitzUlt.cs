@@ -69,6 +69,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private float ownerCommitPendingUntil;
 	private bool ownerControllerInputSuppressed;
 	private bool ownerSavedUseInputControls = true;
+	private bool ownerWasInDashPhase;
 
 	private PlayerUltCharge ultCharge;
 	private PlayerClass playerClass;
@@ -77,6 +78,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private PlayerController playerController;
 	private BallGrab ballGrab;
 	private Rigidbody playerBody;
+	private CatchUpSpeedBoost catchUpSpeedBoost;
 
 	public bool IsActive => NetPhase != SpeedBlitzPhase.None;
 	public bool IsWindUp => NetPhase == SpeedBlitzPhase.WindUp;
@@ -96,6 +98,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		playerController = Components.Get<PlayerController>();
 		ballGrab = Components.Get<BallGrab>();
 		playerBody = Components.Get<Rigidbody>();
+		catchUpSpeedBoost = Components.Get<CatchUpSpeedBoost>();
 	}
 
 	protected override void OnUpdate()
@@ -233,16 +236,10 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			Log.Info( $"[SpeedBlitz] {GameObject.Name}: dash start dur={DashDurationSeconds:F2}s" );
 	}
 
-	/// <summary> Host: swept corridor check from last position to current (handles fast dash steps); first enemy only, dash continues through. </summary>
+	/// <summary> Host: swept corridor check from last position to current; first enemy ends the dash. </summary>
 	private void HostDashHitCheck()
 	{
 		var curr = GameObject.WorldPosition;
-
-		if ( hostHasHitTarget )
-		{
-			hostLastDashCheckPos = curr;
-			return;
-		}
 
 		var segStart = hostLastDashCheckPos.WithZ( 0 );
 		var segEnd = curr.WithZ( 0 );
@@ -268,22 +265,24 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			}
 		}
 
-		if ( best.IsValid() )
-		{
-			var knockDir = (best.WorldPosition - curr).WithZ( 0 );
-			if ( knockDir.Length < 0.001f )
-				knockDir = NetCommittedDirection.WithZ( 0 );
-			if ( knockDir.Length < 0.001f )
-				knockDir = Vector3.Forward;
-
-			best.ApplyKnockdownFromHost( knockDir.Normal, KnockdownLaunchSpeed, KnockdownLaunchArc );
-			hostHasHitTarget = true;
-
-			if ( EnableSpeedBlitzDebugLogs )
-				Log.Info( $"[SpeedBlitz] {GameObject.Name}: dash hit {best.GameObject.Name}" );
-		}
-
 		hostLastDashCheckPos = curr;
+
+		if ( !best.IsValid() )
+			return;
+
+		var knockDir = (best.WorldPosition - curr).WithZ( 0 );
+		if ( knockDir.Length < 0.001f )
+			knockDir = NetCommittedDirection.WithZ( 0 );
+		if ( knockDir.Length < 0.001f )
+			knockDir = Vector3.Forward;
+
+		best.ApplyKnockdownFromHost( knockDir.Normal, KnockdownLaunchSpeed, KnockdownLaunchArc );
+		hostHasHitTarget = true;
+
+		if ( EnableSpeedBlitzDebugLogs )
+			Log.Info( $"[SpeedBlitz] {GameObject.Name}: dash hit {best.GameObject.Name}" );
+
+		EndBlitzOnHost( "hit_enemy" );
 	}
 
 	/// <summary> Returns (lateral distance from point to segment, distance along segment from start to the closest point). </summary>
@@ -305,6 +304,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		if ( !Networking.IsHost || NetPhase == SpeedBlitzPhase.None )
 			return;
 
+		var applyWalkRampPenalty = NetPhase == SpeedBlitzPhase.Dash && (reason == "dash_done" || reason == "hit_enemy" );
+
 		if ( EnableSpeedBlitzDebugLogs )
 			Log.Info( $"[SpeedBlitz] {GameObject.Name}: end ({reason})" );
 
@@ -314,6 +315,15 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		hostHasHitTarget = false;
 		playerTackle?.SetHostTackleImmune( false );
 		ultCharge?.SetHostChargeGainBlocked( false );
+
+		if ( applyWalkRampPenalty )
+		{
+			catchUpSpeedBoost ??= Components.Get<CatchUpSpeedBoost>();
+			catchUpSpeedBoost?.TriggerForceWalkRampOnHost();
+
+			if ( EnableSpeedBlitzDebugLogs )
+				Log.Info( $"[SpeedBlitz] {GameObject.Name}: dash ended — forced to walk ramp" );
+		}
 	}
 
 	/// <summary> Host: abort wind-up or dash (e.g. round reset). Charge is not refunded. </summary>
@@ -341,6 +351,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	private void OwnerUpdate()
 	{
+		if ( IsDashing )
+			ownerWasInDashPhase = true;
+
 		// "Pending" covers the brief window between pressing X and the host confirming the phase
 		// (client owner) so the player can't keep moving before the lock kicks in.
 		var suppress = IsActive || Time.Now < ownerCommitPendingUntil;
@@ -350,6 +363,12 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		if ( !suppress )
 		{
+			if ( ownerWasInDashPhase )
+			{
+				ownerWasInDashPhase = false;
+				OwnerZeroHorizontalVelocity();
+			}
+
 			ownerLookLocked = false;
 			RestoreOwnerController();
 			TryOwnerCommitInput();
@@ -440,6 +459,11 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	/// <summary> Owner wind-up: plant in place (zero horizontal velocity, keep gravity). </summary>
 	private void OwnerFreezeMovement()
+	{
+		OwnerZeroHorizontalVelocity();
+	}
+
+	private void OwnerZeroHorizontalVelocity()
 	{
 		playerController ??= Components.Get<PlayerController>();
 		playerBody ??= Components.Get<Rigidbody>();

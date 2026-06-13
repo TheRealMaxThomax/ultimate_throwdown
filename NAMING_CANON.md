@@ -86,7 +86,7 @@
 
 **Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, **`IsAwaitingRagdollLaunch`**, **`IsKnockedDown`** (ragdolled or awaiting launch), `IsTackleImmune`, `SetHostTackleImmune(bool)` (host force immunity — e.g. Speed Blitz dash), `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay` (body poll timeout), **`PreLaunchPauseSeconds`** (default `0.05` — victim frozen visible → pause → impulse + spawn; **`0`** = legacy impulse-then-spawn); `ApplyKnockdownFromHost()` (traffic/hazards/ult dash); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg); owner RPCs `TriggerTackleImpactFeelAsAttackerRpc` / `TriggerTackleImpactFeelAsVictimRpc` → `TackleImpactFeel`  
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
-**Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`  
+**Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`, `TriggerForceWalkRampOnHost()` (host — force owner ramp back to walk, e.g. Speed Blitz miss)  
 **Tag for test dummies only:** `practice_npc`
 
 ---

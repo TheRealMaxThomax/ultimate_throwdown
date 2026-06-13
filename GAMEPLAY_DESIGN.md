@@ -34,7 +34,7 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Partial** — `PlayerUltCharge` + `UltChargeHud` shipped; Speed Blitz in progress — permanent rules in **Ultimates** below |
+| Ultimates (charge + Speed Blitz) | **Partial** — `PlayerUltCharge` + `UltChargeHud` + **Speed Blitz core (slice 2a)** shipped solo; hold/release preview (2b) + polish (2c) pending |
 
 ---
 
@@ -125,7 +125,7 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 
 **Juggernaut passive (built):** Stay at charge speed → tackle bonus stacks up to a cap. Drop below charge → bonus resets.
 
-**Class ultimates (not built):** Shared charge system (below) + one ult per class. **First ship:** Speedster **Speed Blitz**. Planned after: Juggernaut AOE stomp, Sniper ball-path ragdoll zones. See **Ultimates** and **Speed Blitz** below.
+**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** core (slice 2a) shipped — tap X, wind-up, dash, knockdown. Hold/release preview (2b), Juggernaut stomp, Sniper path zones planned. See **Ultimates** and **Speed Blitz** below.
 
 ---
 
@@ -214,13 +214,22 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 ## Speed Blitz (Speedster ult — first ship)
 
-**Status:** Designed, not built. **Class:** Speedster only.
+**Status:** **Slice 2a shipped** (solo, 2026-06-13) — tap X commit, wind-up, dash, knockdown, walk ramp after dash. **Slice 2b** (hold/release + ground preview) not started. **Class:** Speedster only.
+
+### Shipped in slice 2a (code)
+
+- **Tap X** at 100% to commit (hold/release preview is 2b).
+- Wind-up: planted, look locked to commit aim, vulnerable, no cancel.
+- Dash: invulnerable; owner-driven through `PlayerController` (wall-slide, step-up); charge_run anim; time-based range.
+- First enemy in corridor → knockdown; dash **stops** on hit.
+- Dash end (hit or miss) → forced **walk** ramp (rebuild to charge).
+- No charge gain, ball pickup, or dodge during ult.
 
 ### Fantasy
 
 Lightning-fast dash over a long distance. Hit an enemy → launch them **much farther** than a normal tackle. Miss or graze a wall → you slid wrong; skill is aim + prediction.
 
-### Flow
+### Flow (full design — 2b adds preview)
 
 1. Charge must be **100%**. Not holding the ball. `MatchPhase.Playing` or post-match celebration.
 2. **Hold X** → owner-only preview: **dash line** (max range), **hit width** (capsule corridor), faint **end marker**. Preview geometry = host hit geometry (“between the lines = guaranteed hit” at dash time).
