@@ -18,13 +18,12 @@
 
 ## Right now
 
-**Goal:** **Speed Blitz slice 2a ✅ shipped** (solo). **Next when ready:** slice **2b** (hold/release X + ground preview) — not started. See **Ult implementation roadmap** below.
+**Goal:** **Speed Blitz slice 2a ✅ shipped** (solo). **Charge + W+S ✅ fixed + playtest OK.** **Next:** slice **2b** (talk/plan — hold/release + preview).
 
 **Next session (priority order):**
-1. **Slice 2b** — hold/release **X** + owner ground preview
-2. **Slice 2a MP** — optional 2-window verify (host + client ult commit/dash/knockdown)
-3. **Throw charge MP + polish** — 2-window `NetThrowChargeLerp` + release
-4. Tackle comic Les Flos / practice scene / soak — when ready
+1. **Slice 2b** — hold/release **X** + owner ground preview (design talk first)
+2. **Slice 2a MP** — optional 2-window verify
+3. Throw charge MP + polish / tackle comic / soak — when ready
 
 **Works today:**
 - Ball grab/throw — held ball on **`hold_R`** (`BallGrab` + `BallClientFeel`); **throw trajectory preview** + **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **`BallThrow.ThrowReleaseDelaySeconds`** — anim fires on release, ball stays on hand until delay elapses (tune to release frame); **`PlayerBallHoldAnim`** — built-in `holditem` RH hold + medium throw on release (`b_attack`) + **custom charge wind-up via forked animgraph masked layer** (`throw_charge`/`throw_charge_weight` on `utd_citizen_human_m.vanmgrph` scrub `throw_windup`; body keeps locomotion/look-at — **solo verified 2026-06-11**); **ball carrier glow** (`BallCarrierOutline`); **`BallCompassHud`**; **`main_ball`** art WIP (`ball_v2.vmat`); tackles/ragdolls; dodge; **crouch disabled**
@@ -39,6 +38,7 @@
 - **Petrol station lights** — optional **`StationLightFlicker`** on a parent empty (child `Spot Light` + child block mesh). Keeps mesh visible and flickers via `Spot.Enabled` + mesh `Color` (`VisualOnColor`/`VisualOffColor`)
 - **Road traffic (Turf Wars — Road0 + Road1)** — **`TrafficSpawner`** + disabled **`TrafficCarTemplate`**. **3 car models per lane** via **`CarModelVariants`** (red Road0 / blue Road1); host applies random **Body renderer + Model Collider** **after** **`NetworkSpawn`** + **`Network.Refresh`**. **Physics mesh** on each `.vmdl`; **ball bounce** on host. Knockdown via code hit box + **`PlayerTackle.ApplyKnockdownFromHost`**. **Engine sounds** — idle = cruise/slow, drive = accel only. **`Game.IsPlaying`** guard (no editor spawn spam). **2-window MP OK**.
 - **Movement charge overlay** — **`PlayerChargeRunAnim`** + masked `charge_run` (`charge_run_weight` / `charge_run_cycle`); gates on synced **`CatchUpSpeedBoost.IsAtChargeSpeed`** — remotes see overlay — **2-window MP OK (2026-06-12)**
+- **W+S movement mutex** — **`CatchUpSpeedBoost.ApplyMutuallyExclusiveForwardBackwardInput`** — W and S cannot counteract; W wins when both held; walk/run/charge — **solo OK (2026-06-13)**
 - **Tackle impact feel** — **`TackleImpactFeel`**: owner camera **hitstop**, **shake** (`ShakeForAttacker` / `ShakeForVictim`), attacker **FOV/offset punch**; traffic/car knockdowns use victim path too; **`PlayerTackle.PreLaunchPauseSeconds`** (~0.05): victim **body frozen visible** (`NetAwaitingRagdollLaunch`) → impulse + ragdoll; **`0`** = legacy — **initial 2-window OK (2026-06-12)**; tune vs moving victims when practice scene exists
 - **Traffic knockdown** — no pre-launch pause; **`HazardKnockdownComicPower`** default **1.55** (Chaos/red); **`TriggerAsHazardVictim()`** + **`IsHazardImpact`** car camera path (defer ragdoll cam, orbit shake baseline, enter blend). **Player tackles** use simpler path — hitstop during freeze, ragdoll cam when `isRagdolled`
 - **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** + **`ComicLetterExitMotion`**: entrance polish + **14 exit styles** (5 CSS + 7 letter C#); timing via `LifetimeSeconds` / `ExitFadeStartFraction` / `ExitFadeDurationFraction` / `ExitTailSeconds` — **good enough for v1**; MP verify + Les Flos optional
@@ -110,6 +110,8 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Tackles:** Only at full charge speed (`NetAtChargeSpeed`). Host ragdoll + client **request** RPC. **`PreLaunchPauseSeconds` > 0:** **`NetAwaitingRagdollLaunch`** — victim **visible + frozen**, hidden host ragdoll, then impulse + **`NetworkSpawn`** + **`NetIsRagdolled`**; **`0`** = impulse-then-spawn. **Traffic/hazards** skip pause (attacker-less knockdown). **`TackleImpactFeel`** = owner-only camera juice; ragdoll orbit waits while `IsImpactFeelActive`. Juggernaut bonus in RPC. Built-in ragdoll collision audio; victim grunt SFX later.
 - **Charge run overlay:** **`PlayerChargeRunAnim`** drives graph params when **`IsAtChargeSpeed`** (synced) — not owner-only ramp HUD.
 - **Dodge:** Double-tap A or D. Tackle iframe only.
+- **Ragdoll / knockdown:** **Walk** ramp resets **on knockdown** (`TriggerForceWalkRampOnHost` + local snap of `smoothedMoveSpeedCap` in `CatchUpSpeedBoost`); ramp timers frozen while down. **✅ Working.**
+- **Charge tier + W+S:** **✅ Fixed** — `ApplyMutuallyExclusiveForwardBackwardInput` patches `AnalogMove.x` (not `.y`); `[Order(-100)]` + `OnFixedUpdate` so `PlayerController` sees mutex before movement.
 - **Crouch:** Disabled — do not rebind `Duck` without re-enabling intentionally.
 - **Test dummies:** Tag `practice_npc` on **dummies only**.
 - **Weapons later:** Ball **or** weapon, not both (not implemented).
@@ -223,7 +225,6 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 ## Open decisions (not chosen yet)
 
 - **Player body for v1:** **`citizen_human_*`** (branch tested) vs classic **`citizen.vmdl`** — leaning **human** (audience + looks good); citizen fits chaotic meme tone. No custom rig (account cosmetics).
-- Holding forward + backward while charging — exploit or cool fake-out?
 - Closed roof on arena vs open roof + sun for lighting
 - **Tackle victim oof/grunt** — layered on built-in ragdoll collision audio (not shipped)
 - **Practice / training scene** — moving + charging `practice_npc` for solo tackle/anim tests (MP idle-only when controlling one pawn)
@@ -234,6 +235,7 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **Hero asset art:** maps/props low poly; **players + ball** may get higher-detail models later — ball on **`ball_v2.vmat`** (emissive gold + scroll) for now; `BallCarrierOutline` still copies ball material for carry breathe
 - **Comic word scope:** tackles/knockdowns only for v1; **ults** (+ weapon KOs later) get own burst — not throws/dodges. **Ult palette:** leaning **distinct blue** fill (vs tackle yellow/orange/red); B&W alt considered.
 - **Ult charge point values** — goal / tackle / passive rates TBD in playtest (`PlayerUltCharge` inspector defaults are placeholders).
+- **Charge tier + backward (S) while W held:** **✅ Fixed** — mutex was writing forward/back on `AnalogMove.y` (strafe axis); s&box uses `.x` for forward/back. W wins when both held.
 - **Speed Blitz dash speed vs tunneling:** `DashSpeed` default 2000 — lower in inspector if thin props clip at high speed (2c tuning).
 - **Speed Blitz commit input (2b):** slice 2a ships **tap X**; hold-to-preview / release-to-commit is slice 2b.
 
@@ -372,11 +374,12 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → "Ult implementation roadmap" (slice checklists) + GAMEPLAY_DESIGN.md → Ultimates (permanent rules).
+Read SESSION_NOTES.md → Known issues (charge+S), Ult roadmap, GAMEPLAY_DESIGN.md → Ultimates.
 Match flow slices 1–6 done. Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 No GameNetworkManager auto-add for ult components — player prefab manual.
 
-Slice 2a Speed Blitz core shipped (solo). Next: 2b preview + hold/release X (not started).
+Slice 2a Speed Blitz shipped (solo). Charge W+S mutex fixed in CatchUpSpeedBoost.
+Ragdoll knockdown → walk reset on knockdown: working.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -385,7 +388,9 @@ Slice 2a Speed Blitz core shipped (solo). Next: 2b preview + hold/release X (not
 
 ## Recent session notes
 
-- **2026-06-13 (ult slice 2a shipped — solo):** `SpeedsterSpeedBlitzUlt` — tap X, wind-up (planted + look-lock), owner-driven dash (wall-slide, step-up, charge_run), stop on first enemy hit, walk ramp after every dash (hit or miss), no charge gain during ult, ball/dodge blocked, round-reset cancel. **2-window MP optional** before 2b.
-- **2026-06-13 (ult slice 1 shipped):** `PlayerUltCharge` + `UltChargeHud`; goal/tackle/rematch hooks; `Ultimate` → X.
+- **2026-06-13 (charge W+S ✅ playtest):** Mutex on `AnalogMove.x` — W+S no longer stops movement at any tier; user verified in play.
+- **2026-06-13 (knockdown walk reset ✅):** `TriggerForceWalkRampOnHost` on knockdown + local `smoothedMoveSpeedCap` snap; timers frozen while down.
+- **2026-06-13 (ult slice 2a shipped — solo):** `SpeedsterSpeedBlitzUlt` — tap X, wind-up, dash, stop on hit, walk ramp after dash. **2-window MP optional** before 2b.
+- **2026-06-13 (ult slice 1 shipped):** `PlayerUltCharge` + `UltChargeHud`; `Ultimate` → X.
 
 Older comic-text / tackle detail → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).

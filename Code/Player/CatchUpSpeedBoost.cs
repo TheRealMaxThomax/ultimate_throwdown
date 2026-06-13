@@ -11,11 +11,12 @@ public enum MovementRampTier : byte
 /// <summary>
 /// Walk / sprint / charge tiers: when <see cref="PlayerClass.CurrentClass"/> is set, tier speeds and ramp durations read from that <see cref="ClassData"/> asset; “Fallback” inspector fields apply only if no class is assigned (or for quick tests).
 /// </summary>
-[Order( 10003 )]
+[Order( -100 )]
 public sealed class CatchUpSpeedBoost : Component
 {
 	/// <summary> Must match Input action name (<c>Input.config</c> uses <c>Forward</c>; scene uses lowercase <c>forward</c>).</summary>
 	[Property, Group( "Fallback (no class .cdata)" )] public string ForwardAction { get; set; } = "forward";
+	[Property, Group( "Fallback (no class .cdata)" )] public string BackwardAction { get; set; } = "Backward";
 	[Property, Group( "Fallback (no class .cdata)" )] public float StartMoveSpeed { get; set; } = 140f;
 	[Property, Group( "Fallback (no class .cdata)" )] public float SprintMoveSpeed { get; set; } = 220f;
 	[Property, Group( "Fallback (no class .cdata)" )] public float CatchUpMoveSpeed { get; set; } = 320f;
@@ -49,6 +50,7 @@ public sealed class CatchUpSpeedBoost : Component
 	private int forceWalkRampSeqHandled;
 	private float forwardMoveTime;
 	private float nonHoldingSprintTime;
+	private bool wasKnockedDown;
 
 	/// <summary>Eased toward tier target each frame — <see cref="ClassData.MomentumMultiplier"/> slows the cap blend slightly when &gt;1.</summary>
 	private float smoothedMoveSpeedCap;
@@ -84,10 +86,7 @@ public sealed class CatchUpSpeedBoost : Component
 	/// </summary>
 	private bool IsForwardIntentForChargeRamp()
 	{
-		// Prefer configured action; compat for old inspector value "forward" vs Input.config "Forward".
-		if ( Input.Down( ForwardAction ) )
-			return true;
-		if ( ForwardAction.Equals( "forward", StringComparison.OrdinalIgnoreCase ) && Input.Down( "Forward" ) )
+		if ( IsForwardKeyDown() )
 			return true;
 
 		if ( !Input.UsingController )
@@ -96,9 +95,9 @@ public sealed class CatchUpSpeedBoost : Component
 		var move = Input.AnalogMove.WithZ( 0f );
 		if ( move.LengthSquared < MinForwardInput * MinForwardInput )
 			return false;
-		if ( move.y <= MinForwardInput )
+		if ( move.x <= MinForwardInput )
 			return false;
-		return move.y >= MathF.Abs( move.x );
+		return move.x >= MathF.Abs( move.y );
 	}
 
 	// Owner computes locally; host/other clients read replicated value for tackle checks, UI, etc.
@@ -197,6 +196,15 @@ public sealed class CatchUpSpeedBoost : Component
 		}
 	}
 
+	protected override void OnFixedUpdate()
+	{
+		if ( IsProxy )
+			return;
+
+		// PlayerController reads AnalogMove in FixedUpdate — patch before movement integrates.
+		ApplyMutuallyExclusiveForwardBackwardInput();
+	}
+
 	protected override void OnUpdate()
 	{
 		if ( IsProxy )
@@ -215,6 +223,8 @@ public sealed class CatchUpSpeedBoost : Component
 
 		TryCaptureBaselineControllerTimes();
 
+		ApplyMutuallyExclusiveForwardBackwardInput();
+
 		if ( !IsMatchGameplayInputAllowed() )
 		{
 			ApplyFrozenMovement();
@@ -231,6 +241,21 @@ public sealed class CatchUpSpeedBoost : Component
 		ApplySyncedDodgeRampPulse();
 		ApplySyncedTackleStripPulse();
 		ApplySyncedForceWalkRampPulse();
+
+		playerTackle ??= Components.Get<PlayerTackle>();
+		var knockedDown = playerTackle is { IsKnockedDown: true };
+		if ( knockedDown && !wasKnockedDown )
+			ApplyWalkRampResetLocal();
+
+		wasKnockedDown = knockedDown;
+
+		if ( knockedDown )
+		{
+			ownerAtChargeSpeed = false;
+			NetAtChargeSpeed = false;
+			ApplyChargeLookDamp( atChargeSpeed: false );
+			return;
+		}
 
 		var isHoldingBall = ballGrab?.IsHolding ?? false;
 		var isChargingThrow = ballThrow?.IsChargingThrow ?? false;
@@ -286,7 +311,68 @@ public sealed class CatchUpSpeedBoost : Component
 		playerController.RunSpeed = smoothedMoveSpeedCap;
 		ApplyMomentumTimesToPlayerController();
 		NetAtChargeSpeed = ownerAtChargeSpeed;
-		ApplyChargeLookDamp( ownerAtChargeSpeed );
+	}
+
+	/// <summary> W and S cannot combine — while W is held S is ignored; while S is held (alone) W is ignored. </summary>
+	private void ApplyMutuallyExclusiveForwardBackwardInput()
+	{
+		var forwardDown = IsForwardKeyDown();
+		var backwardDown = IsBackwardKeyDown();
+
+		if ( !forwardDown && !backwardDown )
+			return;
+
+		// Both held: forward wins (S does nothing — fixes charge + accidental brake).
+		if ( forwardDown && backwardDown )
+			backwardDown = false;
+
+		var move = Input.AnalogMove;
+		var strafe = move.y;
+
+		if ( forwardDown )
+		{
+			// AnalogMove.x = forward/back (s&box convention); .y = strafe.
+			var forward = Input.UsingController ? MathF.Max( move.x, MinForwardInput ) : 1f;
+			Input.AnalogMove = new Vector3( forward, strafe, move.z );
+			return;
+		}
+
+		var back = Input.UsingController ? MathF.Min( move.x, -MinForwardInput ) : -1f;
+		Input.AnalogMove = new Vector3( back, strafe, move.z );
+	}
+
+	private bool IsForwardKeyDown()
+	{
+		if ( Input.Down( ForwardAction ) )
+			return true;
+
+		return ForwardAction.Equals( "forward", StringComparison.OrdinalIgnoreCase ) && Input.Down( "Forward" );
+	}
+
+	private bool IsBackwardKeyDown()
+	{
+		if ( Input.Down( BackwardAction ) )
+			return true;
+
+		return BackwardAction.Equals( "backward", StringComparison.OrdinalIgnoreCase ) && Input.Down( "Backward" );
+	}
+
+	private void ApplyWalkRampResetLocal()
+	{
+		playerClass ??= Components.Get<PlayerClass>();
+		var walkSpeed = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
+
+		forwardMoveTime = 0f;
+		nonHoldingSprintTime = 0f;
+		ownerAtChargeSpeed = false;
+		NetAtChargeSpeed = false;
+		smoothedMoveSpeedCap = walkSpeed;
+
+		if ( playerController.IsValid() )
+		{
+			playerController.WalkSpeed = walkSpeed;
+			playerController.RunSpeed = walkSpeed;
+		}
 	}
 
 	private bool IsMatchGameplayInputAllowed()
@@ -354,10 +440,10 @@ public sealed class CatchUpSpeedBoost : Component
 			smoothedMoveSpeedCap = targetCap;
 	}
 
-	/// <summary> After PlayerController integrates look: slew yaw toward commit target at max deg/sec. Commit stores last full wish while look input is active so brief flicks still complete after input ends. </summary>
+	/// <summary> After PlayerController integrates look: slew yaw toward commit target at max deg/sec. </summary>
 	protected override void OnPreRender()
 	{
-		if ( IsProxy || ChargeYawMaxDegreesPerSecond <= 0f )
+		if ( IsProxy )
 			return;
 		if ( !playerController.IsValid() )
 			return;
@@ -366,31 +452,37 @@ public sealed class CatchUpSpeedBoost : Component
 		var ragdolled = playerTackle?.IsRagdolled == true;
 		var wantClamp = ownerAtChargeSpeed && playerController.Enabled && !ragdolled;
 
-		var yPc = playerController.EyeAngles.yaw;
-		if ( !wantClamp )
+		if ( ChargeYawMaxDegreesPerSecond > 0f && wantClamp )
 		{
+			var yPc = playerController.EyeAngles.yaw;
+
+			var lookIn = Input.AnalogLook;
+			var hasLookInput = MathF.Abs( lookIn.yaw ) > 0.00001f || MathF.Abs( lookIn.pitch ) > 0.00001f;
+			if ( hasLookInput )
+				chargeYawCommitTargetDegrees = yPc;
+
+			var maxStep = ChargeYawMaxDegreesPerSecond * Time.Delta;
+			var toward = DeltaAngleDegrees( chargeYawSmoothedDegrees, chargeYawCommitTargetDegrees );
+			var step = Math.Clamp( toward, -maxStep, maxStep );
+			chargeYawSmoothedDegrees += step;
+
+			var remainToCommit = DeltaAngleDegrees( chargeYawSmoothedDegrees, chargeYawCommitTargetDegrees );
+			if ( !hasLookInput && MathF.Abs( remainToCommit ) < 0.02f )
+				chargeYawCommitTargetDegrees = chargeYawSmoothedDegrees;
+
+			var look = playerController.EyeAngles;
+			look.yaw = chargeYawSmoothedDegrees;
+			playerController.EyeAngles = look;
+		}
+		else
+		{
+			var yPc = playerController.EyeAngles.yaw;
 			chargeYawSmoothedDegrees = yPc;
 			chargeYawCommitTargetDegrees = yPc;
-			return;
 		}
 
-		var lookIn = Input.AnalogLook;
-		var hasLookInput = MathF.Abs( lookIn.yaw ) > 0.00001f || MathF.Abs( lookIn.pitch ) > 0.00001f;
-		if ( hasLookInput )
-			chargeYawCommitTargetDegrees = yPc;
-
-		var maxStep = ChargeYawMaxDegreesPerSecond * Time.Delta;
-		var toward = DeltaAngleDegrees( chargeYawSmoothedDegrees, chargeYawCommitTargetDegrees );
-		var step = Math.Clamp( toward, -maxStep, maxStep );
-		chargeYawSmoothedDegrees += step;
-
-		var remainToCommit = DeltaAngleDegrees( chargeYawSmoothedDegrees, chargeYawCommitTargetDegrees );
-		if ( !hasLookInput && MathF.Abs( remainToCommit ) < 0.02f )
-			chargeYawCommitTargetDegrees = chargeYawSmoothedDegrees;
-
-		var look = playerController.EyeAngles;
-		look.yaw = chargeYawSmoothedDegrees;
-		playerController.EyeAngles = look;
+		// Late frame — after PlayerController integrates look.
+		ApplyChargeLookDamp( ownerAtChargeSpeed );
 	}
 
 	/// <summary> Owner only: at charge, apply damped look; restore snapshot when leaving charge. </summary>
@@ -536,9 +628,6 @@ public sealed class CatchUpSpeedBoost : Component
 			return;
 		forceWalkRampSeqHandled = seq;
 
-		forwardMoveTime = 0f;
-		nonHoldingSprintTime = 0f;
-		ownerAtChargeSpeed = false;
-		NetAtChargeSpeed = false;
+		ApplyWalkRampResetLocal();
 	}
 }

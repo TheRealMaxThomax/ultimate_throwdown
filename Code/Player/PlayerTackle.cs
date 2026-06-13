@@ -165,6 +165,7 @@ public sealed class PlayerTackle : Component
 		DestroyRagdollObjectOnHost();
 		NetPostRagdollSlowCatchUpUntil = 0f;
 		NetAwaitingRagdollLaunch = false;
+		Components.Get<CatchUpSpeedBoost>()?.TriggerForceWalkRampOnHost();
 		NetIsRagdolled = false;
 	}
 
@@ -671,6 +672,7 @@ public sealed class PlayerTackle : Component
 		{
 			victim.NetPostRagdollSlowCatchUpUntil = 0f;
 			victim.NetPostAttackSlowCatchUpUntil = 0f;
+			victim.Components.Get<CatchUpSpeedBoost>()?.TriggerForceWalkRampOnHost();
 		}
 
 		NotifyTackleImpactFeel( attacker, victim );
@@ -1057,14 +1059,8 @@ public sealed class PlayerTackle : Component
 
 		victim.DestroyRagdollObjectOnHost();
 
-		var ragdollSlowCatch = victim.playerClass?.CurrentClass?.TimeToCatchUpSpeedAfterRagdoll ?? 0f;
 		if ( Networking.IsHost )
-		{
-			if ( ragdollSlowCatch > 0f && victim.PostRagdollCatchUpRampDuration > 0f )
-				victim.NetPostRagdollSlowCatchUpUntil = Time.Now + victim.PostRagdollCatchUpRampDuration;
-			else
-				victim.NetPostRagdollSlowCatchUpUntil = 0f;
-		}
+			victim.NetPostRagdollSlowCatchUpUntil = 0f;
 
 		victim.NetIsRagdolled = false;
 
