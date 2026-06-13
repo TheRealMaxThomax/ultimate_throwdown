@@ -84,7 +84,7 @@
 
 **Custom citizen animation assets:** `Assets/Animation/utd_citizen_human_throw.vmdl` (sequences + optional custom weight lists e.g. `UTD_Charge_Overlay`) and `Assets/Animation/utd_citizen_human_m.vanmgrph` (forked graph: independent masked layers for `throw_windup` and `charge_run`). Workflow: [`Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md)
 
-**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, **`IsAwaitingRagdollLaunch`**, **`IsKnockedDown`** (ragdolled or awaiting launch), `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay` (body poll timeout), **`PreLaunchPauseSeconds`** (default `0.05` — victim frozen visible → pause → impulse + spawn; **`0`** = legacy impulse-then-spawn); `ApplyKnockdownFromHost()` (traffic/hazards); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg); owner RPCs `TriggerTackleImpactFeelAsAttackerRpc` / `TriggerTackleImpactFeelAsVictimRpc` → `TackleImpactFeel`  
+**Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, **`IsAwaitingRagdollLaunch`**, **`IsKnockedDown`** (ragdolled or awaiting launch), `IsTackleImmune`, `SetHostTackleImmune(bool)` (host force immunity — e.g. Speed Blitz dash), `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay` (body poll timeout), **`PreLaunchPauseSeconds`** (default `0.05` — victim frozen visible → pause → impulse + spawn; **`0`** = legacy impulse-then-spawn); `ApplyKnockdownFromHost()` (traffic/hazards/ult dash); RPC `RequestTackleApplyOnHost` (+ owner charge bonus arg); owner RPCs `TriggerTackleImpactFeelAsAttackerRpc` / `TriggerTackleImpactFeelAsVictimRpc` → `TackleImpactFeel`  
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
 **Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`  
 **Tag for test dummies only:** `practice_npc`
@@ -96,9 +96,10 @@
 | Name | Job |
 |------|-----|
 | `PlayerUltCharge` | Host-authoritative 0–100% ult meter — passive regen (`Playing` only), goal/tackle bumps, rematch reset; `TrySpendFullChargeOnHost()` for ult commit |
-| `SpeedsterSpeedBlitzUlt` | *(slice 2)* Speedster **Speed Blitz** — hold/release `Ultimate`, wind-up, dash |
+| `SpeedsterSpeedBlitzUlt` | *(slice 2a)* Speedster **Speed Blitz** — tap `Ultimate` → wind-up → dash. Owner drives the dash through `PlayerController` (Rigidbody velocity → wall slide / step-up / ground-stick / running legs); host validates commit, times phases, runs corridor hit-detection + knockdown, keeps dasher tackle-immune, blocks charge gain |
 
-**Often-used on `PlayerUltCharge`:** `MaxChargePoints`, `PassivePointsPerSecond`, `GoalChargePoints`, `TackleChargePoints`, `NetChargePercent`, `ChargePercent`, `IsFullyCharged`, `GrantGoalChargeOnHost()`, `TryGrantTackleChargeOnHost()`, `TrySpendFullChargeOnHost()`, `ResetAllPlayersInScene()`  
+**Often-used on `SpeedsterSpeedBlitzUlt`:** `IsActive`, `IsWindUp`, `IsDashing`, `BlocksBallPickup`, `CancelBlitzOnHost()`, `CancelAllInScene(scene)`; tune `WindUpDurationSeconds`, `DashRange`, `DashSpeed` (dash duration = range/speed), `HitHalfWidth`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`  
+**Often-used on `PlayerUltCharge`:** `MaxChargePoints`, `PassivePointsPerSecond`, `GoalChargePoints`, `TackleChargePoints`, `NetChargePercent`, `ChargePercent`, `IsFullyCharged`, `GrantGoalChargeOnHost()`, `TryGrantTackleChargeOnHost()`, `TrySpendFullChargeOnHost()`, `SetHostChargeGainBlocked(bool)` (no charge gain while an ult is active), `ResetAllPlayersInScene()`  
 **Often-used on `UltChargeHud`:** `ReadyHighlightDelaySeconds`, floored `ChargePercent` display, left of `MovementRampHud`
 **Input:** `Ultimate` → **X** (`Input.config`)
 

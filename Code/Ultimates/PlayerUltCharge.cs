@@ -20,6 +20,9 @@ public sealed class PlayerUltCharge : Component
 
 	private float hostChargePoints;
 
+	/// <summary> Host: while true, no charge is gained (passive / goal / tackle). Set during an active ult so % only climbs again afterwards. </summary>
+	private bool hostChargeGainBlocked;
+
 	[Sync( SyncFlags.FromHost )]
 	public float NetChargePercent { get; private set; }
 
@@ -37,6 +40,9 @@ public sealed class PlayerUltCharge : Component
 	protected override void OnUpdate()
 	{
 		if ( !Networking.IsHost )
+			return;
+
+		if ( hostChargeGainBlocked )
 			return;
 
 		if ( !AllowsPassiveRegen() )
@@ -83,6 +89,15 @@ public sealed class PlayerUltCharge : Component
 		AddChargePointsOnHost( TackleChargePoints, "tackle" );
 	}
 
+	/// <summary> Host: block/allow all charge gain (set true for the duration of an active ult). </summary>
+	public void SetHostChargeGainBlocked( bool blocked )
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		hostChargeGainBlocked = blocked;
+	}
+
 	/// <summary> Host: spend full charge (Speed Blitz commit — slice 2). </summary>
 	public bool TrySpendFullChargeOnHost()
 	{
@@ -107,6 +122,7 @@ public sealed class PlayerUltCharge : Component
 		if ( !Networking.IsHost )
 			return;
 
+		hostChargeGainBlocked = false;
 		hostChargePoints = 0f;
 		SyncPercentFromHostPoints();
 	}
@@ -128,6 +144,9 @@ public sealed class PlayerUltCharge : Component
 
 	private void AddChargePointsOnHost( float points, string reason )
 	{
+		if ( hostChargeGainBlocked )
+			return;
+
 		if ( points <= 0f || MaxChargePoints <= 0f )
 			return;
 

@@ -22,6 +22,7 @@ public sealed class PlayerChargeRunAnim : Component
 	private PlayerTackle playerTackle;
 	private PlayerTeam playerTeam;
 	private PlayerBallHoldAnim ballHoldAnim;
+	private SpeedsterSpeedBlitzUlt speedBlitzUlt;
 	private float chargeRunPoseWeight;
 
 	protected override void OnStart()
@@ -32,6 +33,7 @@ public sealed class PlayerChargeRunAnim : Component
 		playerTackle = Components.Get<PlayerTackle>();
 		playerTeam = Components.Get<PlayerTeam>();
 		ballHoldAnim = Components.Get<PlayerBallHoldAnim>();
+		speedBlitzUlt = Components.Get<SpeedsterSpeedBlitzUlt>();
 		ResolveBodyRenderer();
 		ballHoldAnim?.EnsureCustomBodyModel();
 
@@ -59,6 +61,12 @@ public sealed class PlayerChargeRunAnim : Component
 	{
 		if ( ShouldSkipAnim() )
 			return false;
+
+		// Speed Blitz dash: same charge-run look (running legs from locomotion + charge pose overlay).
+		// Synced phase (IsDashing) so remotes see it too. Wins over ball/throw gating below.
+		speedBlitzUlt ??= Components.Get<SpeedsterSpeedBlitzUlt>();
+		if ( speedBlitzUlt?.IsDashing == true )
+			return true;
 
 		if ( ballGrab?.IsHolding == true )
 			return false;

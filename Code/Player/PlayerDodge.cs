@@ -118,6 +118,10 @@ public sealed class PlayerDodge : Component
 		if ( playerTackle is { IsRagdolled: true } )
 			return;
 
+		// No dodge during an ult (Speed Blitz wind-up has no cancel; dash is committed).
+		if ( Components.Get<SpeedsterSpeedBlitzUlt>() is { IsActive: true } )
+			return;
+
 		var charging = ballThrow?.IsChargingThrow == true;
 		if ( charging && !IsSniper() )
 			return;

@@ -239,6 +239,8 @@ public sealed class MatchDirector : Component
 		if ( !Networking.IsHost )
 			return;
 
+		SpeedsterSpeedBlitzUlt.CancelAllInScene( Scene );
+
 		foreach ( var tackle in Scene.GetAllComponents<PlayerTackle>() )
 		{
 			if ( tackle.IsValid() )

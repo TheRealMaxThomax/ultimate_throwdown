@@ -129,6 +129,16 @@ public sealed class PlayerTackle : Component
 	private bool deferringRagdollCamForImpactFeel;
 
 	public bool IsTackleImmune => isTackleImmune;
+
+	/// <summary>Host: force tackle immunity on/off (e.g. invulnerable during a Speed Blitz dash).</summary>
+	public void SetHostTackleImmune( bool immune )
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		NetIsTackleImmune = immune;
+	}
+
 	public bool IsRagdolled => isRagdolled;
 	/// <summary>Host pause window: down for tackles, body still visible (not ragdoll mesh yet).</summary>
 	public bool IsAwaitingRagdollLaunch => netAwaitingRagdollLaunch;

@@ -232,6 +232,9 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **Hero asset art:** maps/props low poly; **players + ball** may get higher-detail models later — ball on **`ball_v2.vmat`** (emissive gold + scroll) for now; `BallCarrierOutline` still copies ball material for carry breathe
 - **Comic word scope:** tackles/knockdowns only for v1; **ults** (+ weapon KOs later) get own burst — not throws/dodges. **Ult palette:** leaning **distinct blue** fill (vs tackle yellow/orange/red); B&W alt considered.
 - **Ult charge point values** — goal / tackle / passive rates TBD in playtest (`PlayerUltCharge` inspector defaults are placeholders).
+- **Speed Blitz dash on hit:** shipped **pass-through** (knock down first enemy, dash keeps going, one target only) vs stop-dead-on-hit — revisit feel in playtest.
+- **Speed Blitz commit input:** **tap X** for slice 2a; hold-to-preview / release-to-commit is slice 2b. Decide if tap stays as a no-preview quick-cast option.
+- **Speed Blitz dash speed vs tunneling:** `DashSpeed` default 2000 — if it clips thin props at high speed, lower it or add a host CCD/sweep guard (2c tuning).
 
 ---
 
@@ -272,17 +275,21 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - [x] `Ultimate` → **X** in `Input.config` (binding only until slice 2)
 - [x] Prefab manual wiring (no `GameNetworkManager` auto-add)
 
-#### Slice 2a — Speed Blitz **core** (no ground preview yet)
+#### Slice 2a — Speed Blitz **core** (no ground preview yet) — **CODE DONE, NEEDS PLAYTEST**
 
-- [ ] `Code/Ultimates/SpeedsterSpeedBlitzUlt.cs` on **Speedster** prefab (class gate by `PlayerClass` / `ClassName`)
-- [ ] **100%** + not holding ball + allowed phase → press/commit flow (can use **tap X** or release-only until 2b)
-- [ ] **Release/commit:** `TrySpendFullChargeOnHost()` → **0%** immediately
-- [ ] **3 s wind-up:** camera lock, **vulnerable**, **no cancel**
-- [ ] **Dash:** **invulnerable**; host sim along committed horizontal direction; burn remaining range
-- [ ] **Hit:** first **enemy** along corridor (closest along ray); **`ApplyKnockdownFromHost`** with ult launch force
-- [ ] **Walls / traffic:** **slide along** surface (tangent keeps spending range) — not phasing through, not hard dead stop
-- [ ] No ball pickup during ult; **enemies-only** dash hit (no FF on ult knockdown)
-- [ ] **MP:** owner request → host validates → synced state; 2-window test
+- [x] `Code/Ultimates/SpeedsterSpeedBlitzUlt.cs` on **Speedster** prefab (class gate by `PlayerClass` / `ClassName`)
+- [x] **100%** + not holding ball + allowed phase → **tap X** commit (hold/release preview is 2b)
+- [x] **Commit:** `TrySpendFullChargeOnHost()` → **0%** immediately; **no charge gain during ult** (`SetHostChargeGainBlocked` — passive + tackle + goal blocked until ult ends)
+- [x] **3 s wind-up:** owner look-lock (EyeAngles held to committed aim), **vulnerable** (knockdown wastes spent ult), **no cancel**, planted in place
+- [x] **Dash:** **invulnerable** (`SetHostTackleImmune`); **owner-driven through `PlayerController`** (Rigidbody velocity, like dodge) → engine collide-and-slide on walls, **step-up over ledges**, **stick-to-ground** (no stuck-in-floor), and **legs run** via locomotion. **Time-based** (duration = `DashRange`/`DashSpeed`)
+- [x] **Anim:** `PlayerChargeRunAnim` shows the charge pose while `IsDashing` → running legs + charge overlay = normal charge-run look (no more arm-up/legs-idle; nothing to "finish" so no speed-up hack)
+- [x] **Hit:** first **enemy** in corridor (host swept segment, `HitHalfWidth`); **`ApplyKnockdownFromHost`** with ult force; pass-through (dash continues, one target only)
+- [x] **Walls:** slide along + keep dashing until the timer ends (never hard-stop; standing next to a wall still slides). No teleport/WorldPosition sim → no tunnel-through
+- [x] No ball pickup during ult (`BallGrab`); dodge blocked during ult (`PlayerDodge`); **enemies-only** dash hit
+- [x] In-progress ult cancelled on round reset / rematch (`CancelAllInScene` in `MatchDirector.PerformRoundReset`)
+- [ ] **MP 2-window playtest** (owner = client → host validates; check both windows)
+
+**Editor wiring (do this before testing):** add **`SpeedsterSpeedBlitzUlt`** to the **Speedster** player prefab (manual — not auto-added). It auto-resolves siblings; tune `DashRange` / `DashSpeed` / `HitHalfWidth` / `KnockdownLaunchSpeed` / `WindUpDurationSeconds` in the inspector. `Ultimate` is already bound to **X**.
 
 #### Slice 2b — Speed Blitz **hold/release + owner preview**
 
@@ -377,6 +384,7 @@ Next slice: 2a SpeedsterSpeedBlitzUlt (core dash, no preview). Slice 1 done.
 
 ## Recent session notes
 
+- **2026-06-13 (ult slice 2a — Speed Blitz core, code done):** `SpeedsterSpeedBlitzUlt` rewritten **owner-driven through `PlayerController`** (Rigidbody velocity like dodge) instead of disabling the controller + teleporting `WorldPosition` — fixes the old stuck-on-ledges / stuck-in-ground, no-wall-slide, and arm-up/legs-idle bugs at once. **Time-based dash** (duration = range/speed) so walls just reduce distance via slide, never hard-stop, and standing next to a wall still slides. No charge gain during ult (`PlayerUltCharge.SetHostChargeGainBlocked`). Dash invuln via `PlayerTackle.SetHostTackleImmune`. Charge-run pose shown while `IsDashing` (`PlayerChargeRunAnim`). Ball pickup + dodge blocked during ult. Cancelled on round reset. **Needs:** add component to Speedster prefab + 2-window MP playtest.
 - **2026-06-13 (ult roadmap):** Full ordered slice list in **Ult implementation roadmap** (delete when all shipped).
 - **2026-06-13 (ult slice 1 shipped):** `PlayerUltCharge` + `UltChargeHud`; goal/tackle/rematch hooks; `Ultimate` → X; HUD floored % + ready blue delay; prefab manual add.
 - **2026-06-12 (tackle juice + charge_run MP):** `TackleImpactFeel` + `PreLaunchPauseSeconds`; charge_run 2-window OK.

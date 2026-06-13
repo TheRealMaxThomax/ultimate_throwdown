@@ -175,7 +175,14 @@ public sealed class BallGrab : Component
 
 	private bool PlayerAllowsBallPickup()
 	{
-		return Components.Get<PlayerTackle>() is not { IsRagdolled: true };
+		if ( Components.Get<PlayerTackle>() is { IsRagdolled: true } )
+			return false;
+
+		// No ball pickup while an ult is running (Speed Blitz wind-up / dash).
+		if ( Components.Get<SpeedsterSpeedBlitzUlt>() is { BlocksBallPickup: true } )
+			return false;
+
+		return true;
 	}
 
 	private void PickUpBall()
