@@ -1,6 +1,6 @@
 ﻿# Gameplay design
 
-**For:** Planning and tuning — dodge, tackle, classes, future weapons.  
+**For:** Planning and tuning — dodge, tackle, classes, **ultimates**, future weapons.  
 **Not for:** Daily “what do I do today?” → use [`SESSION_NOTES.md`](SESSION_NOTES.md).
 
 ---
@@ -33,7 +33,8 @@
 | Ball visual (hero) | **WIP** — `ball_v2.vmat` emissive gold + texture scroll; neutral albedo; team read from glow + compass |
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
-| Class passives / ults | **Not built** (stats in `.cdata` mostly are) |
+| Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
+| Ultimates (charge + Speed Blitz) | **Not built** — design locked below; code under `Code/Ultimates/` |
 
 ---
 
@@ -102,6 +103,7 @@ Think of three gears:
 - Victim drops the ball; ball gets knocked away
 - Victim stands up after on ground and settled, or after a max time
 - Brief invincibility after getting up
+- **Friendly fire:** tackles can hit **teammates** today (no team filter on victim search). **Ult charge** is **not** awarded for friendly-fire tackles — enemy victims only.
 
 **Multiplayer (built):** Host applies pelvis impulse on a local ragdoll, then `NetworkSpawn` (poll `RagdollPhysicsInitDelay` for bodies). Remote attacker RPC includes **owner Juggernaut charge bonus** so launch power matches what the client had. See [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → Ragdoll (technical).
 
@@ -123,7 +125,109 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 
 **Juggernaut passive (built):** Stay at charge speed → tackle bonus stacks up to a cap. Drop below charge → bonus resets.
 
-**Future passives / ults (not built):** Speedster reward for dodging a tackle; Sniper sonic boom throw; Juggernaut ground stomp. See bottom of this file for one-line ideas.
+**Class ultimates (not built):** Shared charge system (below) + one ult per class. **First ship:** Speedster **Speed Blitz**. Planned after: Juggernaut AOE stomp, Sniper ball-path ragdoll zones. See **Ultimates** and **Speed Blitz** below.
+
+---
+
+## Ultimates (shared charge system)
+
+Every player carries **0% → 100%** ult charge. At **100%** they can use their class ult **once**; on commit, charge drops to **0%**. There is **no** separate post-ult regen lockout — refilling from 0% already takes long enough.
+
+### What players see
+
+- HUD shows **percentage only** (0–100%).
+- Internally the host tracks **points** (`currentPoints` / `maxPoints`). v1: **100 points = 100%** for every class.
+- **Future balance:** a stronger ult might need e.g. **150 points** to reach 100% while a weaker ult needs **100** — event rewards stay the same in raw points (goal always +40, etc.), but the bar fills slower on heavy ults. Display stays 0–100%.
+
+### Passive regen
+
+- Ticks up slowly **only during `MatchPhase.Playing`** (live round time).
+- **Paused** during goal celebration, intermission, and post-match celebration.
+- Charge **% persists** across rounds within a match (e.g. end a round at 100% → start next round still at 100%).
+- **Rematch** (host `1` after match over) resets everyone to **0%**.
+
+### Charge sources (v1)
+
+| Source | Who gets credit | Notes |
+|--------|-----------------|-------|
+| **Passive regen** | Holder | Playing only; rate TBD (points per second) |
+| **Goal** | **Scorer only** | Large bump; exact points TBD |
+| **Tackle** | **Attacker only** | Enemy victims only — **no charge on friendly-fire tackles** |
+| **Assist** | TBD | Not v1; tied to goals (pass → teammate scores within ~10s; void rules TBD) |
+| **Throw** | — | **Not planned** — throwing does not grant charge |
+
+Point values for goal / tackle / passive are **not chosen yet** — tune in playtests.
+
+### When ults can be used
+
+| Phase | Passive regen | Ult activation |
+|-------|---------------|----------------|
+| **Playing** | On | On |
+| **Goal celebration** | Off | **Off** |
+| **Intermission** | Off | **Off** |
+| **Post-match celebration** | Off | **On** |
+
+### Multiplayer / authority
+
+- Host owns charge truth and ult validation (same “host is referee” rule as tackles).
+- Clients request; host decides. Sync charge % to all machines.
+- Ult logic lives in **`Code/Ultimates/`** — not in `MatchDirector`.
+
+### Input
+
+- **`Ultimate`** action on **X** (`Input.config`).
+- MOBA-style pattern for aimed ults: **hold** to preview (owner-only) → **release** to commit.
+
+### Ball + ults (general)
+
+- Default: **cannot use ult while holding the ball** (or ult auto-disabled while carrying).
+- Exception later: ball-required ults (e.g. Sniper) only work **with** the ball.
+
+### Feedback (v1 vs later)
+
+- v1: charge bar HUD; Speed Blitz owner-only ground preview (path + hit width).
+- Later: ult comic burst (distinct **blue** palette — not tackle yellow/orange/red); SFX.
+
+---
+
+## Speed Blitz (Speedster ult — first ship)
+
+**Status:** Designed, not built. **Class:** Speedster only.
+
+### Fantasy
+
+Lightning-fast dash over a long distance. Hit an enemy → launch them **much farther** than a normal tackle. Miss or graze a wall → you slid wrong; skill is aim + prediction.
+
+### Flow
+
+1. Charge must be **100%**. Not holding the ball. `MatchPhase.Playing` or post-match celebration.
+2. **Hold X** → owner-only preview: **dash line** (max range), **hit width** (capsule corridor), faint **end marker**. Preview geometry = host hit geometry (“between the lines = guaranteed hit” at dash time).
+3. **Release X** → **commit** (cannot cancel):
+   - Charge immediately drops to **0%**.
+   - **Camera locks** (full lock v1; may add yaw-only or wider hit cone later if too punishing).
+   - **3 s wind-up** — player is **vulnerable** (can be tackled; wasted ult if knocked down).
+4. **Dash** — player is **invulnerable** during movement:
+   - Very fast, long range.
+   - **First enemy** along the committed corridor (closest along ray) takes a heavy knockdown launch (host ragdoll path, like tackle).
+   - **Enemies only** — no friendly fire on dash hit (may revisit).
+   - **Walls / traffic:** cannot pass through; on contact **slide along** the surface at the impact angle (tangent motion keeps burning remaining dash distance — not a hard dead stop).
+   - No ball pickup during the ult.
+5. v1: **one target** per use (first contact only). Variations / upgrades later.
+
+### Tuning knobs (inspector / playtest)
+
+- Dash range, speed, hit width, wind-up duration (3 s default), launch force, slide friction along walls.
+
+---
+
+## Other class ults (planned — not designed in detail)
+
+| Class | Ult (working name) | One-line |
+|-------|-------------------|----------|
+| **Juggernaut** | Ground stomp | AOE knockdown around self |
+| **Sniper** | Path zones (name TBD) | Ball throw creates ragdoll zones along path; requires ball |
+
+Speedster dodge-reward / stay-at-run-speed ult idea is **voided** — no tackle-whiff system planned.
 
 ---
 
@@ -143,15 +247,7 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 - Carriers shouldn’t reliably dodge past **every** defender to score; passing matters
 - Whiff is optional tuning later; don’t ship it until charge yaw + dodge numbers are settled in real 2-player tests
 
----
-
-## Future passives / ults (one-liners only)
-
-**Speedster:** Reward for dodging a tackle that would have hit (speed boost / stay at run speed).  
-**Sniper:** Dodge during throw charge; ult = ball creates ragdoll zones along path.  
-**Juggernaut:** Stronger tackle while at charge (partially in); ult = AOE knockdown stomp.
-
-For exact field names on `ClassData`, see [`NAMING_CANON.md`](NAMING_CANON.md).
+For exact field names on `ClassData`, see [`NAMING_CANON.md`](NAMING_CANON.md). Ult component names → [`NAMING_CANON.md`](NAMING_CANON.md) (`Code/Ultimates/`) when built.
 
 ---
 
