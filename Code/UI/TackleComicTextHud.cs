@@ -32,10 +32,10 @@ public sealed class TackleComicTextHud : Component
 		SpinVanish = 0,
 		Scatter = 1,
 		SlamDeflate = 2,
-		LaunchDrift = 3,
-		RubberSnap = 4,
-		TackleDirectedDrift = 5,
-		InkPuff = 6
+		TackleDirectedDrift = 3,
+		InkPuff = 4,
+		LetterSuckInVortex = 5,
+		LetterTypingErase = 6
 	}
 
 	/// <summary>Inspector pick for exit motion — <see cref="Random"/> rolls per knockdown; otherwise every burst uses that style (MP-synced).</summary>
@@ -45,10 +45,10 @@ public sealed class TackleComicTextHud : Component
 		SpinVanish,
 		Scatter,
 		SlamDeflate,
-		LaunchDrift,
-		RubberSnap,
 		TackleDirectedDrift,
-		InkPuff
+		InkPuff,
+		LetterSuckInVortex,
+		LetterTypingErase
 	}
 
 	[Property] public bool EnableComicText { get; set; } = true;
@@ -282,7 +282,7 @@ public sealed class TackleComicTextHud : Component
 			return;
 
 		var dir = (ComicShadowDirection)MathX.Clamp( shadowDirection, 0, 3 );
-		var style = (ComicExitStyle)(int)MathX.Clamp( exitStyle, 0, (int)ComicExitStyle.InkPuff );
+		var style = (ComicExitStyle)(int)MathX.Clamp( exitStyle, 0, (int)ComicExitStyle.LetterTypingErase );
 		var octant = (int)MathX.Clamp( exitDriftOctant, 0, 7 );
 		SpawnBurst( worldPosition, (ComicFontTier)tier, text.Trim(), dir, wordTiltDegrees, letterJitterSeed, style, octant );
 	}
@@ -339,16 +339,16 @@ public sealed class TackleComicTextHud : Component
 			return ComicExitStyle.SpinVanish;
 
 		if ( ExitStylePick == ComicExitStylePick.Random )
-			return (ComicExitStyle)Game.Random.Int( 0, (int)ComicExitStyle.InkPuff );
+			return (ComicExitStyle)Game.Random.Int( 0, (int)ComicExitStyle.LetterTypingErase );
 
 		return ExitStylePick switch
 		{
 			ComicExitStylePick.Scatter => ComicExitStyle.Scatter,
 			ComicExitStylePick.SlamDeflate => ComicExitStyle.SlamDeflate,
-			ComicExitStylePick.LaunchDrift => ComicExitStyle.LaunchDrift,
-			ComicExitStylePick.RubberSnap => ComicExitStyle.RubberSnap,
 			ComicExitStylePick.TackleDirectedDrift => ComicExitStyle.TackleDirectedDrift,
 			ComicExitStylePick.InkPuff => ComicExitStyle.InkPuff,
+			ComicExitStylePick.LetterSuckInVortex => ComicExitStyle.LetterSuckInVortex,
+			ComicExitStylePick.LetterTypingErase => ComicExitStyle.LetterTypingErase,
 			_ => ComicExitStyle.SpinVanish
 		};
 	}
@@ -436,6 +436,7 @@ public sealed class TackleComicTextHud : Component
 
 		var baseFontSize = ResolveBaseFontSizePx( tier );
 		ResolveLetterJitterCaps( tier, out var sizeJitter, out var baselineJitter, out var spacingJitter );
+		var exitOrder = BuildExitOrderShuffle( letterJitterSeed, text.Length );
 
 		for ( var i = 0; i < text.Length; i++ )
 		{
@@ -456,11 +457,32 @@ public sealed class TackleComicTextHud : Component
 				FontSizePx = fontSizePx,
 				BaselineOffsetPx = baseline,
 				SpacingAfterPx = spacingAfter,
+				OrbitStartRadians = SampleUnit( letterJitterSeed, i, 11 ) * MathF.PI * 2f,
+				ExitOrderIndex = exitOrder[i],
 				ContainerStyle = BuildLetterContainerStyle( tier, letterJitterSeed, i, fontSizePx, baseline, spacingAfter, popDelayMs )
 			} );
 		}
 
 		return letters;
+	}
+
+	static int[] BuildExitOrderShuffle( int seed, int count )
+	{
+		var order = new int[count];
+		for ( var i = 0; i < count; i++ )
+			order[i] = i;
+
+		for ( var i = count - 1; i > 0; i-- )
+		{
+			var j = (int)(SampleUnit( seed, i, 20 ) * (i + 1));
+			(order[i], order[j]) = (order[j], order[i]);
+		}
+
+		var rank = new int[count];
+		for ( var i = 0; i < count; i++ )
+			rank[order[i]] = i;
+
+		return rank;
 	}
 
 	string BuildLetterContainerStyle( ComicFontTier tier, int letterJitterSeed, int letterIndex, float fontSizePx, float baselineOffsetPx, float spacingAfterPx, float popDelayMs )
@@ -571,4 +593,6 @@ public sealed class ComicLetterStyle
 	public float BaselineOffsetPx { get; init; }
 	public float SpacingAfterPx { get; init; }
 	public string ContainerStyle { get; init; }
+	public float OrbitStartRadians { get; init; }
+	public int ExitOrderIndex { get; init; }
 }

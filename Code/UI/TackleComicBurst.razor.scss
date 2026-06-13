@@ -38,14 +38,6 @@ TackleComicBurst {
 		animation-name: tackle-exit-slam-deflate;
 	}
 
-	&.has-exit-anim.exit-launch-drift .word-exit {
-		animation-name: tackle-exit-launch-drift;
-	}
-
-	&.has-exit-anim.exit-rubber-snap .word-exit {
-		animation-name: tackle-exit-rubber-snap;
-	}
-
 	&.has-exit-anim.exit-ink-puff .word-exit {
 		animation-name: tackle-exit-ink-puff;
 	}
@@ -80,6 +72,11 @@ TackleComicBurst {
 
 	&.has-exit-anim.exit-tackle-drift.drift-octant-7 .word-exit {
 		animation-name: tackle-exit-drift-se;
+	}
+
+	// Vortex + typing-erase: C# per-letter — stop entrance anims when fade starts.
+	&.exit-phase .letter {
+		animation: none;
 	}
 
 	.word-stack {
@@ -480,40 +477,6 @@ TackleComicBurst {
 
 	100% {
 		transform: scale(1.2, 0.05);
-		opacity: 0;
-	}
-}
-
-@keyframes tackle-exit-launch-drift {
-	0% {
-		transform: translate(0, 0) scale(1);
-		opacity: 1;
-	}
-
-	100% {
-		transform: translate(0, -96px) scale(0.85);
-		opacity: 0;
-	}
-}
-
-@keyframes tackle-exit-rubber-snap {
-	0% {
-		transform: scale(1);
-		opacity: 1;
-	}
-
-	28% {
-		transform: scale(1.34);
-		opacity: 1;
-	}
-
-	55% {
-		transform: scale(0.88);
-		opacity: 0.9;
-	}
-
-	100% {
-		transform: scale(0.05);
 		opacity: 0;
 	}
 }

@@ -106,7 +106,10 @@
 | `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |
 | `TackleComicTextHud` | Knockdown comic-word spawner (`ComicWords` pool; broadcasts tier + text + shadow dir + `WordTiltMaxDegrees*` + `LetterJitterSeed` + `ComicExitStyle` + `ExitDriftOctant`; `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*` per tier; `EnableHighlightExtrusion` / `EnableComicExitAnimations`; `BurstPanelPadding` for WorldPanel clip headroom; auto on main camera via `GameNetworkManager`) |
 | `TackleComicBurst` | Short-lived `WorldPanel` + Razor burst (`div.letter` + `ComicLetterStyle`; shadow + highlight + fill layers; SCSS letter + exit anims; `ApplySpawnData` on spawn; spawned by `TackleComicTextHud`) |
-| `ComicExitStyle` | Host-synced fade-out motion enum on `TackleComicTextHud` (`SpinVanish`, `Scatter`, `SlamDeflate`, `LaunchDrift`, `RubberSnap`, `TackleDirectedDrift`, `InkPuff`) |
+| `ComicExitStyle` | Host-synced fade-out — whole-word CSS (`SpinVanish`, `Scatter`, `SlamDeflate`, `TackleDirectedDrift`, `InkPuff`) + C# letter (`LetterSuckInVortex`, `LetterTypingErase`) |
+| `ComicLetterExitMotion` | C# per-letter exit for vortex + typing-erase (`TackleComicBurst`) |
+| `OrbitStartRadians` | Per-letter vortex start angle (host `LetterJitterSeed`) |
+| `ExitOrderIndex` | Typing-erase vanish order (host-synced shuffle) |
 | `ComicExitStylePick` | Inspector dropdown on `TackleComicTextHud` — `Random` or force one `ComicExitStyle` per burst (`ExitStylePick`) |
 | `ExitAnimationPaddingPixels` | WorldPanel extra pad per side for exit translate (drift / launch) |
 | `ExitAnimationPeakScale` | Worst-case exit scale overshoot for panel size math (ink puff ~1.65) |
