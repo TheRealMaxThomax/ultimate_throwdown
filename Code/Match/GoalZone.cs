@@ -88,6 +88,8 @@ public sealed class GoalZone : Component, Component.ExecuteInEditor
 		if ( dwellRemaining < ScoreDwellSeconds )
 			return;
 
+		carrier.Components.Get<PlayerUltCharge>()?.GrantGoalChargeOnHost();
+
 		matchDirector.RegisterGoal( scoringTeamId );
 		ResetDwell();
 

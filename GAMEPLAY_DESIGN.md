@@ -34,7 +34,7 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Not built** — design locked below; code under `Code/Ultimates/` |
+| Ultimates (charge + Speed Blitz) | **Partial** — `PlayerUltCharge` + HUD built; Speed Blitz not built |
 
 ---
 

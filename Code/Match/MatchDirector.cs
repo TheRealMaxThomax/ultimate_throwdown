@@ -143,6 +143,7 @@ public sealed class MatchDirector : Component
 		NetLastGoalScoringTeamId = NoTeam;
 		NetIsOvertime = false;
 		NetMatchWinnerTeamId = NoTeam;
+		PlayerUltCharge.ResetAllPlayersInScene( Scene );
 		PushMatchHudStateToPlayers();
 	}
 

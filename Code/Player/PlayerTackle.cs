@@ -582,6 +582,8 @@ public sealed class PlayerTackle : Component
 	{
 		if ( Networking.IsHost )
 		{
+			Components.Get<PlayerUltCharge>()?.TryGrantTackleChargeOnHost( victim );
+
 			NetTackleStripRampId++;
 			var atkClass = playerClass?.CurrentClass;
 			var atkSlow = atkClass?.TimeToCatchUpSpeedAfterAttack ?? 0f;

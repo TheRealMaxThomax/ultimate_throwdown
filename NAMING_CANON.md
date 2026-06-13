@@ -91,13 +91,18 @@
 
 ---
 
-## Ultimates (`Code/Ultimates/`) — next
+## Ultimates (`Code/Ultimates/`)
 
 | Name | Job |
 |------|-----|
-| *(TBD)* | Per-class ult components — host authority, MP sync; not built yet |
+| `PlayerUltCharge` | Host-authoritative 0–100% ult meter — passive regen (`Playing` only), goal/tackle bumps, rematch reset; `TrySpendFullChargeOnHost()` for ult commit |
+| `SpeedsterSpeedBlitzUlt` | *(slice 2)* Speedster **Speed Blitz** — hold/release `Ultimate`, wind-up, dash |
 
-Design one-liners: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Future passives / ults. Ult comic burst: distinct **blue** palette (not tackle tier colors) — see `SESSION_NOTES.md` **Open decisions**.
+**Often-used on `PlayerUltCharge`:** `MaxChargePoints`, `PassivePointsPerSecond`, `GoalChargePoints`, `TackleChargePoints`, `NetChargePercent`, `ChargePercent`, `IsFullyCharged`, `GrantGoalChargeOnHost()`, `TryGrantTackleChargeOnHost()`, `TrySpendFullChargeOnHost()`, `ResetAllPlayersInScene()`  
+**Often-used on `UltChargeHud`:** owner ult % readout (left of `MovementRampHud`; circular ring UI later)  
+**Input:** `Ultimate` → **X** (`Input.config`)
+
+Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. Ult comic burst: distinct **blue** palette — later.
 
 ---
 
@@ -106,6 +111,7 @@ Design one-liners: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Future passive
 | Name | Job |
 |------|-----|
 | `DodgeCooldownHud` | Placeholder dodge cooldown timer (owner HUD) |
+| `UltChargeHud` | Owner ult charge % only (placeholder; circular ring UI later) |
 | `MovementRampHud` | Placeholder walk / sprint / charge ramp bar (owner HUD) |
 | `MatchHudDraw` | Shared HUD read/draw helpers (`FormatMatchClock`, `TryGetHudState`, `IsMatchOverCelebrating`) |
 | `MatchScoreHud` | Top bar: team names + round wins |
