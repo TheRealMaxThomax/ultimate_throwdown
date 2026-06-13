@@ -66,6 +66,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private float nextCommitRequestAt;
 	private Angles ownerLockedEyeAngles;
 	private bool ownerLookLocked;
+	private float ownerCommitPendingUntil;
+	private bool ownerControllerInputSuppressed;
+	private bool ownerSavedUseInputControls = true;
 
 	private PlayerUltCharge ultCharge;
 	private PlayerClass playerClass;
@@ -122,6 +125,13 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return;
 
 		ApplyOwnerLookLock();
+	}
+
+	/// <summary> Safety: never leave the controller with input disabled if this component is turned off mid-ult. </summary>
+	protected override void OnDisabled()
+	{
+		if ( Network.IsOwner )
+			RestoreOwnerController();
 	}
 
 	// ---------------------------------------------------------------------
@@ -331,14 +341,23 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	private void OwnerUpdate()
 	{
-		if ( !IsActive )
+		// "Pending" covers the brief window between pressing X and the host confirming the phase
+		// (client owner) so the player can't keep moving before the lock kicks in.
+		var suppress = IsActive || Time.Now < ownerCommitPendingUntil;
+
+		if ( IsActive )
+			ownerCommitPendingUntil = 0f;
+
+		if ( !suppress )
 		{
 			ownerLookLocked = false;
+			RestoreOwnerController();
 			TryOwnerCommitInput();
 			return;
 		}
 
-		// No steering or movement input during wind-up / dash.
+		// Take over the controller so its own input can't move/strafe the player during the ult.
+		SuppressOwnerController();
 		Input.AnalogMove = Vector3.Zero;
 		ApplyOwnerLookLock();
 	}
@@ -352,7 +371,11 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return;
 
 		if ( !PassesCommitPrecheck() || !AllowsUltActivation() )
+		{
+			if ( EnableSpeedBlitzDebugLogs )
+				Log.Info( $"[SpeedBlitz] {GameObject.Name}: X pressed but commit blocked (speedster={IsSpeedsterClass()} full={ultCharge?.IsFullyCharged} holdingBall={ballGrab?.IsHolding} phaseOk={AllowsUltActivation()})" );
 			return;
+		}
 
 		var dir = GetHorizontalCommitDirection();
 		if ( dir.Length < 0.001f )
@@ -361,12 +384,45 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		playerController ??= Components.Get<PlayerController>();
 		ownerLockedEyeAngles = playerController.IsValid() ? playerController.EyeAngles : default;
 		ownerLookLocked = true;
+		ownerCommitPendingUntil = Time.Now + 0.5f;
 		nextCommitRequestAt = Time.Now + 0.25f;
 
 		if ( Networking.IsHost )
 			TryCommitOnHost( dir );
 		else
 			RequestCommitSpeedBlitzOnHost( dir );
+
+		// Lock movement immediately so there's no walk window before the phase syncs back.
+		SuppressOwnerController();
+	}
+
+	/// <summary> Owner: disable the controller's own input handling so only the ult drives movement. </summary>
+	private void SuppressOwnerController()
+	{
+		playerController ??= Components.Get<PlayerController>();
+		if ( !playerController.IsValid() )
+			return;
+
+		if ( !ownerControllerInputSuppressed )
+		{
+			ownerSavedUseInputControls = playerController.UseInputControls;
+			ownerControllerInputSuppressed = true;
+		}
+
+		playerController.UseInputControls = false;
+	}
+
+	/// <summary> Owner: hand input back to the controller once the ult is over. </summary>
+	private void RestoreOwnerController()
+	{
+		if ( !ownerControllerInputSuppressed )
+			return;
+
+		playerController ??= Components.Get<PlayerController>();
+		if ( playerController.IsValid() )
+			playerController.UseInputControls = ownerSavedUseInputControls;
+
+		ownerControllerInputSuppressed = false;
 	}
 
 	private void ApplyOwnerLookLock()

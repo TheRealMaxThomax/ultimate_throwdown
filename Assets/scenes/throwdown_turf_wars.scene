@@ -610,7 +610,7 @@
               "__guid": "17add8f1-8bee-4e70-9cc2-280662ff35ac",
               "__enabled": true,
               "Flags": 0,
-              "CurrentClass": "classes/juggernaut.cdata",
+              "CurrentClass": "classes/speedster.cdata",
               "ModelScaleRetrySeconds": 3,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
@@ -846,7 +846,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PassivePointsPerSecond": 0.2,
+              "PassivePointsPerSecond": 100,
               "TackleChargePoints": 15
             },
             {
@@ -854,11 +854,8 @@
               "__guid": "8c18239a-cb3f-4c93-aa8a-788ef7cc3fdc",
               "__enabled": true,
               "Flags": 0,
-              "BarBlockCount": 12,
-              "BarFontSize": 14,
               "DodgePanelWidth": 120,
               "GapBetweenPanels": 12,
-              "LabelFontSize": 20,
               "MarginBottom": 24,
               "MarginRight": 24,
               "MovementPanelWidth": 220,
@@ -869,7 +866,29 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "PanelHeight": 56,
-              "PanelWidth": 148
+              "PanelWidth": 148,
+              "PercentFontSize": 22,
+              "ReadyHighlightDelaySeconds": 0.4
+            },
+            {
+              "__type": "SpeedsterSpeedBlitzUlt",
+              "__guid": "de3cd7be-ca5d-4f72-921c-30867df8d88e",
+              "__enabled": true,
+              "Flags": 0,
+              "DashRange": 1200,
+              "DashSpeed": 2000,
+              "EnableSpeedBlitzDebugLogs": false,
+              "HitHalfWidth": 42,
+              "KnockdownLaunchArc": 1.2,
+              "KnockdownLaunchSpeed": 950,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "UltimateAction": "Ultimate",
+              "WindUpDurationSeconds": 3
             }
           ],
           "Children": [
@@ -2953,7 +2972,7 @@
                   ]
                 },
                 {
-                  "__guid": "0cfc2b99-99c6-410a-abab-54e1a16fc0e9",
+                  "__guid": "ad894074-222b-4258-8c58-528fc1d08575",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2970,7 +2989,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "7dfcf8fe-5ed7-48f1-8df1-849f110453fc",
+                      "__guid": "6c227a9f-a379-4fef-9bc7-cc227a051894",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6249,7 +6268,7 @@
                   ]
                 },
                 {
-                  "__guid": "ad4f7996-e07f-4f89-84bd-ec0713768080",
+                  "__guid": "ca734018-3cbc-44e7-a445-e5fa1de301ae",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6266,7 +6285,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "14e29494-a527-4b9b-9428-a22348955aa5",
+                      "__guid": "725c75bd-f311-4499-8139-2d70dde90839",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8884,7 +8903,7 @@
                   ]
                 },
                 {
-                  "__guid": "25f74e91-d552-419b-b8dc-727df01acbb3",
+                  "__guid": "18cab095-3d7e-4fb3-b09f-657be060b0fc",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8901,7 +8920,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "a0104233-040e-4729-b8ea-c1ea5dcd9b83",
+                      "__guid": "f9b9e7d3-db4b-44ce-8bd5-160f4057d948",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11519,7 +11538,7 @@
                   ]
                 },
                 {
-                  "__guid": "8e6ffc2e-9333-4cfb-ad18-5c1be494bd88",
+                  "__guid": "4820c312-52f5-42d9-a4e5-423a79dbbde4",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11536,7 +11555,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "8d6adfae-056b-4504-8fe2-1663f963e175",
+                      "__guid": "f2a0a2e0-308e-49ff-a767-8b6a357287e0",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
