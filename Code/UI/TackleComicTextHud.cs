@@ -37,7 +37,10 @@ public sealed class TackleComicTextHud : Component
 		LetterSuckInVortex = 5,
 		LetterTypingErase = 6,
 		LetterDominoTip = 7,
-		LetterPopOffScatter = 8
+		LetterPopOffScatter = 8,
+		LetterGlitchMelt = 9,
+		LetterComicStrikeThrough = 10,
+		LetterUnspellDrift = 11
 	}
 
 	/// <summary>Inspector pick for exit motion — <see cref="Random"/> rolls per knockdown; otherwise every burst uses that style (MP-synced).</summary>
@@ -52,7 +55,10 @@ public sealed class TackleComicTextHud : Component
 		LetterSuckInVortex,
 		LetterTypingErase,
 		LetterDominoTip,
-		LetterPopOffScatter
+		LetterPopOffScatter,
+		LetterGlitchMelt,
+		LetterComicStrikeThrough,
+		LetterUnspellDrift
 	}
 
 	[Property] public bool EnableComicText { get; set; } = true;
@@ -302,7 +308,7 @@ public sealed class TackleComicTextHud : Component
 			return;
 
 		var dir = (ComicShadowDirection)MathX.Clamp( shadowDirection, 0, 3 );
-		var style = (ComicExitStyle)(int)MathX.Clamp( exitStyle, 0, (int)ComicExitStyle.LetterPopOffScatter );
+		var style = (ComicExitStyle)(int)MathX.Clamp( exitStyle, 0, (int)ComicExitStyle.LetterUnspellDrift );
 		var octant = (int)MathX.Clamp( exitDriftOctant, 0, 7 );
 		SpawnBurst( worldPosition, (ComicFontTier)tier, text.Trim(), dir, wordTiltDegrees, letterJitterSeed, style, octant );
 	}
@@ -359,7 +365,7 @@ public sealed class TackleComicTextHud : Component
 			return ComicExitStyle.SpinVanish;
 
 		if ( ExitStylePick == ComicExitStylePick.Random )
-			return (ComicExitStyle)Game.Random.Int( 0, (int)ComicExitStyle.LetterPopOffScatter );
+			return (ComicExitStyle)Game.Random.Int( 0, (int)ComicExitStyle.LetterUnspellDrift );
 
 		return ExitStylePick switch
 		{
@@ -371,6 +377,9 @@ public sealed class TackleComicTextHud : Component
 			ComicExitStylePick.LetterTypingErase => ComicExitStyle.LetterTypingErase,
 			ComicExitStylePick.LetterDominoTip => ComicExitStyle.LetterDominoTip,
 			ComicExitStylePick.LetterPopOffScatter => ComicExitStyle.LetterPopOffScatter,
+			ComicExitStylePick.LetterGlitchMelt => ComicExitStyle.LetterGlitchMelt,
+			ComicExitStylePick.LetterComicStrikeThrough => ComicExitStyle.LetterComicStrikeThrough,
+			ComicExitStylePick.LetterUnspellDrift => ComicExitStyle.LetterUnspellDrift,
 			_ => ComicExitStyle.SpinVanish
 		};
 	}

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-/// <summary>Per-letter C# exits during fade window — vortex, typing-erase, domino, pop-scatter.</summary>
+/// <summary>Per-letter C# exits during fade window.</summary>
 public static class ComicLetterExitMotion
 {
 	public readonly struct LetterExitFrame
@@ -29,7 +29,10 @@ public static class ComicLetterExitMotion
 		return style is TackleComicTextHud.ComicExitStyle.LetterSuckInVortex
 			or TackleComicTextHud.ComicExitStyle.LetterTypingErase
 			or TackleComicTextHud.ComicExitStyle.LetterDominoTip
-			or TackleComicTextHud.ComicExitStyle.LetterPopOffScatter;
+			or TackleComicTextHud.ComicExitStyle.LetterPopOffScatter
+			or TackleComicTextHud.ComicExitStyle.LetterGlitchMelt
+			or TackleComicTextHud.ComicExitStyle.LetterComicStrikeThrough
+			or TackleComicTextHud.ComicExitStyle.LetterUnspellDrift;
 	}
 
 	public static LetterExitFrame Evaluate(
@@ -57,11 +60,13 @@ public static class ComicLetterExitMotion
 			TackleComicTextHud.ComicExitStyle.LetterTypingErase => TypingErase( tier, letter, letterCount, exitT ),
 			TackleComicTextHud.ComicExitStyle.LetterDominoTip => DominoTip( tier, letterIndex, letterCount, exitT, letterJitterSeed ),
 			TackleComicTextHud.ComicExitStyle.LetterPopOffScatter => PopOffScatter( tier, letterIndex, letterCount, letter, exitT ),
+			TackleComicTextHud.ComicExitStyle.LetterGlitchMelt => GlitchMelt( tier, letterIndex, letter, letterCount, exitT, letterJitterSeed ),
+			TackleComicTextHud.ComicExitStyle.LetterComicStrikeThrough => ComicStrikeThrough( tier, letterIndex, letterCount, exitT, letterJitterSeed ),
+			TackleComicTextHud.ComicExitStyle.LetterUnspellDrift => UnspellDrift( tier, letter, letterCount, exitT, tackleOctant ),
 			_ => LetterExitFrame.None
 		};
 	}
 
-	/// <summary>Outer letters spiral in first; strong inward curl toward word center.</summary>
 	static LetterExitFrame SuckInVortex( TackleComicTextHud.ComicFontTier tier, int letterIndex, int letterCount, ComicLetterStyle letter, float exitT )
 	{
 		var centerIndex = (letterCount - 1) * 0.5f;
@@ -89,7 +94,6 @@ public static class ComicLetterExitMotion
 		return new LetterExitFrame( mx, my, shrink, opacity );
 	}
 
-	/// <summary>Shuffled vanish order; straight drop — no horizontal motion.</summary>
 	static LetterExitFrame TypingErase( TackleComicTextHud.ComicFontTier tier, ComicLetterStyle letter, int letterCount, float exitT )
 	{
 		var slot = letterCount <= 1 ? 0f : letter.ExitOrderIndex / (float)(letterCount - 1);
@@ -117,7 +121,6 @@ public static class ComicLetterExitMotion
 		return new LetterExitFrame( mx, my, shrink, 1f - EaseIn( localT ) );
 	}
 
-	/// <summary>Left-to-right wave; each letter pops outward along its seeded angle.</summary>
 	static LetterExitFrame PopOffScatter( TackleComicTextHud.ComicFontTier tier, int letterIndex, int letterCount, ComicLetterStyle letter, float exitT )
 	{
 		var slot = letterCount <= 1 ? 0f : letterIndex / (float)(letterCount - 1);
@@ -137,6 +140,81 @@ public static class ComicLetterExitMotion
 			: 1f - EaseIn( MathX.Clamp( (localT - 0.35f) / 0.65f, 0f, 1f ) ) * 0.85f;
 		var opacity = 1f - EaseIn( MathX.Clamp( (localT - 0.55f) / 0.45f, 0f, 1f ) );
 		return new LetterExitFrame( mx, my, shrink, opacity );
+	}
+
+	/// <summary>Shuffled melt — horizontal jitter + opacity flicker + sag (chaos heaviest).</summary>
+	static LetterExitFrame GlitchMelt( TackleComicTextHud.ComicFontTier tier, int letterIndex, ComicLetterStyle letter, int letterCount, float exitT, int letterJitterSeed )
+	{
+		var slot = letterCount <= 1 ? 0f : letter.ExitOrderIndex / (float)(letterCount - 1);
+		var localT = StaggerLocalTFromSlot( slot, letterCount, exitT, tier, 0.26f, 0.22f, 0.18f );
+		if ( localT <= 0.001f )
+			return LetterExitFrame.None;
+
+		var melt = EaseIn( localT );
+		var glitchPhase = localT * Dist( tier, 24f, 32f, 44f ) + letterIndex * 1.65f + SampleUnit( letterJitterSeed, letterIndex, 4 ) * 2f;
+		var mx = MathF.Sin( glitchPhase * 6.2f ) * Dist( tier, 10f, 16f, 26f ) * (1f - melt * 0.35f )
+			+ MathF.Cos( glitchPhase * 11.7f ) * Dist( tier, 5f, 8f, 14f );
+		var my = Dist( tier, 22f, 30f, 40f ) * melt + MathF.Sin( glitchPhase * 4.4f ) * Dist( tier, 3f, 5f, 9f );
+
+		var shrink = 1f - melt * Dist( tier, 0.78f, 0.86f, 0.94f );
+		var flicker = (MathF.Sin( glitchPhase * 13.5f ) + 1f) * 0.5f;
+		var opacity = MathX.Lerp( 0.25f, 1f, flicker ) * (1f - EaseIn( MathX.Clamp( (localT - 0.4f) / 0.6f, 0f, 1f ) ));
+		return new LetterExitFrame( mx, my, shrink, opacity );
+	}
+
+	/// <summary>Diagonal slash sweeps the word — host-synced strike angle via <paramref name="letterJitterSeed"/>.</summary>
+	static LetterExitFrame ComicStrikeThrough( TackleComicTextHud.ComicFontTier tier, int letterIndex, int letterCount, float exitT, int letterJitterSeed )
+	{
+		var slashAngle = (SampleUnit( letterJitterSeed, 0, 23 ) * 0.5f + 0.18f) * MathF.PI;
+		var slashX = MathF.Cos( slashAngle );
+		var slashY = MathF.Sin( slashAngle );
+
+		var maxProj = 0f;
+		for ( var i = 0; i < letterCount; i++ )
+		{
+			var proj = i * slashX;
+			maxProj = MathF.Max( maxProj, proj );
+			maxProj = MathF.Max( maxProj, -proj );
+		}
+
+		var letterProj = letterIndex * slashX;
+		var slot = letterCount <= 1 || maxProj <= 0.001f
+			? 0f
+			: (letterProj / maxProj + 1f) * 0.5f;
+
+		var localT = StaggerLocalTFromSlot( slot, letterCount, exitT, tier, 0.24f, 0.2f, 0.16f );
+		if ( localT <= 0.001f )
+			return LetterExitFrame.None;
+
+		var slash = EaseOut( localT );
+		var mx = slashX * Dist( tier, 32f, 42f, 52f ) * slash;
+		var my = slashY * Dist( tier, 26f, 34f, 42f ) * slash;
+		var shrink = 1f - EaseIn( MathX.Clamp( (localT - 0.25f) / 0.75f, 0f, 1f ) ) * 0.92f;
+		var opacity = 1f - EaseIn( MathX.Clamp( (localT - 0.35f) / 0.65f, 0f, 1f ) );
+		return new LetterExitFrame( mx, my, shrink, opacity );
+	}
+
+	/// <summary>Typing-erase order + small nudge along tackle <paramref name="tackleOctant"/>.</summary>
+	static LetterExitFrame UnspellDrift( TackleComicTextHud.ComicFontTier tier, ComicLetterStyle letter, int letterCount, float exitT, int tackleOctant )
+	{
+		var slot = letterCount <= 1 ? 0f : letter.ExitOrderIndex / (float)(letterCount - 1);
+		var localT = StaggerLocalTFromSlot( slot, letterCount, exitT, tier, 0.28f, 0.24f, 0.2f );
+
+		var drift = EaseIn( localT );
+		var drop = Dist( tier, 40f, 50f, 58f ) * drift;
+		OctantToOffset( tackleOctant, Dist( tier, 22f, 32f, 42f ) * drift, out var driftX, out var driftY );
+
+		var shrink = 1f - EaseIn( MathX.Clamp( (localT - 0.55f) / 0.45f, 0f, 1f ) ) * 0.92f;
+		var opacity = localT <= 0.001f ? 1f : 1f - EaseIn( MathX.Clamp( (localT - 0.5f) / 0.5f, 0f, 1f ) );
+		return new LetterExitFrame( driftX, drop + driftY, shrink, opacity );
+	}
+
+	static void OctantToOffset( int octant, float distance, out float marginLeft, out float marginTop )
+	{
+		octant = ((octant % 8) + 8) % 8;
+		var radians = octant * (MathF.PI / 4f);
+		marginLeft = MathF.Cos( radians ) * distance;
+		marginTop = -MathF.Sin( radians ) * distance;
 	}
 
 	static float StaggerLocalTFromSlot( float slot, int letterCount, float exitT, TackleComicTextHud.ComicFontTier tier, float windowSage, float windowSans, float windowChaos )
