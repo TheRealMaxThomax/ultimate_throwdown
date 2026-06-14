@@ -18,11 +18,11 @@
 
 ## Right now
 
-**Goal:** **Speed Blitz slice 2a ✅ shipped** (solo). **Charge + W+S ✅ fixed + playtest OK.** **Next:** slice **2b** (talk/plan — hold/release + preview).
+**Goal:** **Speed Blitz slice 2b** — hold/release + preview **code done**; **playtest** corridor vs knockdown + optional 2a/2b MP.
 
 **Next session (priority order):**
-1. **Slice 2b** — hold/release **X** + owner ground preview (design talk first)
-2. **Slice 2a MP** — optional 2-window verify
+1. **Slice 2b playtest** — corridor lines vs knockdowns (capsule-aware hit shipped); aim locks on X release
+2. **Slice 2a/2b MP** — optional 2-window verify
 3. Throw charge MP + polish / tackle comic / soak — when ready
 
 **Works today:**
@@ -43,7 +43,7 @@
 - **Traffic knockdown** — no pre-launch pause; **`HazardKnockdownComicPower`** default **1.55** (Chaos/red); **`TriggerAsHazardVictim()`** + **`IsHazardImpact`** car camera path (defer ragdoll cam, orbit shake baseline, enter blend). **Player tackles** use simpler path — hitstop during freeze, ragdoll cam when `isRagdolled`
 - **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** + **`ComicLetterExitMotion`**: entrance polish + **14 exit styles** (5 CSS + 7 letter C#); timing via `LifetimeSeconds` / `ExitFadeStartFraction` / `ExitFadeDurationFraction` / `ExitTailSeconds` — **good enough for v1**; MP verify + Les Flos optional
 - **Ult charge (slice 1)** — **`PlayerUltCharge`** + **`UltChargeHud`** on **player prefab** (manual — **not** auto-spawned). Passive regen **`Playing` only**; goal (scorer) + tackle (attacker, **enemy only**); FF tackle **no** charge; % **persists** across rounds; **rematch → 0%**. HUD: floored **%**, white → blue after **`ReadyHighlightDelaySeconds`** at 100%. **`Ultimate`** bound to **X** (ability slice 2).
-- **Speed Blitz (slice 2a)** — **`SpeedsterSpeedBlitzUlt`** on **Speedster** prefab (manual). **Tap X** at 100% → spend charge, **3 s wind-up** (planted, look-locked, vulnerable), **dash** (invuln, wall-slide, step-up, charge_run anim). **First enemy** hit → knockdown + dash stops; **hit or miss** → forced **walk** ramp (`TriggerForceWalkRampOnHost`). No charge gain during ult; no ball pickup / dodge. Cancelled on round reset. **Solo OK (2026-06-13)**; 2-window MP optional.
+- **Speed Blitz (slice 2a)** — **`SpeedsterSpeedBlitzUlt`** on **Speedster** prefab (manual). **Hold X** at 100% → owner corridor preview (`SpeedBlitzAimPreview`); **release X** → commit; **RMB** cancel aim. Wind-up → dash → knockdown / walk ramp (same as 2a). **Solo OK (2026-06-13)**; 2b hit width aligned to preview (2026-06-14).
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -189,7 +189,8 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - **`HighlightOutline`** — tune colors/width here (ragdoll copies this exact component); optional **`PlayerEnemyOutline`** (auto at spawn)
 - `DodgeCooldownHud`, `MovementRampHud`, **`UltChargeHud`**, **`BallCompassHud`**, **`ThrowChargeBar`**, **`ThrowTrajectoryPreview`**, **`ThrowChargeCamera`**
 - **`PlayerUltCharge`** — ult % meter (host sync); tune `PassivePointsPerSecond`, `GoalChargePoints`, `TackleChargePoints`. **Add on prefab** (not auto-spawned).
-- **`SpeedsterSpeedBlitzUlt`** — **Speedster only** (class gate). **Add on Speedster prefab** (not auto-spawned). Tune `WindUpDurationSeconds`, `DashRange`, `DashSpeed`, `HitHalfWidth`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`. Optional **`Enable Speed Blitz Debug Logs`** for commit reject reasons.
+- **`SpeedsterSpeedBlitzUlt`** — **Speedster only** (class gate). **Add on Speedster prefab** (not auto-spawned). Tune `WindUpDurationSeconds`, `DashRange`, `DashSpeed`, `HitHalfWidth`, `DefaultTargetBodyRadius`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`. Optional **`Enable Speed Blitz Debug Logs`** for commit reject reasons.
+- **`SpeedBlitzAimPreview`** — **Speedster only**, same prefab as ult (manual). Owner corridor while holding X; tune `CorridorTint` / `CorridorAlpha`, `SegmentSpacing`, `MarkerModelBaseSize` (dev box native size ≈ **50**).
 - **`UltChargeHud`** — floored **%** centered (left of `MovementRampHud`); **`ReadyHighlightDelaySeconds`** (~0.4s white at 100% then blue). **Add on prefab** with `PlayerUltCharge`.
 - **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
 - **`PlayerBallHoldAnim`** — auto-added on network spawn. Tune `IdleHoldPoseHand` (~0.1), `ThrowAttackStrong`, `ThrowPoseHoldSeconds` (~0.9), `ThrowPlaybackRate` (~0.7). **Throw charge:** `UseAnimGraphChargePose` on — `throw_charge`/`throw_charge_weight` on **`utd_citizen_human_m.vanmgrph`**; tune **`ChargeWindupCycleEnd`** if wind-up finishes before bar is full (or spread keys in Blender ~3 s). Graph re-applied after cosmetics.
@@ -299,9 +300,9 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 - [x] **Hold X** at 100% → owner-only preview: segmented corridor + end marker (dev boxes; blue tint)
 - [x] **Release X** → commit (same as 2a wind-up → dash)
 - [x] **Right-click** cancel while aiming (release X before re-aim)
-- [ ] Preview geometry **must match** host hit test (“between the lines = hit” at dash time) — playtest sign-off
-- [ ] **Width mismatch (finish 2b):** playtest shows hits landing **outside** the preview corridor — pick one: **narrow** host dash hit (`HitHalfWidth` / corridor check) **or** **widen** aim preview (`SpeedBlitzAimPreview` corridor scale) so lines match knockdowns
-- [ ] Aim locked on **release** (not end of wind-up) — verify feel
+- [x] Host hit test uses victim **body radius** so preview side lines = outer knockdown edge (`lateral + BodyRadius ≤ HitHalfWidth`)
+- [x] Aim locked on **release** (yaw snapped to committed dir before wind-up)
+- [ ] Preview vs knockdown **playtest sign-off** (solo + optional MP)
 
 #### Slice 2c — Speed Blitz **polish**
 
@@ -390,7 +391,8 @@ Ragdoll knockdown → walk reset on knockdown: working.
 
 ## Recent session notes
 
-- **2026-06-13 (charge W+S ✅ playtest):** Mutex on `AnalogMove.x` — W+S no longer stops movement at any tier; user verified in play.
+- **2026-06-14 (Speed Blitz preview ground):** Corridor traces ignore players + `main_ball`; per-segment climb capped to `MoveModeWalk.StepUpHeight` (prefab walk step height).
+- **2026-06-14 (ult slice 2b hit/preview align):** Host dash hit subtracts victim `BodyRadius` so corridor side lines match body-edge knockdowns; aim yaw locks on X release (before wind-up).
 - **2026-06-13 (knockdown walk reset ✅):** `TriggerForceWalkRampOnHost` on knockdown + local `smoothedMoveSpeedCap` snap; timers frozen while down.
 - **2026-06-13 (ult slice 2a shipped — solo):** `SpeedsterSpeedBlitzUlt` — tap X, wind-up, dash, stop on hit, walk ramp after dash. **2-window MP optional** before 2b.
 - **2026-06-13 (ult slice 1 shipped):** `PlayerUltCharge` + `UltChargeHud`; `Ultimate` → X.

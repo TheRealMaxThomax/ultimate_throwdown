@@ -1,17 +1,21 @@
 using System;
 using System.Collections.Generic;
 using Sandbox;
+using Sandbox.Movement;
 
 /// <summary>
 /// Owner-only aim telegraph while <see cref="SpeedsterSpeedBlitzUlt.IsAiming"/>.
 /// Add manually on the same GameObject as <see cref="SpeedsterSpeedBlitzUlt"/>.
 /// Straight max-range segmented corridor + end marker (slice 2b).
+/// Corridor half-width = <see cref="SpeedsterSpeedBlitzUlt.HitHalfWidth"/> (outer body-edge lines; host subtracts victim body radius).
+/// Ground samples ignore players + <c>main_ball</c>; rise per segment capped to <see cref="MoveModeWalk.StepUpHeight"/>.
 /// </summary>
 [Order( 10012 )]
 public sealed class SpeedBlitzAimPreview : Component
 {
 	const string DefaultMarkerMaterialPath = "materials/turfwarspoly/ball_translucent.vmat";
 	const string DefaultMarkerModelPath = "models/dev/box.vmdl";
+	const string MainBallName = "main_ball";
 
 	private sealed class SegmentSlot
 	{
@@ -39,19 +43,25 @@ public sealed class SpeedBlitzAimPreview : Component
 	/// <summary> Native size of <see cref="MarkerModelPath"/> (dev box ≈ 50). World size = hit width / this. </summary>
 	[Property] public float MarkerModelBaseSize { get; set; } = 50f;
 
+	/// <summary> Used when <see cref="MoveModeWalk"/> is missing. Otherwise reads prefab <c>Step Up Height</c>. </summary>
+	[Property, Group( "Corridor" )] public float StepUpHeightFallback { get; set; } = 20f;
+
 	private SpeedsterSpeedBlitzUlt ult;
+	private MoveModeWalk moveModeWalk;
 	private Model markerModel;
 	private Material corridorMaterial;
 	private Material markerMaterial;
 
 	private readonly List<SegmentSlot> segmentPool = new();
 	private readonly List<Vector3> pathSamples = new();
+	private readonly List<GameObject> groundTraceIgnores = new();
 	private GameObject markerGo;
 	private ModelRenderer markerRenderer;
 
 	protected override void OnStart()
 	{
 		ult = Components.Get<SpeedsterSpeedBlitzUlt>( FindMode.EverythingInSelf );
+		moveModeWalk = Components.Get<MoveModeWalk>( FindMode.EverythingInSelf );
 	}
 
 	protected override void OnDestroy()
@@ -115,18 +125,26 @@ public sealed class SpeedBlitzAimPreview : Component
 	void BuildStraightPath( Vector3 startFlat, Vector3 moveDir, float dashRange, List<Vector3> samples )
 	{
 		samples.Clear();
-		samples.Add( SnapToGround( startFlat ) );
+		RefreshGroundTraceIgnores();
+
+		var stepUp = GetPreviewStepUpHeight();
+		var previousZ = SampleGroundHeight( startFlat, previousZ: null, stepUp ).z;
+		samples.Add( new Vector3( startFlat.x, startFlat.y, previousZ ) );
 
 		var spacing = SegmentSpacing.Clamp( 8f, 128f );
 		var traveled = spacing;
 
 		while ( traveled < dashRange - MinSegmentLength * 0.5f )
 		{
-			samples.Add( SnapToGround( startFlat + moveDir * traveled ) );
+			var flat = startFlat + moveDir * traveled;
+			var z = SampleGroundHeight( flat, previousZ, stepUp ).z;
+			samples.Add( new Vector3( flat.x, flat.y, z ) );
+			previousZ = z;
 			traveled += spacing;
 		}
 
-		samples.Add( SnapToGround( startFlat + moveDir * dashRange ) );
+		var endFlat = startFlat + moveDir * dashRange;
+		samples.Add( SampleGroundHeight( endFlat, previousZ, stepUp ) );
 	}
 
 	void UpdateCorridorSegments(
@@ -208,13 +226,74 @@ public sealed class SpeedBlitzAimPreview : Component
 		renderer.MaterialOverride = material;
 	}
 
-	Vector3 SnapToGround( Vector3 horizontalPos )
+	Vector3 SampleGroundHeight( Vector3 horizontalPos, float? previousZ, float stepUpHeight )
 	{
-		var trace = Scene.Trace.Ray( horizontalPos + Vector3.Up * 256f, horizontalPos + Vector3.Down * 512f )
-			.IgnoreGameObjectHierarchy( GameObject )
-			.Run();
+		var flat = horizontalPos.WithZ( 0f );
+		var z = TraceGroundHeight( flat ) ?? previousZ ?? flat.z;
 
-		return trace.Hit ? trace.EndPosition : horizontalPos;
+		if ( previousZ.HasValue && z > previousZ.Value + stepUpHeight )
+			z = previousZ.Value + stepUpHeight;
+
+		return new Vector3( flat.x, flat.y, z );
+	}
+
+	float GetPreviewStepUpHeight()
+	{
+		moveModeWalk ??= Components.Get<MoveModeWalk>( FindMode.EverythingInSelf );
+		if ( moveModeWalk.IsValid() && moveModeWalk.StepUpHeight > 0f )
+			return moveModeWalk.StepUpHeight;
+
+		return StepUpHeightFallback.Clamp( 1f, 128f );
+	}
+
+	void RefreshGroundTraceIgnores()
+	{
+		groundTraceIgnores.Clear();
+
+		foreach ( var tackle in Scene.GetAllComponents<PlayerTackle>() )
+		{
+			if ( tackle.IsValid() && tackle.GameObject.IsValid() && tackle.GameObject != GameObject )
+				groundTraceIgnores.Add( tackle.GameObject );
+		}
+
+		var ball = FindMainBallObject();
+		if ( ball.IsValid() && ball != GameObject )
+			groundTraceIgnores.Add( ball );
+	}
+
+	GameObject FindMainBallObject()
+	{
+		foreach ( var go in Scene.GetAllObjects( true ) )
+		{
+			if ( go.Name == MainBallName )
+				return go;
+		}
+
+		return null;
+	}
+
+	SceneTrace BuildGroundTrace( Vector3 start, Vector3 end )
+	{
+		var trace = Scene.Trace.Ray( start, end )
+			.WithoutTags( "ragdoll" )
+			.IgnoreGameObjectHierarchy( GameObject );
+
+		foreach ( var ignore in groundTraceIgnores )
+		{
+			if ( ignore.IsValid() )
+				trace = trace.IgnoreGameObjectHierarchy( ignore );
+		}
+
+		return trace;
+	}
+
+	float? TraceGroundHeight( Vector3 horizontalPos )
+	{
+		var trace = BuildGroundTrace(
+			horizontalPos + Vector3.Up * 256f,
+			horizontalPos + Vector3.Down * 512f ).Run();
+
+		return trace.Hit ? trace.HitPosition.z : null;
 	}
 
 	bool EnsureAssets()

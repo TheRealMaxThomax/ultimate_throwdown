@@ -45,8 +45,15 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	/// <summary> Dash horizontal speed. Dash duration = <see cref="DashRange"/> / this. Keep high but not so high it tunnels thin props. </summary>
 	[Property, Group( "Dash" )] public float DashSpeed { get; set; } = 2000f;
 
-	/// <summary> Half-width of the dash hit corridor (enemy within this lateral distance of the dash path is knocked down). </summary>
+	/// <summary>
+	/// Half-width of the dash hit corridor from the path centerline to the outer body edge (matches
+	/// <see cref="SpeedBlitzAimPreview"/> side lines). Host checks victim center lateral distance +
+	/// victim <see cref="PlayerController.BodyRadius"/> against this value.
+	/// </summary>
 	[Property, Group( "Dash" )] public float HitHalfWidth { get; set; } = 42f;
+
+	/// <summary> Fallback body radius when a dash target has no <see cref="PlayerController"/> / class capsule. </summary>
+	[Property, Group( "Dash" )] public float DefaultTargetBodyRadius { get; set; } = 16f;
 
 	[Property, Group( "Dash" )] public float KnockdownLaunchSpeed { get; set; } = 950f;
 	[Property, Group( "Dash" )] public float KnockdownLaunchArc { get; set; } = 1.2f;
@@ -259,7 +266,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 			var target = candidate.WorldPosition.WithZ( 0 );
 			var (lateral, along) = DistanceToSegment2D( segStart, segEnd, target );
-			if ( lateral > halfWidth )
+			var targetBodyRadius = GetDashTargetBodyRadius( candidate );
+			if ( lateral + targetBodyRadius > halfWidth )
 				continue;
 
 			if ( along < bestAlong )
@@ -426,7 +434,10 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return;
 
 		playerController ??= Components.Get<PlayerController>();
-		ownerLockedEyeAngles = playerController.IsValid() ? playerController.EyeAngles : default;
+		// Lock aim on release (before wind-up) so committed direction matches frozen look during channel + dash.
+		ownerLockedEyeAngles = playerController.IsValid()
+			? LockEyeAnglesToHorizontalDirection( playerController.EyeAngles, dir )
+			: default;
 		ownerLookLocked = true;
 		ownerCommitPendingUntil = Time.Now + 0.5f;
 		nextCommitRequestAt = Time.Now + 0.25f;
@@ -588,6 +599,33 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		var fwd = playerController.EyeAngles.ToRotation().Forward.WithZ( 0f );
 		return fwd.Length >= 0.001f ? fwd.Normal : default;
+	}
+
+	/// <summary> Keep pitch/roll from release; snap yaw so horizontal forward matches the committed dash direction. </summary>
+	private static Angles LockEyeAnglesToHorizontalDirection( Angles eyeAngles, Vector3 horizontalDir )
+	{
+		var flat = horizontalDir.WithZ( 0f );
+		if ( flat.Length < 0.001f )
+			return eyeAngles;
+
+		var yaw = MathF.Atan2( flat.y, flat.x ) * (180f / MathF.PI);
+		return new Angles( eyeAngles.pitch, yaw, eyeAngles.roll );
+	}
+
+	private float GetDashTargetBodyRadius( PlayerTackle candidate )
+	{
+		if ( !candidate.IsValid() )
+			return DefaultTargetBodyRadius.Clamp( 1f, 64f );
+
+		var controller = candidate.Components.Get<PlayerController>();
+		if ( controller.IsValid() && controller.BodyRadius > 0f )
+			return controller.BodyRadius;
+
+		var classData = candidate.Components.Get<PlayerClass>()?.CurrentClass;
+		if ( classData is not null && classData.CapsuleRadius > 0f )
+			return classData.CapsuleRadius;
+
+		return DefaultTargetBodyRadius.Clamp( 1f, 64f );
 	}
 
 	private bool IsValidDashTarget( PlayerTackle candidate )

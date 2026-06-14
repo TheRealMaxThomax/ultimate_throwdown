@@ -878,6 +878,7 @@
               "Flags": 0,
               "DashRange": 1200,
               "DashSpeed": 2000,
+              "DefaultTargetBodyRadius": 16,
               "EnableSpeedBlitzDebugLogs": false,
               "HitHalfWidth": 42,
               "KnockdownLaunchArc": 1.2,
@@ -890,6 +891,33 @@
               "OnComponentUpdate": null,
               "UltimateAction": "Ultimate",
               "WindUpDurationSeconds": 3
+            },
+            {
+              "__type": "SpeedBlitzAimPreview",
+              "__guid": "6f3c78ee-07d0-4652-a0c2-e556dc5c8b6a",
+              "__enabled": true,
+              "Flags": 0,
+              "CorridorAlpha": 0.38,
+              "CorridorHeight": 10,
+              "CorridorLift": 0.5,
+              "CorridorTint": "0.3,0.55,1,1",
+              "MarkerAlpha": 0.55,
+              "MarkerHeight": 18,
+              "MarkerLift": 0.5,
+              "MarkerMaterialPath": "materials/turfwarspoly/ball_translucent.vmat",
+              "MarkerModelBaseSize": 80,
+              "MarkerModelPath": "models/dev/box.vmdl",
+              "MarkerTint": "0.35,0.6,1,1",
+              "MaxSegments": 48,
+              "MinSegmentLength": 4,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "SegmentSpacing": 48,
+              "StepUpHeightFallback": 20
             }
           ],
           "Children": [
@@ -2973,7 +3001,7 @@
                   ]
                 },
                 {
-                  "__guid": "6160ff84-a68e-464f-8eaf-722161740bbb",
+                  "__guid": "048c9fb8-2330-4fa9-a4e6-f009e01e5581",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -2990,7 +3018,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "035967c5-42eb-43fb-b35f-0973eb9b2b95",
+                      "__guid": "e0c92d11-a49c-4127-a9a2-e2c45fa0d8c8",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -3003,7 +3031,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": null,
+                      "LodOverride": 0,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -6270,7 +6298,7 @@
                   ]
                 },
                 {
-                  "__guid": "827481cb-033c-47b4-ab9b-4b43cb19e5b4",
+                  "__guid": "2708ae28-d1c1-4fec-abaa-cb9c145d66f5",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6287,7 +6315,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "4188a9d1-5f84-4832-b610-267398913c41",
+                      "__guid": "d47d5fe9-c76a-4c3e-b51e-ebd695dd595f",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6300,7 +6328,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": null,
+                      "LodOverride": 0,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -8906,7 +8934,7 @@
                   ]
                 },
                 {
-                  "__guid": "6d7f0e3c-8045-490f-b14b-a5b8d80979d1",
+                  "__guid": "612ff60c-1581-44cb-91b2-8e2a74c2fba4",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8923,7 +8951,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "153468a7-d077-4613-9fe9-d1cad5bf2421",
+                      "__guid": "0a1aafae-8648-44b0-8cc1-fe1b18055f59",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8936,7 +8964,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": null,
+                      "LodOverride": 0,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -11542,7 +11570,7 @@
                   ]
                 },
                 {
-                  "__guid": "9e9fabd6-f8d0-40c6-96ba-c6747aec04ef",
+                  "__guid": "8722196e-fa09-4881-90d8-826b7f855ba3",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11559,7 +11587,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "11e8f97e-1a62-43da-a25a-628c416d62d1",
+                      "__guid": "5de4a19a-5638-44cc-b76a-6f26e9214865",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11572,7 +11600,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": null,
+                      "LodOverride": 0,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -12475,7 +12503,7 @@
               "Contribution": "Diffuse, Specular, Transmissive",
               "Cookie": null,
               "FogMode": "Enabled",
-              "FogStrength": 0.5,
+              "FogStrength": 1,
               "LightColor": "1,1,1,1",
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
@@ -12518,7 +12546,7 @@
               "Contribution": "Diffuse, Specular, Transmissive",
               "Cookie": null,
               "FogMode": "Enabled",
-              "FogStrength": 0.5,
+              "FogStrength": 1,
               "LightColor": "1,1,1,1",
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
@@ -12614,7 +12642,7 @@
                   "Contribution": "Diffuse, Specular, Transmissive",
                   "Cookie": null,
                   "FogMode": "Enabled",
-                  "FogStrength": 0.5,
+                  "FogStrength": 1,
                   "LightColor": "1,1,1,1",
                   "OnComponentDestroy": null,
                   "OnComponentDisabled": null,
@@ -13678,7 +13706,7 @@
                   "Contribution": "Diffuse, Specular, Transmissive",
                   "Cookie": null,
                   "FogMode": "Enabled",
-                  "FogStrength": 0.5,
+                  "FogStrength": 1,
                   "LightColor": "1,1,1,1",
                   "OnComponentDestroy": null,
                   "OnComponentDisabled": null,
@@ -13721,7 +13749,7 @@
                   "Contribution": "Diffuse, Specular, Transmissive",
                   "Cookie": null,
                   "FogMode": "Enabled",
-                  "FogStrength": 0.5,
+                  "FogStrength": 1,
                   "LightColor": "0.6,0.82745,1,1",
                   "OnComponentDestroy": null,
                   "OnComponentDisabled": null,
@@ -13764,7 +13792,7 @@
                   "Contribution": "Diffuse, Specular, Transmissive",
                   "Cookie": null,
                   "FogMode": "Enabled",
-                  "FogStrength": 0.5,
+                  "FogStrength": 1,
                   "LightColor": "0.6,0.82745,1,1",
                   "OnComponentDestroy": null,
                   "OnComponentDisabled": null,
@@ -13807,7 +13835,7 @@
                   "Contribution": "Diffuse, Specular, Transmissive",
                   "Cookie": null,
                   "FogMode": "Enabled",
-                  "FogStrength": 0.5,
+                  "FogStrength": 1,
                   "LightColor": "0.6,0.82745,1,1",
                   "OnComponentDestroy": null,
                   "OnComponentDisabled": null,
@@ -13850,7 +13878,7 @@
                   "Contribution": "Diffuse, Specular, Transmissive",
                   "Cookie": null,
                   "FogMode": "Enabled",
-                  "FogStrength": 0.5,
+                  "FogStrength": 1,
                   "LightColor": "0.6,0.82745,1,1",
                   "OnComponentDestroy": null,
                   "OnComponentDisabled": null,
@@ -86602,7 +86630,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Strength": 0.021097047
+          "Strength": 0.02
         }
       ],
       "Children": []
@@ -87274,14 +87302,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
-        }
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
+        }
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
         }
       }
     }
