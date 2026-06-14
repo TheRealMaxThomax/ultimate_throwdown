@@ -87,6 +87,12 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	/// <summary> Host ended the dash before <see cref="NetPhase"/> sync — blocks <see cref="OwnerDriveDashMovement"/> until inactive. </summary>
 	private bool ownerDashMovementBlocked;
 
+	// Owner-only client predict (Tier 0 — see MULTIPLAYER_NETCODE.md).
+	private bool ownerHasLocalDashCheckPos;
+	private Vector3 ownerLastLocalDashCheckPos;
+	private bool ownerPredictedHitThisDash;
+	private bool ownerPredictedAttackerFeelThisDash;
+
 	private PlayerUltCharge ultCharge;
 	private PlayerClass playerClass;
 	private PlayerTeam playerTeam;
@@ -95,6 +101,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private BallGrab ballGrab;
 	private Rigidbody playerBody;
 	private CatchUpSpeedBoost catchUpSpeedBoost;
+	private TackleImpactFeel tackleImpactFeel;
 
 	public bool IsActive => NetPhase != SpeedBlitzPhase.None;
 	public bool IsWindUp => NetPhase == SpeedBlitzPhase.WindUp;
@@ -118,6 +125,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		ballGrab = Components.Get<BallGrab>();
 		playerBody = Components.Get<Rigidbody>();
 		catchUpSpeedBoost = Components.Get<CatchUpSpeedBoost>();
+		tackleImpactFeel = Components.Get<TackleImpactFeel>();
 	}
 
 	protected override void OnUpdate()
@@ -142,6 +150,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		else if ( IsDashing )
 		{
 			OwnerDriveDashMovement();
+			OwnerPredictDashHitCheck();
 			ReportDashSamplePositionToHost();
 		}
 	}
@@ -274,8 +283,19 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		var currRaw = GetHostDashCheckCurrentPosition();
 		var curr = ClampDashSweepEndPosition( hostLastDashCheckPos, currRaw );
 
-		var segStart = hostLastDashCheckPos.WithZ( 0 );
-		var segEnd = curr.WithZ( 0 );
+		if ( TryFindBestDashHitInSegment( hostLastDashCheckPos, curr, out var best ) )
+			HostApplyDashKnockdown( best );
+
+		hostLastDashCheckPos = curr;
+	}
+
+	/// <summary> Shared corridor sweep — host hit test and owner predict use the same filters/width. </summary>
+	private bool TryFindBestDashHitInSegment( Vector3 segStartRaw, Vector3 segEndRaw, out PlayerTackle victim )
+	{
+		victim = null;
+
+		var segStart = segStartRaw.WithZ( 0 );
+		var segEnd = segEndRaw.WithZ( 0 );
 		var halfWidth = HitHalfWidth.Clamp( 4f, 200f );
 
 		PlayerTackle best = null;
@@ -299,12 +319,11 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			}
 		}
 
-		hostLastDashCheckPos = curr;
-
 		if ( !best.IsValid() )
-			return;
+			return false;
 
-		HostApplyDashKnockdown( best );
+		victim = best;
+		return true;
 	}
 
 	/// <summary> Host: always launch along committed dash dir (MP-safe); brief pre-launch pause like tackles. </summary>
@@ -453,6 +472,18 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		OwnerZeroHorizontalVelocity();
 	}
 
+	/// <summary>
+	/// Owner: host confirmed knockdown attacker feel — skip duplicate juice when client predict already played.
+	/// </summary>
+	internal bool ShouldSkipHostAttackerFeelBecauseOwnerPredicted()
+	{
+		if ( !ownerPredictedAttackerFeelThisDash )
+			return false;
+
+		ownerPredictedAttackerFeelThisDash = false;
+		return true;
+	}
+
 	/// <summary> Host: abort wind-up or dash (e.g. round reset). Charge is not refunded. </summary>
 	public void CancelBlitzOnHost()
 	{
@@ -479,7 +510,10 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private void OwnerUpdate()
 	{
 		if ( !IsActive )
+		{
 			ownerDashMovementBlocked = false;
+			ResetOwnerDashPredictState();
+		}
 
 		if ( IsDashing )
 			ownerWasInDashPhase = true;
@@ -680,6 +714,55 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return;
 
 		ReportDashSamplePositionOnHostRpc( GameObject.WorldPosition );
+	}
+
+	/// <summary>
+	/// Client owner only: local corridor sweep during dash — stop + attacker feel on first overlap.
+	/// Host-as-owner already gets instant host hit detection; false-positive v1 stays stopped until host ends.
+	/// </summary>
+	private void OwnerPredictDashHitCheck()
+	{
+		if ( Networking.IsHost || ownerPredictedHitThisDash || ownerDashMovementBlocked )
+			return;
+
+		var curr = GameObject.WorldPosition;
+
+		if ( !ownerHasLocalDashCheckPos )
+		{
+			ownerLastLocalDashCheckPos = curr;
+			ownerHasLocalDashCheckPos = true;
+			return;
+		}
+
+		if ( !TryFindBestDashHitInSegment( ownerLastLocalDashCheckPos, curr, out var victim ) )
+		{
+			ownerLastLocalDashCheckPos = curr;
+			return;
+		}
+
+		ownerLastLocalDashCheckPos = curr;
+		OwnerApplyPredictedDashHit( victim );
+	}
+
+	private void OwnerApplyPredictedDashHit( PlayerTackle victim )
+	{
+		ownerPredictedHitThisDash = true;
+		ownerPredictedAttackerFeelThisDash = true;
+		ownerDashMovementBlocked = true;
+		OwnerZeroHorizontalVelocity();
+
+		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
+		tackleImpactFeel?.TriggerAsAttacker();
+
+		if ( EnableSpeedBlitzDebugLogs )
+			Log.Info( $"[SpeedBlitz] {GameObject.Name}: owner predict hit {victim.GameObject.Name}" );
+	}
+
+	private void ResetOwnerDashPredictState()
+	{
+		ownerHasLocalDashCheckPos = false;
+		ownerPredictedHitThisDash = false;
+		ownerPredictedAttackerFeelThisDash = false;
 	}
 
 	// ---------------------------------------------------------------------

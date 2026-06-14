@@ -19,10 +19,10 @@
 
 ## Right now
 
-**Goal:** **Speed Blitz 2b** playtest + **MP netcode feel** — see [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) (**Tier 0:** dasher predict + dedupe next).
+**Goal:** **Speed Blitz 2b** playtest + **MP netcode feel** — Tier 0 predict shipped; **2-window verify** next.
 
 **Next session (priority order):**
-1. **MP netcode Tier 0** — Speed Blitz owner dasher predict + dedupe ([`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md))
+1. **Tier 0 MP verify** — client dasher stop + punch on contact frame; no double feel / mega-launch regression ([`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md))
 2. **Slice 2b sign-off** — corridor vs knockdown; optional 2a/2b MP soak
 3. Throw charge MP + polish / tackle comic — when ready
 
@@ -102,7 +102,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 
 **Read [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md)** when changing host RPCs, `[Sync]`, owner-driven movement, combat hits, ragdolls, or **adding new combat features**. That doc covers: host authority vs client-side prediction (feel only), reconciliation, priority order (now → per-feature → tuning → late dev), and the **new feature checklist**.
 
-**Next up (Tier 0):** Speed Blitz **owner dasher predict + dedupe**; then tackle attacker predict. Prioritize **dasher + victim** feel; spectators later.
+**Tier 0 ✅ (2026-06-14):** Speed Blitz client-owner **dasher predict + dedupe** — local corridor stop + `TackleImpactFeel.TriggerAsAttacker`; host confirm skips duplicate feel. **Next:** Tier A tackle attacker predict + victim feel timing.
 
 ---
 
@@ -392,7 +392,7 @@ Read SESSION_NOTES.md → Known issues, Ult roadmap, MULTIPLAYER_NETCODE.md (any
 Match flow slices 1–6 done. Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 No GameNetworkManager auto-add for ult components — player prefab manual.
 
-Speed Blitz MP authority OK (2026-06-14). Next netcode: Tier 0 dasher predict — see MULTIPLAYER_NETCODE.md.
+Speed Blitz MP authority OK (2026-06-14). Tier 0 client-owner dasher predict + dedupe shipped — 2-window verify next. See MULTIPLAYER_NETCODE.md.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -401,6 +401,8 @@ Speed Blitz MP authority OK (2026-06-14). Next netcode: Tier 0 dasher predict �
 
 ## Recent session notes
 
+- **2026-06-14 (SpeedBlitzAimPreview MP leak fix):** Preview `Scene.CreateObject` used default snapshot sync — could replicate corridor/end meshes to other clients (rare; seen once in 3P). Fixed: `NetworkMode.Never` + destroy on hide. **Do not** disable component in `OnStart` (ownership not ready on clients) or use `Overlay` (breaks client owner ground telegraph).
+- **2026-06-14 (Tier 0 predict shipped):** `SpeedsterSpeedBlitzUlt` — client owner local corridor sweep during dash; stop + attacker feel on predict; `ShouldSkipHostAttackerFeelBecauseOwnerPredicted()` dedupes host RPC. **2-window verify: feels much better.**
 - **2026-06-14 (MP netcode plan):** [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) — predict/reconcile roadmap; Tier 0 = Blitz dasher predict + dedupe.
 - **2026-06-14 (Speed Blitz MP feel):** Host sweep capped per tick; knockdown uses committed dash dir + tackle pre-launch pause; zero velocity before launch (fixes client mega-launches).
 - **2026-06-14 (ult slice 2b hit/preview align):** Host dash hit subtracts victim `BodyRadius` so corridor side lines match body-edge knockdowns; aim yaw locks on X release (before wind-up).

@@ -6,7 +6,7 @@
 
 **Companion docs:** [`SESSION_NOTES.md`](SESSION_NOTES.md) (day-to-day checklist, MP test steps), [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) (mechanics), [`NAMING_CANON.md`](NAMING_CANON.md) (script names).
 
-**Status:** **Active — start ASAP.** Authority fixes for Speed Blitz MP are largely done (2026-06-14). **Next implementation:** owner-only Speed Blitz dasher predict + dedupe (not shipped yet).
+**Status:** **Active.** Authority fixes for Speed Blitz MP done (2026-06-14). **Tier 0 shipped (2026-06-14):** client-owner Speed Blitz dasher predict + attacker feel dedupe. **Next:** Tier A (tackle attacker predict, victim feel timing, shared dedupe helper).
 
 ---
 
@@ -102,7 +102,7 @@ These are **not unfixable** — they need layered techniques (below), not one ma
 
 ## Priority roadmap
 
-### Tier 0 — Now (next implementation)
+### Tier 0 — Speed Blitz owner predict + dedupe ✅ **SHIPPED (2026-06-14)**
 
 **Speed Blitz — owner dasher predict + dedupe**
 
@@ -263,4 +263,5 @@ See [`SESSION_NOTES.md`](SESSION_NOTES.md) → **Known issues** (ragdoll jitter,
 
 | Date | Change |
 |------|--------|
+| 2026-06-14 | Tier 0 shipped — client-owner Speed Blitz predict + attacker feel dedupe (`TryFindBestDashHitInSegment`, `ShouldSkipHostAttackerFeelBecauseOwnerPredicted`). |
 | 2026-06-14 | Initial doc — philosophy, tiers 0–C, Speed Blitz predict scope, tackle follow-up, per-feature checklist, current architecture snapshot. |

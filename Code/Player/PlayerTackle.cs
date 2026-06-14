@@ -717,6 +717,10 @@ public sealed class PlayerTackle : Component
 	[Rpc.Owner]
 	private void TriggerTackleImpactFeelAsAttackerRpc()
 	{
+		var blitz = Components.Get<SpeedsterSpeedBlitzUlt>();
+		if ( blitz.IsValid() && blitz.ShouldSkipHostAttackerFeelBecauseOwnerPredicted() )
+			return;
+
 		Components.Get<TackleImpactFeel>()?.TriggerAsAttacker();
 	}
 

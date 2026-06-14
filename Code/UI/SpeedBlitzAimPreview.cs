@@ -66,16 +66,12 @@ public sealed class SpeedBlitzAimPreview : Component
 
 	protected override void OnDestroy()
 	{
-		foreach ( var slot in segmentPool )
-		{
-			if ( slot.Root.IsValid() )
-				slot.Root.Destroy();
-		}
+		ClearPreviewObjects();
+	}
 
-		segmentPool.Clear();
-
-		if ( markerGo.IsValid() )
-			markerGo.Destroy();
+	protected override void OnDisabled()
+	{
+		ClearPreviewObjects();
 	}
 
 	protected override void OnUpdate()
@@ -333,6 +329,7 @@ public sealed class SpeedBlitzAimPreview : Component
 	{
 		var go = Scene.CreateObject();
 		go.Name = name;
+		go.NetworkMode = NetworkMode.Never;
 
 		var renderer = go.Components.Create<ModelRenderer>();
 		renderer.RenderOptions.Overlay = false;
@@ -353,6 +350,7 @@ public sealed class SpeedBlitzAimPreview : Component
 
 		markerGo = Scene.CreateObject();
 		markerGo.Name = "SpeedBlitzAimEnd";
+		markerGo.NetworkMode = NetworkMode.Never;
 
 		markerRenderer = markerGo.Components.Create<ModelRenderer>();
 		markerRenderer.RenderOptions.Overlay = false;
@@ -366,13 +364,27 @@ public sealed class SpeedBlitzAimPreview : Component
 
 	void SetVisible( bool visible )
 	{
+		if ( !visible )
+		{
+			ClearPreviewObjects();
+			return;
+		}
+	}
+
+	void ClearPreviewObjects()
+	{
 		foreach ( var slot in segmentPool )
 		{
 			if ( slot.Root.IsValid() )
-				slot.Root.Enabled = visible;
+				slot.Root.Destroy();
 		}
 
+		segmentPool.Clear();
+
 		if ( markerGo.IsValid() )
-			markerGo.Enabled = visible;
+			markerGo.Destroy();
+
+		markerGo = null;
+		markerRenderer = null;
 	}
 }
