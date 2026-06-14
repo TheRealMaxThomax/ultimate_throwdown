@@ -91,7 +91,6 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private bool ownerHasLocalDashCheckPos;
 	private Vector3 ownerLastLocalDashCheckPos;
 	private bool ownerPredictedHitThisDash;
-	private bool ownerPredictedAttackerFeelThisDash;
 
 	private PlayerUltCharge ultCharge;
 	private PlayerClass playerClass;
@@ -472,18 +471,6 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		OwnerZeroHorizontalVelocity();
 	}
 
-	/// <summary>
-	/// Owner: host confirmed knockdown attacker feel — skip duplicate juice when client predict already played.
-	/// </summary>
-	internal bool ShouldSkipHostAttackerFeelBecauseOwnerPredicted()
-	{
-		if ( !ownerPredictedAttackerFeelThisDash )
-			return false;
-
-		ownerPredictedAttackerFeelThisDash = false;
-		return true;
-	}
-
 	/// <summary> Host: abort wind-up or dash (e.g. round reset). Charge is not refunded. </summary>
 	public void CancelBlitzOnHost()
 	{
@@ -747,10 +734,10 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private void OwnerApplyPredictedDashHit( PlayerTackle victim )
 	{
 		ownerPredictedHitThisDash = true;
-		ownerPredictedAttackerFeelThisDash = true;
 		ownerDashMovementBlocked = true;
 		OwnerZeroHorizontalVelocity();
 
+		Components.GetOrCreate<CombatFeelPredictDedupe>().MarkOwnerPredictedAttackerFeel();
 		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
 		tackleImpactFeel?.TriggerAsAttacker();
 
@@ -762,7 +749,6 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	{
 		ownerHasLocalDashCheckPos = false;
 		ownerPredictedHitThisDash = false;
-		ownerPredictedAttackerFeelThisDash = false;
 	}
 
 	// ---------------------------------------------------------------------

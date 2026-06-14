@@ -34,7 +34,7 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Partial** — `PlayerUltCharge` + `UltChargeHud` + **Speed Blitz core (slice 2a)** shipped solo; hold/release preview (2b) + polish (2c) pending |
+| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b** shipped (**MP OK 2026-06-14**); 2b playtest sign-off + 2c polish pending |
 
 ---
 
@@ -105,7 +105,7 @@ Think of three gears:
 - Brief invincibility after getting up
 - **Friendly fire:** tackles can hit **teammates** today (no team filter on victim search). **Ult charge** is **not** awarded for friendly-fire tackles — enemy victims only.
 
-**Multiplayer (built):** Host applies pelvis impulse on a local ragdoll, then `NetworkSpawn` (poll `RagdollPhysicsInitDelay` for bodies). Remote attacker RPC includes **owner Juggernaut charge bonus** so launch power matches what the client had. See [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → Ragdoll (technical).
+**Multiplayer (built):** Host applies pelvis impulse on a local ragdoll, then `NetworkSpawn` (poll `RagdollPhysicsInitDelay` for bodies). Remote attacker RPC includes **owner Juggernaut charge bonus** so launch power matches what the client had. **Client feel predict (2026-06-14):** owner tackler/victim early camera juice via **`CombatFeelPredictDedupe`** — host still owns knockdown. See [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) and [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → Ragdoll (technical).
 
 **Launch tuning:** `TackleLaunchSpeed` and `TackleLaunchArc` on `PlayerTackle` — try values in the **400–800** range in playtests.
 
@@ -125,7 +125,7 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 
 **Juggernaut passive (built):** Stay at charge speed → tackle bonus stacks up to a cap. Drop below charge → bonus resets.
 
-**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** core (slice 2a) shipped — tap X, wind-up, dash, knockdown. Hold/release preview (2b), Juggernaut stomp, Sniper path zones planned. See **Ultimates** and **Speed Blitz** below.
+**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** 2a + **2b hold/release preview** shipped — **MP authority + client dasher predict OK (2026-06-14)**. Juggernaut stomp, Sniper path zones planned. See **Ultimates** and **Speed Blitz** below.
 
 ---
 
@@ -214,14 +214,14 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 ## Speed Blitz (Speedster ult — first ship)
 
-**Status:** **Slice 2a shipped** (solo, 2026-06-13) — tap X commit, wind-up, dash, knockdown, walk ramp after dash. **Slice 2b** (hold/release + ground preview) not started. **Class:** Speedster only.
+**Status:** **Slices 2a + 2b shipped** — hold/release preview, MP authority + **client dasher predict** OK (**2026-06-14**). **2b playtest sign-off** (corridor vs knockdown) + **2c polish** pending. **Class:** Speedster only.
 
-### Shipped in slice 2a (code)
+### Shipped in slice 2a + 2b (code)
 
-- **Tap X** at 100% to commit (hold/release preview is 2b).
-- Wind-up: planted, look locked to commit aim, vulnerable, no cancel.
+- **Hold X** at 100% → owner-only corridor preview; **release X** commits (RMB cancel while aiming).
+- Wind-up: planted, look locked to committed aim, vulnerable, no cancel.
 - Dash: invulnerable; owner-driven through `PlayerController` (wall-slide, step-up); charge_run anim; time-based range.
-- First enemy in corridor → knockdown; dash **stops** on hit.
+- First enemy in corridor → knockdown; dash **stops** on hit; **client-owner predict** for stop + attacker feel (host dedupe).
 - Dash end (hit or miss) → forced **walk** ramp (rebuild to charge).
 - No charge gain, ball pickup, or dodge during ult.
 
@@ -229,7 +229,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 Lightning-fast dash over a long distance. Hit an enemy → launch them **much farther** than a normal tackle. Miss or graze a wall → you slid wrong; skill is aim + prediction.
 
-### Flow (full design — 2b adds preview)
+### Flow (full design)
 
 1. Charge must be **100%**. Not holding the ball. `MatchPhase.Playing` or post-match celebration.
 2. **Hold X** → owner-only preview: **dash line** (max range), **hit width** (capsule corridor), faint **end marker**. Preview geometry = host hit geometry (“between the lines = guaranteed hit” at dash time).

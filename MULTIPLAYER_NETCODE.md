@@ -6,7 +6,7 @@
 
 **Companion docs:** [`SESSION_NOTES.md`](SESSION_NOTES.md) (day-to-day checklist, MP test steps), [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) (mechanics), [`NAMING_CANON.md`](NAMING_CANON.md) (script names).
 
-**Status:** **Active.** Authority fixes for Speed Blitz MP done (2026-06-14). **Tier 0 shipped (2026-06-14):** client-owner Speed Blitz dasher predict + attacker feel dedupe. **Next:** Tier A (tackle attacker predict, victim feel timing, shared dedupe helper).
+**Status:** **Tier 0–A complete ✅ (2026-06-14).** Verified 2–3 window idle-target soak. **Next:** Tier B ongoing tuning; Tier C1 lag-comp if moving targets feel unfair after practice scene.
 
 ---
 
@@ -30,14 +30,17 @@ This is how most action sports games ship without a dedicated netcode team: **th
 | **Client (acting player)** | Moves locally → RPC/report to host → host confirms → sync/RPC back → stop/feel. Gap ≈ **RTT/2+** (often 30–120ms+). |
 | **Other clients** | Interpolated copies of remote players; ragdoll/ball smoothed from host snapshots. |
 
-Common symptoms in this project (expected until predict/tuning):
+Common symptoms **still open** after Tier 0–A:
 
-- Client ult/tackle **connect feels late** on the actor.
-- **Ragdoll jitter** on non-host viewers (`RagdollClientFeel` interpolation).
-- **Ball jitter** on clients (`BallClientFeel`).
-- Remote players ** slightly behind** where the owner sees them.
+- **Ragdoll jitter** on non-host viewers (`RagdollClientFeel` interpolation) — Tier B2.
+- **Ball jitter** on clients (`BallClientFeel`) — Tier B3.
+- Remote players **slightly behind** where the owner sees them — Tier C2.
+- **Moving-target misses** at latency — idle soak OK; practice scene + **Tier C1** lag-comp if still unfair.
 
-These are **not unfixable** — they need layered techniques (below), not one magic flag.
+**Largely addressed (Tier 0–A, 2026-06-14):**
+
+- Client ult/tackle **connect feel late** on the actor → dasher + tackler predict.
+- Client victim **feel late vs freeze/ragdoll** → A2 + A2b predict.
 
 ---
 
@@ -80,12 +83,13 @@ These are **not unfixable** — they need layered techniques (below), not one ma
 
 | System | Owner local | Host authority | Feel RPC / sync |
 |--------|-------------|----------------|-----------------|
-| **Tackle** | Input, movement | `RequestTackleApplyOnHost`, `ExecuteTackle`, ragdoll spawn | `TriggerTackleImpactFeelAsAttackerRpc` / `AsVictimRpc` **after** host hit |
-| **Speed Blitz** | Dash velocity, aim preview | Commit, phase, hit sweep, `ApplyKnockdownFromHost`, walk ramp | `NotifyOwnerDashEndedRpc`; impact feel via tackle path when attacker passed |
-| **Dodge** | Shove on owner when `NetDodgeApplyId` bumps | `RequestDodgeOnHostRpc` | Synced apply id (dedupe pattern exists) |
+| **Tackle** | Input, movement; **attacker predict** on RPC send (A1) | `RequestTackleApplyOnHost`, `ExecuteTackle`, ragdoll spawn | `TriggerTackleImpactFeel*Rpc(applyId)` + **`CombatFeelPredictDedupe`** |
+| **Speed Blitz** | Dash velocity, aim preview; **dasher predict** on local hit (Tier 0) | Commit, phase, hit sweep, `ApplyKnockdownFromHost`, walk ramp | `NotifyOwnerDashEndedRpc`; impact feel via tackle path + dedupe |
+| **Tackle/blitz victim** | **Victim predict** on freeze (A2) or direct ragdoll (A2b) | Knockdown + `NetLastKnockdownWasHazard` | Victim feel RPC + dedupe |
+| **Dodge** | Shove on owner when `NetDodgeApplyId` bumps | `RequestDodgeOnHostRpc` | Synced apply id (dedupe pattern) |
 | **Ball throw** | Trajectory preview, charge camera | Host ball / grab | `BallClientFeel` smooths for viewers |
 | **Match flow** | HUD reads `PlayerTeam` sync | `MatchDirector` on host pushes to players | Not on local MatchDirector |
-| **Traffic** | Proxy pose | Host movement + knockdown | Hazard victim feel path |
+| **Traffic** | Proxy pose | Host movement + knockdown | Hazard victim feel + A2b predict on ragdoll sync |
 
 ### Speed Blitz MP fixes already shipped (authority — not predict)
 
@@ -95,8 +99,7 @@ These are **not unfixable** — they need layered techniques (below), not one ma
 - **Pre-launch pause** on blitz hits (attacker passed to `ApplyKnockdownFromHost`).
 - **Zero velocity** on dasher/victim before knockdown on host.
 - **`NotifyOwnerDashEndedRpc`** + `ownerDashMovementBlocked` so client owner stops without waiting only on `[Sync]`.
-
-**Remaining gap:** acting client still waits for host to **confirm** hit before stop/feel — predict closes that.
+- **Tier 0 predict:** client dasher local corridor hit → stop + attacker feel; host dedupe via **`CombatFeelPredictDedupe`**.
 
 ---
 
@@ -120,13 +123,14 @@ Scope (agreed):
 
 ---
 
-### Tier A — Soon after Tier 0
+### Tier A — Combat feel predict ✅ **COMPLETE (2026-06-14)**
 
 | # | Item | Effort | Notes |
 |---|------|--------|-------|
-| A1 | **Tackle attacker predict** | Medium (easier than blitz) | Local cone/radius when tacker owner presses; early attacker `TackleImpactFeel`; dedupe on host confirm. Reuse blitz pattern. |
-| A2 | **Victim-owner feel timing** | Small | Blitz + tackle: victim `TriggerAsVictim` same frame as host commit / pre-launch pause. |
-| A3 | **Shared dedupe helper** | Small–medium | e.g. host combat event id + “owner consumed predict for id”. Model after `NetDodgeApplyId`. Document names in `NAMING_CANON.md` when added. |
+| A1 | **Tackle attacker predict** ✅ **SHIPPED (2026-06-14)** | Medium | Client owner: local `TryFindTackleVictim` on RPC send → early `TackleImpactFeel`; dedupe on host `TriggerTackleImpactFeelAsAttackerRpc`. Host-as-owner unchanged. |
+| A2 | **Victim-owner feel timing** ✅ **SHIPPED (2026-06-14)** | Small | Client owner: victim feel on first pre-launch freeze frame (`NetAwaitingRagdollLaunch`); dedupe on host victim feel RPC. Tackle + blitz (default pause). |
+| A2b | **Hazard victim feel (traffic)** ✅ **SHIPPED (2026-06-14)** | Small | Client owner: `TriggerAsHazardVictim` on direct ragdoll transition; `NetLastKnockdownWasHazard` sync; dedupe via `CombatFeelPredictDedupe`. |
+| A3 | **Shared dedupe helper** ✅ **SHIPPED (2026-06-14)** | Small–medium | `CombatFeelPredictDedupe` — host `NetCombatFeelApplyId`, owner predict + `TryConsumeHost*FeelDedupe(applyId)` on feel RPCs. Auto-spawned on join. |
 
 ---
 
@@ -172,13 +176,13 @@ When adding **Juggernaut stomp**, **Sniper zones**, **weapons**, or any **owner 
 
 ---
 
-## Speed Blitz predict — implementation sketch (Tier 0)
+## Speed Blitz predict — implementation sketch (Tier 0) ✅ **SHIPPED**
 
 ### Predict locally (owner)
 
 - Each dash fixed tick: segment `lastLocalSample → current WorldPosition`.
 - Same filters as host: `IsValidDashTarget`, `HitHalfWidth`, victim `BodyRadius`, committed direction corridor.
-- First hit → set `ownerPredictedHitThisDash`, `ownerDashMovementBlocked = true`, zero velocity, `TackleImpactFeel.TriggerAsAttacker()`.
+- First hit → set `ownerPredictedHitThisDash`, `ownerDashMovementBlocked = true`, zero velocity, **`CombatFeelPredictDedupe.MarkOwnerPredictedAttackerFeel()`**, `TackleImpactFeel.TriggerAsAttacker()`.
 
 ### Stay host-only
 
@@ -203,14 +207,38 @@ When adding **Juggernaut stomp**, **Sniper zones**, **weapons**, or any **owner 
 
 ---
 
-## Tackle predict — sketch (Tier A1)
+## Tackle predict — sketch (Tier A1) ✅ **SHIPPED**
 
-- **Owner:** on tackle request (or fixed tick while charge-tackling if ever continuous), local `TryFindTackleVictim` with **same** radius/threshold as host RPC.
-- On local find → `TackleImpactFeel.TriggerAsAttacker()` once; set predict id flag.
-- **Host:** unchanged validation; on confirm RPC victim feel as today.
-- **Dedupe:** if `TriggerTackleImpactFeelAsAttackerRpc` arrives and predict already fired for this tackle attempt id, skip.
+- **Owner:** on tackle RPC send, local `TryFindTackleVictim` (same radius/cone as today) → **`CombatFeelPredictDedupe.MarkOwnerPredictedAttackerFeel()`**, `TackleImpactFeel.TriggerAsAttacker()` once.
+- **Host:** unchanged validation; victim feel as today.
+- **Dedupe:** `TriggerTackleImpactFeelAsAttackerRpc(combatFeelApplyId)` → **`CombatFeelPredictDedupe.TryConsumeHostAttackerFeelDedupe`**.
 
 Existing gotcha (keep): **do not** add extra host-side charge gates on tackle RPC — owner/host position lag (`SESSION_NOTES` → Multiplayer gotcha tackles).
+
+---
+
+## Shared dedupe — sketch (Tier A3) ✅ **SHIPPED**
+
+- **`CombatFeelPredictDedupe`** on each player (auto at network spawn).
+- **Host:** `AllocateCombatFeelApplyIdOnHost()` before each attacker/victim feel RPC (`NotifyTackleImpactFeel`).
+- **Owner predict:** `MarkOwnerPredictedAttackerFeel()` / `TryBeginOwnerPredictedVictimFeel()` before local `TackleImpactFeel`.
+- **Owner RPC:** pass `combatFeelApplyId`; `TryConsumeHost*FeelDedupe` skips duplicate feel + records consumed id (model after `NetDodgeApplyId`).
+
+---
+
+## Victim feel timing — sketch (Tier A2) ✅ **SHIPPED**
+
+- **Client owner:** first frame of pre-launch freeze (`NetAwaitingRagdollLaunch`, before/at `ApplyKnockdownAwaitingFreezeLocally`) → `TackleImpactFeel.TriggerAsVictim()`; dedupe on `TriggerTackleImpactFeelAsVictimRpc`.
+- **Covers:** player tackle + Speed Blitz hits (default `PreLaunchPauseSeconds` > 0).
+- **Unchanged:** host-as-victim (instant RPC).
+
+---
+
+## Hazard victim feel — sketch (Tier A2b) ✅ **SHIPPED**
+
+- **Client owner:** on direct ragdoll transition (`NetIsRagdolled`, no pre-launch pause) → `TriggerAsHazardVictim()` or `TriggerAsVictim()` from synced **`NetLastKnockdownWasHazard`**; dedupe on host victim feel RPC.
+- **Covers:** traffic / hazard knockdowns (also legacy tackle when `PreLaunchPauseSeconds` = 0).
+- **Does not:** predict before host knockdown — aligns shake with ragdoll sync, not car contact frame.
 
 ---
 
@@ -240,16 +268,29 @@ Existing gotcha (keep): **do not** add extra host-side charge gates on tackle RP
 
 ## Testing
 
-**Minimum:** [`SESSION_NOTES.md`](SESSION_NOTES.md) → **Multiplayer testing** (2-window).
+**Minimum:** [`SESSION_NOTES.md`](SESSION_NOTES.md) → **Multiplayer testing**.
 
-**After predict work, add:**
+**Combat predict acceptance ✅ (2026-06-14 — idle targets, 2–3 windows):**
 
-- Client dasher → client victim / host victim: stop on same frame as contact (dasher screen).
-- Host dasher unchanged (no double feel).
-- No return of super-far launches.
-- Spam ults/tackles once to probe desync.
+- [x] Client dasher → stop + punch on contact frame; no mega-launches.
+- [x] Client tackler → attacker feel on connect; host unchanged.
+- [x] Client victim (tackle/blitz) → feel with pre-launch freeze.
+- [x] Client traffic victim → shake aligned with ragdoll sync.
+- [x] No double feel on host confirm (dedupe).
+- [ ] **Moving targets** — not validated; need practice scene before C1.
 
-**Optional:** enable `EnableSpeedBlitzDebugLogs` / tackle debug on prefab when tuning false positives.
+**Optional debug:** `EnableSpeedBlitzDebugLogs` / `EnableTackleDebugLogs` on prefab.
+
+---
+
+## What's next (netcode)
+
+| Priority | When |
+|----------|------|
+| **Tier B** | Ongoing — ragdoll interp, ball smooth, checklist on new combat features |
+| **Practice scene** | Moving/charging dummies — prerequisite for fair moving-target MP tests |
+| **Tier C1** | Lag-comp rewind on host hit tests if misses still feel wrong after practice scene |
+| **Tier C2–C3** | Spectator polish, long soak |
 
 ---
 
@@ -263,5 +304,10 @@ See [`SESSION_NOTES.md`](SESSION_NOTES.md) → **Known issues** (ragdoll jitter,
 
 | Date | Change |
 |------|--------|
-| 2026-06-14 | Tier 0 shipped — client-owner Speed Blitz predict + attacker feel dedupe (`TryFindBestDashHitInSegment`, `ShouldSkipHostAttackerFeelBecauseOwnerPredicted`). |
+| 2026-06-14 | **Wrap-up** — Tier 0–A marked complete; testing acceptance; symptoms table updated; `What's next` → B/C. |
+| 2026-06-14 | Tier A2b shipped — client-owner hazard victim feel on direct ragdoll + `NetLastKnockdownWasHazard`. |
+| 2026-06-14 | Tier A3 shipped — `CombatFeelPredictDedupe` + apply-id feel RPC dedupe (replaces per-feature bools). |
+| 2026-06-14 | Tier A2 shipped — client-owner victim feel on pre-launch freeze frame + host RPC dedupe. |
+| 2026-06-14 | Tier A1 shipped — client-owner tackle attacker predict + dedupe on `PlayerTackle`. |
+| 2026-06-14 | Tier 0 shipped — client-owner Speed Blitz predict + attacker feel dedupe (`TryFindBestDashHitInSegment`, **`CombatFeelPredictDedupe.MarkOwnerPredictedAttackerFeel`**). |
 | 2026-06-14 | Initial doc — philosophy, tiers 0–C, Speed Blitz predict scope, tackle follow-up, per-feature checklist, current architecture snapshot. |

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 //   Sync / net state ............ isRagdolled, ragdoll/attack slow-catch windows, tackle strip id, cooldowns
 //   OnStart / OnUpdate .......... camera ref, ragdoll transitions, owner camera + free look
 //   Host detection .............. TryDetectAndApplyHostTackle, ApplyTackleCooldownOnHost
-//   Client → host ............... TryOwnerRequestTackleOnHost, RequestTackleApplyOnHost
+//   Client → host ............... TryOwnerRequestTackleOnHost, RequestTackleApplyOnHost, owner predict feel (Tier A1)
 //   Victim pick ................. TryFindTackleVictim (cone vs horizontal view forward, not velocity)
 //   Hit + ball .................. ExecuteTackle, ApplyKnockdownFromHost
 //   Ragdoll (host only) ......... SpawnRagdollObject, AddVictimClothingToRagdoll, HandleRagdollRecovery, IsRagdollGroundedAndSettled
@@ -53,6 +53,10 @@ public sealed class PlayerTackle : Component
 	private bool netAwaitingRagdollLaunch;
 	[Sync( SyncFlags.FromHost )]
 	private bool NetAwaitingRagdollLaunch { get => netAwaitingRagdollLaunch; set => netAwaitingRagdollLaunch = value; }
+	/// <summary>Host: last knockdown had no player attacker (traffic/hazard) — client victim predict picks hazard feel path.</summary>
+	private bool netLastKnockdownWasHazard;
+	[Sync( SyncFlags.FromHost )]
+	private bool NetLastKnockdownWasHazard { get => netLastKnockdownWasHazard; set => netLastKnockdownWasHazard = value; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetKnockdownFreezePosition { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetRagdollPosition { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetStandUpPosition { get; set; }
@@ -114,6 +118,7 @@ public sealed class PlayerTackle : Component
 	private PlayerClass playerClass;
 	private PlayerController playerController;
 	private TackleImpactFeel tackleImpactFeel;
+	private CombatFeelPredictDedupe combatFeelDedupe;
 	private CameraComponent activeCamera;
 
 	// Last ragdoll orbit camera (owner); used as blend start when standing up
@@ -192,6 +197,7 @@ public sealed class PlayerTackle : Component
 		playerClass = Components.Get<PlayerClass>();
 		playerController = Components.Get<PlayerController>();
 		tackleImpactFeel = Components.Get<TackleImpactFeel>();
+		combatFeelDedupe = Components.Get<CombatFeelPredictDedupe>();
 
 		foreach ( var cam in Scene.GetAllComponents<CameraComponent>() )
 		{
@@ -219,9 +225,18 @@ public sealed class PlayerTackle : Component
 		if ( isRagdolled != wasRagdolled )
 		{
 			if ( isRagdolled )
+			{
+				if ( Network.IsOwner && !Networking.IsHost )
+					OwnerTryApplyPredictedVictimFeelForDirectRagdoll();
+
 				ApplyRagdollLocally();
+			}
 			else
+			{
+				combatFeelDedupe ??= Components.Get<CombatFeelPredictDedupe>();
+				combatFeelDedupe?.ResetVictimKnockdownPredictState();
 				StandUpLocally();
+			}
 
 			wasRagdolled = isRagdolled;
 		}
@@ -233,6 +248,9 @@ public sealed class PlayerTackle : Component
 
 		if ( netAwaitingRagdollLaunch && !isRagdolled )
 		{
+			if ( Network.IsOwner && !Networking.IsHost && !knockdownAwaitingFreezeApplied )
+				OwnerApplyPredictedVictimFeel( hazardKnockdown: false );
+
 			ApplyKnockdownAwaitingFreezeLocally();
 			WorldPosition = NetKnockdownFreezePosition;
 		}
@@ -416,10 +434,48 @@ public sealed class PlayerTackle : Component
 		if ( !TryFindTackleVictim( Scene, this, WorldPosition, approachDir, tackleRadius, TackleDirectionThreshold, out var victim, out _ ) )
 			return;
 
+		OwnerApplyPredictedTackleAttackerFeel();
+
 		var attackerPos = WorldPosition;
 		var victimPos = victim.WorldPosition;
 		nextRemoteTackleRequestAt = Time.Now + (TackleCooldown * 0.2f).Clamp( 0.05f, 0.25f );
 		RequestTackleApplyOnHost( victim.GameObject.Id, approachDir, attackerPos, victimPos, ownerTackleChargeBonus );
+	}
+
+	/// <summary>Client owner only: early attacker feel when local victim find matches the RPC we are about to send.</summary>
+	private void OwnerApplyPredictedTackleAttackerFeel()
+	{
+		combatFeelDedupe ??= Components.GetOrCreate<CombatFeelPredictDedupe>();
+		combatFeelDedupe.MarkOwnerPredictedAttackerFeel();
+		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
+		tackleImpactFeel?.TriggerAsAttacker();
+
+		if ( EnableTackleDebugLogs )
+			Log.Info( $"[Tackle] {GameObject.Name}: owner predict attacker feel" );
+	}
+
+	/// <summary>Client owner: early victim feel aligned with pre-launch freeze (tackle / blitz — Tier A2).</summary>
+	private void OwnerApplyPredictedVictimFeel( bool hazardKnockdown )
+	{
+		combatFeelDedupe ??= Components.GetOrCreate<CombatFeelPredictDedupe>();
+		if ( !combatFeelDedupe.TryBeginOwnerPredictedVictimFeel() )
+			return;
+
+		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
+
+		if ( hazardKnockdown )
+			tackleImpactFeel?.TriggerAsHazardVictim();
+		else
+			tackleImpactFeel?.TriggerAsVictim();
+
+		if ( EnableTackleDebugLogs )
+			Log.Info( $"[Tackle] {GameObject.Name}: owner predict victim feel (hazard={hazardKnockdown})" );
+	}
+
+	/// <summary>Client owner: direct ragdoll knockdown (traffic / no pre-launch pause) — Tier A2b.</summary>
+	private void OwnerTryApplyPredictedVictimFeelForDirectRagdoll()
+	{
+		OwnerApplyPredictedVictimFeel( hazardKnockdown: netLastKnockdownWasHazard );
 	}
 
 	[Rpc.Host]
@@ -634,6 +690,9 @@ public sealed class PlayerTackle : Component
 	{
 		CapturePracticeNpcPreTacklePoseIfTagged( victim );
 
+		if ( Networking.IsHost )
+			victim.NetLastKnockdownWasHazard = !attacker.IsValid();
+
 		var classData = victim.playerClass?.CurrentClass;
 		var ballLaunchForce = (classData?.BallLaunchForceOnTackle ?? 500f) * tacklePowerForBall;
 		var ballLockout = classData?.BallPickupLockoutAfterTackle ?? 1.5f;
@@ -708,25 +767,37 @@ public sealed class PlayerTackle : Component
 			return;
 
 		if ( attacker.IsValid() && attacker != victim )
-			attacker.TriggerTackleImpactFeelAsAttackerRpc();
+		{
+			var attackerDedupe = attacker.Components.GetOrCreate<CombatFeelPredictDedupe>();
+			var applyId = attackerDedupe.AllocateCombatFeelApplyIdOnHost();
+			attacker.TriggerTackleImpactFeelAsAttackerRpc( applyId );
+		}
 
 		if ( victim.IsValid() )
-			victim.TriggerTackleImpactFeelAsVictimRpc( hazardKnockdown: !attacker.IsValid() );
+		{
+			var victimDedupe = victim.Components.GetOrCreate<CombatFeelPredictDedupe>();
+			var applyId = victimDedupe.AllocateCombatFeelApplyIdOnHost();
+			victim.TriggerTackleImpactFeelAsVictimRpc( applyId, hazardKnockdown: !attacker.IsValid() );
+		}
 	}
 
 	[Rpc.Owner]
-	private void TriggerTackleImpactFeelAsAttackerRpc()
+	private void TriggerTackleImpactFeelAsAttackerRpc( int combatFeelApplyId )
 	{
-		var blitz = Components.Get<SpeedsterSpeedBlitzUlt>();
-		if ( blitz.IsValid() && blitz.ShouldSkipHostAttackerFeelBecauseOwnerPredicted() )
+		combatFeelDedupe ??= Components.Get<CombatFeelPredictDedupe>();
+		if ( combatFeelDedupe.IsValid() && combatFeelDedupe.TryConsumeHostAttackerFeelDedupe( combatFeelApplyId ) )
 			return;
 
 		Components.Get<TackleImpactFeel>()?.TriggerAsAttacker();
 	}
 
 	[Rpc.Owner]
-	private void TriggerTackleImpactFeelAsVictimRpc( bool hazardKnockdown )
+	private void TriggerTackleImpactFeelAsVictimRpc( int combatFeelApplyId, bool hazardKnockdown )
 	{
+		combatFeelDedupe ??= Components.Get<CombatFeelPredictDedupe>();
+		if ( combatFeelDedupe.IsValid() && combatFeelDedupe.TryConsumeHostVictimFeelDedupe( combatFeelApplyId ) )
+			return;
+
 		var feel = Components.Get<TackleImpactFeel>();
 		if ( !feel.IsValid() )
 			return;

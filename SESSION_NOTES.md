@@ -19,11 +19,11 @@
 
 ## Right now
 
-**Goal:** **Speed Blitz 2b** playtest + **MP netcode feel** — Tier 0 predict shipped; **2-window verify** next.
+**Goal:** **Slice 2b sign-off** + gameplay polish. **MP combat feel predict (Tier 0–A3, A2b) ✅ shipped & verified (2026-06-14).**
 
 **Next session (priority order):**
-1. **Tier 0 MP verify** — client dasher stop + punch on contact frame; no double feel / mega-launch regression ([`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md))
-2. **Slice 2b sign-off** — corridor vs knockdown; optional 2a/2b MP soak
+1. **Slice 2b sign-off** — corridor vs knockdown playtest (solo + optional MP)
+2. **Practice scene** — moving/charging dummies before C1 lag-comp
 3. Throw charge MP + polish / tackle comic — when ready
 
 **Works today:**
@@ -44,7 +44,8 @@
 - **Traffic knockdown** — no pre-launch pause; **`HazardKnockdownComicPower`** default **1.55** (Chaos/red); **`TriggerAsHazardVictim()`** + **`IsHazardImpact`** car camera path (defer ragdoll cam, orbit shake baseline, enter blend). **Player tackles** use simpler path — hitstop during freeze, ragdoll cam when `isRagdolled`
 - **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** + **`ComicLetterExitMotion`**: entrance polish + **14 exit styles** (5 CSS + 7 letter C#); timing via `LifetimeSeconds` / `ExitFadeStartFraction` / `ExitFadeDurationFraction` / `ExitTailSeconds` — **good enough for v1**; MP verify + Les Flos optional
 - **Ult charge (slice 1)** — **`PlayerUltCharge`** + **`UltChargeHud`** on **player prefab** (manual — **not** auto-spawned). Passive regen **`Playing` only**; goal (scorer) + tackle (attacker, **enemy only**); FF tackle **no** charge; % **persists** across rounds; **rematch → 0%**. HUD: floored **%**, white → blue after **`ReadyHighlightDelaySeconds`** at 100%. **`Ultimate`** bound to **X** (ability slice 2).
-- **Speed Blitz (slice 2a)** — **`SpeedsterSpeedBlitzUlt`** on **Speedster** prefab (manual). **Hold X** at 100% → owner corridor preview (`SpeedBlitzAimPreview`); **release X** → commit; **RMB** cancel aim. Wind-up → dash → knockdown / walk ramp (same as 2a). **Solo OK (2026-06-13)**; 2b hit width aligned to preview (2026-06-14).
+- **Speed Blitz (slice 2a/2b)** — **`SpeedsterSpeedBlitzUlt`** + owner **`SpeedBlitzAimPreview`** on Speedster prefab (manual). Hold X → corridor preview; release → commit; RMB cancel. Hit width = preview; **MP authority + client dasher predict OK (2026-06-14)**.
+- **MP combat feel predict** — **`CombatFeelPredictDedupe`** (auto on join): client-owner early **`TackleImpactFeel`** for blitz dash, tackle connect, victim freeze (tackle/blitz), traffic ragdoll; host **`NetCombatFeelApplyId`** dedupe. Details → [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md). **2–3 window idle-target soak OK (2026-06-14)**; moving-target fairness → practice scene + Tier C1 later.
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -77,10 +78,10 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | Folder | What’s in it |
 |--------|----------------|
 | `Code/Ball/` | Ball pickup, throw, charge bar, trajectory preview (`ThrowReleaseMath`), **`BallCarrierOutline`**, smooth ball on clients |
-| `Code/Player/` | Movement, dodge, tackle, team, class, cosmetics, **`PlayerBallHoldAnim`** (hold/throw), **`PlayerChargeRunAnim`** (charge-speed overlay), **no crouch** |
+| `Code/Player/` | Movement, dodge, tackle, **`CombatFeelPredictDedupe`**, team, class, cosmetics, **`PlayerBallHoldAnim`**, **`PlayerChargeRunAnim`**, **no crouch** |
 | `Code/Network/` | Spawning players when people join |
 | `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig` |
-| `Code/Ultimates/` | **`PlayerUltCharge`** (slice 1 shipped); **`SpeedsterSpeedBlitzUlt`** (slice 2 next) |
+| `Code/Ultimates/` | **`PlayerUltCharge`** (slice 1); **`SpeedsterSpeedBlitzUlt`** (slice 2a/2b) |
 | `Code/UI/` | Match HUD + owner HUDs + **`UltChargeHud`** + **`BallCompassHud`** + **`TackleComicTextHud`** / **`TackleComicBurst`** |
 | `Code/Map/` | `StartupMapBootstrap` (practice NPC locks); **`StreetLightFlicker`** (decorative lamp flicker); **`StationLightFlicker`** (petrol station spot + mesh color flicker); **`TrafficSpawner`** / **`TrafficCar`** (host lane traffic + knockdown) |
 
@@ -102,7 +103,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 
 **Read [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md)** when changing host RPCs, `[Sync]`, owner-driven movement, combat hits, ragdolls, or **adding new combat features**. That doc covers: host authority vs client-side prediction (feel only), reconciliation, priority order (now → per-feature → tuning → late dev), and the **new feature checklist**.
 
-**Tier 0 ✅ (2026-06-14):** Speed Blitz client-owner **dasher predict + dedupe** — local corridor stop + `TackleImpactFeel.TriggerAsAttacker`; host confirm skips duplicate feel. **Next:** Tier A tackle attacker predict + victim feel timing.
+**Tier 0–A3 + A2b ✅ (2026-06-14):** Client predict for blitz dasher, tackle attacker, victim freeze, traffic ragdoll; **`CombatFeelPredictDedupe`**. **Next netcode:** Tier B tuning / Tier C1 lag-comp if moving targets feel unfair — see [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md).
 
 ---
 
@@ -116,7 +117,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Walk into the ball = pick it up.** No kick button. While held, ball follows **`hold_R`** on **Body** `SkinnedModelRenderer` (`BallGrab.HoldBoneName`; falls back to `HoldAnchor`). Old `HandHoldPoint` + `citizen_holdball_test` IK was for classic citizen — human uses bone attach.
 - **Ball carrier hold/throw anim (v1):** **`PlayerBallHoldAnim`** — **`holditem`** + **RH** while holding; on release **`b_attack`** (built-in medium throw). **`ThrowPoseHoldSeconds`** / **`ThrowPlaybackRate`**; **`BallThrow.ThrowReleaseDelaySeconds`** delays ball velocity. Charge = masked **`throw_windup`** layer on forked **`utd_citizen_human_m.vanmgrph`** (`throw_charge` / `throw_charge_weight`; body alive). Sequences on **`utd_citizen_human_throw.vmdl`**. Auto-added on network spawn.
 - **Online: the host is the referee** — clients request; host decides.
-- **Tackles:** Only at full charge speed (`NetAtChargeSpeed`). Host ragdoll + client **request** RPC. **`PreLaunchPauseSeconds` > 0:** **`NetAwaitingRagdollLaunch`** — victim **visible + frozen**, hidden host ragdoll, then impulse + **`NetworkSpawn`** + **`NetIsRagdolled`**; **`0`** = impulse-then-spawn. **Traffic/hazards** skip pause (attacker-less knockdown). **`TackleImpactFeel`** = owner-only camera juice; ragdoll orbit waits while `IsImpactFeelActive`. Juggernaut bonus in RPC. Built-in ragdoll collision audio; victim grunt SFX later.
+- **Tackles:** Only at full charge speed (`NetAtChargeSpeed`). Host ragdoll + client **request** RPC. **`PreLaunchPauseSeconds` > 0:** **`NetAwaitingRagdollLaunch`** — victim **visible + frozen**, then impulse + ragdoll. **Client victim/attacker feel predict** (Tier A) — host still owns knockdown. **`CombatFeelPredictDedupe`** dedupes host feel RPCs.
 - **Charge run overlay:** **`PlayerChargeRunAnim`** drives graph params when **`IsAtChargeSpeed`** (synced) — not owner-only ramp HUD.
 - **Dodge:** Double-tap A or D. Tackle iframe only.
 - **Ragdoll / knockdown:** **Walk** ramp resets **on knockdown** (`TriggerForceWalkRampOnHost` + local snap of `smoothedMoveSpeedCap` in `CatchUpSpeedBoost`); ramp timers frozen while down. **✅ Working.**
@@ -148,6 +149,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 10. **Tackle juice:** hitstop/shake/punch on connect; victim **visible freeze** then launch when **`PreLaunchPauseSeconds` > 0**; host→client and client→host.
 11. Spam actions once to probe desync.
 12. **Ult charge:** % creeps in **Playing** only; frozen in celebration/intermission; goal/tackle bumps; FF tackle no bump; persists across rounds; rematch clears; HUD floored % + blue flash at 100%.
+13. **Combat feel predict:** client tackler / dasher / victim / car-hit — juice on contact frame, no double feel; idle targets OK (2026-06-14).
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
 
@@ -158,7 +160,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 ## Multiplayer gotcha (tackles)
 
 - Physics and impulse are **host-only** on `PlayerRagdoll`.
-- Remote attacker: `TryOwnerRequestTackleOnHost` → `RequestTackleApplyOnHost` (owner positions + `ownerTackleChargeBonus`).
+- Remote attacker: `TryOwnerRequestTackleOnHost` → `RequestTackleApplyOnHost` (owner positions + `ownerTackleChargeBonus`). **Attacker feel predict** on RPC send; **`CombatFeelPredictDedupe`** dedupes host RPC.
 - **Do not** require extra host-side charge/distance gates on the RPC — `NetAtChargeSpeed` / host positions lag and tackles feel late.
 - Rare: impact sound spam at tackle start (client → host); left alone — not worth breaking launch.
 
@@ -208,6 +210,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **`PlayerTackle`** — **`PreLaunchPauseSeconds`** (default **0.05**; **0** = legacy launch); tune with **`TackleImpactFeel.HitstopDurationSeconds`**
 - **`PlayerChargeRunAnim`** — auto-added on network spawn. **`UseAnimGraphChargeRunPose`** on; **`IsAtChargeSpeed`** (not local HUD tier). Graph → [`CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md)
 - **`TackleImpactFeel`** — auto-added on network spawn. Tune **Hitstop** / **Shake** / **Attacker punch**; **`ShakeForAttacker`** + **`ShakeForVictim`**
+- **`CombatFeelPredictDedupe`** — auto-added on network spawn (with **`TackleImpactFeel`**). No inspector tuning.
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
 - **`BallThrow`** — tune **`ThrowReleaseDelaySeconds`** (~0.35) to match anim release frame; **`Throw Direction Source`** optional (else **`PlayerController.EyeAngles`**)
 
@@ -302,7 +305,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [x] **Walls:** slide along; no tunnel-through
 - [x] No ball pickup / dodge during ult; **enemies-only** dash hit
 - [x] Cancelled on round reset / rematch (`CancelAllInScene`)
-- [ ] **MP 2-window** — optional before 2b (host + client commit/dash/knockdown)
+- [x] **MP 2-window** — ✅ **OK (2026-06-14)** commit/dash/knockdown + predict feel
 
 **Prefab:** **`SpeedsterSpeedBlitzUlt`** on Speedster player prefab (manual). Tune `DashRange` / `DashSpeed` / `HitHalfWidth` / `KnockdownLaunchSpeed` / `WindUpDurationSeconds`.
 
@@ -355,8 +358,8 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 | After slice | Verify |
 |-------------|--------|
 | **1** ✅ | % creeps Playing only; frozen celebration/intermission; goal/tackle bumps; FF tackle no bump; persists rounds; rematch 0%; HUD floor % + blue at 100% |
-| **2a** ✅ solo | Commit spends charge; wind-up interrupt wastes ult; dash stops on hit; walk ramp after dash; enemy-only knockdown; **2-window MP optional** |
-| **2b** | Preview owner-only; release aim = dash direction; preview matches hit |
+| **2a** ✅ | Commit, dash, knockdown, walk ramp; **2-window MP OK (2026-06-14)** |
+| **2b** | Preview owner-only; release aim = dash direction; preview matches hit; **playtest sign-off pending** |
 | **2c** | Feel tuning; optional comic/SFX |
 
 ---
@@ -370,7 +373,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 ## Known issues
 
 - [ ] **Tackle comic text** — Les Flos import + **2-window MP verify** (optional; exits good enough for v1)
-- [ ] **Tackle juice — moving victims** — pause reads best vs runners; solo MP idle-only so far — revisit after practice scene or live 2P; tune **`PreLaunchPauseSeconds`** vs **`HitstopDurationSeconds`** (set pause **0** if hang feels like delay)
+- [ ] **Tackle juice — moving victims** — predict tested on **idle** targets only (2026-06-14); moving fairness → practice scene + Tier C1 lag-comp
 - [ ] **Throw charge wind-up — MP verify + polish** — ✅ **WORKS solo (2026-06-11)**: masked layer in forked graph `utd_citizen_human_m.vanmgrph`; body keeps locomotion/look-at while arm winds up. Remaining: 2-window MP check (remotes scrub via `NetThrowChargeLerp`); improve the wind-up clip in Blender if wanted (overwrite `throw_windup.fbx` — see workflow doc "Iterating on a clip"); pick final bone mask (see Open decisions).
 - [ ] Throw strength still needs playtest tuning
 - [ ] Walk/run animations while charging throw (legs still locomote in place — `PlayerBallHoldAnim` does not fix; charge blocks move input)
@@ -389,10 +392,9 @@ Paste at the start of a new chat:
 
 ```
 Read SESSION_NOTES.md → Known issues, Ult roadmap, MULTIPLAYER_NETCODE.md (any net/combat work).
-Match flow slices 1–6 done. Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
+Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped (2026-06-14).
+Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 No GameNetworkManager auto-add for ult components — player prefab manual.
-
-Speed Blitz MP authority OK (2026-06-14). Tier 0 client-owner dasher predict + dedupe shipped — 2-window verify next. See MULTIPLAYER_NETCODE.md.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -401,13 +403,9 @@ Speed Blitz MP authority OK (2026-06-14). Tier 0 client-owner dasher predict + d
 
 ## Recent session notes
 
-- **2026-06-14 (SpeedBlitzAimPreview MP leak fix):** Preview `Scene.CreateObject` used default snapshot sync — could replicate corridor/end meshes to other clients (rare; seen once in 3P). Fixed: `NetworkMode.Never` + destroy on hide. **Do not** disable component in `OnStart` (ownership not ready on clients) or use `Overlay` (breaks client owner ground telegraph).
-- **2026-06-14 (Tier 0 predict shipped):** `SpeedsterSpeedBlitzUlt` — client owner local corridor sweep during dash; stop + attacker feel on predict; `ShouldSkipHostAttackerFeelBecauseOwnerPredicted()` dedupes host RPC. **2-window verify: feels much better.**
-- **2026-06-14 (MP netcode plan):** [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) — predict/reconcile roadmap; Tier 0 = Blitz dasher predict + dedupe.
-- **2026-06-14 (Speed Blitz MP feel):** Host sweep capped per tick; knockdown uses committed dash dir + tackle pre-launch pause; zero velocity before launch (fixes client mega-launches).
-- **2026-06-14 (ult slice 2b hit/preview align):** Host dash hit subtracts victim `BodyRadius` so corridor side lines match body-edge knockdowns; aim yaw locks on X release (before wind-up).
-- **2026-06-13 (knockdown walk reset ✅):** `TriggerForceWalkRampOnHost` on knockdown + local `smoothedMoveSpeedCap` snap; timers frozen while down.
-- **2026-06-13 (ult slice 2a shipped — solo):** `SpeedsterSpeedBlitzUlt` — tap X, wind-up, dash, stop on hit, walk ramp after dash. **2-window MP optional** before 2b.
-- **2026-06-13 (ult slice 1 shipped):** `PlayerUltCharge` + `UltChargeHud`; `Ultimate` → X.
+- **2026-06-14 (MP combat feel — Tier 0–A3 + A2b):** Full predict stack shipped + verified (2–3 window). **`CombatFeelPredictDedupe`**, blitz/tackle/victim/traffic predict; **`SpeedBlitzAimPreview`** `NetworkMode.Never` leak fix. Idle targets OK; moving → practice scene + C1.
+- **2026-06-14 (Speed Blitz authority + 2b):** Host sweep cap, committed dash dir, pre-launch pause, preview/hit align, aim lock on X release.
+- **2026-06-13 (knockdown walk reset ✅):** `TriggerForceWalkRampOnHost` + local ramp snap.
+- **2026-06-13 (ult slice 2a / slice 1):** Speed Blitz core + shared ult charge.
 
-Older comic-text / tackle detail → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
+Older detail → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).

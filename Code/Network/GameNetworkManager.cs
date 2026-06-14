@@ -252,6 +252,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		player.Components.GetOrCreate<PlayerBallHoldAnim>();
 		player.Components.GetOrCreate<PlayerChargeRunAnim>();
 		player.Components.GetOrCreate<TackleImpactFeel>();
+		player.Components.GetOrCreate<CombatFeelPredictDedupe>();
 
 		player.NetworkSpawn( connection );
 
