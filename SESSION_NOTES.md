@@ -9,6 +9,7 @@
 | [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) | Full match flow design (slices 1–6 **complete**) |
 | [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) | Tuning dodge/tackle, classes, **ultimates** (permanent charge + ult rules), future weapons |
 | [`NAMING_CANON.md`](NAMING_CANON.md) | Exact script/property names — agents read this automatically when adding/renaming under `Code/` |
+| [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) | **MP feel & netcode** — host authority, client predict, reconciliation, priority roadmap, **checklist for new combat features** |
 | [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) | Something broke before and you want the long “why we did it” story |
 | [`Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md) | Custom citizen human anims — Blender export, ModelDoc, ScaleAndMirror, troubleshooting (throw, wave, hit, stand-up, …) |
 
@@ -18,12 +19,12 @@
 
 ## Right now
 
-**Goal:** **Speed Blitz slice 2b** — hold/release + preview **code done**; **playtest** corridor vs knockdown + optional 2a/2b MP.
+**Goal:** **Speed Blitz 2b** playtest + **MP netcode feel** — see [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) (**Tier 0:** dasher predict + dedupe next).
 
 **Next session (priority order):**
-1. **Slice 2b playtest** — corridor lines vs knockdowns (capsule-aware hit shipped); aim locks on X release
-2. **Slice 2a/2b MP** — optional 2-window verify
-3. Throw charge MP + polish / tackle comic / soak — when ready
+1. **MP netcode Tier 0** — Speed Blitz owner dasher predict + dedupe ([`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md))
+2. **Slice 2b sign-off** — corridor vs knockdown; optional 2a/2b MP soak
+3. Throw charge MP + polish / tackle comic — when ready
 
 **Works today:**
 - Ball grab/throw — held ball on **`hold_R`** (`BallGrab` + `BallClientFeel`); **throw trajectory preview** + **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **`BallThrow.ThrowReleaseDelaySeconds`** — anim fires on release, ball stays on hand until delay elapses (tune to release frame); **`PlayerBallHoldAnim`** — built-in `holditem` RH hold + medium throw on release (`b_attack`) + **custom charge wind-up via forked animgraph masked layer** (`throw_charge`/`throw_charge_weight` on `utd_citizen_human_m.vanmgrph` scrub `throw_windup`; body keeps locomotion/look-at — **solo verified 2026-06-11**); **ball carrier glow** (`BallCarrierOutline`); **`BallCompassHud`**; **`main_ball`** art WIP (`ball_v2.vmat`); tackles/ragdolls; dodge; **crouch disabled**
@@ -97,6 +98,14 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 
 ---
 
+## Multiplayer feel & netcode
+
+**Read [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md)** when changing host RPCs, `[Sync]`, owner-driven movement, combat hits, ragdolls, or **adding new combat features**. That doc covers: host authority vs client-side prediction (feel only), reconciliation, priority order (now → per-feature → tuning → late dev), and the **new feature checklist**.
+
+**Next up (Tier 0):** Speed Blitz **owner dasher predict + dedupe**; then tackle attacker predict. Prioritize **dasher + victim** feel; spectators later.
+
+---
+
 ## How the game is put together (simple rules)
 
 - **One script, one job** — e.g. `BallGrab` = “who holds the ball”, `BallThrow` = “throwing”, `ThrowTrajectoryPreview` = owner aim helper only.
@@ -124,6 +133,8 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 ---
 
 ## Multiplayer testing (do this after network changes)
+
+See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** after predict/lag-comp work.
 
 1. Start Play (host).
 2. Network menu → **Join via new instance** (second window = client).
@@ -377,12 +388,11 @@ More history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → Known issues (charge+S), Ult roadmap, GAMEPLAY_DESIGN.md → Ultimates.
+Read SESSION_NOTES.md → Known issues, Ult roadmap, MULTIPLAYER_NETCODE.md (any net/combat work).
 Match flow slices 1–6 done. Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 No GameNetworkManager auto-add for ult components — player prefab manual.
 
-Slice 2a Speed Blitz shipped (solo). Charge W+S mutex fixed in CatchUpSpeedBoost.
-Ragdoll knockdown → walk reset on knockdown: working.
+Speed Blitz MP authority OK (2026-06-14). Next netcode: Tier 0 dasher predict — see MULTIPLAYER_NETCODE.md.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -391,7 +401,8 @@ Ragdoll knockdown → walk reset on knockdown: working.
 
 ## Recent session notes
 
-- **2026-06-14 (Speed Blitz preview ground):** Corridor traces ignore players + `main_ball`; per-segment climb capped to `MoveModeWalk.StepUpHeight` (prefab walk step height).
+- **2026-06-14 (MP netcode plan):** [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) — predict/reconcile roadmap; Tier 0 = Blitz dasher predict + dedupe.
+- **2026-06-14 (Speed Blitz MP feel):** Host sweep capped per tick; knockdown uses committed dash dir + tackle pre-launch pause; zero velocity before launch (fixes client mega-launches).
 - **2026-06-14 (ult slice 2b hit/preview align):** Host dash hit subtracts victim `BodyRadius` so corridor side lines match body-edge knockdowns; aim yaw locks on X release (before wind-up).
 - **2026-06-13 (knockdown walk reset ✅):** `TriggerForceWalkRampOnHost` on knockdown + local `smoothedMoveSpeedCap` snap; timers frozen while down.
 - **2026-06-13 (ult slice 2a shipped — solo):** `SpeedsterSpeedBlitzUlt` — tap X, wind-up, dash, stop on hit, walk ramp after dash. **2-window MP optional** before 2b.

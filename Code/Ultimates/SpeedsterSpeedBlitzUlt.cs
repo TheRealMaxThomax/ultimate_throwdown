@@ -58,6 +58,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	[Property, Group( "Dash" )] public float KnockdownLaunchSpeed { get; set; } = 950f;
 	[Property, Group( "Dash" )] public float KnockdownLaunchArc { get; set; } = 1.2f;
 
+	/// <summary> Multiplier on dash-speed × fixed delta when capping host sweep steps (client RPC can arrive in bursts). </summary>
+	[Property, Group( "Dash" )] public float DashSweepStepMultiplier { get; set; } = 2.5f;
+
 	[Property] public bool EnableSpeedBlitzDebugLogs { get; set; }
 
 	[Sync( SyncFlags.FromHost )] private SpeedBlitzPhase NetPhase { get; set; }
@@ -68,6 +71,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private float hostDashEndsAt;
 	private bool hostHasHitTarget;
 	private Vector3 hostLastDashCheckPos;
+	private Vector3 hostOwnerDashSamplePos;
+	private bool hostHasOwnerDashSample;
+	private float hostOwnerDashSampleTime;
 
 	// Owner-only state.
 	private float nextCommitRequestAt;
@@ -78,6 +84,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private bool ownerSavedUseInputControls = true;
 	private bool ownerWasInDashPhase;
 	private bool ownerBlockedAimUntilUltimateRelease;
+	/// <summary> Host ended the dash before <see cref="NetPhase"/> sync — blocks <see cref="OwnerDriveDashMovement"/> until inactive. </summary>
+	private bool ownerDashMovementBlocked;
 
 	private PlayerUltCharge ultCharge;
 	private PlayerClass playerClass;
@@ -123,13 +131,19 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	protected override void OnFixedUpdate()
 	{
+		if ( Networking.IsHost )
+			HostFixedUpdate();
+
 		if ( !Network.IsOwner )
 			return;
 
 		if ( IsWindUp )
 			OwnerFreezeMovement();
 		else if ( IsDashing )
+		{
 			OwnerDriveDashMovement();
+			ReportDashSamplePositionToHost();
+		}
 	}
 
 	/// <summary> Owner: re-assert the locked aim last, after other systems integrate look, so the dash holds its committed direction. </summary>
@@ -168,19 +182,24 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 					BeginDashOnHost();
 				return;
 
-			case SpeedBlitzPhase.Dash:
-				// Keep the dasher invulnerable for the whole dash (re-assert in case a stale tackle invuln timer clears it).
-				playerTackle?.SetHostTackleImmune( true );
-
-				if ( Time.Now >= hostDashEndsAt )
-				{
-					EndBlitzOnHost( "dash_done" );
-					return;
-				}
-
-				HostDashHitCheck();
-				return;
 		}
+	}
+
+	/// <summary> Host dash timer + hit sweep — fixed update so it aligns with owner position reports. </summary>
+	private void HostFixedUpdate()
+	{
+		if ( NetPhase != SpeedBlitzPhase.Dash )
+			return;
+
+		playerTackle?.SetHostTackleImmune( true );
+
+		if ( Time.Now >= hostDashEndsAt )
+		{
+			EndBlitzOnHost( "dash_done" );
+			return;
+		}
+
+		HostDashHitCheck();
 	}
 
 	private void TryCommitOnHost( Vector3 committedDirFromOwner )
@@ -239,7 +258,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		hostDashEndsAt = Time.Now + DashDurationSeconds;
 		hostHasHitTarget = false;
-		hostLastDashCheckPos = GameObject.WorldPosition;
+		hostLastDashCheckPos = GetHostDashCheckCurrentPosition();
+		hostHasOwnerDashSample = false;
+		hostOwnerDashSampleTime = 0f;
 		playerTackle?.SetHostTackleImmune( true );
 		NetPhase = SpeedBlitzPhase.Dash;
 
@@ -250,7 +271,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	/// <summary> Host: swept corridor check from last position to current; first enemy ends the dash. </summary>
 	private void HostDashHitCheck()
 	{
-		var curr = GameObject.WorldPosition;
+		var currRaw = GetHostDashCheckCurrentPosition();
+		var curr = ClampDashSweepEndPosition( hostLastDashCheckPos, currRaw );
 
 		var segStart = hostLastDashCheckPos.WithZ( 0 );
 		var segEnd = curr.WithZ( 0 );
@@ -282,19 +304,98 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		if ( !best.IsValid() )
 			return;
 
-		var knockDir = (best.WorldPosition - curr).WithZ( 0 );
-		if ( knockDir.Length < 0.001f )
-			knockDir = NetCommittedDirection.WithZ( 0 );
+		HostApplyDashKnockdown( best );
+	}
+
+	/// <summary> Host: always launch along committed dash dir (MP-safe); brief pre-launch pause like tackles. </summary>
+	private void HostApplyDashKnockdown( PlayerTackle victim )
+	{
+		var knockDir = NetCommittedDirection.WithZ( 0 );
 		if ( knockDir.Length < 0.001f )
 			knockDir = Vector3.Forward;
+		else
+			knockDir = knockDir.Normal;
 
-		best.ApplyKnockdownFromHost( knockDir.Normal, KnockdownLaunchSpeed, KnockdownLaunchArc );
+		playerBody ??= Components.Get<Rigidbody>();
+		if ( playerBody.IsValid() )
+			playerBody.Velocity = new Vector3( 0f, 0f, playerBody.Velocity.z );
+
+		playerController ??= Components.Get<PlayerController>();
+		if ( playerController.IsValid() )
+			playerController.WishVelocity = Vector3.Zero;
+
+		var victimBody = victim.Components.Get<Rigidbody>();
+		if ( victimBody.IsValid() )
+			victimBody.Velocity = Vector3.Zero;
+
+		var victimController = victim.Components.Get<PlayerController>();
+		if ( victimController.IsValid() )
+			victimController.WishVelocity = Vector3.Zero;
+
+		victim.ApplyKnockdownFromHost( knockDir, KnockdownLaunchSpeed, KnockdownLaunchArc, playerTackle );
 		hostHasHitTarget = true;
 
 		if ( EnableSpeedBlitzDebugLogs )
-			Log.Info( $"[SpeedBlitz] {GameObject.Name}: dash hit {best.GameObject.Name}" );
+			Log.Info( $"[SpeedBlitz] {GameObject.Name}: dash hit {victim.GameObject.Name}" );
 
 		EndBlitzOnHost( "hit_enemy" );
+	}
+
+	/// <summary> Prevents lagged owner samples from sweeping a huge corridor in one host tick. </summary>
+	private Vector3 ClampDashSweepEndPosition( Vector3 segStart, Vector3 segEndRaw )
+	{
+		var flatDelta = (segEndRaw - segStart).WithZ( 0f );
+		var maxStep = GetMaxDashSweepStepDistance();
+		if ( flatDelta.Length <= maxStep )
+			return segEndRaw;
+
+		var clamped = segStart + flatDelta.Normal * maxStep;
+		return new Vector3( clamped.x, clamped.y, segEndRaw.z );
+	}
+
+	private float GetMaxDashSweepStepDistance()
+	{
+		var tick = Time.Delta.Clamp( 0.008f, 0.05f );
+		return (DashSpeed * tick * DashSweepStepMultiplier.Clamp( 1f, 6f )).Clamp( 16f, 160f );
+	}
+
+	/// <summary> Host: owner-reported dash sample for client-owned dashers (local owner uses live transform). </summary>
+	private Vector3 GetHostDashCheckCurrentPosition()
+	{
+		if ( Network.IsOwner || !Networking.IsHost )
+			return GameObject.WorldPosition;
+
+		if ( hostHasOwnerDashSample && Time.Now - hostOwnerDashSampleTime <= 0.15f )
+			return hostOwnerDashSamplePos;
+
+		return GameObject.WorldPosition;
+	}
+
+	/// <summary> Host-only: latest owner-reported dash position for this pawn (client-owned dashers). </summary>
+	internal bool TryGetHostReportedDashPosition( out Vector3 position )
+	{
+		if ( !Networking.IsHost || !hostHasOwnerDashSample || Time.Now - hostOwnerDashSampleTime > 0.15f )
+		{
+			position = default;
+			return false;
+		}
+
+		position = hostOwnerDashSamplePos;
+		return true;
+	}
+
+	[Rpc.Host]
+	private void ReportDashSamplePositionOnHostRpc( Vector3 samplePos )
+	{
+		if ( Network.Owner is null || Rpc.Caller.SteamId != Network.Owner.SteamId )
+			return;
+
+		if ( NetPhase != SpeedBlitzPhase.Dash )
+			return;
+
+		hostOwnerDashSamplePos = samplePos;
+		hostHasOwnerDashSample = true;
+		hostOwnerDashSampleTime = Time.Now;
 	}
 
 	/// <summary> Returns (lateral distance from point to segment, distance along segment from start to the closest point). </summary>
@@ -316,7 +417,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		if ( !Networking.IsHost || NetPhase == SpeedBlitzPhase.None )
 			return;
 
-		var applyWalkRampPenalty = NetPhase == SpeedBlitzPhase.Dash && (reason == "dash_done" || reason == "hit_enemy" );
+		var wasDashing = NetPhase == SpeedBlitzPhase.Dash;
+		var applyWalkRampPenalty = wasDashing && (reason == "dash_done" || reason == "hit_enemy" );
+		var notifyOwnerToStop = wasDashing && Network.Owner is not null && !Network.IsOwner;
 
 		if ( EnableSpeedBlitzDebugLogs )
 			Log.Info( $"[SpeedBlitz] {GameObject.Name}: end ({reason})" );
@@ -325,6 +428,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		hostWindUpEndsAt = 0f;
 		hostDashEndsAt = 0f;
 		hostHasHitTarget = false;
+		hostHasOwnerDashSample = false;
+		hostOwnerDashSampleTime = 0f;
 		playerTackle?.SetHostTackleImmune( false );
 		ultCharge?.SetHostChargeGainBlocked( false );
 
@@ -336,6 +441,16 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			if ( EnableSpeedBlitzDebugLogs )
 				Log.Info( $"[SpeedBlitz] {GameObject.Name}: dash ended — forced to walk ramp" );
 		}
+
+		if ( notifyOwnerToStop )
+			NotifyOwnerDashEndedRpc();
+	}
+
+	[Rpc.Owner]
+	private void NotifyOwnerDashEndedRpc()
+	{
+		ownerDashMovementBlocked = true;
+		OwnerZeroHorizontalVelocity();
 	}
 
 	/// <summary> Host: abort wind-up or dash (e.g. round reset). Charge is not refunded. </summary>
@@ -363,6 +478,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	private void OwnerUpdate()
 	{
+		if ( !IsActive )
+			ownerDashMovementBlocked = false;
+
 		if ( IsDashing )
 			ownerWasInDashPhase = true;
 
@@ -531,6 +649,12 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	/// </summary>
 	private void OwnerDriveDashMovement()
 	{
+		if ( ownerDashMovementBlocked )
+		{
+			OwnerZeroHorizontalVelocity();
+			return;
+		}
+
 		var dir = NetCommittedDirection.WithZ( 0 );
 		if ( dir.Length < 0.001f )
 			return;
@@ -548,6 +672,14 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		// Set the actual velocity (preserve vertical so gravity / stick-to-ground still works).
 		if ( playerBody.IsValid() )
 			playerBody.Velocity = horizontal.WithZ( playerBody.Velocity.z );
+	}
+
+	private void ReportDashSamplePositionToHost()
+	{
+		if ( Networking.IsHost )
+			return;
+
+		ReportDashSamplePositionOnHostRpc( GameObject.WorldPosition );
 	}
 
 	// ---------------------------------------------------------------------

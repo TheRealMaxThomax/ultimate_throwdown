@@ -575,7 +575,7 @@ public sealed class PlayerTackle : Component
 
 	/// <summary>Host: hazard knockdown (traffic, etc.) — same ragdoll path as tackle without attacker bookkeeping.</summary>
 	/// <returns><c>true</c> if knockdown started.</returns>
-	public bool ApplyKnockdownFromHost( Vector3 launchDir, float launchSpeed, float launchArc = -1f )
+	public bool ApplyKnockdownFromHost( Vector3 launchDir, float launchSpeed, float launchArc = -1f, PlayerTackle attacker = null )
 	{
 		if ( !Networking.IsHost )
 			return false;
@@ -585,7 +585,7 @@ public sealed class PlayerTackle : Component
 			return false;
 
 		var arc = launchArc >= 0f ? launchArc : TackleLaunchArc;
-		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, HazardKnockdownComicPower, attackerGrabForCarrierLockout: null, attacker: null );
+		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, HazardKnockdownComicPower, attackerGrabForCarrierLockout: null, attacker );
 		return true;
 	}
 
