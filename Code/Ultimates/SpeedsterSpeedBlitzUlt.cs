@@ -70,6 +70,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private float hostWindUpEndsAt;
 	private float hostDashEndsAt;
 	private bool hostHasHitTarget;
+	private Vector3 hostDashCorridorOrigin;
 	private Vector3 hostLastDashCheckPos;
 	private Vector3 hostOwnerDashSamplePos;
 	private bool hostHasOwnerDashSample;
@@ -89,6 +90,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	// Owner-only client predict (Tier 0 — see MULTIPLAYER_NETCODE.md).
 	private bool ownerHasLocalDashCheckPos;
+	private Vector3 ownerDashCorridorOrigin;
 	private Vector3 ownerLastLocalDashCheckPos;
 	private bool ownerPredictedHitThisDash;
 
@@ -203,6 +205,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		if ( Time.Now >= hostDashEndsAt )
 		{
+			HostDashFinalHitCheck();
 			EndBlitzOnHost( "dash_done" );
 			return;
 		}
@@ -267,6 +270,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		hostDashEndsAt = Time.Now + DashDurationSeconds;
 		hostHasHitTarget = false;
 		hostLastDashCheckPos = GetHostDashCheckCurrentPosition();
+		hostDashCorridorOrigin = hostLastDashCheckPos.WithZ( 0f );
 		hostHasOwnerDashSample = false;
 		hostOwnerDashSampleTime = 0f;
 		playerTackle?.SetHostTackleImmune( true );
@@ -282,20 +286,55 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		var currRaw = GetHostDashCheckCurrentPosition();
 		var curr = ClampDashSweepEndPosition( hostLastDashCheckPos, currRaw );
 
-		if ( TryFindBestDashHitInSegment( hostLastDashCheckPos, curr, out var best ) )
+		if ( TryFindBestDashHitInSegment( hostLastDashCheckPos, curr, hostDashCorridorOrigin, out var best ) )
 			HostApplyDashKnockdown( best );
 
 		hostLastDashCheckPos = curr;
 	}
 
+	/// <summary> Host: last sweep to committed corridor end so max-range targets are not skipped when the dash timer ends. </summary>
+	private void HostDashFinalHitCheck()
+	{
+		if ( hostHasHitTarget )
+			return;
+
+		var dir = NetCommittedDirection.WithZ( 0f );
+		if ( dir.Length < 0.001f )
+			return;
+
+		dir = dir.Normal;
+		var curr = GetHostDashCheckCurrentPosition();
+		var currAlong = ProjectAlongDashCorridor( hostDashCorridorOrigin, dir, curr );
+		var sweepEndAlong = MathF.Max( currAlong, DashRange );
+		var sweepEnd = hostDashCorridorOrigin + dir * sweepEndAlong;
+		sweepEnd = new Vector3( sweepEnd.x, sweepEnd.y, curr.z );
+
+		if ( TryFindBestDashHitInSegment( hostLastDashCheckPos, sweepEnd, hostDashCorridorOrigin, out var best ) )
+			HostApplyDashKnockdown( best );
+	}
+
 	/// <summary> Shared corridor sweep — host hit test and owner predict use the same filters/width. </summary>
-	private bool TryFindBestDashHitInSegment( Vector3 segStartRaw, Vector3 segEndRaw, out PlayerTackle victim )
+	private bool TryFindBestDashHitInSegment(
+		Vector3 segStartRaw,
+		Vector3 segEndRaw,
+		Vector3 corridorOriginRaw,
+		out PlayerTackle victim )
 	{
 		victim = null;
 
-		var segStart = segStartRaw.WithZ( 0 );
-		var segEnd = segEndRaw.WithZ( 0 );
+		var corridorDir = NetCommittedDirection.WithZ( 0f );
+		if ( corridorDir.Length < 0.001f )
+			return false;
+
+		corridorDir = corridorDir.Normal;
+		var corridorOrigin = corridorOriginRaw.WithZ( 0f );
 		var halfWidth = HitHalfWidth.Clamp( 4f, 200f );
+		var maxAlong = DashRange;
+
+		var segStartAlong = ProjectAlongDashCorridor( corridorOrigin, corridorDir, segStartRaw );
+		var segEndAlong = ProjectAlongDashCorridor( corridorOrigin, corridorDir, segEndRaw );
+		var segAlongMin = MathF.Min( segStartAlong, segEndAlong );
+		var segAlongMax = MathF.Max( segStartAlong, segEndAlong );
 
 		PlayerTackle best = null;
 		var bestAlong = float.MaxValue;
@@ -305,10 +344,18 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			if ( !IsValidDashTarget( candidate ) )
 				continue;
 
-			var target = candidate.WorldPosition.WithZ( 0 );
-			var (lateral, along) = DistanceToSegment2D( segStart, segEnd, target );
+			var target = candidate.WorldPosition.WithZ( 0f );
+			var along = ProjectAlongDashCorridor( corridorOrigin, corridorDir, target );
+			var lateral = LateralDistanceToDashCorridor( corridorOrigin, corridorDir, target );
 			var targetBodyRadius = GetDashTargetBodyRadius( candidate );
+
 			if ( lateral + targetBodyRadius > halfWidth )
+				continue;
+
+			if ( along + targetBodyRadius < 0f || along - targetBodyRadius > maxAlong )
+				continue;
+
+			if ( along + targetBodyRadius < segAlongMin || along - targetBodyRadius > segAlongMax )
 				continue;
 
 			if ( along < bestAlong )
@@ -416,18 +463,17 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		hostOwnerDashSampleTime = Time.Now;
 	}
 
-	/// <summary> Returns (lateral distance from point to segment, distance along segment from start to the closest point). </summary>
-	private static (float lateral, float along) DistanceToSegment2D( Vector3 a, Vector3 b, Vector3 p )
+	private static float ProjectAlongDashCorridor( Vector3 corridorOrigin, Vector3 corridorDir, Vector3 point )
 	{
-		var ab = b - a;
-		var abLen = ab.Length;
-		if ( abLen < 0.0001f )
-			return ((p - a).Length, 0f);
+		return Vector3.Dot( point.WithZ( 0f ) - corridorOrigin, corridorDir );
+	}
 
-		var dir = ab / abLen;
-		var t = Vector3.Dot( p - a, dir ).Clamp( 0f, abLen );
-		var closest = a + dir * t;
-		return ((p - closest).Length, t);
+	private static float LateralDistanceToDashCorridor( Vector3 corridorOrigin, Vector3 corridorDir, Vector3 point )
+	{
+		var flat = point.WithZ( 0f ) - corridorOrigin;
+		var along = Vector3.Dot( flat, corridorDir );
+		var closest = corridorOrigin + corridorDir * along;
+		return (point.WithZ( 0f ) - closest).Length;
 	}
 
 	private void EndBlitzOnHost( string reason )
@@ -716,12 +762,13 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		if ( !ownerHasLocalDashCheckPos )
 		{
+			ownerDashCorridorOrigin = curr.WithZ( 0f );
 			ownerLastLocalDashCheckPos = curr;
 			ownerHasLocalDashCheckPos = true;
 			return;
 		}
 
-		if ( !TryFindBestDashHitInSegment( ownerLastLocalDashCheckPos, curr, out var victim ) )
+		if ( !TryFindBestDashHitInSegment( ownerLastLocalDashCheckPos, curr, ownerDashCorridorOrigin, out var victim ) )
 		{
 			ownerLastLocalDashCheckPos = curr;
 			return;
@@ -748,6 +795,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private void ResetOwnerDashPredictState()
 	{
 		ownerHasLocalDashCheckPos = false;
+		ownerDashCorridorOrigin = default;
 		ownerPredictedHitThisDash = false;
 	}
 

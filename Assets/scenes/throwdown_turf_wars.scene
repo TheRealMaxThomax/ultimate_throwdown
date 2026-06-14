@@ -3002,7 +3002,7 @@
                   ]
                 },
                 {
-                  "__guid": "dffd4d0c-788b-4cad-96dd-a4b7cc289493",
+                  "__guid": "5725a5f7-a5a7-4b76-95bc-7f4817443cc0",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3019,7 +3019,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "1d963048-d9e0-4d63-b342-b31059a5b089",
+                      "__guid": "1922a17a-e87f-4012-9f99-bbad0cd49273",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6299,7 +6299,7 @@
                   ]
                 },
                 {
-                  "__guid": "89996b52-53c7-4f57-a262-505ecade92b6",
+                  "__guid": "edd4df90-0c8e-4937-b55d-dbc306cd6080",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6316,7 +6316,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "153b1ace-9036-4c0c-8248-97cf22ed5778",
+                      "__guid": "1db34053-34b3-449c-a71d-8a0576df08d6",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8935,7 +8935,7 @@
                   ]
                 },
                 {
-                  "__guid": "a3e9c7a2-ca00-4678-868f-f652e9956756",
+                  "__guid": "517c6f87-2c22-465c-928d-277188e2f893",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8952,7 +8952,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "7b5e14eb-b440-497b-a313-e572702674a3",
+                      "__guid": "f44833e4-f685-4ac7-856c-1958b66c5ac1",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11571,7 +11571,7 @@
                   ]
                 },
                 {
-                  "__guid": "081dadbd-71de-4688-b61a-404d0f40e039",
+                  "__guid": "bac5d7c2-0071-4409-bc7c-639af38ffb2c",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11588,7 +11588,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "d19411bc-486c-456a-a4b3-df8bb9f816da",
+                      "__guid": "b79f81a7-cbe6-49c2-971a-9c3a66723bef",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -87303,14 +87303,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
-      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
+        }
+      },
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
         }
       }
     }

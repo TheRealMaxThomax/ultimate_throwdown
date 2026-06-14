@@ -34,7 +34,7 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b** shipped (**MP OK 2026-06-14**); 2b playtest sign-off + 2c polish pending |
+| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b** complete (**2026-06-14**); **2c polish** pending |
 
 ---
 
@@ -214,7 +214,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 ## Speed Blitz (Speedster ult — first ship)
 
-**Status:** **Slices 2a + 2b shipped** — hold/release preview, MP authority + **client dasher predict** OK (**2026-06-14**). **2b playtest sign-off** (corridor vs knockdown) + **2c polish** pending. **Class:** Speedster only.
+**Status:** **Slices 2a + 2b complete** — hold/release preview matches knockdown incl. max range (**playtest sign-off 2026-06-14**). **2c polish** next. **Class:** Speedster only.
 
 ### Shipped in slice 2a + 2b (code)
 
