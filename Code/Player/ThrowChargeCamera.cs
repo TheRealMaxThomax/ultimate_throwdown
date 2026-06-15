@@ -4,9 +4,11 @@ using Sandbox;
 /// Owner-only third-person pullback + mild FOV widen while <see cref="BallThrow.IsChargingThrow"/>.
 /// FOV is applied in <see cref="PlayerController.IEvents.PostCameraSetup"/> because PlayerController
 /// resets <see cref="CameraComponent.FieldOfView"/> from preferences every frame after <c>OnUpdate</c>.
-/// Runs after <see cref="SpeedBlitzDashCamera"/> so throw offset is not overwritten when ult is idle.
+/// Runs at <c>[Order(10002)]</c> (right after <see cref="BallThrow"/>) so release blend starts before
+/// <see cref="PlayerController"/> camera setup. FOV still applied in <see cref="PlayerController.IEvents.PostCameraSetup"/>.
+/// Offset is not touched when idle (same as <see cref="SpeedBlitzDashCamera"/> when ult idle).
 /// </summary>
-[Order( 10006 )]
+[Order( 10002 )]
 public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 {
 	[Property] public float ExtraCameraDistanceAtFullCharge { get; set; } = 50f;
@@ -29,8 +31,12 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 	private float lastChargeCameraLerp;
 	private bool wasKnockedDown;
 	private float releaseBlendStartTime = -1f;
+	private bool releaseBlendAwaitingPostCameraClear;
 	private Vector3 releaseBlendFromOffset;
 	private float releaseBlendFromFieldOfView;
+	private float lastAppliedChargeFieldOfView;
+	private bool hasLastAppliedChargeFieldOfView;
+	private bool releaseBlendUseZeroT;
 
 	protected override void OnStart()
 	{
@@ -56,20 +62,36 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 		if ( !TryEnsureReady() )
 			return;
 
+		if ( releaseBlendAwaitingPostCameraClear )
+		{
+			releaseBlendStartTime = -1f;
+			releaseBlendAwaitingPostCameraClear = false;
+		}
+
 		if ( ShouldLeaveCameraAlone() )
 		{
 			wasChargingThrow = false;
 			wasPendingThrowRelease = false;
 			releaseBlendStartTime = -1f;
+			releaseBlendAwaitingPostCameraClear = false;
+			hasLastAppliedChargeFieldOfView = false;
 			return;
 		}
 
 		var charging = ballThrow.IsValid() && ballThrow.IsChargingThrow;
 		var pendingRelease = ballThrow.IsValid() && ballThrow.IsPendingThrowRelease;
 
+		// Start blend immediately when BallThrow (10001) just cleared charge/pending — before PC camera setup.
+		if ( IsAwaitingReleaseBlendStart( charging, pendingRelease ) )
+			BeginReleaseOffsetBlend();
+
 		if ( charging )
 		{
+			if ( !wasChargingThrow )
+				baselineCameraOffset = playerController.CameraOffset;
+
 			releaseBlendStartTime = -1f;
+			releaseBlendAwaitingPostCameraClear = false;
 			lastChargeCameraLerp = ballThrow.GetThrowChargeLerp();
 			ApplyChargeCameraOffset( lastChargeCameraLerp );
 		}
@@ -77,20 +99,14 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 		{
 			// Hold charge camera while throw wind-up runs (ThrowReleaseDelaySeconds) — blend starts after ball leaves.
 			releaseBlendStartTime = -1f;
+			releaseBlendAwaitingPostCameraClear = false;
 			ApplyChargeCameraOffset( lastChargeCameraLerp );
-		}
-		else if ( wasChargingThrow || wasPendingThrowRelease )
-		{
-			BeginReleaseOffsetBlend();
 		}
 		else if ( releaseBlendStartTime >= 0f )
 		{
 			StepReleaseOffsetBlend();
 		}
-		else
-		{
-			ApplyBaselineOffset();
-		}
+		// Idle: do not touch CameraOffset — PlayerController owns it (same as SpeedBlitzDashCamera when ult idle).
 
 		wasChargingThrow = charging;
 		wasPendingThrowRelease = pendingRelease;
@@ -116,13 +132,27 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 		if ( TryGetOverrideFieldOfView( out var fieldOfView ) )
 		{
 			cam.FieldOfView = fieldOfView;
+			if ( ballThrow?.IsChargingThrow == true || ballThrow?.IsPendingThrowRelease == true )
+			{
+				lastAppliedChargeFieldOfView = fieldOfView;
+				hasLastAppliedChargeFieldOfView = true;
+			}
+			else if ( releaseBlendStartTime >= 0f )
+				releaseBlendUseZeroT = false;
+
 			return;
 		}
 
 		if ( !(ballThrow?.IsChargingThrow == true)
 			&& !(ballThrow?.IsPendingThrowRelease == true)
-			&& releaseBlendStartTime < 0f )
+			&& releaseBlendStartTime < 0f
+			&& !releaseBlendAwaitingPostCameraClear )
 			baselineFieldOfView = cam.FieldOfView;
+	}
+
+	bool IsAwaitingReleaseBlendStart( bool charging, bool pendingRelease )
+	{
+		return releaseBlendStartTime < 0f && !charging && !pendingRelease && (wasChargingThrow || wasPendingThrowRelease);
 	}
 
 	bool TryGetOverrideFieldOfView( out float fieldOfView )
@@ -139,20 +169,43 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 
 		if ( ballThrow.IsValid() && ballThrow.IsPendingThrowRelease )
 		{
-			fieldOfView = baselineFieldOfView + (ExtraFieldOfViewAtFullCharge * lastChargeCameraLerp.Clamp( 0f, 1f ));
+			fieldOfView = GetHeldChargeFieldOfView();
 			return true;
 		}
 
 		if ( releaseBlendStartTime >= 0f )
 		{
-			var duration = ReleaseCameraBlendDuration <= 0.0001f ? 0.0001f : ReleaseCameraBlendDuration;
-			var tLinear = MathX.Clamp( (Time.Now - releaseBlendStartTime) / duration, 0f, 1f );
-			var t = tLinear * tLinear * (3f - 2f * tLinear );
-			fieldOfView = MathX.Lerp( releaseBlendFromFieldOfView, baselineFieldOfView, t );
+			fieldOfView = MathX.Lerp( releaseBlendFromFieldOfView, baselineFieldOfView, GetReleaseBlendSmoothT() );
+			return true;
+		}
+
+		var charging = ballThrow.IsValid() && ballThrow.IsChargingThrow;
+		var pendingRelease = ballThrow.IsValid() && ballThrow.IsPendingThrowRelease;
+		if ( IsAwaitingReleaseBlendStart( charging, pendingRelease ) )
+		{
+			fieldOfView = GetHeldChargeFieldOfView();
 			return true;
 		}
 
 		return false;
+	}
+
+	float GetHeldChargeFieldOfView()
+	{
+		if ( hasLastAppliedChargeFieldOfView )
+			return lastAppliedChargeFieldOfView;
+
+		return baselineFieldOfView + (ExtraFieldOfViewAtFullCharge * lastChargeCameraLerp.Clamp( 0f, 1f ));
+	}
+
+	float GetReleaseBlendSmoothT()
+	{
+		if ( releaseBlendUseZeroT )
+			return 0f;
+
+		var duration = ReleaseCameraBlendDuration <= 0.0001f ? 0.0001f : ReleaseCameraBlendDuration;
+		var tLinear = MathX.Clamp( (Time.Now - releaseBlendStartTime) / duration, 0f, 1f );
+		return tLinear * tLinear * (3f - 2f * tLinear );
 	}
 
 	bool ShouldLeaveCameraAlone()
@@ -175,7 +228,7 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 		baselineCameraOffset = playerController.CameraOffset;
 		baselineCaptured = true;
 		releaseBlendStartTime = -1f;
-		ApplyBaselineOffset();
+		releaseBlendAwaitingPostCameraClear = false;
 	}
 
 	void TryCaptureBaselineOffset()
@@ -218,37 +271,44 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 
 	void ApplyChargeCameraOffset( float chargeLerp )
 	{
+		playerController.CameraOffset = GetChargeCameraOffset( chargeLerp );
+	}
+
+	Vector3 GetChargeCameraOffset( float chargeLerp )
+	{
 		chargeLerp = chargeLerp.Clamp( 0f, 1f );
-		var extraOffset = new Vector3(
+		return baselineCameraOffset + new Vector3(
 			ExtraCameraDistanceAtFullCharge * chargeLerp,
 			0f,
 			ExtraCameraHeightAtFullCharge * chargeLerp );
-
-		playerController.CameraOffset = baselineCameraOffset + extraOffset;
 	}
 
 	void BeginReleaseOffsetBlend()
 	{
-		releaseBlendFromOffset = playerController.CameraOffset;
-		releaseBlendFromFieldOfView = baselineFieldOfView + (ExtraFieldOfViewAtFullCharge * lastChargeCameraLerp.Clamp( 0f, 1f ));
+		var chargeLerp = lastChargeCameraLerp.Clamp( 0f, 1f );
+		releaseBlendFromOffset = GetChargeCameraOffset( chargeLerp );
+		releaseBlendFromFieldOfView = GetHeldChargeFieldOfView();
+		hasLastAppliedChargeFieldOfView = false;
+		releaseBlendAwaitingPostCameraClear = false;
 		releaseBlendStartTime = Time.Now;
+		releaseBlendUseZeroT = true;
+		playerController.CameraOffset = releaseBlendFromOffset;
 		StepReleaseOffsetBlend();
 	}
 
 	void StepReleaseOffsetBlend()
 	{
+		var t = GetReleaseBlendSmoothT();
 		var duration = ReleaseCameraBlendDuration <= 0.0001f ? 0.0001f : ReleaseCameraBlendDuration;
-		var tLinear = MathX.Clamp( (Time.Now - releaseBlendStartTime) / duration, 0f, 1f );
-		var t = tLinear * tLinear * (3f - 2f * tLinear );
+		var tLinear = releaseBlendUseZeroT
+			? 0f
+			: MathX.Clamp( (Time.Now - releaseBlendStartTime) / duration, 0f, 1f );
 
-		playerController.CameraOffset = Vector3.Lerp( releaseBlendFromOffset, baselineCameraOffset, t );
+		playerController.CameraOffset = tLinear >= 1f
+			? baselineCameraOffset
+			: Vector3.Lerp( releaseBlendFromOffset, baselineCameraOffset, t );
 
 		if ( tLinear >= 1f )
-			releaseBlendStartTime = -1f;
-	}
-
-	void ApplyBaselineOffset()
-	{
-		playerController.CameraOffset = baselineCameraOffset;
+			releaseBlendAwaitingPostCameraClear = true;
 	}
 }

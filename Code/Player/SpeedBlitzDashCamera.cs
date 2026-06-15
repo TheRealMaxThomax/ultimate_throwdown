@@ -1,13 +1,15 @@
 using Sandbox;
 
 /// <summary>
-/// Owner-only Speed Blitz camera — wind-up FOV/pullback buildup, instant dash FOV spike + strong pullback.
+/// Owner-only Speed Blitz camera — wind-up FOV/pullback buildup, blended transition into dash spike + pullback.
+/// On enemy contact, <see cref="BeginHitRecoveryBlend"/> eases back to baseline at freeze start (not victim launch).
 /// FOV is applied in <see cref="PlayerController.IEvents.PostCameraSetup"/> because PlayerController
 /// resets <see cref="CameraComponent.FieldOfView"/> from preferences every frame after <c>OnUpdate</c>.
-/// Only touches <see cref="PlayerController.CameraOffset"/> during an active ult — never resets offset when idle
-/// ( <see cref="ThrowChargeCamera"/> owns offset the rest of the time ).
+/// Runs at <c>[Order(10012)]</c> (right after <see cref="SpeedsterSpeedBlitzUlt"/>) so dash phase + blend start
+/// land before <see cref="PlayerController"/> camera setup. Only touches <see cref="PlayerController.CameraOffset"/>
+/// during an active ult or hit-recovery blend — never resets offset when idle.
 /// </summary>
-[Order( 10004 )]
+[Order( 10012 )]
 public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 {
 	[Property, Group( "Wind-up" )] public float ExtraFieldOfViewAtFullWindUp { get; set; } = 10f;
@@ -17,6 +19,7 @@ public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 	[Property, Group( "Dash" )] public float ExtraFieldOfViewDuringDash { get; set; } = 24f;
 	[Property, Group( "Dash" )] public float ExtraCameraDistanceDuringDash { get; set; } = 48f;
 	[Property, Group( "Dash" )] public float ExtraCameraHeightDuringDash { get; set; } = 16f;
+	[Property, Group( "Dash" )] public float WindUpToDashBlendDurationSeconds { get; set; } = 0.15f;
 	[Property, Group( "Dash" )] public float DashEndBlendDurationSeconds { get; set; } = 0.18f;
 
 	private SpeedsterSpeedBlitzUlt speedBlitzUlt;
@@ -30,7 +33,20 @@ public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 
 	private bool wasDashing;
 	private bool wasWindUp;
+	private float lastWindUpCameraLerp = 1f;
+	private float lastAppliedWindUpFieldOfView;
+	private bool hasLastAppliedWindUpFieldOfView;
+	private float lastAppliedDashFieldOfView;
+	private bool hasLastAppliedDashFieldOfView;
+	private float dashStartBlendStartTime = -1f;
+	private bool dashStartBlendUseZeroT;
+	private bool dashStartBlendAwaitingPostCameraClear;
+	private Vector3 dashStartBlendFromOffset;
+	private float dashStartBlendFromFieldOfView;
 	private float dashEndBlendStartTime = -1f;
+	private bool dashEndBlendFromHit;
+	private bool dashEndBlendUseZeroT;
+	private bool dashEndBlendAwaitingPostCameraClear;
 	private Vector3 dashEndBlendFromOffset;
 	private float dashEndBlendFromFieldOfView;
 
@@ -41,6 +57,18 @@ public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 		tackleImpactFeel = Components.Get<TackleImpactFeel>();
 		playerController = Components.Get<PlayerController>();
 		TryCaptureBaselineOffset();
+	}
+
+	/// <summary> Owner: dash stopped on enemy contact — ease camera to baseline at impact freeze start. </summary>
+	public void BeginHitRecoveryBlend()
+	{
+		if ( !Network.IsOwner || dashEndBlendStartTime >= 0f )
+			return;
+
+		if ( !TryEnsureReady() )
+			return;
+
+		BeginDashEndBlend( fromHit: true );
 	}
 
 	protected override void OnUpdate()
@@ -60,11 +88,34 @@ public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 		if ( !TryEnsureReady() )
 			return;
 
+		if ( dashStartBlendAwaitingPostCameraClear )
+		{
+			dashStartBlendStartTime = -1f;
+			dashStartBlendAwaitingPostCameraClear = false;
+		}
+
+		if ( dashEndBlendAwaitingPostCameraClear )
+		{
+			dashEndBlendStartTime = -1f;
+			dashEndBlendFromHit = false;
+			dashEndBlendAwaitingPostCameraClear = false;
+		}
+
 		if ( ShouldLeaveCameraAlone() )
 		{
 			wasDashing = false;
 			wasWindUp = false;
-			dashEndBlendStartTime = -1f;
+			dashStartBlendStartTime = -1f;
+			dashStartBlendUseZeroT = false;
+			dashStartBlendAwaitingPostCameraClear = false;
+			hasLastAppliedWindUpFieldOfView = false;
+			hasLastAppliedDashFieldOfView = false;
+			if ( !dashEndBlendFromHit )
+			{
+				dashEndBlendStartTime = -1f;
+				dashEndBlendUseZeroT = false;
+				dashEndBlendAwaitingPostCameraClear = false;
+			}
 			return;
 		}
 
@@ -72,25 +123,37 @@ public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 		var dashing = speedBlitzUlt.IsDashing;
 		var ultActive = speedBlitzUlt.IsActive;
 
-		if ( dashing )
-		{
-			dashEndBlendStartTime = -1f;
-			ApplyDashCameraOffset();
-		}
-		else if ( windUp )
-		{
-			dashEndBlendStartTime = -1f;
-			ApplyWindUpCameraOffset( speedBlitzUlt.GetWindUpLerp() );
-		}
-		else if ( dashEndBlendStartTime >= 0f )
+		if ( dashEndBlendStartTime >= 0f )
 		{
 			StepDashEndOffsetBlend();
 		}
+		else if ( IsAwaitingDashStartBlend( windUp, dashing ) )
+		{
+			BeginDashStartBlend();
+		}
+		else if ( dashing )
+		{
+			if ( dashStartBlendStartTime >= 0f )
+				StepDashStartOffsetBlend();
+			else
+				ApplyDashCameraOffset();
+		}
+		else if ( windUp )
+		{
+			if ( !wasWindUp )
+				baselineCameraOffset = playerController.CameraOffset;
+
+			dashStartBlendStartTime = -1f;
+			dashStartBlendUseZeroT = false;
+			dashStartBlendAwaitingPostCameraClear = false;
+			hasLastAppliedDashFieldOfView = false;
+			lastWindUpCameraLerp = speedBlitzUlt.GetWindUpLerp();
+			ApplyWindUpCameraOffset( lastWindUpCameraLerp );
+		}
 		else if ( (wasDashing || wasWindUp) && !ultActive )
 		{
-			BeginDashEndBlend();
+			BeginDashEndBlend( fromHit: false );
 		}
-		// When idle: do not touch CameraOffset — ThrowChargeCamera / PlayerController own it.
 
 		wasDashing = dashing;
 		wasWindUp = windUp;
@@ -113,11 +176,35 @@ public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 		if ( TryGetOverrideFieldOfView( out var fieldOfView ) )
 		{
 			cam.FieldOfView = fieldOfView;
+			if ( speedBlitzUlt.IsWindUp )
+			{
+				lastAppliedWindUpFieldOfView = fieldOfView;
+				hasLastAppliedWindUpFieldOfView = true;
+			}
+			else if ( speedBlitzUlt.IsDashing && dashEndBlendStartTime < 0f && dashStartBlendStartTime < 0f )
+			{
+				lastAppliedDashFieldOfView = fieldOfView;
+				hasLastAppliedDashFieldOfView = true;
+			}
+			else if ( dashStartBlendStartTime >= 0f )
+				dashStartBlendUseZeroT = false;
+			else if ( dashEndBlendStartTime >= 0f )
+				dashEndBlendUseZeroT = false;
+
 			return;
 		}
 
-		if ( !speedBlitzUlt.IsActive && dashEndBlendStartTime < 0f )
+		if ( !speedBlitzUlt.IsActive
+			&& dashEndBlendStartTime < 0f
+			&& dashStartBlendStartTime < 0f
+			&& !dashStartBlendAwaitingPostCameraClear
+			&& !dashEndBlendAwaitingPostCameraClear )
 			baselineFieldOfView = cam.FieldOfView;
+	}
+
+	bool IsAwaitingDashStartBlend( bool windUp, bool dashing )
+	{
+		return dashStartBlendStartTime < 0f && wasWindUp && dashing && !windUp;
 	}
 
 	bool TryGetOverrideFieldOfView( out float fieldOfView )
@@ -127,41 +214,115 @@ public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 		if ( !speedBlitzUlt.IsValid() )
 			return false;
 
-		if ( speedBlitzUlt.IsDashing )
+		if ( dashEndBlendStartTime >= 0f )
 		{
-			fieldOfView = baselineFieldOfView + ExtraFieldOfViewAtFullWindUp + ExtraFieldOfViewDuringDash;
+			fieldOfView = MathX.Lerp( dashEndBlendFromFieldOfView, baselineFieldOfView, GetDashEndBlendSmoothT() );
 			return true;
 		}
 
-		if ( speedBlitzUlt.IsWindUp )
+		if ( dashStartBlendStartTime >= 0f )
+		{
+			fieldOfView = MathX.Lerp( dashStartBlendFromFieldOfView, GetDashPeakFieldOfView(), GetDashStartBlendSmoothT() );
+			return true;
+		}
+
+		var windUp = speedBlitzUlt.IsWindUp;
+		var dashing = speedBlitzUlt.IsDashing;
+
+		if ( IsAwaitingDashStartBlend( windUp, dashing ) )
+		{
+			fieldOfView = GetHeldWindUpFieldOfView();
+			return true;
+		}
+
+		if ( dashing )
+		{
+			fieldOfView = GetDashPeakFieldOfView();
+			return true;
+		}
+
+		if ( windUp )
 		{
 			var windUpLerp = speedBlitzUlt.GetWindUpLerp();
 			fieldOfView = baselineFieldOfView + (ExtraFieldOfViewAtFullWindUp * windUpLerp);
 			return true;
 		}
 
-		if ( dashEndBlendStartTime >= 0f )
-		{
-			var duration = DashEndBlendDurationSeconds <= 0.0001f ? 0.0001f : DashEndBlendDurationSeconds;
-			var tLinear = MathX.Clamp( (Time.Now - dashEndBlendStartTime) / duration, 0f, 1f );
-			var t = tLinear * tLinear * (3f - 2f * tLinear );
-			fieldOfView = MathX.Lerp( dashEndBlendFromFieldOfView, baselineFieldOfView, t );
-			return true;
-		}
-
 		return false;
+	}
+
+	float GetHeldWindUpFieldOfView()
+	{
+		if ( hasLastAppliedWindUpFieldOfView )
+			return lastAppliedWindUpFieldOfView;
+
+		return baselineFieldOfView + (ExtraFieldOfViewAtFullWindUp * lastWindUpCameraLerp.Clamp( 0f, 1f ));
+	}
+
+	float GetHeldDashFieldOfView()
+	{
+		if ( hasLastAppliedDashFieldOfView )
+			return lastAppliedDashFieldOfView;
+
+		return GetDashPeakFieldOfView();
+	}
+
+	float GetDashStartBlendSmoothT()
+	{
+		if ( dashStartBlendUseZeroT )
+			return 0f;
+
+		var duration = WindUpToDashBlendDurationSeconds <= 0.0001f ? 0.0001f : WindUpToDashBlendDurationSeconds;
+		var tLinear = MathX.Clamp( (Time.Now - dashStartBlendStartTime) / duration, 0f, 1f );
+		return tLinear * tLinear * (3f - 2f * tLinear );
+	}
+
+	float GetDashEndBlendSmoothT()
+	{
+		if ( dashEndBlendUseZeroT )
+			return 0f;
+
+		var duration = DashEndBlendDurationSeconds <= 0.0001f ? 0.0001f : DashEndBlendDurationSeconds;
+		var tLinear = MathX.Clamp( (Time.Now - dashEndBlendStartTime) / duration, 0f, 1f );
+		return tLinear * tLinear * (3f - 2f * tLinear );
+	}
+
+	float GetDashPeakFieldOfView() => baselineFieldOfView + ExtraFieldOfViewAtFullWindUp + ExtraFieldOfViewDuringDash;
+
+	Vector3 GetWindUpCameraOffset( float windUpLerp )
+	{
+		windUpLerp = windUpLerp.Clamp( 0f, 1f );
+		return baselineCameraOffset + new Vector3(
+			ExtraCameraDistanceAtFullWindUp * windUpLerp,
+			0f,
+			ExtraCameraHeightAtFullWindUp * windUpLerp );
+	}
+
+	Vector3 GetDashPeakCameraOffset()
+	{
+		return baselineCameraOffset + new Vector3(
+			ExtraCameraDistanceAtFullWindUp + ExtraCameraDistanceDuringDash,
+			0f,
+			ExtraCameraHeightAtFullWindUp + ExtraCameraHeightDuringDash );
 	}
 
 	bool ShouldLeaveCameraAlone()
 	{
+		if ( !playerTackle.IsValid() )
+			playerTackle = Components.Get<PlayerTackle>();
+
+		if ( playerTackle.IsValid() && (playerTackle.IsKnockedDown || playerTackle.IsStandUpCameraBlending) )
+			return true;
+
+		// Keep easing to baseline through blitz connect hitstop/punch — do not yield to frozen dash FOV.
+		if ( dashEndBlendFromHit && dashEndBlendStartTime >= 0f )
+			return false;
+
 		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
 		if ( tackleImpactFeel?.IsImpactFeelActive == true )
 			return true;
 
-		if ( !playerTackle.IsValid() )
-			return false;
-
-		return playerTackle.IsKnockedDown || playerTackle.IsStandUpCameraBlending;
+		return false;
 	}
 
 	void RefreshBaselineFromController()
@@ -171,7 +332,15 @@ public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 
 		baselineCameraOffset = playerController.CameraOffset;
 		baselineCaptured = true;
+		dashStartBlendStartTime = -1f;
+		dashStartBlendUseZeroT = false;
+		dashStartBlendAwaitingPostCameraClear = false;
+		hasLastAppliedWindUpFieldOfView = false;
+		hasLastAppliedDashFieldOfView = false;
 		dashEndBlendStartTime = -1f;
+		dashEndBlendFromHit = false;
+		dashEndBlendUseZeroT = false;
+		dashEndBlendAwaitingPostCameraClear = false;
 		ApplyBaselineOffset();
 	}
 
@@ -208,45 +377,85 @@ public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 
 	void ApplyWindUpCameraOffset( float windUpLerp )
 	{
-		windUpLerp = windUpLerp.Clamp( 0f, 1f );
-		var extraOffset = new Vector3(
-			ExtraCameraDistanceAtFullWindUp * windUpLerp,
-			0f,
-			ExtraCameraHeightAtFullWindUp * windUpLerp );
-
-		playerController.CameraOffset = baselineCameraOffset + extraOffset;
+		playerController.CameraOffset = GetWindUpCameraOffset( windUpLerp );
 	}
 
 	void ApplyDashCameraOffset()
 	{
-		var extraOffset = new Vector3(
-			ExtraCameraDistanceAtFullWindUp + ExtraCameraDistanceDuringDash,
-			0f,
-			ExtraCameraHeightAtFullWindUp + ExtraCameraHeightDuringDash );
-
-		playerController.CameraOffset = baselineCameraOffset + extraOffset;
+		playerController.CameraOffset = GetDashPeakCameraOffset();
 	}
 
-	void BeginDashEndBlend()
+	void BeginDashStartBlend()
 	{
-		dashEndBlendFromOffset = playerController.CameraOffset;
-		dashEndBlendFromFieldOfView = wasDashing
-			? baselineFieldOfView + ExtraFieldOfViewAtFullWindUp + ExtraFieldOfViewDuringDash
-			: baselineFieldOfView + ExtraFieldOfViewAtFullWindUp;
+		var windUpLerp = lastWindUpCameraLerp.Clamp( 0f, 1f );
+		dashStartBlendFromOffset = GetWindUpCameraOffset( windUpLerp );
+		dashStartBlendFromFieldOfView = GetHeldWindUpFieldOfView();
+		hasLastAppliedWindUpFieldOfView = false;
+		dashStartBlendStartTime = Time.Now;
+		dashStartBlendUseZeroT = true;
+		dashStartBlendAwaitingPostCameraClear = false;
+		playerController.CameraOffset = dashStartBlendFromOffset;
+		StepDashStartOffsetBlend();
+	}
+
+	void StepDashStartOffsetBlend()
+	{
+		var t = GetDashStartBlendSmoothT();
+		var duration = WindUpToDashBlendDurationSeconds <= 0.0001f ? 0.0001f : WindUpToDashBlendDurationSeconds;
+		var tLinear = dashStartBlendUseZeroT
+			? 0f
+			: MathX.Clamp( (Time.Now - dashStartBlendStartTime) / duration, 0f, 1f );
+		var dashOffset = GetDashPeakCameraOffset();
+
+		playerController.CameraOffset = tLinear >= 1f
+			? dashOffset
+			: Vector3.Lerp( dashStartBlendFromOffset, dashOffset, t );
+
+		if ( tLinear >= 1f )
+			dashStartBlendAwaitingPostCameraClear = true;
+	}
+
+	void BeginDashEndBlend( bool fromHit )
+	{
+		if ( dashEndBlendStartTime >= 0f )
+			return;
+
+		dashEndBlendFromHit = fromHit;
+		dashStartBlendStartTime = -1f;
+		dashStartBlendUseZeroT = false;
+		dashStartBlendAwaitingPostCameraClear = false;
+		hasLastAppliedDashFieldOfView = false;
+
+		dashEndBlendFromOffset = fromHit
+			? GetDashPeakCameraOffset()
+			: playerController.CameraOffset;
+		dashEndBlendFromFieldOfView = fromHit
+			? GetHeldDashFieldOfView()
+			: wasDashing
+				? GetDashPeakFieldOfView()
+				: GetHeldWindUpFieldOfView();
+
 		dashEndBlendStartTime = Time.Now;
+		dashEndBlendUseZeroT = true;
+		dashEndBlendAwaitingPostCameraClear = false;
+		playerController.CameraOffset = dashEndBlendFromOffset;
 		StepDashEndOffsetBlend();
 	}
 
 	void StepDashEndOffsetBlend()
 	{
+		var t = GetDashEndBlendSmoothT();
 		var duration = DashEndBlendDurationSeconds <= 0.0001f ? 0.0001f : DashEndBlendDurationSeconds;
-		var tLinear = MathX.Clamp( (Time.Now - dashEndBlendStartTime) / duration, 0f, 1f );
-		var t = tLinear * tLinear * (3f - 2f * tLinear );
+		var tLinear = dashEndBlendUseZeroT
+			? 0f
+			: MathX.Clamp( (Time.Now - dashEndBlendStartTime) / duration, 0f, 1f );
 
-		playerController.CameraOffset = Vector3.Lerp( dashEndBlendFromOffset, baselineCameraOffset, t );
+		playerController.CameraOffset = tLinear >= 1f
+			? baselineCameraOffset
+			: Vector3.Lerp( dashEndBlendFromOffset, baselineCameraOffset, t );
 
 		if ( tLinear >= 1f )
-			dashEndBlendStartTime = -1f;
+			dashEndBlendAwaitingPostCameraClear = true;
 	}
 
 	void ApplyBaselineOffset()

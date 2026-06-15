@@ -454,7 +454,10 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			playerController.WishVelocity = Vector3.Zero;
 
 		if ( Network.IsOwner )
+		{
 			ownerDashMovementBlocked = true;
+			Components.Get<SpeedBlitzDashCamera>()?.BeginHitRecoveryBlend();
+		}
 
 		var victimBody = victim.Components.Get<Rigidbody>();
 		if ( victimBody.IsValid() )
@@ -583,6 +586,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	{
 		ownerDashMovementBlocked = true;
 		OwnerZeroHorizontalVelocity();
+
+		if ( stopPosition.HasValue )
+			Components.Get<SpeedBlitzDashCamera>()?.BeginHitRecoveryBlend();
 
 		if ( stopPosition.HasValue )
 		{
@@ -865,6 +871,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		ownerPredictedHitThisDash = true;
 		ownerDashMovementBlocked = true;
 		OwnerZeroHorizontalVelocity();
+
+		Components.Get<SpeedBlitzDashCamera>()?.BeginHitRecoveryBlend();
 
 		Components.GetOrCreate<CombatFeelPredictDedupe>().MarkOwnerPredictedAttackerFeel();
 		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();

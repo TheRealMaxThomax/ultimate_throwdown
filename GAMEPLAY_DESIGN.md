@@ -34,7 +34,7 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b** complete (**2026-06-14**); **2c polish** pending |
+| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b** complete (**2026-06-14**); **2c camera ✅ (2026-06-15)** — SFX + dash tuning pending |
 
 ---
 
@@ -125,7 +125,7 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 
 **Juggernaut passive (built):** Stay at charge speed → tackle bonus stacks up to a cap. Drop below charge → bonus resets.
 
-**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** 2a + **2b hold/release preview** shipped — **MP authority + client dasher predict OK (2026-06-14)**. Juggernaut stomp, Sniper path zones planned. See **Ultimates** and **Speed Blitz** below.
+**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** 2a + **2b hold/release preview** shipped — **MP authority + client dasher predict OK (2026-06-14)**. **2c owner camera** (wind-up→dash blend, hit recovery at contact, throw release blend) **✅ 2026-06-15**. Juggernaut stomp, Sniper path zones planned. See **Ultimates** and **Speed Blitz** below.
 
 ---
 
@@ -214,7 +214,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 ## Speed Blitz (Speedster ult — first ship)
 
-**Status:** **Slices 2a + 2b complete** — hold/release preview matches knockdown incl. max range (**playtest sign-off 2026-06-14**). **2c polish** next. **Class:** Speedster only.
+**Status:** **Slices 2a + 2b complete** — hold/release preview matches knockdown incl. max range (**playtest sign-off 2026-06-14**). **2c camera shipped (2026-06-15)** — wind-up→dash ease, **`BeginHitRecoveryBlend`** on connect. **Remaining 2c:** SFX, dash tuning, optional preview art. **Class:** Speedster only.
 
 ### Shipped in slice 2a + 2b (code)
 
@@ -224,6 +224,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 - First enemy in corridor → knockdown; dash **stops** on hit; **client-owner predict** for stop + attacker feel (host dedupe).
 - Dash end (hit or miss) → forced **walk** ramp (rebuild to charge).
 - No charge gain, ball pickup, or dodge during ult.
+- **Owner camera (`SpeedBlitzDashCamera`):** wind-up pullback/FOV build → blended dash spike → on enemy hit **`BeginHitRecoveryBlend()`** eases to baseline at contact freeze (not victim launch); miss/timeout uses same end blend. **`ThrowChargeCamera`** release blend uses same transition-frame pattern.
 
 ### Fantasy
 
@@ -247,7 +248,8 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 
 ### Tuning knobs (inspector / playtest)
 
-- Dash range, speed, hit width, wind-up duration (3 s default), launch force, slide friction along walls.
+- Dash range, speed, hit width, wind-up duration (2 s default), launch force, slide friction along walls.
+- **Camera:** `WindUpToDashBlendDurationSeconds`, `DashEndBlendDurationSeconds` on **`SpeedBlitzDashCamera`** (hit recovery + miss end).
 
 ---
 

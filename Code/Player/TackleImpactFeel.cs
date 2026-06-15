@@ -106,7 +106,10 @@ public sealed class TackleImpactFeel : Component, PlayerController.IEvents
 
 		if ( IsHitstopActive )
 		{
-			ApplyFrozenCameraState();
+			// Speed Blitz connect: dash camera eases to baseline during hitstop — only freeze world pose.
+			if ( !(activeRole == ImpactRole.Attacker && impactHasOverrides) )
+				ApplyFrozenCameraState();
+
 			IsShakeActive = false;
 			return;
 		}
@@ -139,11 +142,14 @@ public sealed class TackleImpactFeel : Component, PlayerController.IEvents
 
 		if ( IsHitstopActive )
 		{
+			if ( activeRole == ImpactRole.Attacker && impactHasOverrides )
+				return;
+
 			cam.FieldOfView = frozenFieldOfView;
 			return;
 		}
 
-		if ( activeRole == ImpactRole.Attacker && TryGetAttackerPunchFieldOfView( out var punchFieldOfView ) )
+		if ( activeRole == ImpactRole.Attacker && !impactHasOverrides && TryGetAttackerPunchFieldOfView( out var punchFieldOfView ) )
 			cam.FieldOfView = punchFieldOfView;
 	}
 
@@ -255,7 +261,7 @@ public sealed class TackleImpactFeel : Component, PlayerController.IEvents
 			&& playerTackle.IsValid()
 			&& playerTackle.IsRagdolled;
 
-		if ( restoreCamera && !skipRestore )
+		if ( restoreCamera && !skipRestore && !(activeRole == ImpactRole.Attacker && impactHasOverrides) )
 			RestoreCapturedCameraState();
 
 		activeRole = ImpactRole.None;
@@ -331,6 +337,9 @@ public sealed class TackleImpactFeel : Component, PlayerController.IEvents
 
 	void ApplyAttackerPunch( float afterHitstopSeconds )
 	{
+		if ( impactHasOverrides )
+			return;
+
 		if ( afterHitstopSeconds < 0f || ActiveAttackerPunchDurationSeconds <= 0.0001f )
 			return;
 
