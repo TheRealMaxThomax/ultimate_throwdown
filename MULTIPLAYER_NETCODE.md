@@ -84,7 +84,7 @@ Common symptoms **still open** after Tier 0–A:
 | System | Owner local | Host authority | Feel RPC / sync |
 |--------|-------------|----------------|-----------------|
 | **Tackle** | Input, movement; **attacker predict** on RPC send (A1) | `RequestTackleApplyOnHost`, `ExecuteTackle`, ragdoll spawn | `TriggerTackleImpactFeel*Rpc(applyId)` + **`CombatFeelPredictDedupe`** |
-| **Speed Blitz** | Dash velocity, aim preview; **dasher predict** on local hit (Tier 0) | Commit, phase, hit sweep, `ApplyKnockdownFromHost`, walk ramp | `NotifyOwnerDashEndedRpc`; impact feel via tackle path + dedupe |
+| **Speed Blitz** | Dash velocity, aim preview; **dasher predict** on local hit (Tier 0) | Commit, phase, hit sweep, `ApplyKnockdownFromHost`, walk ramp; **connect/launch SFX** (host random crunch + launch boom via **`[Rpc.Broadcast]`**) | `NotifyOwnerDashEndedRpc`; impact feel via tackle path + dedupe |
 | **Tackle/blitz victim** | **Victim predict** on freeze (A2) or direct ragdoll (A2b) | Knockdown + `NetLastKnockdownWasHazard` | Victim feel RPC + dedupe |
 | **Dodge** | Shove on owner when `NetDodgeApplyId` bumps | `RequestDodgeOnHostRpc` | Synced apply id (dedupe pattern) |
 | **Ball throw** | Trajectory preview, charge camera | Host ball / grab | `BallClientFeel` smooths for viewers |
@@ -277,6 +277,7 @@ Existing gotcha (keep): **do not** add extra host-side charge gates on tackle RP
 - [x] Client victim (tackle/blitz) → feel with pre-launch freeze.
 - [x] Client traffic victim → shake aligned with ragdoll sync.
 - [x] No double feel on host confirm (dedupe).
+- [x] **Blitz connect + launch SFX** — host picks random crunch; all clients hear same sound via broadcast RPC (**2026-06-15**).
 - [ ] **Moving targets** — not validated; need practice scene before C1.
 
 **Optional debug:** `EnableSpeedBlitzDebugLogs` / `EnableTackleDebugLogs` on prefab.
@@ -309,5 +310,6 @@ See [`SESSION_NOTES.md`](SESSION_NOTES.md) → **Known issues** (ragdoll jitter,
 | 2026-06-14 | Tier A3 shipped — `CombatFeelPredictDedupe` + apply-id feel RPC dedupe (replaces per-feature bools). |
 | 2026-06-14 | Tier A2 shipped — client-owner victim feel on pre-launch freeze frame + host RPC dedupe. |
 | 2026-06-14 | Tier A1 shipped — client-owner tackle attacker predict + dedupe on `PlayerTackle`. |
+| 2026-06-15 | Speed Blitz 2c SFX — host random **`ConnectImpactSoundA/B`** at dash stop + **`LaunchSound`** at ragdoll launch; **`[Rpc.Broadcast]`** on **`PlayerTackle`**. |
 | 2026-06-14 | Tier 0 shipped — client-owner Speed Blitz predict + attacker feel dedupe (`TryFindBestDashHitInSegment`, **`CombatFeelPredictDedupe.MarkOwnerPredictedAttackerFeel`**). |
 | 2026-06-14 | Initial doc — philosophy, tiers 0–C, Speed Blitz predict scope, tackle follow-up, per-feature checklist, current architecture snapshot. |

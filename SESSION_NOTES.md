@@ -19,12 +19,12 @@
 
 ## Right now
 
-**Goal:** **Slice 2c** (Speed Blitz polish) — **camera feel ✅ (2026-06-15)**; **SFX + dash tuning** next. **Speed Blitz 2b ✅ signed off (2026-06-14).**
+**Goal:** **Slice 2c** (Speed Blitz polish) — **camera + SFX + body freeze ✅ (2026-06-15)**; **dash tuning** + optional preview art v3 remain. **Speed Blitz 2b ✅ signed off (2026-06-14).**
 
 **Next session (priority order):**
-1. **Slice 2c** — blitz connect + launch **SFX**; dash range/speed/wall-slide tuning; optional preview art v3
+1. **Slice 2c finish** — dash range/speed/wall-slide tuning in playtest; optional preview art v3
 2. **Practice scene** — moving/charging dummies before C1 lag-comp
-3. **Optional** — global owner FOV numeric pass (transitions shipped; extras additive on ~60° preference)
+3. **Optional** — global owner FOV numeric pass; blitz impact-stride `charge_run_cycle` snap; victim flinch clip
 
 **Works today:**
 - Ball grab/throw — held ball on **`hold_R`** (`BallGrab` + `BallClientFeel`); **throw trajectory preview** + **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **`BallThrow.ThrowReleaseDelaySeconds`** — anim fires on release, ball stays on hand until delay elapses (tune to release frame); **`PlayerBallHoldAnim`** — built-in `holditem` RH hold + medium throw on release (`b_attack`) + **custom charge wind-up via forked animgraph masked layer** (`throw_charge`/`throw_charge_weight` on `utd_citizen_human_m.vanmgrph` scrub `throw_windup`; body keeps locomotion/look-at — **solo verified 2026-06-11**); **ball carrier glow** (`BallCarrierOutline`); **`BallCompassHud`**; **`main_ball`** art WIP (`ball_v2.vmat`); tackles/ragdolls; dodge; **crouch disabled**
@@ -44,7 +44,7 @@
 - **Traffic knockdown** — no pre-launch pause; **`HazardKnockdownComicPower`** default **1.55** (Chaos/red); **`TriggerAsHazardVictim()`** + **`IsHazardImpact`** car camera path (defer ragdoll cam, orbit shake baseline, enter blend). **Player tackles** use simpler path — hitstop during freeze, ragdoll cam when `isRagdolled`
 - **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** + **`ComicLetterExitMotion`**: entrance polish + **14 exit styles** (5 CSS + 7 letter C#); timing via `LifetimeSeconds` / `ExitFadeStartFraction` / `ExitFadeDurationFraction` / `ExitTailSeconds` — **good enough for v1**; MP verify + Les Flos optional
 - **Ult charge (slice 1)** — **`PlayerUltCharge`** + **`UltChargeHud`** on **player prefab** (manual — **not** auto-spawned). Passive regen **`Playing` only**; goal (scorer) + tackle (attacker, **enemy only**); FF tackle **no** charge; % **persists** across rounds; **rematch → 0%**. HUD: floored **%**, white → blue after **`ReadyHighlightDelaySeconds`** at 100%. **`Ultimate`** bound to **X** (ability slice 2).
-- **Speed Blitz (slice 2a/2b/2c WIP)** — **`SpeedsterSpeedBlitzUlt`** + owner **`SpeedBlitzAimPreview`**; hold X → corridor preview; release → commit; **2b playtest sign-off OK (2026-06-14)**; **2c:** blitz-only **0.65s** victim hang, connect feel, **`HitStopContactGap`**, **`SpeedBlitzDashCamera`**, **`BlitzConnectPoseFreeze`** (attacker + victim body pose hold during hang) — wind-up build → **`WindUpToDashBlendDurationSeconds`** ease into dash → **`BeginHitRecoveryBlend()`** on enemy contact (freeze start, not victim launch); wind-up default **2s**
+- **Speed Blitz (slice 2a/2b/2c)** — **`SpeedsterSpeedBlitzUlt`** + owner **`SpeedBlitzAimPreview`**; hold X → corridor preview; release → commit; **2b ✅ (2026-06-14)**; **2c ✅ feel shipped (2026-06-15):** blitz-only **0.65s** hang, **`HitStopContactGap`**, **`SpeedBlitzDashCamera`**, **`BlitzConnectPoseFreeze`**, **`ConnectImpactSoundA/B`** (host random crunch at dash stop) + **`LaunchSound`** (boom at ragdoll launch), **`SpeedBlitzChargeRunBlendInSeconds`** on dash; wind-up → dash → **`BeginHitRecoveryBlend()`** on contact
 - **Owner cameras (2026-06-15)** — **`PostCameraSetup`** for all owner FOV (PC resets preference FOV every frame). **`ThrowChargeCamera`** `[Order(10002)]`: charge offset + release blend after ball leaves hand (transition-frame hold — no pop). **`SpeedBlitzDashCamera`** `[Order(10012)]`: idle must **not** stomp **`CameraOffset`** (throw owns offset). **`TackleImpactFeel`**: blitz attacker uses overrides — hitstop freezes **world pose only**; dash cam eases during freeze; no blitz attacker offset/FOV punch (recovery blend owns it). Player tackles unchanged.
 - **MP combat feel predict** — **`CombatFeelPredictDedupe`** (auto on join): client-owner early **`TackleImpactFeel`** for blitz dash, tackle connect, victim freeze (tackle/blitz), traffic ragdoll; host **`NetCombatFeelApplyId`** dedupe. Details → [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md). **2–3 window idle-target soak OK (2026-06-14)**; moving-target fairness → practice scene + Tier C1 later.
 
@@ -116,6 +116,8 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Ball compass:** `BallCompassHud` — bottom-left panel + ring; white **`LabelText`** hub centered in ring (default **BALL**); small **triangle** orbits ring edge (360°) toward **`main_ball`** (held or loose). **White** loose · **green** teammate · **red** enemy. **Needle hidden** when you carry (label + panel + dim ring stay). Bearing = **player position + `EyeAngles` yaw** (not camera). Auto-added on network spawn (`GameNetworkManager.GetOrCreate`). Tune: `MarginLeft` / `MarginBottom` / `CompassSize` / `NeedleTipRadius` / colours.
 - **Throw charge camera:** **`ThrowChargeCamera`** — `[Order(10002)]` after **`BallThrow`**; offset in `OnUpdate`; FOV in **`PostCameraSetup`**. Holds through **`IsPendingThrowRelease`**, then **`ReleaseCameraBlendDuration`** ease (transition FOV hold — no frame pop). Idle: does **not** touch **`CameraOffset`**. Yields to ragdoll, **`TackleImpactFeel`**, active Speed Blitz.
 - **Speed Blitz dash camera:** **`SpeedBlitzDashCamera`** — wind-up lerp → blended dash spike (`WindUpToDashBlendDurationSeconds`) → on hit **`BeginHitRecoveryBlend()`** (`DashEndBlendDurationSeconds` to baseline at contact). Auto-added by ult. Tune on Speedster prefab.
+- **Speed Blitz connect SFX:** Host picks random **`ConnectImpactSoundA/B`** at dash stop → **`PlaySpeedBlitzConnectImpactSoundRpc`** (all clients). **`LaunchSound`** at ragdoll impulse after hang — same broadcast pattern. Drag-drop **`SoundEvent`** on Speedster prefab.
+- **Speed Blitz body freeze:** **`BlitzConnectPoseFreeze`** — attacker + victim **`PlaybackRate = 0`** during blitz hang only (`IsConnectPoseFrozen` / `IsAwaitingSpeedBlitzRagdollLaunch`). Optional **`ConnectImpactChargeRunCycle`** snap on dasher.
 - **Owner camera FOV rule:** Never set **`CameraComponent.FieldOfView`** only in `OnUpdate` — use **`PlayerController.IEvents.PostCameraSetup`**. **`CameraOffset`**: set in `OnUpdate` before PC setup; respect **`[Order]`** — idle ult cam must not stomp throw offset.
 - **Walk into the ball = pick it up.** No kick button. While held, ball follows **`hold_R`** on **Body** `SkinnedModelRenderer` (`BallGrab.HoldBoneName`; falls back to `HoldAnchor`). Old `HandHoldPoint` + `citizen_holdball_test` IK was for classic citizen — human uses bone attach.
 - **Ball carrier hold/throw anim (v1):** **`PlayerBallHoldAnim`** — **`holditem`** + **RH** while holding; on release **`b_attack`** (built-in medium throw). **`ThrowPoseHoldSeconds`** / **`ThrowPlaybackRate`**; **`BallThrow.ThrowReleaseDelaySeconds`** delays ball velocity. Charge = masked **`throw_windup`** layer on forked **`utd_citizen_human_m.vanmgrph`** (`throw_charge` / `throw_charge_weight`; body alive). Sequences on **`utd_citizen_human_throw.vmdl`**. Auto-added on network spawn.
@@ -207,7 +209,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **`ThrowChargeCamera`** — tune `ExtraFieldOfViewAtFullCharge`, pullback/height, **`ReleaseCameraBlendDuration`** (~0.35; ease after ball leaves hand). FOV extras **additive** on preference FOV.
 - **`SpeedBlitzDashCamera`** — auto on Speedster (from ult). **Wind-up** / **Dash** FOV + pullback groups; **`WindUpToDashBlendDurationSeconds`** (~0.15); **`DashEndBlendDurationSeconds`** (~0.18) for miss end + **hit recovery** on connect.
 - **`PlayerUltCharge`** — ult % meter (host sync); tune `PassivePointsPerSecond`, `GoalChargePoints`, `TackleChargePoints`. **Add on prefab** (not auto-spawned).
-- **`SpeedsterSpeedBlitzUlt`** — **Speedster only** (class gate). **Add on Speedster prefab** (not auto-spawned). Tune `WindUpDurationSeconds` (default **2**), `DashRange`, `DashSpeed`, `HitHalfWidth`, `DefaultTargetBodyRadius`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`. **Knockdown feel:** `KnockdownPreLaunchPauseSeconds` (**0.65**), **`ConnectImpactChargeRunCycle`** (**-1** = freeze at contact; ≥ **0** = snap dasher impact stride), `ImpactHitstopDurationSeconds`, shake/punch fields. Optional **`Enable Speed Blitz Debug Logs`**. Auto-adds **`SpeedBlitzDashCamera`** on start.
+- **`SpeedsterSpeedBlitzUlt`** — **Speedster only** (class gate). **Add on Speedster prefab** (not auto-spawned). Tune `WindUpDurationSeconds` (default **2**), `DashRange`, `DashSpeed`, `HitHalfWidth`, `DefaultTargetBodyRadius`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`. **Knockdown feel:** `KnockdownPreLaunchPauseSeconds` (**0.65**), **`ConnectImpactChargeRunCycle`** (**-1** = freeze at contact; ≥ **0** = snap dasher impact stride), **`LaunchSound`** + **`ConnectImpactSoundA`** / **`ConnectImpactSoundB`** (drag-drop **`SoundEvent`** — random connect crunch), **`LaunchSoundVolume`** / **`ConnectImpactSoundVolume`**, `ImpactHitstopDurationSeconds`, shake/punch fields. Optional **`Enable Speed Blitz Debug Logs`**. Auto-adds **`SpeedBlitzDashCamera`** on start.
 - **`SpeedBlitzAimPreview`** — **Speedster only**, same prefab as ult (manual). Owner corridor while holding X; tune `CorridorTint` / `CorridorAlpha`, `SegmentSpacing`, `MarkerModelBaseSize` (dev box native size ≈ **50**).
 - **`UltChargeHud`** — floored **%** centered (left of `MovementRampHud`); **`ReadyHighlightDelaySeconds`** (~0.4s white at 100% then blue). **Add on prefab** with `PlayerUltCharge`.
 - **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
@@ -326,15 +328,17 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [x] Aim locked on **release** (yaw snapped to committed dir before wind-up)
 - [x] Preview vs knockdown **playtest sign-off** (solo + optional MP) — max-range corridor hit fix same session
 
-#### Slice 2c — Speed Blitz **polish**
+#### Slice 2c — Speed Blitz **polish** (dash tuning + optional art remain)
 
 - [x] Blitz-only victim pre-launch hang (**0.65s** default) + stronger connect impact feel (hitstop / shake / punch)
 - [x] Owner dash camera (`SpeedBlitzDashCamera` — wind-up → blended dash → **hit recovery at contact**)
 - [x] Dasher contact snap (`HitStopContactGap`) — no stopping inside victim
 - [x] Owner camera transitions — **`PostCameraSetup`** + release/wind-up→dash/hit-recovery blends (**2026-06-15** sign-off)
+- [x] Blitz connect **hit** SFX — **`ConnectImpactSoundA/B`** random crunch at dash stop (**2026-06-15** playtest OK)
+- [x] Blitz connect body freeze — **`BlitzConnectPoseFreeze`** (`PlaybackRate = 0`); optional **`ConnectImpactChargeRunCycle`**
+- [x] Blitz victim **launch SFX** — **`LaunchSound`** at ragdoll impulse (all clients)
+- [x] Dash **`charge_run`** faster blend-in — **`SpeedBlitzChargeRunBlendInSeconds`** on **`PlayerChargeRunAnim`**
 - [ ] Tune range, speed, hit width, wind-up, launch force, wall-slide feel in playtest
-- [ ] Blitz connect + launch **SFX** (sell the 0.65s hang — user priority)
-- [x] Blitz connect: freeze **attacker + victim body pose** during pre-launch hang — **`BlitzConnectPoseFreeze`** (`PlaybackRate = 0`); **`ConnectImpactChargeRunCycle`** on ult for optional dasher snap
 - [ ] Optional: yaw-only camera lock or wider hit cone if full lock too punishing
 - [ ] Later (not blocking): ult **blue** comic burst
 
@@ -374,7 +378,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 | **1** ✅ | % creeps Playing only; frozen celebration/intermission; goal/tackle bumps; FF tackle no bump; persists rounds; rematch 0%; HUD floor % + blue at 100% |
 | **2a** ✅ | Commit, dash, knockdown, walk ramp; **2-window MP OK (2026-06-14)** |
 | **2b** ✅ | Preview owner-only; release aim = dash direction; preview matches hit incl. max range (**2026-06-14**) |
-| **2c** | Camera blends + hit recovery ✅; SFX; optional comic |
+| **2c** | Camera + hit recovery ✅; connect crunch + launch boom ✅; body freeze ✅; dash charge_run blend ✅; dash numeric tuning open |
 
 ---
 
@@ -386,7 +390,6 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 ## Known issues
 
-- [ ] **Speed Blitz SFX** — connect hit + launch boom to sell 0.65s hang (reads as lag without audio)
 - [ ] **Tackle comic text** — Les Flos import + **2-window MP verify** (optional; exits good enough for v1)
 - [ ] **Tackle juice — moving victims** — predict tested on **idle** targets only (2026-06-14); moving fairness → practice scene + Tier C1 lag-comp
 - [ ] **Throw charge wind-up — MP verify + polish** — ✅ **WORKS solo (2026-06-11)**: masked layer in forked graph `utd_citizen_human_m.vanmgrph`; body keeps locomotion/look-at while arm winds up. Remaining: 2-window MP check (remotes scrub via `NetThrowChargeLerp`); improve the wind-up clip in Blender if wanted (overwrite `throw_windup.fbx` — see workflow doc "Iterating on a clip"); pick final bone mask (see Open decisions).
@@ -406,9 +409,10 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → Ult roadmap 2c, MULTIPLAYER_NETCODE.md (any net/combat work).
-Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped. Speed Blitz 2b signed off (2026-06-14); 2c camera ✅ (2026-06-15).
+Read SESSION_NOTES.md → Ult roadmap 2c (dash tuning left), MULTIPLAYER_NETCODE.md (any net/combat work).
+Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped. Speed Blitz 2b ✅ (2026-06-14); 2c feel ✅ camera/SFX/body-freeze (2026-06-15).
 Owner FOV: PlayerController.IEvents.PostCameraSetup — not OnUpdate alone. ThrowChargeCamera [10002]; SpeedBlitzDashCamera idle must not stomp CameraOffset.
+Blitz SFX: ConnectImpactSoundA/B (host random) at dash stop; LaunchSound at ragdoll launch — Rpc.Broadcast from host.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 No GameNetworkManager auto-add for ult components — player prefab manual.
 ```
@@ -419,10 +423,7 @@ No GameNetworkManager auto-add for ult components — player prefab manual.
 
 ## Recent session notes
 
-- **2026-06-15 (blitz connect body freeze):** **`BlitzConnectPoseFreeze`** — attacker + victim **`PlaybackRate = 0`** during blitz hang; optional **`ConnectImpactChargeRunCycle`** on ult.
-- **2026-06-15 (owner camera — throw + blitz):** Throw **`ReleaseCameraBlendDuration`** pop fixed (transition FOV hold, `[Order(10002)]`, idle offset rule). Blitz **wind-up→dash** blended (`WindUpToDashBlendDurationSeconds`). **Hit recovery** — **`BeginHitRecoveryBlend()`** on contact (not victim launch); eases through blitz hitstop. **2c camera sign-off.**
-- **2026-06-15 (camera FOV + blitz 2c core):** **`PostCameraSetup`** for owner FOV. Blitz **0.65s** hang + **`HitStopContactGap`** + dash/wind-up camera foundation.
-- **2026-06-14 (MP combat feel — Tier 0–A3 + A2b):** Full predict stack; idle targets OK.
-- **2026-06-14 (Speed Blitz 2b sign-off):** Preview vs knockdown verified solo + MP.
+- **2026-06-15 (Speed Blitz 2c polish — signed off feel):** **`BlitzConnectPoseFreeze`**; **`ConnectImpactSoundA/B`** + **`LaunchSound`** (drag-drop **`SoundEvent`**, host random crunch); **`SpeedBlitzChargeRunBlendInSeconds`**; owner camera + hang/launch timing. Dash numeric tuning still open.
+- **2026-06-14 (MP combat feel + Blitz 2b):** Tier 0–A3 + A2b predict; Blitz preview vs knockdown sign-off.
 
 Older detail → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).

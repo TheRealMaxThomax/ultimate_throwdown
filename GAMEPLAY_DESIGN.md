@@ -34,7 +34,7 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b** complete (**2026-06-14**); **2c camera ✅ (2026-06-15)** — SFX + dash tuning pending |
+| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b/2c feel ✅ (2026-06-15)** — camera, connect crunch + launch SFX, body freeze; **dash numeric tuning** + optional preview art remain |
 
 ---
 
@@ -125,7 +125,7 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 
 **Juggernaut passive (built):** Stay at charge speed → tackle bonus stacks up to a cap. Drop below charge → bonus resets.
 
-**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** 2a + **2b hold/release preview** shipped — **MP authority + client dasher predict OK (2026-06-14)**. **2c owner camera** (wind-up→dash blend, hit recovery at contact, throw release blend) **✅ 2026-06-15**. Juggernaut stomp, Sniper path zones planned. See **Ultimates** and **Speed Blitz** below.
+**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** 2a + **2b** + **2c feel** shipped — MP authority + client dasher predict OK (**2026-06-14**); **2c (2026-06-15):** owner camera blends, **`BlitzConnectPoseFreeze`**, connect crunch + launch **`SoundEvent`** (host random A/B at stop, boom at ragdoll launch). Juggernaut stomp, Sniper path zones planned. See **Ultimates** and **Speed Blitz** below.
 
 ---
 
@@ -214,7 +214,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 ## Speed Blitz (Speedster ult — first ship)
 
-**Status:** **Slices 2a + 2b complete** — hold/release preview matches knockdown incl. max range (**playtest sign-off 2026-06-14**). **2c camera shipped (2026-06-15)** — wind-up→dash ease, **`BeginHitRecoveryBlend`** on connect. **Remaining 2c:** SFX, dash tuning, optional preview art. **Class:** Speedster only.
+**Status:** **Slices 2a + 2b + 2c feel complete** — hold/release preview matches knockdown (**2026-06-14**). **2c shipped (2026-06-15):** owner camera (wind-up→dash ease, **`BeginHitRecoveryBlend`** on connect), **`BlitzConnectPoseFreeze`**, connect crunch (**`ConnectImpactSoundA/B`**, host random) + launch boom (**`LaunchSound`**) at ragdoll impulse, faster dash **`charge_run`** blend. **Remaining 2c:** dash range/speed/wall-slide tuning, optional preview art v3, optional ult comic burst. **Class:** Speedster only.
 
 ### Shipped in slice 2a + 2b (code)
 
@@ -225,6 +225,9 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 - Dash end (hit or miss) → forced **walk** ramp (rebuild to charge).
 - No charge gain, ball pickup, or dodge during ult.
 - **Owner camera (`SpeedBlitzDashCamera`):** wind-up pullback/FOV build → blended dash spike → on enemy hit **`BeginHitRecoveryBlend()`** eases to baseline at contact freeze (not victim launch); miss/timeout uses same end blend. **`ThrowChargeCamera`** release blend uses same transition-frame pattern.
+- **Connect feel (2c):** **`BlitzConnectPoseFreeze`** — attacker + victim body pose held during **0.65s** pre-launch hang (`PlaybackRate = 0`). Optional **`ConnectImpactChargeRunCycle`** for consistent impact stride.
+- **SFX (2c):** **`ConnectImpactSoundA/B`** — host picks one at random each hit, plays at dash stop (`PlaySpeedBlitzConnectImpactSoundRpc`). **`LaunchSound`** — boom when ragdoll launches after hang. Both **`SoundEvent`** drag-drop on Speedster prefab; **`[Rpc.Broadcast]`** so all clients hear the same pick.
+- **Dash anim:** **`PlayerChargeRunAnim.SpeedBlitzChargeRunBlendInSeconds`** — faster `charge_run` overlay during short dashes.
 
 ### Fantasy
 
@@ -250,6 +253,7 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 
 - Dash range, speed, hit width, wind-up duration (2 s default), launch force, slide friction along walls.
 - **Camera:** `WindUpToDashBlendDurationSeconds`, `DashEndBlendDurationSeconds` on **`SpeedBlitzDashCamera`** (hit recovery + miss end).
+- **SFX:** `ConnectImpactSoundA`, `ConnectImpactSoundB`, `LaunchSound`, `ConnectImpactSoundVolume`, `LaunchSoundVolume` on **`SpeedsterSpeedBlitzUlt`**. Defaults: `Assets/Sounds/Crunch/speed_blitz_connect_crunch_a/b.sound`, `Assets/Sounds/Explosions/speed_blitz_launch.sound`.
 
 ---
 

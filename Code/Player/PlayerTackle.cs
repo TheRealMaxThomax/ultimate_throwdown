@@ -770,8 +770,27 @@ public sealed class PlayerTackle : Component
 			victim.NetIsRagdolled = true;
 		}
 
-		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc, usePreLaunchPause, effectivePreLaunchPause );
+		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc, usePreLaunchPause, effectivePreLaunchPause, speedBlitzKnockdown, attacker );
 		HandleRagdollRecovery( victim );
+	}
+
+	[Rpc.Broadcast]
+	private void PlaySpeedBlitzLaunchSoundRpc( Vector3 worldPosition, string soundResourcePath, float volume )
+	{
+		var sound = ResourceLibrary.Get<SoundEvent>( soundResourcePath );
+		SpeedsterSpeedBlitzUlt.PlayLaunchSoundAt( worldPosition, sound, volume );
+	}
+
+	internal void BroadcastSpeedBlitzConnectImpactSound( Vector3 worldPosition, string soundResourcePath, float volume )
+	{
+		PlaySpeedBlitzConnectImpactSoundRpc( worldPosition, soundResourcePath, volume );
+	}
+
+	[Rpc.Broadcast]
+	private void PlaySpeedBlitzConnectImpactSoundRpc( Vector3 worldPosition, string soundResourcePath, float volume )
+	{
+		var sound = ResourceLibrary.Get<SoundEvent>( soundResourcePath );
+		SpeedsterSpeedBlitzUlt.PlayConnectImpactSoundAt( worldPosition, sound, volume );
 	}
 
 	/// <summary>Host: owner-only hitstop / shake / punch on attacker and victim clients.</summary>
@@ -856,7 +875,15 @@ public sealed class PlayerTackle : Component
 	// Spawns a host-owned physics ragdoll at the victim's position.
 	// NetworkSpawn makes it visible on all clients automatically.
 	// Physics runs on the host without client transform ownership conflicts.
-	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 tackleDir, float effectiveLaunchSpeed, float launchArc, bool usePreLaunchPause, float preLaunchPauseSeconds )
+	private async void SpawnRagdollObject(
+		PlayerTackle victim,
+		Vector3 tackleDir,
+		float effectiveLaunchSpeed,
+		float launchArc,
+		bool usePreLaunchPause,
+		float preLaunchPauseSeconds,
+		bool speedBlitzKnockdown = false,
+		PlayerTackle attacker = null )
 	{
 		var ragdollGo = new GameObject( true, "PlayerRagdoll" );
 		var spawnPos = usePreLaunchPause ? victim.NetKnockdownFreezePosition : victim.WorldPosition + Vector3.Up * 10f;
@@ -921,6 +948,15 @@ public sealed class PlayerTackle : Component
 			SetRagdollRenderersEnabled( ragdollGo, true );
 			ragdollPhysics.MotionEnabled = true;
 			var launched = TryApplyRagdollLaunchImpulse( ragdollGo, tackleDir, effectiveLaunchSpeed, launchArc, out var bodyCount );
+
+			if ( speedBlitzKnockdown && launched && Networking.IsHost )
+			{
+				victim.PlaySpeedBlitzLaunchSoundRpc(
+					spawnPos,
+					SpeedsterSpeedBlitzUlt.ResolveLaunchSoundResourcePath( attacker ),
+					SpeedsterSpeedBlitzUlt.ResolveLaunchSoundVolume( attacker ) );
+			}
+
 			ragdollGo.NetworkSpawn();
 
 			victim.NetAwaitingRagdollLaunch = false;

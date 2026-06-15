@@ -64,6 +64,24 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	/// <summary> Snap dasher <c>charge_run_cycle</c> at connect before pose freeze. &lt; 0 = freeze at contact frame. </summary>
 	[Property, Group( "Knockdown feel" )] public float ConnectImpactChargeRunCycle { get; set; } = -1f;
 
+	/// <summary> 3D boom when the blitz victim ragdoll launches (after pre-launch hang). Drag a <c>.sound</c> asset here. </summary>
+	[Property, Group( "Knockdown feel" )] public SoundEvent LaunchSound { get; set; }
+
+	[Property, Group( "Knockdown feel" )] public float LaunchSoundVolume { get; set; } = 1f;
+
+	/// <summary> Body-crunch SFX when the dash stops on an enemy — host picks one at random each hit. </summary>
+	[Property, Group( "Knockdown feel" )] public SoundEvent ConnectImpactSoundA { get; set; }
+
+	[Property, Group( "Knockdown feel" )] public SoundEvent ConnectImpactSoundB { get; set; }
+
+	[Property, Group( "Knockdown feel" )] public float ConnectImpactSoundVolume { get; set; } = 1f;
+
+	/// <summary> Fallback when <see cref="LaunchSound"/> is unset on the Speedster prefab. </summary>
+	internal const string DefaultLaunchSoundPath = "sounds/explosions/speed_blitz_launch.sound";
+
+	internal const string DefaultConnectImpactSoundAPath = "sounds/crunch/speed_blitz_connect_crunch_a.sound";
+	internal const string DefaultConnectImpactSoundBPath = "sounds/crunch/speed_blitz_connect_crunch_b.sound";
+
 	[Property, Group( "Knockdown feel" )] public float ImpactHitstopDurationSeconds { get; set; } = 0.15f;
 	[Property, Group( "Knockdown feel" )] public float ImpactShakeDurationSeconds { get; set; } = 0.2f;
 	[Property, Group( "Knockdown feel" )] public float ImpactShakePositionAmplitude { get; set; } = 10f;
@@ -176,6 +194,111 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			AttackerCameraOffsetPunchZ = ImpactAttackerCameraOffsetPunchZ,
 			AttackerPunchDurationSeconds = ImpactAttackerPunchDurationSeconds
 		};
+	}
+
+	/// <summary> Host: launch SFX from dasher ult (falls back to <see cref="DefaultLaunchSoundPath"/>). </summary>
+	public static SoundEvent ResolveLaunchSound( PlayerTackle attacker )
+	{
+		var ult = attacker?.Components.Get<SpeedsterSpeedBlitzUlt>();
+		if ( ult.IsValid() && ult.LaunchSound.IsValid() )
+			return ult.LaunchSound;
+
+		return ResourceLibrary.Get<SoundEvent>( DefaultLaunchSoundPath );
+	}
+
+	/// <summary> Resource path for MP RPC — derived from inspector <see cref="LaunchSound"/>. </summary>
+	public static string ResolveLaunchSoundResourcePath( PlayerTackle attacker )
+	{
+		var sound = ResolveLaunchSound( attacker );
+		return sound.IsValid() ? sound.ResourcePath : DefaultLaunchSoundPath;
+	}
+
+	public static float ResolveLaunchSoundVolume( PlayerTackle attacker )
+	{
+		var ult = attacker?.Components.Get<SpeedsterSpeedBlitzUlt>();
+		return ult.IsValid() ? ult.LaunchSoundVolume.Clamp( 0f, 2f ) : 1f;
+	}
+
+	/// <summary> All machines: 3D launch boom at victim freeze position. </summary>
+	public static void PlayLaunchSoundAt( Vector3 worldPosition, SoundEvent soundEvent, float volume )
+	{
+		if ( !soundEvent.IsValid() )
+			soundEvent = ResourceLibrary.Get<SoundEvent>( DefaultLaunchSoundPath );
+
+		if ( !soundEvent.IsValid() )
+			return;
+
+		var handle = Sound.Play( soundEvent, worldPosition );
+		if ( !handle.IsPlaying || Math.Abs( volume - 1f ) < 0.001f )
+			return;
+
+		handle.Volume = volume.Clamp( 0f, 2f );
+	}
+
+	/// <summary> Host: random connect crunch from dasher ult (A/B inspector slots, then code defaults). </summary>
+	public string PickConnectImpactSoundResourcePath()
+	{
+		var options = new System.Collections.Generic.List<string>( 2 );
+
+		if ( ConnectImpactSoundA.IsValid() )
+			options.Add( ConnectImpactSoundA.ResourcePath );
+
+		if ( ConnectImpactSoundB.IsValid() )
+			options.Add( ConnectImpactSoundB.ResourcePath );
+
+		if ( options.Count == 0 )
+		{
+			options.Add( DefaultConnectImpactSoundAPath );
+			options.Add( DefaultConnectImpactSoundBPath );
+		}
+
+		if ( options.Count == 1 )
+			return options[0];
+
+		return options[Game.Random.Int( 0, options.Count - 1 )];
+	}
+
+	public static float ResolveConnectImpactSoundVolume( PlayerTackle attacker )
+	{
+		var ult = attacker?.Components.Get<SpeedsterSpeedBlitzUlt>();
+		return ult.IsValid() ? ult.ConnectImpactSoundVolume.Clamp( 0f, 2f ) : 1f;
+	}
+
+	/// <summary> All machines: 3D connect crunch at dash stop / victim contact. </summary>
+	public static void PlayConnectImpactSoundAt( Vector3 worldPosition, SoundEvent soundEvent, float volume )
+	{
+		if ( !soundEvent.IsValid() )
+			return;
+
+		var handle = Sound.Play( soundEvent, worldPosition );
+		if ( !handle.IsPlaying || Math.Abs( volume - 1f ) < 0.001f )
+			return;
+
+		handle.Volume = volume.Clamp( 0f, 2f );
+	}
+
+	private static Vector3 GetBlitzConnectImpactSoundPosition( Vector3 dasherStopPosition, PlayerTackle victim )
+	{
+		if ( !victim.IsValid() )
+			return dasherStopPosition;
+
+		var victimPos = victim.WorldPosition;
+		return new Vector3(
+			(dasherStopPosition.x + victimPos.x) * 0.5f,
+			(dasherStopPosition.y + victimPos.y) * 0.5f,
+			(dasherStopPosition.z + victimPos.z) * 0.5f );
+	}
+
+	private void BroadcastConnectImpactSoundOnHost( PlayerTackle victim, Vector3 dasherStopPosition )
+	{
+		if ( !Networking.IsHost || !victim.IsValid() )
+			return;
+
+		var contactPos = GetBlitzConnectImpactSoundPosition( dasherStopPosition, victim );
+		victim.BroadcastSpeedBlitzConnectImpactSound(
+			contactPos,
+			PickConnectImpactSoundResourcePath(),
+			ConnectImpactSoundVolume.Clamp( 0f, 2f ) );
 	}
 
 	private float DashDurationSeconds => (DashRange / MathF.Max( DashSpeed, 1f )).Clamp( 0.05f, 6f );
@@ -453,6 +576,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			knockDir = knockDir.Normal;
 
 		var snappedPos = SnapDasherToDashHitContact( victim, victimAlong, hostDashCorridorOrigin, knockDir );
+
+		BroadcastConnectImpactSoundOnHost( victim, snappedPos );
 
 		playerBody ??= Components.Get<Rigidbody>();
 		if ( playerBody.IsValid() )
