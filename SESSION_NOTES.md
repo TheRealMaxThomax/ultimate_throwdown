@@ -19,12 +19,12 @@
 
 ## Right now
 
-**Goal:** **Slice 2c** (Speed Blitz polish) — **camera + SFX + body freeze ✅ (2026-06-15)**; **dash tuning** + optional preview art v3 remain. **Speed Blitz 2b ✅ signed off (2026-06-14).**
+**Goal:** **Slice 2d** (Speed Blitz **wind-up** polish — particles → SFX → Olympic pose). **2c feel ✅ (2026-06-15)**; dash numeric tuning + preview art v3 still open in 2c.
 
 **Next session (priority order):**
-1. **Slice 2c finish** — dash range/speed/wall-slide tuning in playtest; optional preview art v3
-2. **Practice scene** — moving/charging dummies before C1 lag-comp
-3. **Optional** — global owner FOV numeric pass; blitz impact-stride `charge_run_cycle` snap; victim flinch clip
+1. **Slice 2d** — wind-up blue energy particles (editor asset first), then buildup + dash-start SFX, then Olympic pose + animgraph layer
+2. **Slice 2c finish** — dash range/speed/wall-slide tuning in playtest; optional preview art v3
+3. **Practice scene** — moving/charging dummies before C1 lag-comp
 
 **Works today:**
 - Ball grab/throw — held ball on **`hold_R`** (`BallGrab` + `BallClientFeel`); **throw trajectory preview** + **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **`BallThrow.ThrowReleaseDelaySeconds`** — anim fires on release, ball stays on hand until delay elapses (tune to release frame); **`PlayerBallHoldAnim`** — built-in `holditem` RH hold + medium throw on release (`b_attack`) + **custom charge wind-up via forked animgraph masked layer** (`throw_charge`/`throw_charge_weight` on `utd_citizen_human_m.vanmgrph` scrub `throw_windup`; body keeps locomotion/look-at — **solo verified 2026-06-11**); **ball carrier glow** (`BallCarrierOutline`); **`BallCompassHud`**; **`main_ball`** art WIP (`ball_v2.vmat`); tackles/ragdolls; dodge; **crouch disabled**
@@ -255,14 +255,15 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **Traffic knockdown tuning:** **`KnockdownLaunchSpeed`** / hit box vs dodgeability
 - **Ball compass polish:** optional distance readout on `BallCompassHud`
 - **Charge wind-up bone mask choice:** `Blend_UpperBody_HalfSpine_FullArms` (arm + some spine lean, smoother) vs `Only_RightArm` (strictly arm) on the graph's Bone Mask node — pick whichever looks better in playtest
-- **Hero asset art:** maps/props low poly; **players + ball** may get higher-detail models later — ball on **`ball_v2.vmat`** (emissive gold + scroll) for now; `BallCarrierOutline` still copies ball material for carry breathe
+- **Hero asset art:** maps/props low poly; **players + ball** may get higher-detail models later — ball on **`ball_v2.vmat`** (emissive gold + scroll) for now; **leaning white ball** later (fits blue ult VFX). `BallCarrierOutline` still copies ball material for carry breathe
 - **Comic word scope:** tackles/knockdowns only for v1; **ults** (+ weapon KOs later) get own burst — not throws/dodges. **Ult palette:** leaning **distinct blue** fill (vs tackle yellow/orange/red); B&W alt considered.
 - **Ult charge point values** — goal / tackle / passive rates TBD in playtest (`PlayerUltCharge` inspector defaults are placeholders).
 - **Charge tier + backward (S) while W held:** **✅ Fixed** — mutex was writing forward/back on `AnalogMove.y` (strafe axis); s&box uses `.x` for forward/back. W wins when both held.
 - **Speed Blitz dash speed vs tunneling:** `DashSpeed` default 2000 — lower in inspector if thin props clip at high speed (2c tuning).
 - **Speed Blitz aim preview v3 (2c+):** replace dev-box corridor/end with **custom translucent blue `.vmat`** + **`Model.Plane`** or **`DecalRenderer`** (SMITE-like ground telegraph); Max authors material in editor — not blocking current segmented-box preview.
 - **Speed Blitz impact stride `charge_run_cycle`:** snap dasher to a fixed cycle at connect (shoulder-in frame) vs freeze whatever pose contact landed on — scrub `charge_run` in ModelDoc; inspector default TBD in playtest.
-- **Speed Blitz victim flinch (later):** optional masked hit-react clip + graph layer during hang (same pattern as `throw_windup` / `charge_run`) — polish on top of body freeze v1; ship or skip after playtest.
+- **Speed Blitz victim flinch (later):** optional masked hit-react clip + graph layer during hang (same pattern as `throw_windup` / `charge_run`) — polish on top of body freeze v1; ship or skip after playtest
+- **Player prefab component count (3 classes):** **✅ Chosen: Option A — per-class prefab variants** before slice 5/6 (`Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; `GameNetworkManager` picks template by class). Not doing yet — see roadmap note before slice 5. Move **`BlitzConnectPoseFreeze`** off global auto-add when splitting.
 
 ---
 
@@ -339,8 +340,21 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [x] Blitz victim **launch SFX** — **`LaunchSound`** at ragdoll impulse (all clients)
 - [x] Dash **`charge_run`** faster blend-in — **`SpeedBlitzChargeRunBlendInSeconds`** on **`PlayerChargeRunAnim`**
 - [ ] Tune range, speed, hit width, wind-up, launch force, wall-slide feel in playtest
-- [ ] Optional: yaw-only camera lock or wider hit cone if full lock too punishing
+- [x] ~~Optional: yaw-only camera lock or wider hit cone~~ — **signed off (2026-06-15):** keep **full camera lock** + current lane hit test (“in the corridor = hit”); no yaw-only or wider cone
 - [ ] Later (not blocking): ult **blue** comic burst
+
+#### Slice 2d — Speed Blitz **wind-up** polish (energy fantasy + Olympic pose)
+
+**Design locked (2026-06-15):** **Energy-anime** read — blue/cyan particles pulling inward during wind-up; **Olympic sprinter blocks** pose (full-body mask — planted anyway). **Telegraph:** enemies should **hear** wind-up; particles **visible from distance** (~1500–2500 units — tune in playtest; profile before shortening). **All clients** see + hear. **Only after release X** (commit) — no buildup during hold/preview. **Not** during hold aim corridor.
+
+**Ship order:** 1) particles → 2) SFX → 3) pose/anim.
+
+- [ ] **Wind-up VFX** — blue energy streaks/sparks **inward** toward dasher; intensity scales with **`GetWindUpLerp()`**; keyed off synced **`IsWindUp`**; **stop on interrupt** (tackle) and on dash start. Max: author **particle asset in editor** first (project has no particles yet — use **`@sbox docs`** for spawn API when wiring code). New helper component TBD (e.g. wind-up VFX on Speedster / spawned by ult).
+- [ ] **Wind-up SFX** — rising pitch/volume **energy build** over **`WindUpDurationSeconds`** (~2s); separate **dash-start burst** at wind-up → dash transition. **`SoundEvent`** on **`SpeedsterSpeedBlitzUlt`** (same drag-drop pattern as connect/launch); **`[Rpc.Broadcast]`** or follow-player 3D so all clients hear; cut/fade on interrupt.
+- [ ] **Wind-up pose** — Blender: **single-frame** Olympic blocks, all bones keyed → `blitz_windup.fbx` → AnimFile on **`utd_citizen_human_throw.vmdl`**. Animgraph: **third masked stack** on **`utd_citizen_human_m.vanmgrph`** (`blitz_windup` / `blitz_windup_weight`); **full-body bone mask**. Code: blend **weight 0→1** (~0.25–0.4s) at wind-up start — **no** in-clip transition required unless weight-only blend pops. **`PlayerChargeRunAnim`:** force **`charge_run_weight` off during `IsWindUp`** (commit at charge speed otherwise fights pose). See [`CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md).
+- [ ] **2-window MP** — remote sees/hears wind-up; interrupt + dash-start sync OK
+
+**Audio arc (full ult):** wind-up build → dash-start burst → (dash) → connect crunch (existing) → launch boom (existing).
 
 #### Slice 3 — assist charge
 
@@ -352,6 +366,8 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 - [ ] `maxPoints` per class/ult (e.g. Juggernaut stomp 150, Speed Blitz 100)
 - [ ] Display still 0–100%; same universal event point awards
+
+**Before slice 5/6 (prefab split — not blocking 2d–4):** Split shared player into **per-class prefab variants** (Option A). Duplicate shared components (`PlayerTackle`, `BallGrab`, `PlayerUltCharge`, HUDs, …) on each; **class-only** ult + preview + wind-up VFX live only on that class prefab. Update **`GameNetworkManager`** to spawn the template matching **`PlayerClass`**. Remove Speedster-only **`BlitzConnectPoseFreeze`** from global auto-add — keep on Speedster prefab or `GetOrCreate` from blitz ult. Do this **before Juggernaut + Sniper** land, not required for Speed Blitz 2d.
 
 #### Slice 5 — **Juggernaut** ult (ground stomp)
 
@@ -379,6 +395,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 | **2a** ✅ | Commit, dash, knockdown, walk ramp; **2-window MP OK (2026-06-14)** |
 | **2b** ✅ | Preview owner-only; release aim = dash direction; preview matches hit incl. max range (**2026-06-14**) |
 | **2c** | Camera + hit recovery ✅; connect crunch + launch boom ✅; body freeze ✅; dash charge_run blend ✅; dash numeric tuning open |
+| **2d** | Wind-up particles + build SFX + dash-start burst + Olympic pose; all clients; audible/visible telegraph; interrupt clean; 2-window MP |
 
 ---
 
@@ -409,12 +426,13 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → Ult roadmap 2c (dash tuning left), MULTIPLAYER_NETCODE.md (any net/combat work).
-Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped. Speed Blitz 2b ✅ (2026-06-14); 2c feel ✅ camera/SFX/body-freeze (2026-06-15).
+Read SESSION_NOTES.md → Ult roadmap 2d (wind-up VFX/SFX/pose), MULTIPLAYER_NETCODE.md (any net/combat work).
+Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped. Speed Blitz 2c feel ✅ (2026-06-15); 2d = wind-up polish (particles first).
 Owner FOV: PlayerController.IEvents.PostCameraSetup — not OnUpdate alone. ThrowChargeCamera [10002]; SpeedBlitzDashCamera idle must not stomp CameraOffset.
-Blitz SFX: ConnectImpactSoundA/B (host random) at dash stop; LaunchSound at ragdoll launch — Rpc.Broadcast from host.
+Blitz SFX today: ConnectImpactSoundA/B (host random) at dash stop; LaunchSound at ragdoll launch — Rpc.Broadcast from host. 2d adds wind-up build + dash-start burst.
+Wind-up: all clients; only after release X; energy particles + Olympic full-body pose; @sbox docs for particles.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
-No GameNetworkManager auto-add for ult components — player prefab manual.
+No GameNetworkManager auto-add for ult components — player prefab manual (consider per-class prefab variants before 3 ults on one root).
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -423,7 +441,8 @@ No GameNetworkManager auto-add for ult components — player prefab manual.
 
 ## Recent session notes
 
-- **2026-06-15 (Speed Blitz 2c polish — signed off feel):** **`BlitzConnectPoseFreeze`**; **`ConnectImpactSoundA/B`** + **`LaunchSound`** (drag-drop **`SoundEvent`**, host random crunch); **`SpeedBlitzChargeRunBlendInSeconds`**; owner camera + hang/launch timing. Dash numeric tuning still open.
+- **2026-06-15 (Speed Blitz 2d planned):** Wind-up polish scoped — energy particles (first), buildup + dash-start SFX, Olympic full-body pose; all-client telegraph; release-only. Full camera lock + lane hit signed off in 2c.
+- **2026-06-15 (Speed Blitz 2c polish — signed off feel):** **`BlitzConnectPoseFreeze`**; connect/launch SFX; dash camera + charge_run blend. Dash numeric tuning still open in 2c.
 - **2026-06-14 (MP combat feel + Blitz 2b):** Tier 0–A3 + A2b predict; Blitz preview vs knockdown sign-off.
 
 Older detail → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).

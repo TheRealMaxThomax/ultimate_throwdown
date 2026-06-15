@@ -239,7 +239,7 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 2. **Hold X** → owner-only preview: **dash line** (max range), **hit width** (capsule corridor), faint **end marker**. Preview geometry = host hit geometry (“between the lines = guaranteed hit” at dash time).
 3. **Release X** → **commit** (cannot cancel):
    - Charge immediately drops to **0%**.
-   - **Camera locks** (full lock v1; may add yaw-only or wider hit cone later if too punishing).
+   - **Camera locks** (full lock — signed off; lane corridor hit = guaranteed knockdown, no yaw-only or wider cone planned).
    - **3 s wind-up** — player is **vulnerable** (can be tackled; wasted ult if knocked down).
 4. **Dash** — player is **invulnerable** during movement:
    - Very fast, long range.
