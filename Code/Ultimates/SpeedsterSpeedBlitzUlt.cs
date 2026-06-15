@@ -93,6 +93,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	[Sync( SyncFlags.FromHost )] private SpeedBlitzPhase NetPhase { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetCommittedDirection { get; set; }
+	[Sync( SyncFlags.FromHost )] private float NetWindUpEndsAt { get; set; }
 
 	// Host-only state.
 	private float hostWindUpEndsAt;
@@ -135,6 +136,18 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	public bool IsActive => NetPhase != SpeedBlitzPhase.None;
 	public bool IsWindUp => NetPhase == SpeedBlitzPhase.WindUp;
 	public bool IsDashing => NetPhase == SpeedBlitzPhase.Dash;
+
+	/// <summary> 0→1 over wind-up — synced via <see cref="NetWindUpEndsAt"/> for owner camera buildup. </summary>
+	public float GetWindUpLerp()
+	{
+		if ( !IsWindUp || NetWindUpEndsAt <= 0f )
+			return 0f;
+
+		var duration = WindUpDurationSeconds.Clamp( 0.05f, 30f );
+		var remaining = MathX.Clamp( NetWindUpEndsAt - Time.Now, 0f, duration );
+		var tLinear = 1f - (remaining / duration);
+		return tLinear * tLinear * (3f - 2f * tLinear );
+	}
 
 	/// <summary> Owner-only: holding <see cref="UltimateAction"/> at full charge before commit (slice 2b preview). </summary>
 	public bool IsAiming { get; private set; }
@@ -288,6 +301,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		NetCommittedDirection = dir;
 		hostWindUpEndsAt = Time.Now + WindUpDurationSeconds.Clamp( 0.05f, 30f );
+		NetWindUpEndsAt = hostWindUpEndsAt;
 		NetPhase = SpeedBlitzPhase.WindUp;
 
 		if ( EnableSpeedBlitzDebugLogs )
@@ -317,6 +331,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		hostDashCorridorOrigin = hostLastDashCheckPos.WithZ( 0f );
 		hostHasOwnerDashSample = false;
 		hostOwnerDashSampleTime = 0f;
+		NetWindUpEndsAt = 0f;
 		playerTackle?.SetHostTackleImmune( true );
 		NetPhase = SpeedBlitzPhase.Dash;
 
@@ -542,6 +557,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		NetPhase = SpeedBlitzPhase.None;
 		hostWindUpEndsAt = 0f;
+		NetWindUpEndsAt = 0f;
 		hostDashEndsAt = 0f;
 		hostHasHitTarget = false;
 		hostHasOwnerDashSample = false;

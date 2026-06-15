@@ -7,7 +7,7 @@ using Sandbox;
 /// Does not slow simulation — freezes the local view only.
 /// </summary>
 [Order( 10050 )]
-public sealed class TackleImpactFeel : Component
+public sealed class TackleImpactFeel : Component, PlayerController.IEvents
 {
 	[Property] public bool EnableHitstop { get; set; } = true;
 	[Property] public float HitstopDurationSeconds { get; set; } = 0.055f;
@@ -127,6 +127,48 @@ public sealed class TackleImpactFeel : Component
 			EndImpact( restoreCamera: true );
 	}
 
+	void PlayerController.IEvents.PostCameraSetup( CameraComponent cam )
+	{
+		if ( !Network.IsOwner || activeRole == ImpactRole.None || !cam.IsValid() )
+			return;
+
+		activeCamera = cam;
+
+		if ( !TryEnsureReady() )
+			return;
+
+		if ( IsHitstopActive )
+		{
+			cam.FieldOfView = frozenFieldOfView;
+			return;
+		}
+
+		if ( activeRole == ImpactRole.Attacker && TryGetAttackerPunchFieldOfView( out var punchFieldOfView ) )
+			cam.FieldOfView = punchFieldOfView;
+	}
+
+	bool TryGetAttackerPunchFieldOfView( out float fieldOfView )
+	{
+		fieldOfView = punchBaselineFieldOfView;
+
+		if ( activeRole != ImpactRole.Attacker )
+			return false;
+
+		var afterHitstopSeconds = Time.Now - impactStartTime - EffectiveHitstopDuration;
+		if ( afterHitstopSeconds < 0f || ActiveAttackerPunchDurationSeconds <= 0.0001f )
+			return false;
+
+		if ( !punchBaselineCaptured )
+			return false;
+
+		var duration = ActiveAttackerPunchDurationSeconds;
+		var tLinear = MathX.Clamp( afterHitstopSeconds / duration, 0f, 1f );
+		var t = tLinear * tLinear * (3f - 2f * tLinear );
+		var punchFov = punchBaselineFieldOfView + ActiveAttackerFovPunchDegrees;
+		fieldOfView = MathX.Lerp( punchFov, punchBaselineFieldOfView, t );
+		return true;
+	}
+
 	protected override void OnPreRender()
 	{
 		if ( !Network.IsOwner || activeRole == ImpactRole.None || !activeCamera.IsValid() )
@@ -231,9 +273,6 @@ public sealed class TackleImpactFeel : Component
 	{
 		if ( playerController.IsValid() )
 			playerController.CameraOffset = frozenCameraOffset;
-
-		if ( activeCamera.IsValid() )
-			activeCamera.FieldOfView = frozenFieldOfView;
 	}
 
 	float GetImpactEndTime()
@@ -288,9 +327,6 @@ public sealed class TackleImpactFeel : Component
 	{
 		if ( playerController.IsValid() )
 			playerController.CameraOffset = frozenCameraOffset;
-
-		if ( activeCamera.IsValid() )
-			activeCamera.FieldOfView = frozenFieldOfView;
 	}
 
 	void ApplyAttackerPunch( float afterHitstopSeconds )
@@ -312,12 +348,6 @@ public sealed class TackleImpactFeel : Component
 		var punchOffset = new Vector3( ActiveAttackerCameraOffsetPunchX, 0f, ActiveAttackerCameraOffsetPunchZ );
 		var targetOffset = punchBaselineOffset + punchOffset;
 		playerController.CameraOffset = Vector3.Lerp( targetOffset, punchBaselineOffset, t );
-
-		if ( activeCamera.IsValid() )
-		{
-			var punchFov = punchBaselineFieldOfView + ActiveAttackerFovPunchDegrees;
-			activeCamera.FieldOfView = MathX.Lerp( punchFov, punchBaselineFieldOfView, t );
-		}
 	}
 
 	bool TryEnsureReady()

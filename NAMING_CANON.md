@@ -77,11 +77,13 @@
 
 **Often-used on `RagdollEnemyOutline`:** `NetVictimTeamId` (synced), `ConfigureFromVictim()` (host, before network spawn)
 
-**Often-used on `ThrowChargeCamera`:** `ExtraCameraDistanceAtFullCharge`, `ExtraCameraHeightAtFullCharge`, `ExtraFieldOfViewAtFullCharge`, `ReleaseCameraBlendDuration` — skips when `PlayerTackle.IsRagdolled`, `IsStandUpCameraBlending`, or `TackleImpactFeel.IsImpactFeelActive`
+**Often-used on `ThrowChargeCamera`:** `ExtraCameraDistanceAtFullCharge`, `ExtraCameraHeightAtFullCharge`, `ExtraFieldOfViewAtFullCharge`, `ReleaseCameraBlendDuration` — FOV in **`PlayerController.IEvents.PostCameraSetup`**; offset in `OnUpdate`; skips when `PlayerTackle.IsRagdolled`, `IsStandUpCameraBlending`, `TackleImpactFeel.IsImpactFeelActive`, or active Speed Blitz
 
-**Often-used on `TackleImpactFeel`:** `EnableHitstop`, `HitstopDurationSeconds` (default `0.055`), `ShakeForAttacker` / `ShakeForVictim` (default both on), `ShakeDurationSeconds`, `ShakePositionAmplitude`, `AttackerFovPunchDegrees`, `AttackerCameraOffsetPunchX` / `AttackerCameraOffsetPunchZ`, `AttackerPunchDurationSeconds`, `IsImpactFeelActive`, `IsHazardImpact`, `TriggerAsAttacker( overrides? )` / `TriggerAsVictim( overrides? )` (player tackle) / `TriggerAsHazardVictim()` (traffic — shake only, no hitstop, car camera path)
+**Often-used on `TackleImpactFeel`:** `EnableHitstop`, `HitstopDurationSeconds` (default `0.055`), `ShakeForAttacker` / `ShakeForVictim` (default both on), `ShakeDurationSeconds`, `ShakePositionAmplitude`, `AttackerFovPunchDegrees`, `AttackerCameraOffsetPunchX` / `AttackerCameraOffsetPunchZ`, `AttackerPunchDurationSeconds`, `IsImpactFeelActive`, `IsHazardImpact`, `TriggerAsAttacker( overrides? )` / `TriggerAsVictim( overrides? )` (player tackle) / `TriggerAsHazardVictim()` (traffic — shake only, no hitstop, car camera path); FOV hitstop + attacker punch in **`PlayerController.IEvents.PostCameraSetup`**
 
-**Often-used on `SpeedBlitzDashCamera`:** `DashBlendInDurationSeconds`, `DashEndBlendDurationSeconds`, `ExtraFieldOfViewDuringDash`, `ExtraCameraDistanceDuringDash`, `ExtraCameraHeightDuringDash` — skips when `TackleImpactFeel.IsImpactFeelActive` or ragdolled
+**Often-used on `SpeedBlitzDashCamera`:** **Wind-up** — `ExtraFieldOfViewAtFullWindUp`, `ExtraCameraDistanceAtFullWindUp`, `ExtraCameraHeightAtFullWindUp`; **Dash** — `ExtraFieldOfViewDuringDash` (additive spike on dash start), `ExtraCameraDistanceDuringDash`, `ExtraCameraHeightDuringDash`, `DashEndBlendDurationSeconds` — FOV applied in **`PlayerController.IEvents.PostCameraSetup`** (PC resets FOV from preferences every frame); offset in `OnUpdate`; skips when `TackleImpactFeel.IsImpactFeelActive` or ragdolled
+
+**Often-used on `SpeedsterSpeedBlitzUlt`:** `GetWindUpLerp()` (owner camera buildup during wind-up)
 
 **Often-used on `CombatFeelPredictDedupe`:** `CombatFeelApplySequence`, `AllocateCombatFeelApplyIdOnHost()`, `MarkOwnerPredictedAttackerFeel()`, `TryBeginOwnerPredictedVictimFeel()`, `TryConsumeHostAttackerFeelDedupe(applyId)`, `TryConsumeHostVictimFeelDedupe(applyId)`, `ResetVictimKnockdownPredictState()`
 
