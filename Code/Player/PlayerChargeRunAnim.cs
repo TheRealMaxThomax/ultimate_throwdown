@@ -15,6 +15,8 @@ public sealed class PlayerChargeRunAnim : Component
 	[Property] public float ChargeRunCycle { get; set; } = 0f;
 	[Property] public float ChargeRunWeightBlendInSeconds { get; set; } = 0.12f;
 	[Property] public float ChargeRunWeightBlendOutSeconds { get; set; } = 0.15f;
+	/// <summary> Faster blend-in while <see cref="SpeedsterSpeedBlitzUlt.IsDashing"/> — dash is often short (especially on connect).</summary>
+	[Property] public float SpeedBlitzChargeRunBlendInSeconds { get; set; } = 0.03f;
 
 	private CatchUpSpeedBoost catchUpSpeedBoost;
 	private BallGrab ballGrab;
@@ -47,6 +49,9 @@ public sealed class PlayerChargeRunAnim : Component
 	protected override void OnUpdate()
 	{
 		if ( !UseAnimGraphChargeRunPose )
+			return;
+
+		if ( Components.Get<BlitzConnectPoseFreeze>() is { IsBodyPoseFrozen: true } )
 			return;
 
 		if ( !TryGetBodyRenderer( out var renderer ) )
@@ -83,7 +88,7 @@ public sealed class PlayerChargeRunAnim : Component
 	private void UpdateChargeRunPose( SkinnedModelRenderer renderer, bool wantPose )
 	{
 		var targetWeight = wantPose ? 1f : 0f;
-		var blendSeconds = wantPose ? ChargeRunWeightBlendInSeconds : ChargeRunWeightBlendOutSeconds;
+		var blendSeconds = wantPose ? GetChargeRunBlendInSeconds() : ChargeRunWeightBlendOutSeconds;
 		chargeRunPoseWeight = blendSeconds <= 0.001f
 			? targetWeight
 			: chargeRunPoseWeight.Approach( targetWeight, Time.Delta / blendSeconds );
@@ -92,6 +97,15 @@ public sealed class PlayerChargeRunAnim : Component
 			renderer.Set( ChargeRunCycleParamName, ChargeRunCycle.Clamp( 0f, 1f ) );
 
 		renderer.Set( ChargeRunWeightParamName, chargeRunPoseWeight );
+	}
+
+	private float GetChargeRunBlendInSeconds()
+	{
+		speedBlitzUlt ??= Components.Get<SpeedsterSpeedBlitzUlt>();
+		if ( speedBlitzUlt?.IsDashing == true )
+			return SpeedBlitzChargeRunBlendInSeconds;
+
+		return ChargeRunWeightBlendInSeconds;
 	}
 
 	private bool ShouldSkipAnim()

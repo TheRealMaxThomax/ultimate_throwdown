@@ -61,6 +61,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	/// <summary> Victim body hang (everyone sees) before ragdoll launch on blitz connect. Normal tackles use <see cref="PlayerTackle.PreLaunchPauseSeconds"/>. </summary>
 	[Property, Group( "Knockdown feel" )] public float KnockdownPreLaunchPauseSeconds { get; set; } = 0.65f;
 
+	/// <summary> Snap dasher <c>charge_run_cycle</c> at connect before pose freeze. &lt; 0 = freeze at contact frame. </summary>
+	[Property, Group( "Knockdown feel" )] public float ConnectImpactChargeRunCycle { get; set; } = -1f;
+
 	[Property, Group( "Knockdown feel" )] public float ImpactHitstopDurationSeconds { get; set; } = 0.15f;
 	[Property, Group( "Knockdown feel" )] public float ImpactShakeDurationSeconds { get; set; } = 0.2f;
 	[Property, Group( "Knockdown feel" )] public float ImpactShakePositionAmplitude { get; set; } = 10f;
@@ -94,6 +97,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	[Sync( SyncFlags.FromHost )] private SpeedBlitzPhase NetPhase { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetCommittedDirection { get; set; }
 	[Sync( SyncFlags.FromHost )] private float NetWindUpEndsAt { get; set; }
+	[Sync( SyncFlags.FromHost )] private float NetConnectPoseFreezeUntil { get; set; }
 
 	// Host-only state.
 	private float hostWindUpEndsAt;
@@ -122,6 +126,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private Vector3 ownerDashCorridorOrigin;
 	private Vector3 ownerLastLocalDashCheckPos;
 	private bool ownerPredictedHitThisDash;
+	private float ownerConnectPoseFreezeUntil;
 
 	private PlayerUltCharge ultCharge;
 	private PlayerClass playerClass;
@@ -136,6 +141,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	public bool IsActive => NetPhase != SpeedBlitzPhase.None;
 	public bool IsWindUp => NetPhase == SpeedBlitzPhase.WindUp;
 	public bool IsDashing => NetPhase == SpeedBlitzPhase.Dash;
+
+	/// <summary> Dasher body pose held for blitz connect hang (synced host end + owner predict). </summary>
+	public bool IsConnectPoseFrozen => GetConnectPoseFreezeUntil() > Time.Now;
 
 	/// <summary> 0→1 over wind-up — synced via <see cref="NetWindUpEndsAt"/> for owner camera buildup. </summary>
 	public float GetWindUpLerp()
@@ -303,6 +311,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		hostWindUpEndsAt = Time.Now + WindUpDurationSeconds.Clamp( 0.05f, 30f );
 		NetWindUpEndsAt = hostWindUpEndsAt;
 		NetPhase = SpeedBlitzPhase.WindUp;
+		ClearConnectPoseFreezeOnHost();
 
 		if ( EnableSpeedBlitzDebugLogs )
 			Log.Info( $"[SpeedBlitz] {GameObject.Name}: commit dir={dir} windUpEnds={hostWindUpEndsAt:F2}" );
@@ -459,6 +468,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			Components.Get<SpeedBlitzDashCamera>()?.BeginHitRecoveryBlend();
 		}
 
+		BeginConnectPoseFreezeOnHost();
+
 		var victimBody = victim.Components.Get<Rigidbody>();
 		if ( victimBody.IsValid() )
 			victimBody.Velocity = Vector3.Zero;
@@ -557,6 +568,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		if ( EnableSpeedBlitzDebugLogs )
 			Log.Info( $"[SpeedBlitz] {GameObject.Name}: end ({reason})" );
+
+		if ( reason != "hit_enemy" )
+			ClearConnectPoseFreezeOnHost();
 
 		NetPhase = SpeedBlitzPhase.None;
 		hostWindUpEndsAt = 0f;
@@ -871,6 +885,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		ownerPredictedHitThisDash = true;
 		ownerDashMovementBlocked = true;
 		OwnerZeroHorizontalVelocity();
+		BeginConnectPoseFreezeForOwnerPredict();
 
 		Components.Get<SpeedBlitzDashCamera>()?.BeginHitRecoveryBlend();
 
@@ -1030,6 +1045,35 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return false;
 
 		return playerTeam.TeamId != victimTeam.TeamId;
+	}
+
+	private float GetConnectPoseFreezeUntil()
+	{
+		return MathF.Max( NetConnectPoseFreezeUntil, ownerConnectPoseFreezeUntil );
+	}
+
+	private void BeginConnectPoseFreezeOnHost()
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		NetConnectPoseFreezeUntil = Time.Now + KnockdownPreLaunchPauseSeconds.Clamp( 0f, 1.5f );
+	}
+
+	private void BeginConnectPoseFreezeForOwnerPredict()
+	{
+		if ( !Network.IsOwner || Networking.IsHost )
+			return;
+
+		ownerConnectPoseFreezeUntil = Time.Now + KnockdownPreLaunchPauseSeconds.Clamp( 0f, 1.5f );
+	}
+
+	private void ClearConnectPoseFreezeOnHost()
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		NetConnectPoseFreezeUntil = 0f;
 	}
 
 	private void LogReject( string reason )

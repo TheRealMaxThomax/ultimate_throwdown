@@ -153,6 +153,8 @@ public sealed class PlayerTackle : Component
 	public bool IsAwaitingRagdollLaunch => netAwaitingRagdollLaunch;
 	/// <summary>Ragdolled or in pre-launch knockdown freeze (cannot be tackled again).</summary>
 	public bool IsKnockedDown => isRagdolled || netAwaitingRagdollLaunch;
+	/// <summary>Speed Blitz victim hang — body visible, pre-ragdoll; drives <see cref="BlitzConnectPoseFreeze"/>.</summary>
+	public bool IsAwaitingSpeedBlitzRagdollLaunch => netAwaitingRagdollLaunch && netLastKnockdownWasSpeedBlitz;
 	/// <summary> Owning client: easing main camera from ragdoll orbit back to <see cref="PlayerController"/> third-person. </summary>
 	public bool IsStandUpCameraBlending => standUpCameraBlendStartTime >= 0f;
 	/// <summary>Host bumps after successful tackles; <see cref="CatchUpSpeedBoost"/> consumes changes to strip charge speed.</summary>

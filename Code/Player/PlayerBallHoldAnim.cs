@@ -237,6 +237,9 @@ public sealed class PlayerBallHoldAnim : Component
 		if ( playerTackle?.IsRagdolled == true )
 			return true;
 
+		if ( Components.Get<BlitzConnectPoseFreeze>() is { IsBodyPoseFrozen: true } )
+			return true;
+
 		if ( playerTeam is not null && !playerTeam.IsMatchGameplayInputAllowed )
 			return true;
 
