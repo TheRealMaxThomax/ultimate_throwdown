@@ -19,7 +19,7 @@
 
 ## Right now
 
-**Goal:** **Slice 2c** (Speed Blitz polish) or **practice scene** for moving-target tests. **Speed Blitz 2b ✅ signed off (2026-06-14).**
+**Goal:** **Slice 2c** (Speed Blitz polish) — **feel layer in progress**. **Speed Blitz 2b ✅ signed off (2026-06-14).**
 
 **Next session (priority order):**
 1. **Slice 2c** — tune dash feel / optional preview art (`SpeedBlitzAimPreview` v3)
@@ -44,7 +44,7 @@
 - **Traffic knockdown** — no pre-launch pause; **`HazardKnockdownComicPower`** default **1.55** (Chaos/red); **`TriggerAsHazardVictim()`** + **`IsHazardImpact`** car camera path (defer ragdoll cam, orbit shake baseline, enter blend). **Player tackles** use simpler path — hitstop during freeze, ragdoll cam when `isRagdolled`
 - **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** + **`ComicLetterExitMotion`**: entrance polish + **14 exit styles** (5 CSS + 7 letter C#); timing via `LifetimeSeconds` / `ExitFadeStartFraction` / `ExitFadeDurationFraction` / `ExitTailSeconds` — **good enough for v1**; MP verify + Les Flos optional
 - **Ult charge (slice 1)** — **`PlayerUltCharge`** + **`UltChargeHud`** on **player prefab** (manual — **not** auto-spawned). Passive regen **`Playing` only**; goal (scorer) + tackle (attacker, **enemy only**); FF tackle **no** charge; % **persists** across rounds; **rematch → 0%**. HUD: floored **%**, white → blue after **`ReadyHighlightDelaySeconds`** at 100%. **`Ultimate`** bound to **X** (ability slice 2).
-- **Speed Blitz (slice 2a/2b)** — **`SpeedsterSpeedBlitzUlt`** + owner **`SpeedBlitzAimPreview`** on Speedster prefab (manual). Hold X → corridor preview; release → commit; RMB cancel. Preview corridor = knockdown (incl. max range); **2b playtest sign-off OK (2026-06-14)**.
+- **Speed Blitz (slice 2a/2b/2c WIP)** — **`SpeedsterSpeedBlitzUlt`** + owner **`SpeedBlitzAimPreview`**; hold X → corridor preview; release → commit; **2b playtest sign-off OK (2026-06-14)**; **2c feel:** blitz-only **0.65s** victim pre-launch hang, stronger connect shake/hitstop, owner **`SpeedBlitzDashCamera`** (FOV + pullback during dash); wind-up default **2s**
 - **MP combat feel predict** — **`CombatFeelPredictDedupe`** (auto on join): client-owner early **`TackleImpactFeel`** for blitz dash, tackle connect, victim freeze (tackle/blitz), traffic ragdoll; host **`NetCombatFeelApplyId`** dedupe. Details → [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md). **2–3 window idle-target soak OK (2026-06-14)**; moving-target fairness → practice scene + Tier C1 later.
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
@@ -202,7 +202,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **`HighlightOutline`** — tune colors/width here (ragdoll copies this exact component); optional **`PlayerEnemyOutline`** (auto at spawn)
 - `DodgeCooldownHud`, `MovementRampHud`, **`UltChargeHud`**, **`BallCompassHud`**, **`ThrowChargeBar`**, **`ThrowTrajectoryPreview`**, **`ThrowChargeCamera`**
 - **`PlayerUltCharge`** — ult % meter (host sync); tune `PassivePointsPerSecond`, `GoalChargePoints`, `TackleChargePoints`. **Add on prefab** (not auto-spawned).
-- **`SpeedsterSpeedBlitzUlt`** — **Speedster only** (class gate). **Add on Speedster prefab** (not auto-spawned). Tune `WindUpDurationSeconds`, `DashRange`, `DashSpeed`, `HitHalfWidth`, `DefaultTargetBodyRadius`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`. Optional **`Enable Speed Blitz Debug Logs`** for commit reject reasons.
+- **`SpeedsterSpeedBlitzUlt`** — **Speedster only** (class gate). **Add on Speedster prefab** (not auto-spawned). Tune `WindUpDurationSeconds` (default **2**), `DashRange`, `DashSpeed`, `HitHalfWidth`, `DefaultTargetBodyRadius`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`. **Knockdown feel:** `KnockdownPreLaunchPauseSeconds` (**0.65**), `ImpactHitstopDurationSeconds`, shake/punch fields. Optional **`Enable Speed Blitz Debug Logs`**. Auto-adds **`SpeedBlitzDashCamera`** on start.
 - **`SpeedBlitzAimPreview`** — **Speedster only**, same prefab as ult (manual). Owner corridor while holding X; tune `CorridorTint` / `CorridorAlpha`, `SegmentSpacing`, `MarkerModelBaseSize` (dev box native size ≈ **50**).
 - **`UltChargeHud`** — floored **%** centered (left of `MovementRampHud`); **`ReadyHighlightDelaySeconds`** (~0.4s white at 100% then blue). **Add on prefab** with `PlayerUltCharge`.
 - **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
@@ -320,7 +320,9 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 #### Slice 2c — Speed Blitz **polish**
 
-- [ ] Tune range, speed, hit width, wind-up, launch force, wall-slide feel
+- [x] Blitz-only victim pre-launch hang (**0.65s** default) + stronger connect impact feel (hitstop / shake / punch)
+- [x] Owner dash super-speed camera (`SpeedBlitzDashCamera` — FOV widen + pullback)
+- [ ] Tune range, speed, hit width, wind-up, launch force, wall-slide feel in playtest
 - [ ] Optional: yaw-only camera lock or wider hit cone if full lock too punishing
 - [ ] Later (not blocking): ult **blue** comic burst, SFX
 
@@ -403,7 +405,7 @@ No GameNetworkManager auto-add for ult components — player prefab manual.
 
 ## Recent session notes
 
-- **2026-06-14 (Speed Blitz 2b sign-off):** Preview vs knockdown verified solo + MP; max-range miss fixed (corridor-axis hit test + final sweep to `DashRange`).
+- **2026-06-15 (Speed Blitz 2c feel):** Blitz-only **0.65s** victim pre-launch hang; stronger connect hitstop/shake/punch (`Knockdown feel` on ult); owner **`SpeedBlitzDashCamera`** (FOV +12 / pullback during dash); wind-up code default **2s**.
 - **2026-06-14 (MP combat feel — Tier 0–A3 + A2b):** Full predict stack shipped + verified (2–3 window). **`CombatFeelPredictDedupe`**, blitz/tackle/victim/traffic predict; **`SpeedBlitzAimPreview`** `NetworkMode.Never` leak fix. Idle targets OK; moving → practice scene + C1.
 - **2026-06-14 (Speed Blitz authority + 2b):** Host sweep cap, committed dash dir, pre-launch pause, preview/hit align, aim lock on X release.
 - **2026-06-13 (knockdown walk reset ✅):** `TriggerForceWalkRampOnHost` + local ramp snap.

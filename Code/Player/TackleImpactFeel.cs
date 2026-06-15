@@ -37,6 +37,8 @@ public sealed class TackleImpactFeel : Component
 	private ImpactRole activeRole = ImpactRole.None;
 	private bool impactUseHitstop = true;
 	private bool impactIsHazard;
+	private bool impactHasOverrides;
+	private TackleImpactFeelOverrides impactOverrides;
 	private float impactStartTime = -1f;
 
 	private Vector3 frozenCameraPosition;
@@ -54,7 +56,16 @@ public sealed class TackleImpactFeel : Component
 	/// <summary>True while a traffic/hazard knockdown impact is active (car-specific camera path).</summary>
 	public bool IsHazardImpact => activeRole != ImpactRole.None && impactIsHazard;
 
-	float EffectiveHitstopDuration => EnableHitstop && impactUseHitstop ? HitstopDurationSeconds : 0f;
+	float ActiveHitstopDurationSeconds => impactHasOverrides ? impactOverrides.HitstopDurationSeconds : HitstopDurationSeconds;
+	float ActiveShakeDurationSeconds => impactHasOverrides ? impactOverrides.ShakeDurationSeconds : ShakeDurationSeconds;
+	float ActiveShakePositionAmplitude => impactHasOverrides ? impactOverrides.ShakePositionAmplitude : ShakePositionAmplitude;
+	float ActiveShakeRotationAmplitudeDegrees => impactHasOverrides ? impactOverrides.ShakeRotationAmplitudeDegrees : ShakeRotationAmplitudeDegrees;
+	float ActiveAttackerFovPunchDegrees => impactHasOverrides ? impactOverrides.AttackerFovPunchDegrees : AttackerFovPunchDegrees;
+	float ActiveAttackerCameraOffsetPunchX => impactHasOverrides ? impactOverrides.AttackerCameraOffsetPunchX : AttackerCameraOffsetPunchX;
+	float ActiveAttackerCameraOffsetPunchZ => impactHasOverrides ? impactOverrides.AttackerCameraOffsetPunchZ : AttackerCameraOffsetPunchZ;
+	float ActiveAttackerPunchDurationSeconds => impactHasOverrides ? impactOverrides.AttackerPunchDurationSeconds : AttackerPunchDurationSeconds;
+
+	float EffectiveHitstopDuration => EnableHitstop && impactUseHitstop ? ActiveHitstopDurationSeconds : 0f;
 
 	protected override void OnStart()
 	{
@@ -64,15 +75,15 @@ public sealed class TackleImpactFeel : Component
 	}
 
 	/// <summary> Owning client: landed a player tackle. </summary>
-	public void TriggerAsAttacker()
+	public void TriggerAsAttacker( TackleImpactFeelOverrides? overrides = null )
 	{
-		BeginImpact( ImpactRole.Attacker, useHitstop: true, isHazard: false );
+		BeginImpact( ImpactRole.Attacker, useHitstop: true, isHazard: false, overrides );
 	}
 
 	/// <summary> Owning client: got tackled by another player. </summary>
-	public void TriggerAsVictim()
+	public void TriggerAsVictim( TackleImpactFeelOverrides? overrides = null )
 	{
-		BeginImpact( ImpactRole.Victim, useHitstop: true, isHazard: false );
+		BeginImpact( ImpactRole.Victim, useHitstop: true, isHazard: false, overrides );
 	}
 
 	/// <summary> Owning client: hazard knockdown (traffic, etc.) — shake only, no camera hitstop. </summary>
@@ -107,7 +118,7 @@ public sealed class TackleImpactFeel : Component
 			return;
 		}
 
-		IsShakeActive = ShouldShakeForRole( activeRole ) && elapsed < hitstopDuration + ShakeDurationSeconds;
+		IsShakeActive = ShouldShakeForRole( activeRole ) && elapsed < hitstopDuration + ActiveShakeDurationSeconds;
 
 		if ( activeRole == ImpactRole.Attacker )
 			ApplyAttackerPunch( elapsed - hitstopDuration );
@@ -132,11 +143,11 @@ public sealed class TackleImpactFeel : Component
 			return;
 
 		var afterHitstop = Time.Now - impactStartTime - EffectiveHitstopDuration;
-		var duration = ShakeDurationSeconds <= 0.0001f ? 0.0001f : ShakeDurationSeconds;
+		var duration = ActiveShakeDurationSeconds <= 0.0001f ? 0.0001f : ActiveShakeDurationSeconds;
 		var t = MathX.Clamp( afterHitstop / duration, 0f, 1f );
 		var falloff = 1f - t;
-		var amp = ShakePositionAmplitude * falloff;
-		var rotAmp = ShakeRotationAmplitudeDegrees * falloff;
+		var amp = ActiveShakePositionAmplitude * falloff;
+		var rotAmp = ActiveShakeRotationAmplitudeDegrees * falloff;
 		var wobble = afterHitstop;
 
 		var pitch = MathF.Sin( wobble * 61f ) * rotAmp;
@@ -172,7 +183,7 @@ public sealed class TackleImpactFeel : Component
 		activeCamera.WorldRotation = baseRotation * wobbleRot;
 	}
 
-	void BeginImpact( ImpactRole role, bool useHitstop, bool isHazard )
+	void BeginImpact( ImpactRole role, bool useHitstop, bool isHazard, TackleImpactFeelOverrides? overrides = null )
 	{
 		if ( !Network.IsOwner || role == ImpactRole.None )
 			return;
@@ -182,6 +193,8 @@ public sealed class TackleImpactFeel : Component
 
 		impactUseHitstop = useHitstop;
 		impactIsHazard = isHazard;
+		impactHasOverrides = overrides.HasValue;
+		impactOverrides = overrides ?? default;
 		CaptureFrozenCameraState();
 		punchBaselineCaptured = false;
 
@@ -206,6 +219,8 @@ public sealed class TackleImpactFeel : Component
 		activeRole = ImpactRole.None;
 		impactUseHitstop = true;
 		impactIsHazard = false;
+		impactHasOverrides = false;
+		impactOverrides = default;
 		impactStartTime = -1f;
 		IsHitstopActive = false;
 		IsShakeActive = false;
@@ -227,9 +242,9 @@ public sealed class TackleImpactFeel : Component
 			return 0f;
 
 		var afterHitstopEnd = impactStartTime + EffectiveHitstopDuration;
-		var shakeEnd = afterHitstopEnd + ShakeDurationSeconds;
+		var shakeEnd = afterHitstopEnd + ActiveShakeDurationSeconds;
 		if ( activeRole == ImpactRole.Attacker )
-			return MathF.Max( shakeEnd, afterHitstopEnd + AttackerPunchDurationSeconds );
+			return MathF.Max( shakeEnd, afterHitstopEnd + ActiveAttackerPunchDurationSeconds );
 
 		return shakeEnd;
 	}
@@ -280,7 +295,7 @@ public sealed class TackleImpactFeel : Component
 
 	void ApplyAttackerPunch( float afterHitstopSeconds )
 	{
-		if ( afterHitstopSeconds < 0f || AttackerPunchDurationSeconds <= 0.0001f )
+		if ( afterHitstopSeconds < 0f || ActiveAttackerPunchDurationSeconds <= 0.0001f )
 			return;
 
 		if ( !punchBaselineCaptured )
@@ -290,17 +305,17 @@ public sealed class TackleImpactFeel : Component
 			punchBaselineCaptured = true;
 		}
 
-		var duration = AttackerPunchDurationSeconds;
+		var duration = ActiveAttackerPunchDurationSeconds;
 		var tLinear = MathX.Clamp( afterHitstopSeconds / duration, 0f, 1f );
 		var t = tLinear * tLinear * (3f - 2f * tLinear );
 
-		var punchOffset = new Vector3( AttackerCameraOffsetPunchX, 0f, AttackerCameraOffsetPunchZ );
+		var punchOffset = new Vector3( ActiveAttackerCameraOffsetPunchX, 0f, ActiveAttackerCameraOffsetPunchZ );
 		var targetOffset = punchBaselineOffset + punchOffset;
 		playerController.CameraOffset = Vector3.Lerp( targetOffset, punchBaselineOffset, t );
 
 		if ( activeCamera.IsValid() )
 		{
-			var punchFov = punchBaselineFieldOfView + AttackerFovPunchDegrees;
+			var punchFov = punchBaselineFieldOfView + ActiveAttackerFovPunchDegrees;
 			activeCamera.FieldOfView = MathX.Lerp( punchFov, punchBaselineFieldOfView, t );
 		}
 	}

@@ -57,6 +57,10 @@ public sealed class PlayerTackle : Component
 	private bool netLastKnockdownWasHazard;
 	[Sync( SyncFlags.FromHost )]
 	private bool NetLastKnockdownWasHazard { get => netLastKnockdownWasHazard; set => netLastKnockdownWasHazard = value; }
+	/// <summary>Host: last knockdown was Speed Blitz — client victim predict + feel RPC use blitz impact profile.</summary>
+	private bool netLastKnockdownWasSpeedBlitz;
+	[Sync( SyncFlags.FromHost )]
+	private bool NetLastKnockdownWasSpeedBlitz { get => netLastKnockdownWasSpeedBlitz; set => netLastKnockdownWasSpeedBlitz = value; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetKnockdownFreezePosition { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetRagdollPosition { get; set; }
 	[Sync( SyncFlags.FromHost )] private Vector3 NetStandUpPosition { get; set; }
@@ -465,6 +469,8 @@ public sealed class PlayerTackle : Component
 
 		if ( hazardKnockdown )
 			tackleImpactFeel?.TriggerAsHazardVictim();
+		else if ( netLastKnockdownWasSpeedBlitz )
+			tackleImpactFeel?.TriggerAsVictim( SpeedsterSpeedBlitzUlt.DefaultKnockdownImpactFeelOverrides );
 		else
 			tackleImpactFeel?.TriggerAsVictim();
 
@@ -631,7 +637,7 @@ public sealed class PlayerTackle : Component
 
 	/// <summary>Host: hazard knockdown (traffic, etc.) — same ragdoll path as tackle without attacker bookkeeping.</summary>
 	/// <returns><c>true</c> if knockdown started.</returns>
-	public bool ApplyKnockdownFromHost( Vector3 launchDir, float launchSpeed, float launchArc = -1f, PlayerTackle attacker = null )
+	public bool ApplyKnockdownFromHost( Vector3 launchDir, float launchSpeed, float launchArc = -1f, PlayerTackle attacker = null, float? preLaunchPauseSecondsOverride = null )
 	{
 		if ( !Networking.IsHost )
 			return false;
@@ -641,7 +647,7 @@ public sealed class PlayerTackle : Component
 			return false;
 
 		var arc = launchArc >= 0f ? launchArc : TackleLaunchArc;
-		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, HazardKnockdownComicPower, attackerGrabForCarrierLockout: null, attacker );
+		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, HazardKnockdownComicPower, attackerGrabForCarrierLockout: null, attacker, preLaunchPauseSecondsOverride );
 		return true;
 	}
 
@@ -686,12 +692,17 @@ public sealed class PlayerTackle : Component
 		float launchArc,
 		float tacklePowerForBall,
 		BallGrab attackerGrabForCarrierLockout,
-		PlayerTackle attacker )
+		PlayerTackle attacker,
+		float? preLaunchPauseSecondsOverride = null )
 	{
 		CapturePracticeNpcPreTacklePoseIfTagged( victim );
 
+		var speedBlitzKnockdown = preLaunchPauseSecondsOverride.HasValue;
 		if ( Networking.IsHost )
+		{
 			victim.NetLastKnockdownWasHazard = !attacker.IsValid();
+			victim.NetLastKnockdownWasSpeedBlitz = speedBlitzKnockdown;
+		}
 
 		var classData = victim.playerClass?.CurrentClass;
 		var ballLaunchForce = (classData?.BallLaunchForceOnTackle ?? 500f) * tacklePowerForBall;
@@ -734,7 +745,7 @@ public sealed class PlayerTackle : Component
 			victim.Components.Get<CatchUpSpeedBoost>()?.TriggerForceWalkRampOnHost();
 		}
 
-		NotifyTackleImpactFeel( attacker, victim );
+		NotifyTackleImpactFeel( attacker, victim, speedBlitzKnockdown );
 		try
 		{
 			TackleComicTextHud.NotifyHostKnockdown( Scene, victim.WorldPosition, tacklePowerForBall, launchDir );
@@ -745,7 +756,8 @@ public sealed class PlayerTackle : Component
 		}
 
 		// Moving hazards (traffic) skip pause — freeze holds the victim in world space while the car drives through.
-		var usePreLaunchPause = attacker.IsValid() && PreLaunchPauseSeconds > 0.0001f;
+		var effectivePreLaunchPause = preLaunchPauseSecondsOverride ?? PreLaunchPauseSeconds;
+		var usePreLaunchPause = attacker.IsValid() && effectivePreLaunchPause > 0.0001f;
 		if ( usePreLaunchPause )
 		{
 			victim.NetKnockdownFreezePosition = victim.WorldPosition;
@@ -756,12 +768,12 @@ public sealed class PlayerTackle : Component
 			victim.NetIsRagdolled = true;
 		}
 
-		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc, usePreLaunchPause );
+		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc, usePreLaunchPause, effectivePreLaunchPause );
 		HandleRagdollRecovery( victim );
 	}
 
 	/// <summary>Host: owner-only hitstop / shake / punch on attacker and victim clients.</summary>
-	private static void NotifyTackleImpactFeel( PlayerTackle attacker, PlayerTackle victim )
+	private static void NotifyTackleImpactFeel( PlayerTackle attacker, PlayerTackle victim, bool speedBlitzKnockdown = false )
 	{
 		if ( !Networking.IsHost )
 			return;
@@ -770,29 +782,36 @@ public sealed class PlayerTackle : Component
 		{
 			var attackerDedupe = attacker.Components.GetOrCreate<CombatFeelPredictDedupe>();
 			var applyId = attackerDedupe.AllocateCombatFeelApplyIdOnHost();
-			attacker.TriggerTackleImpactFeelAsAttackerRpc( applyId );
+			attacker.TriggerTackleImpactFeelAsAttackerRpc( applyId, speedBlitzKnockdown );
 		}
 
 		if ( victim.IsValid() )
 		{
 			var victimDedupe = victim.Components.GetOrCreate<CombatFeelPredictDedupe>();
 			var applyId = victimDedupe.AllocateCombatFeelApplyIdOnHost();
-			victim.TriggerTackleImpactFeelAsVictimRpc( applyId, hazardKnockdown: !attacker.IsValid() );
+			victim.TriggerTackleImpactFeelAsVictimRpc( applyId, hazardKnockdown: !attacker.IsValid(), speedBlitzKnockdown );
 		}
 	}
 
 	[Rpc.Owner]
-	private void TriggerTackleImpactFeelAsAttackerRpc( int combatFeelApplyId )
+	private void TriggerTackleImpactFeelAsAttackerRpc( int combatFeelApplyId, bool speedBlitzKnockdown = false )
 	{
 		combatFeelDedupe ??= Components.Get<CombatFeelPredictDedupe>();
 		if ( combatFeelDedupe.IsValid() && combatFeelDedupe.TryConsumeHostAttackerFeelDedupe( combatFeelApplyId ) )
 			return;
 
-		Components.Get<TackleImpactFeel>()?.TriggerAsAttacker();
+		var feel = Components.Get<TackleImpactFeel>();
+		if ( !feel.IsValid() )
+			return;
+
+		if ( speedBlitzKnockdown )
+			feel.TriggerAsAttacker( ResolveSpeedBlitzImpactFeelOverrides() );
+		else
+			feel.TriggerAsAttacker();
 	}
 
 	[Rpc.Owner]
-	private void TriggerTackleImpactFeelAsVictimRpc( int combatFeelApplyId, bool hazardKnockdown )
+	private void TriggerTackleImpactFeelAsVictimRpc( int combatFeelApplyId, bool hazardKnockdown, bool speedBlitzKnockdown = false )
 	{
 		combatFeelDedupe ??= Components.Get<CombatFeelPredictDedupe>();
 		if ( combatFeelDedupe.IsValid() && combatFeelDedupe.TryConsumeHostVictimFeelDedupe( combatFeelApplyId ) )
@@ -804,8 +823,16 @@ public sealed class PlayerTackle : Component
 
 		if ( hazardKnockdown )
 			feel.TriggerAsHazardVictim();
+		else if ( speedBlitzKnockdown )
+			feel.TriggerAsVictim( SpeedsterSpeedBlitzUlt.DefaultKnockdownImpactFeelOverrides );
 		else
 			feel.TriggerAsVictim();
+	}
+
+	private TackleImpactFeelOverrides ResolveSpeedBlitzImpactFeelOverrides()
+	{
+		var ult = Components.Get<SpeedsterSpeedBlitzUlt>();
+		return ult.IsValid() ? ult.GetKnockdownImpactFeelOverrides() : SpeedsterSpeedBlitzUlt.DefaultKnockdownImpactFeelOverrides;
 	}
 
 	private static void CapturePracticeNpcPreTacklePoseIfTagged( PlayerTackle victim )
@@ -827,7 +854,7 @@ public sealed class PlayerTackle : Component
 	// Spawns a host-owned physics ragdoll at the victim's position.
 	// NetworkSpawn makes it visible on all clients automatically.
 	// Physics runs on the host without client transform ownership conflicts.
-	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 tackleDir, float effectiveLaunchSpeed, float launchArc, bool usePreLaunchPause )
+	private async void SpawnRagdollObject( PlayerTackle victim, Vector3 tackleDir, float effectiveLaunchSpeed, float launchArc, bool usePreLaunchPause, float preLaunchPauseSeconds )
 	{
 		var ragdollGo = new GameObject( true, "PlayerRagdoll" );
 		var spawnPos = usePreLaunchPause ? victim.NetKnockdownFreezePosition : victim.WorldPosition + Vector3.Up * 10f;
@@ -874,7 +901,7 @@ public sealed class PlayerTackle : Component
 		if ( !ragdollGo.IsValid() )
 			return;
 
-		var pause = PreLaunchPauseSeconds.Clamp( 0f, 1f );
+		var pause = preLaunchPauseSeconds.Clamp( 0f, 1.5f );
 		if ( usePreLaunchPause && pause > 0.0001f )
 		{
 			if ( baseVictimRenderer != null )

@@ -707,7 +707,7 @@
               "__enabled": true,
               "Flags": 0,
               "AttackerPickupLockoutAfterCarrierTackle": 0.45,
-              "EnableTackleDebugLogs": false,
+              "EnableTackleDebugLogs": true,
               "HazardKnockdownComicPower": 1.55,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
@@ -891,7 +891,7 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "UltimateAction": "Ultimate",
-              "WindUpDurationSeconds": 3
+              "WindUpDurationSeconds": 2
             },
             {
               "__type": "SpeedBlitzAimPreview",
@@ -3002,7 +3002,7 @@
                   ]
                 },
                 {
-                  "__guid": "5725a5f7-a5a7-4b76-95bc-7f4817443cc0",
+                  "__guid": "9eb51f52-22ac-4f65-b913-da4fa3527aa9",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3019,7 +3019,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "1922a17a-e87f-4012-9f99-bbad0cd49273",
+                      "__guid": "943834f3-66f4-4a9f-886c-3b59b46b31c2",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6299,7 +6299,7 @@
                   ]
                 },
                 {
-                  "__guid": "edd4df90-0c8e-4937-b55d-dbc306cd6080",
+                  "__guid": "f071e99c-e114-4a05-992d-f62f85f0c97a",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6316,7 +6316,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "1db34053-34b3-449c-a71d-8a0576df08d6",
+                      "__guid": "db6006cc-bcdf-45db-b374-93b05b8ea789",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8935,7 +8935,7 @@
                   ]
                 },
                 {
-                  "__guid": "517c6f87-2c22-465c-928d-277188e2f893",
+                  "__guid": "3c13a778-8b99-46bb-a886-df2236fa1b6e",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8952,7 +8952,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "f44833e4-f685-4ac7-856c-1958b66c5ac1",
+                      "__guid": "ea610c07-090a-4b18-9f0b-ca29b66f8901",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11571,7 +11571,7 @@
                   ]
                 },
                 {
-                  "__guid": "bac5d7c2-0071-4409-bc7c-639af38ffb2c",
+                  "__guid": "aff3205f-a1e4-4887-af47-1b04159cf290",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11588,7 +11588,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "b79f81a7-cbe6-49c2-971a-9c3a66723bef",
+                      "__guid": "78f41a70-71f1-4359-84c1-b6462619cfd1",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -87303,14 +87303,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
-        }
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
+        }
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
         }
       }
     }

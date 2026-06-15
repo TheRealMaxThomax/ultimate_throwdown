@@ -2,7 +2,7 @@ using Sandbox;
 using System;
 
 /// <summary>
-/// Speedster <b>Speed Blitz</b> ult — slice 2a: tap <c>Ultimate</c> to commit, 3 s wind-up, then a fast dash.
+/// Speedster <b>Speed Blitz</b> ult — slice 2a: tap/hold <c>Ultimate</c> to commit, wind-up, then a fast dash.
 /// <para>
 /// Movement is <b>owner-driven through the built-in <see cref="PlayerController"/></b> (we set the player's
 /// Rigidbody velocity, just like <see cref="PlayerDodge"/>): the character controller's move mode handles
@@ -37,7 +37,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	[Property] public string UltimateAction { get; set; } = "Ultimate";
 
-	[Property, Group( "Wind-up" )] public float WindUpDurationSeconds { get; set; } = 3f;
+	[Property, Group( "Wind-up" )] public float WindUpDurationSeconds { get; set; } = 2f;
 
 	/// <summary> Total ground the dash tries to cover (walls reduce actual distance via slide). </summary>
 	[Property, Group( "Dash" )] public float DashRange { get; set; } = 1200f;
@@ -58,8 +58,36 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	[Property, Group( "Dash" )] public float KnockdownLaunchSpeed { get; set; } = 950f;
 	[Property, Group( "Dash" )] public float KnockdownLaunchArc { get; set; } = 1.2f;
 
+	/// <summary> Victim body hang (everyone sees) before ragdoll launch on blitz connect. Normal tackles use <see cref="PlayerTackle.PreLaunchPauseSeconds"/>. </summary>
+	[Property, Group( "Knockdown feel" )] public float KnockdownPreLaunchPauseSeconds { get; set; } = 0.65f;
+
+	[Property, Group( "Knockdown feel" )] public float ImpactHitstopDurationSeconds { get; set; } = 0.15f;
+	[Property, Group( "Knockdown feel" )] public float ImpactShakeDurationSeconds { get; set; } = 0.2f;
+	[Property, Group( "Knockdown feel" )] public float ImpactShakePositionAmplitude { get; set; } = 10f;
+	[Property, Group( "Knockdown feel" )] public float ImpactShakeRotationAmplitudeDegrees { get; set; } = 1.65f;
+	[Property, Group( "Knockdown feel" )] public float ImpactAttackerFovPunchDegrees { get; set; } = -6f;
+	[Property, Group( "Knockdown feel" )] public float ImpactAttackerCameraOffsetPunchX { get; set; } = 28f;
+	[Property, Group( "Knockdown feel" )] public float ImpactAttackerCameraOffsetPunchZ { get; set; } = 5f;
+	[Property, Group( "Knockdown feel" )] public float ImpactAttackerPunchDurationSeconds { get; set; } = 0.14f;
+
+	/// <summary> Code defaults for victims / RPC when no local <see cref="SpeedsterSpeedBlitzUlt"/> instance is available. </summary>
+	public static TackleImpactFeelOverrides DefaultKnockdownImpactFeelOverrides { get; } = new()
+	{
+		HitstopDurationSeconds = 0.15f,
+		ShakeDurationSeconds = 0.2f,
+		ShakePositionAmplitude = 10f,
+		ShakeRotationAmplitudeDegrees = 1.65f,
+		AttackerFovPunchDegrees = -6f,
+		AttackerCameraOffsetPunchX = 28f,
+		AttackerCameraOffsetPunchZ = 5f,
+		AttackerPunchDurationSeconds = 0.14f
+	};
+
 	/// <summary> Multiplier on dash-speed × fixed delta when capping host sweep steps (client RPC can arrive in bursts). </summary>
 	[Property, Group( "Dash" )] public float DashSweepStepMultiplier { get; set; } = 2.5f;
+
+	/// <summary> Extra gap (units) between dasher and victim body at dash stop — prevents overlap read as lag. </summary>
+	[Property, Group( "Dash" )] public float HitStopContactGap { get; set; } = 4f;
 
 	[Property] public bool EnableSpeedBlitzDebugLogs { get; set; }
 
@@ -114,6 +142,21 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	/// <summary> While true, ball pickup is blocked (BallGrab) and dodge is suppressed (PlayerDodge). </summary>
 	public bool BlocksBallPickup => IsActive;
 
+	public TackleImpactFeelOverrides GetKnockdownImpactFeelOverrides()
+	{
+		return new TackleImpactFeelOverrides
+		{
+			HitstopDurationSeconds = ImpactHitstopDurationSeconds,
+			ShakeDurationSeconds = ImpactShakeDurationSeconds,
+			ShakePositionAmplitude = ImpactShakePositionAmplitude,
+			ShakeRotationAmplitudeDegrees = ImpactShakeRotationAmplitudeDegrees,
+			AttackerFovPunchDegrees = ImpactAttackerFovPunchDegrees,
+			AttackerCameraOffsetPunchX = ImpactAttackerCameraOffsetPunchX,
+			AttackerCameraOffsetPunchZ = ImpactAttackerCameraOffsetPunchZ,
+			AttackerPunchDurationSeconds = ImpactAttackerPunchDurationSeconds
+		};
+	}
+
 	private float DashDurationSeconds => (DashRange / MathF.Max( DashSpeed, 1f )).Clamp( 0.05f, 6f );
 
 	protected override void OnStart()
@@ -127,6 +170,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		playerBody = Components.Get<Rigidbody>();
 		catchUpSpeedBoost = Components.Get<CatchUpSpeedBoost>();
 		tackleImpactFeel = Components.Get<TackleImpactFeel>();
+		Components.GetOrCreate<SpeedBlitzDashCamera>();
 	}
 
 	protected override void OnUpdate()
@@ -286,8 +330,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		var currRaw = GetHostDashCheckCurrentPosition();
 		var curr = ClampDashSweepEndPosition( hostLastDashCheckPos, currRaw );
 
-		if ( TryFindBestDashHitInSegment( hostLastDashCheckPos, curr, hostDashCorridorOrigin, out var best ) )
-			HostApplyDashKnockdown( best );
+		if ( TryFindBestDashHitInSegment( hostLastDashCheckPos, curr, hostDashCorridorOrigin, out var best, out var victimAlong ) )
+			HostApplyDashKnockdown( best, victimAlong );
 
 		hostLastDashCheckPos = curr;
 	}
@@ -309,8 +353,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		var sweepEnd = hostDashCorridorOrigin + dir * sweepEndAlong;
 		sweepEnd = new Vector3( sweepEnd.x, sweepEnd.y, curr.z );
 
-		if ( TryFindBestDashHitInSegment( hostLastDashCheckPos, sweepEnd, hostDashCorridorOrigin, out var best ) )
-			HostApplyDashKnockdown( best );
+		if ( TryFindBestDashHitInSegment( hostLastDashCheckPos, sweepEnd, hostDashCorridorOrigin, out var best, out var victimAlong ) )
+			HostApplyDashKnockdown( best, victimAlong );
 	}
 
 	/// <summary> Shared corridor sweep — host hit test and owner predict use the same filters/width. </summary>
@@ -318,9 +362,11 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		Vector3 segStartRaw,
 		Vector3 segEndRaw,
 		Vector3 corridorOriginRaw,
-		out PlayerTackle victim )
+		out PlayerTackle victim,
+		out float victimAlong )
 	{
 		victim = null;
+		victimAlong = 0f;
 
 		var corridorDir = NetCommittedDirection.WithZ( 0f );
 		if ( corridorDir.Length < 0.001f )
@@ -369,17 +415,20 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return false;
 
 		victim = best;
+		victimAlong = bestAlong;
 		return true;
 	}
 
 	/// <summary> Host: always launch along committed dash dir (MP-safe); brief pre-launch pause like tackles. </summary>
-	private void HostApplyDashKnockdown( PlayerTackle victim )
+	private void HostApplyDashKnockdown( PlayerTackle victim, float victimAlong )
 	{
 		var knockDir = NetCommittedDirection.WithZ( 0 );
 		if ( knockDir.Length < 0.001f )
 			knockDir = Vector3.Forward;
 		else
 			knockDir = knockDir.Normal;
+
+		var snappedPos = SnapDasherToDashHitContact( victim, victimAlong, hostDashCorridorOrigin, knockDir );
 
 		playerBody ??= Components.Get<Rigidbody>();
 		if ( playerBody.IsValid() )
@@ -389,6 +438,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		if ( playerController.IsValid() )
 			playerController.WishVelocity = Vector3.Zero;
 
+		if ( Network.IsOwner )
+			ownerDashMovementBlocked = true;
+
 		var victimBody = victim.Components.Get<Rigidbody>();
 		if ( victimBody.IsValid() )
 			victimBody.Velocity = Vector3.Zero;
@@ -397,13 +449,13 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		if ( victimController.IsValid() )
 			victimController.WishVelocity = Vector3.Zero;
 
-		victim.ApplyKnockdownFromHost( knockDir, KnockdownLaunchSpeed, KnockdownLaunchArc, playerTackle );
+		victim.ApplyKnockdownFromHost( knockDir, KnockdownLaunchSpeed, KnockdownLaunchArc, playerTackle, KnockdownPreLaunchPauseSeconds );
 		hostHasHitTarget = true;
 
 		if ( EnableSpeedBlitzDebugLogs )
 			Log.Info( $"[SpeedBlitz] {GameObject.Name}: dash hit {victim.GameObject.Name}" );
 
-		EndBlitzOnHost( "hit_enemy" );
+		EndBlitzOnHost( "hit_enemy", ownerDashStopPosition: Network.IsOwner ? null : snappedPos );
 	}
 
 	/// <summary> Prevents lagged owner samples from sweeping a huge corridor in one host tick. </summary>
@@ -476,7 +528,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		return (point.WithZ( 0f ) - closest).Length;
 	}
 
-	private void EndBlitzOnHost( string reason )
+	private void EndBlitzOnHost( string reason, Vector3? ownerDashStopPosition = null )
 	{
 		if ( !Networking.IsHost || NetPhase == SpeedBlitzPhase.None )
 			return;
@@ -507,14 +559,20 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		}
 
 		if ( notifyOwnerToStop )
-			NotifyOwnerDashEndedRpc();
+			NotifyOwnerDashEndedRpc( ownerDashStopPosition );
 	}
 
 	[Rpc.Owner]
-	private void NotifyOwnerDashEndedRpc()
+	private void NotifyOwnerDashEndedRpc( Vector3? stopPosition = null )
 	{
 		ownerDashMovementBlocked = true;
 		OwnerZeroHorizontalVelocity();
+
+		if ( stopPosition.HasValue )
+		{
+			var flat = stopPosition.Value;
+			GameObject.WorldPosition = new Vector3( flat.x, flat.y, GameObject.WorldPosition.z );
+		}
 	}
 
 	/// <summary> Host: abort wind-up or dash (e.g. round reset). Charge is not refunded. </summary>
@@ -768,25 +826,33 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return;
 		}
 
-		if ( !TryFindBestDashHitInSegment( ownerLastLocalDashCheckPos, curr, ownerDashCorridorOrigin, out var victim ) )
+		if ( !TryFindBestDashHitInSegment( ownerLastLocalDashCheckPos, curr, ownerDashCorridorOrigin, out var victim, out var victimAlong ) )
 		{
 			ownerLastLocalDashCheckPos = curr;
 			return;
 		}
 
-		ownerLastLocalDashCheckPos = curr;
-		OwnerApplyPredictedDashHit( victim );
+		OwnerApplyPredictedDashHit( victim, victimAlong );
 	}
 
-	private void OwnerApplyPredictedDashHit( PlayerTackle victim )
+	private void OwnerApplyPredictedDashHit( PlayerTackle victim, float victimAlong )
 	{
+		var knockDir = NetCommittedDirection.WithZ( 0 );
+		if ( knockDir.Length < 0.001f )
+			knockDir = Vector3.Forward;
+		else
+			knockDir = knockDir.Normal;
+
+		SnapDasherToDashHitContact( victim, victimAlong, ownerDashCorridorOrigin, knockDir );
+		ownerLastLocalDashCheckPos = GameObject.WorldPosition;
+
 		ownerPredictedHitThisDash = true;
 		ownerDashMovementBlocked = true;
 		OwnerZeroHorizontalVelocity();
 
 		Components.GetOrCreate<CombatFeelPredictDedupe>().MarkOwnerPredictedAttackerFeel();
 		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
-		tackleImpactFeel?.TriggerAsAttacker();
+		tackleImpactFeel?.TriggerAsAttacker( GetKnockdownImpactFeelOverrides() );
 
 		if ( EnableSpeedBlitzDebugLogs )
 			Log.Info( $"[SpeedBlitz] {GameObject.Name}: owner predict hit {victim.GameObject.Name}" );
@@ -859,6 +925,47 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		var yaw = MathF.Atan2( flat.y, flat.x ) * (180f / MathF.PI);
 		return new Angles( eyeAngles.pitch, yaw, eyeAngles.roll );
+	}
+
+	private float GetDasherBodyRadius()
+	{
+		playerController ??= Components.Get<PlayerController>();
+		if ( playerController.IsValid() && playerController.BodyRadius > 0f )
+			return playerController.BodyRadius;
+
+		var classData = playerClass?.CurrentClass;
+		if ( classData is not null && classData.CapsuleRadius > 0f )
+			return classData.CapsuleRadius;
+
+		return DefaultTargetBodyRadius.Clamp( 1f, 64f );
+	}
+
+	/// <summary>
+	/// Place the dasher at first body contact along the corridor (not at overshoot position).
+	/// Host + owner predict share the same formula.
+	/// </summary>
+	private Vector3 SnapDasherToDashHitContact(
+		PlayerTackle victim,
+		float victimAlong,
+		Vector3 corridorOriginRaw,
+		Vector3 corridorDirRaw )
+	{
+		var corridorDir = corridorDirRaw.WithZ( 0f );
+		if ( corridorDir.Length < 0.001f )
+			return GameObject.WorldPosition;
+
+		corridorDir = corridorDir.Normal;
+		var corridorOrigin = corridorOriginRaw.WithZ( 0f );
+		var victimRadius = GetDashTargetBodyRadius( victim );
+		var dasherRadius = GetDasherBodyRadius();
+		var gap = HitStopContactGap.Clamp( 0f, 32f );
+		var stopAlong = MathF.Max( 0f, victimAlong - victimRadius - dasherRadius - gap );
+
+		var stopFlat = corridorOrigin + corridorDir * stopAlong;
+		var pos = GameObject.WorldPosition;
+		var snapped = new Vector3( stopFlat.x, stopFlat.y, pos.z );
+		GameObject.WorldPosition = snapped;
+		return snapped;
 	}
 
 	private float GetDashTargetBodyRadius( PlayerTackle candidate )
