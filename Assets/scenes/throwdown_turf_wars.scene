@@ -893,12 +893,16 @@
               "__guid": "de3cd7be-ca5d-4f72-921c-30867df8d88e",
               "__enabled": true,
               "Flags": 0,
+              "ConnectElectricDuckSeconds": 0.5,
+              "ConnectElectricDuckVolumeFraction": 0.01,
               "ConnectImpactChargeRunCycle": -1,
               "ConnectImpactSoundA": "sounds/crunch/speed_blitz_connect_crunch_a.sound",
               "ConnectImpactSoundB": "sounds/crunch/speed_blitz_connect_crunch_b.sound",
               "ConnectImpactSoundVolume": 1,
               "DashRange": 1200,
               "DashSpeed": 2000,
+              "DashStartSound": "sounds/woosh/speedblitz_dash.sound",
+              "DashStartVolume": 0.5,
               "DashSweepStepMultiplier": 2.5,
               "DefaultTargetBodyRadius": 16,
               "EnableSpeedBlitzDebugLogs": true,
@@ -917,6 +921,7 @@
               "KnockdownPreLaunchPauseSeconds": 0.65,
               "LaunchSound": "sounds/explosions/speed_blitz_launch.sound",
               "LaunchSoundVolume": 1,
+              "MissVfxFadeSeconds": 0.25,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -924,7 +929,18 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "UltimateAction": "Ultimate",
-              "WindUpDurationSeconds": 2
+              "WindUpDurationSeconds": 2,
+              "WindUpElectricSound": "sounds/electric/speedblitz_electric.sound",
+              "WindUpElectricVolume": 0.5,
+              "WindUpFeelSoundLocalOffset": "0,0,48",
+              "WindUpRiseSound": "sounds/rising pitch/speedblitz_windup.sound",
+              "WindUpRiseVolume": 0.5,
+              "WindUpVfxLocalOffset": "0,0,10",
+              "WindUpVfxMinTimeScale": 0.25,
+              "WindUpVfxPrefab": {
+                "_type": "gameobject",
+                "prefab": "vfx/speedblitzwindupvfx.prefab"
+              }
             },
             {
               "__type": "SpeedBlitzAimPreview",
@@ -3055,7 +3071,7 @@
                   ]
                 },
                 {
-                  "__guid": "3aae5aac-3d0e-40df-bcd6-fe888837ab3e",
+                  "__guid": "6a53c807-c184-42a6-b9e0-84586660f278",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3072,7 +3088,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "b22e972f-19ef-43c9-8bf5-d89fb13ad88f",
+                      "__guid": "f3308cae-b3c4-4ae4-ac33-5448686e299e",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6352,7 +6368,7 @@
                   ]
                 },
                 {
-                  "__guid": "ef868212-cfad-40c0-b883-688717045e2d",
+                  "__guid": "2dd0ea3c-f7d4-4865-a20c-07dea1f52711",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6369,7 +6385,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "c9ae5592-7f82-45fa-b27c-6b8abf321fc0",
+                      "__guid": "0a8d6678-ce61-466e-98a1-d1e4e069ffc6",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8988,7 +9004,7 @@
                   ]
                 },
                 {
-                  "__guid": "945fbe69-815f-45d4-b305-061dc57e2e62",
+                  "__guid": "e55cc5ba-381f-493f-804f-d00ed5d0dd07",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -9005,7 +9021,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "5582c305-1c4e-4496-96b5-d3d3006730b4",
+                      "__guid": "4bd1ada2-5251-4f81-b0da-4081ecdec51c",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11624,7 +11640,7 @@
                   ]
                 },
                 {
-                  "__guid": "51bfd781-7c2a-4fcb-8c9e-54181de994f2",
+                  "__guid": "2d42de77-72e8-4cc2-b855-e62ad08bfa12",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11641,7 +11657,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "c1d5b6cb-69f7-49ee-a8cb-6487dfb3314d",
+                      "__guid": "992f8ee6-96df-4829-90e1-a2587924b593",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -87334,229 +87350,6 @@
           "Children": []
         }
       ]
-    },
-    {
-      "__guid": "4afd6ffe-6eb4-4293-80a4-164b7de8b8f3",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "SpeedBlitzWindUpVFX",
-      "Position": "970,1050,190",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "particles",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.ParticleEffect",
-          "__guid": "b26eb013-7e6c-4ba7-a1ea-11231b32593a",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 3,
-          "Alpha": {
-            "Type": "Range",
-            "Evaluation": "Frame",
-            "Constants": "1,3,0,0"
-          },
-          "ApplyAlpha": true,
-          "ApplyColor": true,
-          "ApplyRotation": false,
-          "ApplyShape": false,
-          "Bounce": 1,
-          "Brightness": {
-            "Type": "Range",
-            "Evaluation": "Frame",
-            "Constants": "1,3,0,0"
-          },
-          "Bumpiness": 0,
-          "Collision": false,
-          "CollisionIgnore": null,
-          "CollisionPrefab": null,
-          "CollisionPrefabAlign": false,
-          "CollisionPrefabChance": 1,
-          "CollisionPrefabRotation": 0,
-          "CollisionRadius": 1,
-          "ConstantMovement": {
-            "X": 0,
-            "Y": 0,
-            "Z": 0
-          },
-          "Damping": 0,
-          "DieOnCollisionChance": 0,
-          "FollowerPrefab": null,
-          "FollowerPrefabChance": 1,
-          "FollowerPrefabKill": true,
-          "Force": false,
-          "ForceDirection": "0,0,0",
-          "ForceScale": 1,
-          "ForceSpace": "World",
-          "Friction": 1,
-          "Gradient": {
-            "Type": "Range",
-            "Evaluation": "Life",
-            "ConstantA": "0,0.46085,0.95349,1",
-            "ConstantB": "1,1,1,1"
-          },
-          "InitialVelocity": {
-            "X": 0,
-            "Y": 0,
-            "Z": 0
-          },
-          "Lifetime": 2,
-          "LocalSpace": 0,
-          "MaxParticles": 25,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OnParticleCreated": null,
-          "OnParticleDestroyed": null,
-          "OrbitalForce": {
-            "X": 0,
-            "Y": 0,
-            "Z": 0
-          },
-          "OrbitalPull": 0,
-          "PerParticleTimeScale": 1,
-          "Pitch": 0,
-          "PreWarm": 0.40248963,
-          "PushStrength": 0,
-          "Roll": 0,
-          "Scale": 1,
-          "SequenceId": 0,
-          "SequenceSpeed": 1,
-          "SequenceTime": 1,
-          "SheetSequence": false,
-          "SnapToFrame": false,
-          "StartDelay": {
-            "Type": "Range",
-            "Evaluation": "Seed",
-            "Constants": "0,2,0,0"
-          },
-          "StartVelocity": 0,
-          "Stretch": 0,
-          "TimeScale": 1,
-          "Timing": "GameTime",
-          "Tint": "0.14118,0.55686,1,1",
-          "UsePrefabFeature": false,
-          "Yaw": 0
-        },
-        {
-          "__type": "Sandbox.ParticleSpriteRenderer",
-          "__guid": "f0e7bbb4-b0a9-444b-8ce8-6f0ab3ccdab4",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 2,
-          "Additive": true,
-          "Alignment": "LookAtCamera",
-          "BlurAmount": 0.5,
-          "BlurOpacity": 0.5,
-          "BlurSpacing": 0.5,
-          "DepthFeather": 0,
-          "FaceVelocity": false,
-          "FogStrength": 1,
-          "LeadingTrail": true,
-          "Lighting": false,
-          "MotionBlur": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Opaque": false,
-          "PlaybackSpeed": 1,
-          "RenderOptions": {
-            "GameLayer": true,
-            "OverlayLayer": false,
-            "BloomLayer": false,
-            "AfterUILayer": false
-          },
-          "RotationOffset": 0,
-          "Scale": 5,
-          "Shadows": false,
-          "SortMode": "Unsorted",
-          "Sprite": "vfx/kenney_particle-pack/sprites/spark_01.sprite",
-          "StartingAnimationName": "Default",
-          "TextureFilter": "Bilinear"
-        },
-        {
-          "__type": "Sandbox.ParticleLightRenderer",
-          "__guid": "9d88d33c-7043-4c45-8767-15559951754a",
-          "__enabled": true,
-          "Flags": 0,
-          "Attenuation": 0.5,
-          "Brightness": 5,
-          "CastShadows": false,
-          "LightColor": "0.14118,0.55686,1,1",
-          "MaximumLights": 8,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Ratio": 1,
-          "Scale": 32,
-          "UseParticleColor": true
-        },
-        {
-          "__type": "Sandbox.ParticleAttractor",
-          "__guid": "2597480c-c40f-4fd7-a589-c61da9a79111",
-          "__enabled": true,
-          "Flags": 0,
-          "Force": {
-            "Type": "Range",
-            "Evaluation": "Seed",
-            "Constants": "1,2,0,0"
-          },
-          "MaxForce": {
-            "Type": "Range",
-            "Evaluation": "Seed",
-            "Constants": "1,2,0,0"
-          },
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Radius": 25,
-          "Randomness": 1,
-          "Target": {
-            "_type": "gameobject",
-            "go": "4afd6ffe-6eb4-4293-80a4-164b7de8b8f3"
-          }
-        },
-        {
-          "__type": "Sandbox.ParticleBoxEmitter",
-          "__guid": "6780087c-682c-454e-abdd-8a7437952ae3",
-          "__enabled": true,
-          "Flags": 0,
-          "Burst": 100,
-          "Delay": 0,
-          "DestroyOnEnd": false,
-          "Duration": 10,
-          "Loop": true,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "OnEdge": false,
-          "Rate": 0,
-          "RateOverDistance": 0,
-          "Size": "50,50,90"
-        }
-      ],
-      "Children": []
     }
   ],
   "SceneProperties": {
@@ -87579,14 +87372,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.SelectionSetsSystem": {
-        "Data": {
-          "SelectionSets": []
-        }
-      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
           "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
+        }
+      },
+      "Sandbox.SelectionSetsSystem": {
+        "Data": {
+          "SelectionSets": []
         }
       }
     }

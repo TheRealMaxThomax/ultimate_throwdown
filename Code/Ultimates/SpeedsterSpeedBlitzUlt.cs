@@ -39,6 +39,40 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	[Property, Group( "Wind-up" )] public float WindUpDurationSeconds { get; set; } = 2f;
 
+	[Property, Group( "Wind-up feel" )] public GameObject WindUpVfxPrefab { get; set; }
+
+	[Property, Group( "Wind-up feel" )] public Vector3 WindUpVfxLocalOffset { get; set; } = new( 0f, 0f, 48f );
+
+	[Property, Group( "Wind-up feel" )] public Vector3 WindUpFeelSoundLocalOffset { get; set; } = new( 0f, 0f, 48f );
+
+	[Property, Group( "Wind-up feel" )] public float WindUpVfxMinTimeScale { get; set; } = 0.25f;
+
+	/// <summary> Electric bed from wind-up through dash + connect hang. Drag <c>speedblitz_electric.sound</c>. </summary>
+	[Property, Group( "Wind-up feel" )] public SoundEvent WindUpElectricSound { get; set; }
+
+	[Property, Group( "Wind-up feel" )] public float WindUpElectricVolume { get; set; } = 0.85f;
+
+	/// <summary> Rising sting for the wind-up channel only — stops at dash start. Drag <c>speedblitz_windup.sound</c>. </summary>
+	[Property, Group( "Wind-up feel" )] public SoundEvent WindUpRiseSound { get; set; }
+
+	[Property, Group( "Wind-up feel" )] public float WindUpRiseVolume { get; set; } = 1f;
+
+	/// <summary> One-shot at dash start. Drag <c>speedblitz_dash.sound</c> (not ragdoll <see cref="LaunchSound"/>). </summary>
+	[Property, Group( "Wind-up feel" )] public SoundEvent DashStartSound { get; set; }
+
+	[Property, Group( "Wind-up feel" )] public float DashStartVolume { get; set; } = 1f;
+
+	[Property, Group( "Wind-up feel" )] public float ConnectElectricDuckSeconds { get; set; } = 0.12f;
+
+	[Property, Group( "Wind-up feel" )] public float ConnectElectricDuckVolumeFraction { get; set; } = 0.4f;
+
+	[Property, Group( "Wind-up feel" )] public float MissVfxFadeSeconds { get; set; } = 0.25f;
+
+	internal const string DefaultWindUpElectricSoundPath = "sounds/electric/speedblitz_electric.sound";
+	internal const string DefaultWindUpRiseSoundPath = "sounds/rising pitch/speedblitz_windup.sound";
+	internal const string DefaultDashStartSoundPath = "sounds/woosh/speedblitz_dash.sound";
+	internal const string DefaultWindUpVfxPrefabPath = "vfx/speedblitzwindupvfx.prefab";
+
 	/// <summary> Total ground the dash tries to cover (walls reduce actual distance via slide). </summary>
 	[Property, Group( "Dash" )] public float DashRange { get; set; } = 1200f;
 
@@ -116,6 +150,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	[Sync( SyncFlags.FromHost )] private Vector3 NetCommittedDirection { get; set; }
 	[Sync( SyncFlags.FromHost )] private float NetWindUpEndsAt { get; set; }
 	[Sync( SyncFlags.FromHost )] private float NetConnectPoseFreezeUntil { get; set; }
+	[Sync( SyncFlags.FromHost )] private Guid NetConnectVictimId { get; set; }
 
 	// Host-only state.
 	private float hostWindUpEndsAt;
@@ -159,6 +194,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	public bool IsActive => NetPhase != SpeedBlitzPhase.None;
 	public bool IsWindUp => NetPhase == SpeedBlitzPhase.WindUp;
 	public bool IsDashing => NetPhase == SpeedBlitzPhase.Dash;
+
+	/// <summary> Synced ult phase — used by <see cref="SpeedBlitzWindUpFeel"/> on all clients. </summary>
+	public SpeedBlitzPhase SyncedPhase => NetPhase;
 
 	/// <summary> Dasher body pose held for blitz connect hang (synced host end + owner predict). </summary>
 	public bool IsConnectPoseFrozen => GetConnectPoseFreezeUntil() > Time.Now;
@@ -277,6 +315,84 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		handle.Volume = volume.Clamp( 0f, 2f );
 	}
 
+	internal GameObject ResolveWindUpVfxPrefabRoot()
+	{
+		if ( WindUpVfxPrefab is not null && WindUpVfxPrefab.IsValid() )
+			return WindUpVfxPrefab;
+
+		var prefabFile = ResourceLibrary.Get<PrefabFile>( DefaultWindUpVfxPrefabPath );
+		if ( !prefabFile.IsValid() )
+			return null;
+
+		return SceneUtility.GetPrefabScene( prefabFile );
+	}
+
+	internal SoundEvent ResolveWindUpElectricSound()
+	{
+		if ( WindUpElectricSound is not null && WindUpElectricSound.IsValid() )
+			return WindUpElectricSound;
+
+		return ResourceLibrary.Get<SoundEvent>( DefaultWindUpElectricSoundPath );
+	}
+
+	internal SoundEvent ResolveWindUpRiseSound()
+	{
+		if ( WindUpRiseSound is not null && WindUpRiseSound.IsValid() )
+			return WindUpRiseSound;
+
+		return ResourceLibrary.Get<SoundEvent>( DefaultWindUpRiseSoundPath );
+	}
+
+	internal SoundEvent ResolveDashStartSound()
+	{
+		if ( DashStartSound is not null && DashStartSound.IsValid() )
+			return DashStartSound;
+
+		return ResourceLibrary.Get<SoundEvent>( DefaultDashStartSoundPath );
+	}
+
+	/// <summary> 3D wind-up feel SFX — same playback path as connect/launch crunch. </summary>
+	internal static SoundHandle PlayFeelSoundAt( Vector3 worldPosition, SoundEvent soundEvent, float volume )
+	{
+		if ( !soundEvent.IsValid() )
+			return default;
+
+		var handle = Sound.Play( soundEvent, worldPosition );
+		if ( !handle.IsValid() )
+			return default;
+
+		handle.Volume = volume.Clamp( 0f, 2f );
+		return handle;
+	}
+
+	internal GameObject ResolveConnectVictimGameObject()
+	{
+		if ( NetConnectVictimId != Guid.Empty )
+		{
+			foreach ( var tackle in Scene.GetAllComponents<PlayerTackle>() )
+			{
+				if ( tackle.GameObject.Id == NetConnectVictimId )
+					return tackle.GameObject;
+			}
+		}
+
+		foreach ( var tackle in Scene.GetAllComponents<PlayerTackle>() )
+		{
+			if ( tackle.IsAwaitingSpeedBlitzRagdollLaunch )
+				return tackle.GameObject;
+		}
+
+		return null;
+	}
+
+	internal void ClearBlitzConnectVictimOnHost()
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		NetConnectVictimId = Guid.Empty;
+	}
+
 	private static Vector3 GetBlitzConnectImpactSoundPosition( Vector3 dasherStopPosition, PlayerTackle victim )
 	{
 		if ( !victim.IsValid() )
@@ -315,6 +431,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		catchUpSpeedBoost = Components.Get<CatchUpSpeedBoost>();
 		tackleImpactFeel = Components.Get<TackleImpactFeel>();
 		Components.GetOrCreate<SpeedBlitzDashCamera>();
+		Components.GetOrCreate<SpeedBlitzWindUpFeel>();
 	}
 
 	protected override void OnUpdate()
@@ -371,6 +488,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	private void HostUpdate()
 	{
+		if ( NetConnectPoseFreezeUntil > 0f && Time.Now >= NetConnectPoseFreezeUntil )
+			NetConnectVictimId = Guid.Empty;
+
 		switch ( NetPhase )
 		{
 			case SpeedBlitzPhase.WindUp:
@@ -583,6 +703,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		var snappedPos = SnapDasherToDashHitContact( victim, victimAlong, hostDashCorridorOrigin, knockDir );
 
 		BroadcastConnectImpactSoundOnHost( victim, snappedPos );
+		NetConnectVictimId = victim.GameObject.Id;
 
 		playerBody ??= Components.Get<Rigidbody>();
 		if ( playerBody.IsValid() )
@@ -1205,6 +1326,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return;
 
 		NetConnectPoseFreezeUntil = 0f;
+		NetConnectVictimId = Guid.Empty;
 	}
 
 	private void LogReject( string reason )
