@@ -331,11 +331,16 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		if ( Networking.IsHost )
 			HostFixedUpdate();
 
+		// Wind-up is planted on the owner — remotes must zero wish/horizontal velocity too or
+		// locomotion keeps a charge-run decel lean while charge_run overlay is already off.
+		if ( IsWindUp )
+			ApplyPlantedHorizontalFreeze();
+
 		if ( !Network.IsOwner )
 			return;
 
-		if ( IsWindUp || IsConnectPoseFrozen )
-			OwnerFreezeMovement();
+		if ( IsConnectPoseFrozen )
+			ApplyPlantedHorizontalFreeze();
 		else if ( IsDashing )
 		{
 			OwnerDriveDashMovement();
@@ -911,8 +916,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		playerController.EyeAngles = ownerLockedEyeAngles;
 	}
 
-	/// <summary> Owner wind-up: plant in place (zero horizontal velocity, keep gravity). </summary>
-	private void OwnerFreezeMovement()
+	/// <summary> Plant in place — zero horizontal velocity, keep gravity (wind-up on all clients; connect hang on owner). </summary>
+	private void ApplyPlantedHorizontalFreeze()
 	{
 		OwnerZeroHorizontalVelocity();
 	}

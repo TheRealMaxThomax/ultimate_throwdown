@@ -57,6 +57,13 @@ public sealed class PlayerChargeRunAnim : Component
 		if ( !TryGetBodyRenderer( out var renderer ) )
 			return;
 
+		speedBlitzUlt ??= Components.Get<SpeedsterSpeedBlitzUlt>();
+		if ( speedBlitzUlt?.IsWindUp == true && chargeRunPoseWeight > 0.001f )
+		{
+			chargeRunPoseWeight = 0f;
+			renderer.Set( ChargeRunWeightParamName, 0f );
+		}
+
 		var wantPose = ShouldShowChargeRunPose();
 		UpdateChargeRunPose( renderer, wantPose );
 	}

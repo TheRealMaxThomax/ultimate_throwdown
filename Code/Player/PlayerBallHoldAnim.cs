@@ -115,8 +115,8 @@ public sealed class PlayerBallHoldAnim : Component
 
 		if ( ShouldSkipHoldAnim() )
 		{
-			if ( wasShowingHoldPose )
-				ClearHoldPose( renderer );
+			if ( wasShowingHoldPose || chargePoseWeight > 0.001f )
+				ClearHoldAndThrowPose( renderer );
 
 			ResetGraphChargePose( renderer );
 			wasShowingHoldPose = false;
@@ -142,8 +142,8 @@ public sealed class PlayerBallHoldAnim : Component
 
 		if ( showHoldPose )
 			ApplyHoldPose( renderer );
-		else if ( wasShowingHoldPose )
-			ClearHoldPose( renderer );
+		else if ( wasShowingHoldPose || chargePoseWeight > 0.001f )
+			ClearHoldAndThrowPose( renderer );
 
 		wasShowingHoldPose = showHoldPose;
 	}
@@ -154,20 +154,21 @@ public sealed class PlayerBallHoldAnim : Component
 		if ( !Network.IsOwner )
 			return;
 
-		PlayThrowReleaseAnim();
-		PlayThrowReleaseAnimRpc();
+		var throwPoseEndTime = Time.Now + ThrowPoseHoldSeconds;
+		PlayThrowReleaseAnim( throwPoseEndTime );
+		PlayThrowReleaseAnimRpc( throwPoseEndTime );
 	}
 
 	[Rpc.Broadcast]
-	private void PlayThrowReleaseAnimRpc()
+	private void PlayThrowReleaseAnimRpc( float throwPoseEndTime )
 	{
 		if ( Network.IsOwner )
 			return;
 
-		PlayThrowReleaseAnim();
+		PlayThrowReleaseAnim( throwPoseEndTime );
 	}
 
-	private void PlayThrowReleaseAnim()
+	private void PlayThrowReleaseAnim( float throwPoseEndTime )
 	{
 		if ( !TryGetBodyRenderer( out var renderer ) )
 			return;
@@ -176,7 +177,7 @@ public sealed class PlayerBallHoldAnim : Component
 			return;
 
 		ResetGraphChargePose( renderer );
-		throwPoseUntil = Time.Now + ThrowPoseHoldSeconds;
+		throwPoseUntil = throwPoseEndTime;
 		ApplyHoldPose( renderer );
 		renderer.Set( "holdtype_attack", ThrowAttackStrong );
 		renderer.Set( "b_attack", true );
@@ -206,11 +207,12 @@ public sealed class PlayerBallHoldAnim : Component
 
 	private void ResetGraphChargePose( SkinnedModelRenderer renderer )
 	{
-		if ( !UseAnimGraphChargePose || chargePoseWeight <= 0f )
+		if ( !UseAnimGraphChargePose )
 			return;
 
 		chargePoseWeight = 0f;
 		renderer.Set( ChargeWeightParamName, 0f );
+		renderer.Set( ChargeCycleParamName, ChargeWindupCycleStart );
 	}
 
 	private void ApplyThrowPlaybackRate( SkinnedModelRenderer renderer )
@@ -254,11 +256,15 @@ public sealed class PlayerBallHoldAnim : Component
 		renderer.Set( "holdtype_pose_hand", IdleHoldPoseHand );
 	}
 
-	private void ClearHoldPose( SkinnedModelRenderer renderer )
+	private void ClearHoldAndThrowPose( SkinnedModelRenderer renderer )
 	{
+		ResetGraphChargePose( renderer );
 		renderer.Set( "holdtype", 0 );
+		renderer.Set( "holdtype_handedness", 0 );
 		renderer.Set( "holdtype_pose", 0f );
 		renderer.Set( "holdtype_pose_hand", 0f );
+		renderer.Set( "holdtype_attack", 0f );
+		renderer.Set( "b_attack", false );
 	}
 
 	private void ResolveBodyRenderer()
