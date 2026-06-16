@@ -899,6 +899,8 @@
               "ConnectImpactSoundA": "sounds/crunch/speed_blitz_connect_crunch_a.sound",
               "ConnectImpactSoundB": "sounds/crunch/speed_blitz_connect_crunch_b.sound",
               "ConnectImpactSoundVolume": 1,
+              "DashAttractorForceMultiplier": 32,
+              "DashAttractorRadiusMultiplier": 1.2,
               "DashRange": 1200,
               "DashSpeed": 2000,
               "DashStartSound": "sounds/woosh/speedblitz_dash.sound",

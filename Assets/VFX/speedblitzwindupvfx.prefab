@@ -4,7 +4,7 @@
     "__version": 2,
     "Flags": 0,
     "Name": "speedblitzwindupvfx",
-    "Position": "0,0,0",
+    "Position": "0,0,4",
     "Rotation": "0,0,0,1",
     "Scale": "1,1,1",
     "Tags": "particles",
@@ -70,9 +70,9 @@
           "Y": 0,
           "Z": 0
         },
-        "Lifetime": 2,
+        "Lifetime": 0.5,
         "LocalSpace": 0,
-        "MaxParticles": 25,
+        "MaxParticles": 100,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
@@ -143,7 +143,7 @@
           "AfterUILayer": false
         },
         "RotationOffset": 0,
-        "Scale": 5,
+        "Scale": 4,
         "Shadows": false,
         "SortMode": "Unsorted",
         "Sprite": "vfx/kenney_particle-pack/sprites/spark_01.sprite",
@@ -178,12 +178,12 @@
         "Force": {
           "Type": "Range",
           "Evaluation": "Seed",
-          "Constants": "1,2,0,0"
+          "Constants": "2,4,0,0"
         },
         "MaxForce": {
           "Type": "Range",
           "Evaluation": "Seed",
-          "Constants": "1,2,0,0"
+          "Constants": "2,4,0,0"
         },
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
@@ -191,11 +191,11 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "Radius": 25,
+        "Radius": 1,
         "Randomness": 1,
         "Target": {
           "_type": "gameobject",
-          "go": "ea9925f1-0cb2-4934-ae4c-0b2d865e8880"
+          "go": "2ff2aeda-576b-42b6-ba44-97e8cbe160db"
         }
       },
       {
@@ -217,7 +217,7 @@
         "OnEdge": false,
         "Rate": 0,
         "RateOverDistance": 0,
-        "Size": "50,50,70"
+        "Size": "80,80,30"
       }
     ],
     "Children": [],

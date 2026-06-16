@@ -1,5 +1,6 @@
 using Sandbox;
 using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// Speed Blitz slice 2d — phased electric VFX + wind-up/dash SFX on all clients.
@@ -8,10 +9,27 @@ using System;
 [Order( 10013 )]
 public sealed class SpeedBlitzWindUpFeel : Component
 {
+	private readonly struct AttractorSnapshot
+	{
+		public AttractorSnapshot( ParticleAttractor attractor, ParticleFloat force, ParticleFloat maxForce, float radius )
+		{
+			Attractor = attractor;
+			Force = force;
+			MaxForce = maxForce;
+			Radius = radius;
+		}
+
+		public ParticleAttractor Attractor { get; }
+		public ParticleFloat Force { get; }
+		public ParticleFloat MaxForce { get; }
+		public float Radius { get; }
+	}
+
 	private SpeedsterSpeedBlitzUlt ult;
 
 	private GameObject dasherVfxInstance;
 	private GameObject victimVfxInstance;
+	private readonly List<AttractorSnapshot> dasherAttractorSnapshots = new();
 
 	private SoundHandle electricHandle;
 	private SoundHandle windUpRiseHandle;
@@ -19,7 +37,7 @@ public sealed class SpeedBlitzWindUpFeel : Component
 	private SpeedsterSpeedBlitzUlt.SpeedBlitzPhase previousPhase;
 	private bool wasConnectPoseFrozen;
 	private bool wasDashing;
-	private float electricDuckUntil;
+	private bool dashAttractorBoosted;
 	private float missFadeUntil;
 	private float missFadeDuration;
 	private bool loggedMissingPrefab;
@@ -99,7 +117,7 @@ public sealed class SpeedBlitzWindUpFeel : Component
 			StopAllFeel( immediate: true );
 
 		UpdateActiveFeel( windUp, connectFrozen );
-		UpdateVfxFollowTargets();
+		UpdateDashAttractorBoost( dashing && !connectFrozen );
 		UpdateElectricVolume();
 
 		previousPhase = phase;
@@ -132,7 +150,7 @@ public sealed class SpeedBlitzWindUpFeel : Component
 
 	private void BeginConnectHangFeel()
 	{
-		electricDuckUntil = Time.Now + ult.ConnectElectricDuckSeconds.Clamp( 0.02f, 0.5f );
+		StopElectric( 0f );
 		EnsureVictimVfx();
 	}
 
@@ -183,22 +201,13 @@ public sealed class SpeedBlitzWindUpFeel : Component
 		ApplyVfxIntensity( intensity );
 	}
 
-	private void UpdateVfxFollowTargets()
+	private void UpdateDashAttractorBoost( bool shouldBoost )
 	{
-		if ( !TryResolveUlt() || !IsGameObjectAlive( GameObject ) )
+		if ( shouldBoost == dashAttractorBoosted )
 			return;
 
-		if ( IsGameObjectAlive( dasherVfxInstance ) )
-			dasherVfxInstance.WorldPosition = GameObject.WorldPosition + ult.WindUpVfxLocalOffset;
-
-		if ( !IsGameObjectAlive( victimVfxInstance ) )
-			return;
-
-		var victimGo = ult.ResolveConnectVictimGameObject();
-		if ( !IsGameObjectAlive( victimGo ) )
-			return;
-
-		victimVfxInstance.WorldPosition = victimGo.WorldPosition + ult.WindUpVfxLocalOffset;
+		dashAttractorBoosted = shouldBoost;
+		ApplyDashAttractorBoost( shouldBoost );
 	}
 
 	private void UpdateElectricVolume()
@@ -209,11 +218,7 @@ public sealed class SpeedBlitzWindUpFeel : Component
 		if ( IsGameObjectAlive( GameObject ) )
 			electricHandle.Position = GetFeelSoundWorldPosition();
 
-		var volume = ult.WindUpElectricVolume.Clamp( 0f, 2f );
-		if ( Time.Now < electricDuckUntil )
-			volume *= ult.ConnectElectricDuckVolumeFraction.Clamp( 0f, 1f );
-
-		electricHandle.Volume = volume;
+		electricHandle.Volume = ult.WindUpElectricVolume.Clamp( 0f, 2f );
 	}
 
 	private void EnsureDasherVfx()
@@ -266,6 +271,11 @@ public sealed class SpeedBlitzWindUpFeel : Component
 			instance.Name = followTarget == GameObject
 				? "SpeedBlitzWindUpVFX_Dasher"
 				: "SpeedBlitzWindUpVFX_Victim";
+
+			instance.Parent = followTarget;
+			instance.LocalPosition = ult.WindUpVfxLocalOffset;
+			instance.LocalRotation = Rotation.Identity;
+			ConfigureAttractorsOnInstance( instance, followTarget == GameObject );
 
 			return instance;
 		}
@@ -390,11 +400,87 @@ public sealed class SpeedBlitzWindUpFeel : Component
 
 	private bool IsMissFading() => missFadeUntil > 0f && Time.Now < missFadeUntil;
 
+	private void ConfigureAttractorsOnInstance( GameObject instance, bool trackForDashBoost )
+	{
+		foreach ( var attractor in instance.GetComponentsInChildren<ParticleAttractor>( true ) )
+		{
+			if ( !attractor.IsValid() )
+				continue;
+
+			attractor.Target = instance;
+
+			if ( !trackForDashBoost )
+				continue;
+
+			dasherAttractorSnapshots.Add( new AttractorSnapshot(
+				attractor,
+				attractor.Force,
+				attractor.MaxForce,
+				attractor.Radius ) );
+		}
+	}
+
+	private void ApplyDashAttractorBoost( bool boosted )
+	{
+		if ( ult is null || dasherAttractorSnapshots.Count == 0 )
+			return;
+
+		var forceMultiplier = ult.DashAttractorForceMultiplier.Clamp( 1f, 64f );
+		var radiusMultiplier = ult.DashAttractorRadiusMultiplier.Clamp( 1f, 8f );
+
+		foreach ( var snapshot in dasherAttractorSnapshots )
+		{
+			if ( !snapshot.Attractor.IsValid() )
+				continue;
+
+			if ( boosted )
+			{
+				snapshot.Attractor.Force = ScaleParticleFloat( snapshot.Force, forceMultiplier );
+				snapshot.Attractor.MaxForce = ScaleParticleFloat( snapshot.MaxForce, forceMultiplier );
+				snapshot.Attractor.Radius = snapshot.Radius * radiusMultiplier;
+			}
+			else
+			{
+				snapshot.Attractor.Force = snapshot.Force;
+				snapshot.Attractor.MaxForce = snapshot.MaxForce;
+				snapshot.Attractor.Radius = snapshot.Radius;
+			}
+		}
+	}
+
+	private static ParticleFloat ScaleParticleFloat( ParticleFloat source, float multiplier )
+	{
+		if ( multiplier <= 1.0001f )
+			return source;
+
+		if ( source.Type == ParticleFloat.ValueType.Constant )
+			return MakeConstantParticleFloat( source.ConstantValue * multiplier );
+
+		if ( source.Type == ParticleFloat.ValueType.Range )
+		{
+			var scaled = new ParticleFloat( source.ConstantA * multiplier, source.ConstantB * multiplier );
+			scaled.Type = ParticleFloat.ValueType.Range;
+			scaled.Evaluation = source.Evaluation;
+			return scaled;
+		}
+
+		return MakeConstantParticleFloat( source.ConstantA * multiplier );
+	}
+
+	private static ParticleFloat MakeConstantParticleFloat( float value )
+	{
+		var particleFloat = new ParticleFloat( value, value );
+		particleFloat.Type = ParticleFloat.ValueType.Constant;
+		particleFloat.ConstantValue = value;
+		return particleFloat;
+	}
+
 	private void StopAllFeel( bool immediate )
 	{
 		missFadeUntil = 0f;
 		missFadeDuration = 0f;
-		electricDuckUntil = 0f;
+		dashAttractorBoosted = false;
+		dasherAttractorSnapshots.Clear();
 
 		StopWindUpRise();
 		var fadeSeconds = immediate
@@ -406,6 +492,9 @@ public sealed class SpeedBlitzWindUpFeel : Component
 
 	private void DestroyVfxInstances()
 	{
+		dashAttractorBoosted = false;
+		dasherAttractorSnapshots.Clear();
+
 		if ( IsGameObjectAlive( dasherVfxInstance ) )
 			dasherVfxInstance.Destroy();
 

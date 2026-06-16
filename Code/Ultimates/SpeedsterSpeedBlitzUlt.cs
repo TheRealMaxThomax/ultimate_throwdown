@@ -62,9 +62,17 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	[Property, Group( "Wind-up feel" )] public float DashStartVolume { get; set; } = 1f;
 
+	/// <summary> Legacy — electric bed hard-stops at connect; kept so old prefab values do not break. </summary>
 	[Property, Group( "Wind-up feel" )] public float ConnectElectricDuckSeconds { get; set; } = 0.12f;
 
+	/// <summary> Legacy — electric bed hard-stops at connect; kept so old prefab values do not break. </summary>
 	[Property, Group( "Wind-up feel" )] public float ConnectElectricDuckVolumeFraction { get; set; } = 0.4f;
+
+	/// <summary> Multiplier on prefab <see cref="ParticleAttractor"/> force during dash so world-space sparks keep up. </summary>
+	[Property, Group( "Wind-up feel" )] public float DashAttractorForceMultiplier { get; set; } = 16f;
+
+	/// <summary> Multiplier on prefab attractor radius during dash. </summary>
+	[Property, Group( "Wind-up feel" )] public float DashAttractorRadiusMultiplier { get; set; } = 2.5f;
 
 	[Property, Group( "Wind-up feel" )] public float MissVfxFadeSeconds { get; set; } = 0.25f;
 
