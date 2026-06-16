@@ -334,7 +334,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		if ( !Network.IsOwner )
 			return;
 
-		if ( IsWindUp )
+		if ( IsWindUp || IsConnectPoseFrozen )
 			OwnerFreezeMovement();
 		else if ( IsDashing )
 		{
@@ -761,7 +761,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	private void OwnerUpdate()
 	{
-		if ( !IsActive )
+		if ( !IsActive && !IsConnectPoseFrozen )
 		{
 			ownerDashMovementBlocked = false;
 			ResetOwnerDashPredictState();
@@ -772,7 +772,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 		// "Pending" covers the brief window between pressing X and the host confirming the phase
 		// (client owner) so the player can't keep moving before the lock kicks in.
-		var suppress = IsActive || Time.Now < ownerCommitPendingUntil;
+		// Connect pose hang continues after NetPhase ends — keep input off until freeze expires.
+		var suppress = IsActive || IsConnectPoseFrozen || Time.Now < ownerCommitPendingUntil;
 
 		if ( IsActive )
 			ownerCommitPendingUntil = 0f;

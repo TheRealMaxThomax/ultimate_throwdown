@@ -67,6 +67,11 @@ public sealed class PlayerChargeRunAnim : Component
 		if ( ShouldSkipAnim() )
 			return false;
 
+		// Blitz wind-up: planted channel — no charge_run overlay (connect hang may snap charge_run via BlitzConnectPoseFreeze).
+		speedBlitzUlt ??= Components.Get<SpeedsterSpeedBlitzUlt>();
+		if ( speedBlitzUlt?.IsWindUp == true )
+			return false;
+
 		// Speed Blitz dash: same charge-run look (running legs from locomotion + charge pose overlay).
 		// Synced phase (IsDashing) so remotes see it too. Wins over ball/throw gating below.
 		speedBlitzUlt ??= Components.Get<SpeedsterSpeedBlitzUlt>();

@@ -45,6 +45,7 @@ public sealed class CatchUpSpeedBoost : Component
 	private PlayerClass playerClass;
 	private PlayerTackle playerTackle;
 	private PlayerDodge playerDodge;
+	private SpeedsterSpeedBlitzUlt speedBlitzUlt;
 	private int dodgeRampApplySeqHandled;
 	private int tackleRampStripSeqHandled;
 	private int forceWalkRampSeqHandled;
@@ -237,6 +238,8 @@ public sealed class CatchUpSpeedBoost : Component
 			ballThrow = Components.Get<BallThrow>();
 		if ( playerDodge is null )
 			playerDodge = Components.Get<PlayerDodge>();
+		if ( speedBlitzUlt is null )
+			speedBlitzUlt = Components.Get<SpeedsterSpeedBlitzUlt>();
 
 		ApplySyncedDodgeRampPulse();
 		ApplySyncedTackleStripPulse();
@@ -261,29 +264,9 @@ public sealed class CatchUpSpeedBoost : Component
 		var isChargingThrow = ballThrow?.IsChargingThrow ?? false;
 		var isMovingForward = IsForwardIntentForChargeRamp();
 
-		if ( isChargingThrow )
+		if ( isChargingThrow || IsSpeedBlitzPlantedChannel() )
 		{
-			forwardMoveTime = 0f;
-			nonHoldingSprintTime = 0f;
-			ownerAtChargeSpeed = false;
-			NetAtChargeSpeed = false;
-			ApplyChargeLookDamp( atChargeSpeed: false );
-
-			// Grounded wind-up = planted. Airborne wind-up = normal gravity (BallThrow disables built-in input + wish velocity).
-			if ( playerController.IsOnGround )
-			{
-				smoothedMoveSpeedCap = 0f;
-				playerController.WalkSpeed = 0f;
-				playerController.RunSpeed = 0f;
-				ResetPlayerControllerMomentumTimesToBaseline();
-			}
-			else
-			{
-				var airMoveCap = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
-				playerController.WalkSpeed = airMoveCap;
-				playerController.RunSpeed = airMoveCap;
-			}
-
+			ApplyPlantedMovementChannelLock();
 			return;
 		}
 
@@ -522,6 +505,36 @@ public sealed class CatchUpSpeedBoost : Component
 			if ( chargeLookDampActive )
 				playerController.LookSensitivity = chargeLookUserBaseline;
 			chargeLookDampActive = false;
+		}
+	}
+
+	private bool IsSpeedBlitzPlantedChannel()
+	{
+		return speedBlitzUlt?.IsWindUp == true || speedBlitzUlt?.IsConnectPoseFrozen == true;
+	}
+
+	/// <summary> Throw charge + Speed Blitz wind-up / connect hang — planted on ground, no charge tier. </summary>
+	private void ApplyPlantedMovementChannelLock()
+	{
+		forwardMoveTime = 0f;
+		nonHoldingSprintTime = 0f;
+		ownerAtChargeSpeed = false;
+		NetAtChargeSpeed = false;
+		ApplyChargeLookDamp( atChargeSpeed: false );
+
+		// Grounded channel = planted. Airborne throw wind-up keeps gravity (BallThrow disables built-in input + wish velocity).
+		if ( playerController.IsOnGround )
+		{
+			smoothedMoveSpeedCap = 0f;
+			playerController.WalkSpeed = 0f;
+			playerController.RunSpeed = 0f;
+			ResetPlayerControllerMomentumTimesToBaseline();
+		}
+		else
+		{
+			var airMoveCap = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
+			playerController.WalkSpeed = airMoveCap;
+			playerController.RunSpeed = airMoveCap;
 		}
 	}
 

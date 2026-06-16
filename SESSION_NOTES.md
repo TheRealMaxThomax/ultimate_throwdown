@@ -264,6 +264,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **Speed Blitz impact stride `charge_run_cycle`:** snap dasher to a fixed cycle at connect (shoulder-in frame) vs freeze whatever pose contact landed on — scrub `charge_run` in ModelDoc; inspector default TBD in playtest.
 - **Speed Blitz victim flinch (later):** optional masked hit-react clip + graph layer during hang (same pattern as `throw_windup` / `charge_run`) — polish on top of body freeze v1; ship or skip after playtest
 - **Player prefab component count (3 classes):** **✅ Chosen: Option A — per-class prefab variants** before slice 5/6 (`Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; `GameNetworkManager` picks template by class). Not doing yet — see roadmap note before slice 5. Move **`BlitzConnectPoseFreeze`** off global auto-add when splitting.
+- **Post-tackle attacker ramp (attacker only, on connect — no whiff penalty):** leaning **walk** reset for all classes; **Juggernaut** exception **run** (sprint tier, not charge) for “unstoppable” feel — **bundle with loadout UI** (pick passive / ult / etc.), not a standalone tweak. **Future:** one passive slot per class → Juggernaut pick **tackle ramp bonus** *or* **post-tackle run recovery** (not both).
 
 ---
 
