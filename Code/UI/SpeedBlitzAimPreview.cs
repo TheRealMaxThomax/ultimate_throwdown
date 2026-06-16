@@ -17,6 +17,9 @@ public sealed class SpeedBlitzAimPreview : Component
 	const string DefaultMarkerModelPath = "models/dev/box.vmdl";
 	const string MainBallName = "main_ball";
 
+	/// <summary>Matches <c>TackleComicBurst</c> <c>palette-ult</c> fill (<c>#24b0ff</c>).</summary>
+	static readonly Color UltPreviewBlue = new( 36f / 255f, 176f / 255f, 1f, 1f );
+
 	private sealed class SegmentSlot
 	{
 		public GameObject Root;
@@ -25,7 +28,7 @@ public sealed class SpeedBlitzAimPreview : Component
 
 	private static Material markerMaterialBase;
 
-	[Property, Group( "Corridor" )] public Color CorridorTint { get; set; } = new( 0.3f, 0.55f, 1f, 1f );
+	[Property, Group( "Corridor" )] public Color CorridorTint { get; set; } = UltPreviewBlue;
 	[Property, Group( "Corridor" )] public float CorridorAlpha { get; set; } = 0.38f;
 	[Property, Group( "Corridor" )] public float CorridorHeight { get; set; } = 10f;
 	[Property, Group( "Corridor" )] public float CorridorLift { get; set; } = 0.5f;
@@ -33,7 +36,7 @@ public sealed class SpeedBlitzAimPreview : Component
 	[Property, Group( "Corridor" )] public float MinSegmentLength { get; set; } = 4f;
 	[Property, Group( "Corridor" )] public int MaxSegments { get; set; } = 48;
 
-	[Property, Group( "End marker" )] public Color MarkerTint { get; set; } = new( 0.35f, 0.6f, 1f, 1f );
+	[Property, Group( "End marker" )] public Color MarkerTint { get; set; } = UltPreviewBlue;
 	[Property, Group( "End marker" )] public float MarkerAlpha { get; set; } = 0.55f;
 	[Property, Group( "End marker" )] public float MarkerHeight { get; set; } = 18f;
 
@@ -41,7 +44,7 @@ public sealed class SpeedBlitzAimPreview : Component
 	[Property] public string MarkerModelPath { get; set; } = DefaultMarkerModelPath;
 	[Property] public float MarkerLift { get; set; } = 0.5f;
 	/// <summary> Native size of <see cref="MarkerModelPath"/> (dev box ≈ 50). World size = hit width / this. </summary>
-	[Property] public float MarkerModelBaseSize { get; set; } = 50f;
+	[Property] public float MarkerModelBaseSize { get; set; } = 80f;
 
 	/// <summary> Used when <see cref="MoveModeWalk"/> is missing. Otherwise reads prefab <c>Step Up Height</c>. </summary>
 	[Property, Group( "Corridor" )] public float StepUpHeightFallback { get; set; } = 20f;

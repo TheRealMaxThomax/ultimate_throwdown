@@ -4,7 +4,7 @@
 @using Sandbox.UI
 @inherits PanelComponent
 
-<root class="tackle-comic-burst tier-@TierClass @(UseHighlightExtrusion ? "has-highlight" : "") @(UseComicExitAnimations ? "has-exit-anim" : "") @(InExitPhase ? "exit-phase" : "") @(UseLetterPopStagger ? "stagger-pop" : "") @(UseLetterImpactShake ? "letter-impact-shake" : "") @ExitStyleClass @ExitDriftClass">
+<root class="tackle-comic-burst tier-@TierClass palette-@PaletteClass @(UseHighlightExtrusion ? "has-highlight" : "") @(UseComicExitAnimations ? "has-exit-anim" : "") @(InExitPhase ? "exit-phase" : "") @(UseLetterPopStagger ? "stagger-pop" : "") @(UseLetterImpactShake ? "letter-impact-shake" : "") @ExitStyleClass @ExitDriftClass">
 	<div class="word-tilt" style="transform: rotate(@WordRotationStyle)">
 		<div class="word-exit" style="@ExitAnimationStyle">
 			<div class="word-stack">
@@ -64,6 +64,7 @@
 	private TackleComicTextHud settings;
 	private TackleComicTextHud.ComicExitStyle exitStyle;
 	private TackleComicTextHud.ComicFontTier tier;
+	private TackleComicTextHud.ComicBurstPalette palette;
 	private Vector3 driftOrigin;
 	private float startTime;
 	private bool configured;
@@ -76,6 +77,7 @@
 	public IReadOnlyList<ComicLetterStyle> Letters { get; private set; } = Array.Empty<ComicLetterStyle>();
 	public string DisplayText { get; private set; } = "";
 	public string TierClass { get; private set; } = "sage";
+	public string PaletteClass { get; private set; } = "tackle";
 	public string FontFamily { get; private set; } = "Poppins";
 	public string ShadowTransform { get; private set; } = "10px, 12px";
 	public string HighlightTransform { get; private set; } = "-10px, -12px";
@@ -95,10 +97,12 @@
 		settings = data.Hud;
 		exitStyle = data.ExitStyle;
 		tier = data.Tier;
+		palette = data.Palette;
 		usesLetterExit = ComicLetterExitMotion.UsesLetterMotion( data.ExitStyle );
 		letterRuntimeStyles = new string[data.LetterStyles?.Count ?? data.Text?.Length ?? 0];
 		DisplayText = data.Text ?? "";
 		TierClass = TierToClass( data.Tier );
+		PaletteClass = PaletteToClass( data.Palette );
 		FontFamily = data.Hud.ResolveFontFamily( data.Tier );
 		letterJitterSeed = data.LetterJitterSeed;
 		LetterJitterSeed = data.LetterJitterSeed;
@@ -164,6 +168,7 @@
 		var hash = new HashCode();
 		hash.Add( DisplayText );
 		hash.Add( TierClass );
+		hash.Add( PaletteClass );
 		hash.Add( FontFamily );
 		hash.Add( ShadowTransform );
 		hash.Add( HighlightTransform );
@@ -240,6 +245,15 @@
 		};
 	}
 
+	static string PaletteToClass( TackleComicTextHud.ComicBurstPalette palette )
+	{
+		return palette switch
+		{
+			TackleComicTextHud.ComicBurstPalette.Ult => "ult",
+			_ => "tackle"
+		};
+	}
+
 	static string ResolveExitStyleClass( TackleComicTextHud.ComicExitStyle style )
 	{
 		return style switch
@@ -276,7 +290,7 @@
 			return;
 
 		var scale = settings.RenderScale;
-		if ( TierClass == "chaos" )
+		if ( TackleComicTextHud.UsesHeavyRenderScale( tier, palette ) )
 			scale *= settings.ChaosRenderScaleMultiplier;
 
 		worldPanel.RenderScale = scale;

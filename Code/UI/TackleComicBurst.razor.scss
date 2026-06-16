@@ -197,6 +197,20 @@ TackleComicBurst {
 	&.tier-chaos .word {
 		font-size: 128px;
 	}
+
+	&.palette-ult .highlight {
+		color: #d6f4ff;
+	}
+
+	&.palette-ult .fill {
+		color: #24b0ff;
+	}
+
+	&.palette-ult.tier-chaos .word,
+	&.palette-ult.tier-sans .word,
+	&.palette-ult.tier-sage .word {
+		font-size: 128px;
+	}
 }
 
 @keyframes tackle-comic-pop {

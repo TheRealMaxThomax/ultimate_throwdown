@@ -256,7 +256,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **Ball compass polish:** optional distance readout on `BallCompassHud`
 - **Charge wind-up bone mask choice:** `Blend_UpperBody_HalfSpine_FullArms` (arm + some spine lean, smoother) vs `Only_RightArm` (strictly arm) on the graph's Bone Mask node — pick whichever looks better in playtest
 - **Hero asset art:** maps/props low poly; **players + ball** may get higher-detail models later — ball on **`ball_v2.vmat`** (emissive gold + scroll) for now; **leaning white ball** later (fits blue ult VFX). `BallCarrierOutline` still copies ball material for carry breathe
-- **Comic word scope:** tackles/knockdowns only for v1; **ults** (+ weapon KOs later) get own burst — not throws/dodges. **Ult palette:** leaning **distinct blue** fill (vs tackle yellow/orange/red); B&W alt considered.
+- **Comic word scope:** tackles/knockdowns only for v1; **ults** (+ weapon KOs later) get own burst — not throws/dodges. **Ult palette ✅:** `ComicBurstPalette.Ult` — blue fill (`#24b0ff`) + pale cyan highlight; Speed Blitz spawns **after ragdoll launch** (not at connect hang). Future ults pass `ComicBurstPalette.Ult` to `NotifyHostKnockdown`.
 - **Ult charge point values** — goal / tackle / passive rates TBD in playtest (`PlayerUltCharge` inspector defaults are placeholders).
 - **Charge tier + backward (S) while W held:** **✅ Fixed** — mutex was writing forward/back on `AnalogMove.y` (strafe axis); s&box uses `.x` for forward/back. W wins when both held.
 - **Speed Blitz dash speed vs tunneling:** `DashSpeed` default 2000 — lower in inspector if thin props clip at high speed (2c tuning).
@@ -342,7 +342,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [x] Dash **`charge_run`** faster blend-in — **`SpeedBlitzChargeRunBlendInSeconds`** on **`PlayerChargeRunAnim`**
 - [ ] Tune range, speed, hit width, wind-up, launch force, wall-slide feel in playtest
 - [x] ~~Optional: yaw-only camera lock or wider hit cone~~ — **signed off (2026-06-15):** keep **full camera lock** + current lane hit test (“in the corridor = hit”); no yaw-only or wider cone
-- [ ] Later (not blocking): ult **blue** comic burst
+- [x] Ult **blue** comic burst — `ComicBurstPalette.Ult`; Speed Blitz spawns on launch (not connect)
 
 #### Slice 2d — Speed Blitz **wind-up** polish (energy fantasy + Olympic pose)
 
@@ -442,6 +442,7 @@ No GameNetworkManager auto-add for ult components — player prefab manual (cons
 
 ## Recent session notes
 
+- **2026-06-16 (Speed Blitz 2c comic):** Ult knockdowns use **`ComicBurstPalette.Ult`** (blue fill); Speed Blitz word spawns **after ragdoll launch** (with launch SFX), not during connect hang.
 - **2026-06-15 (Speed Blitz 2d planned):** Wind-up polish scoped — energy particles (first), buildup + dash-start SFX, Olympic full-body pose; all-client telegraph; release-only. Full camera lock + lane hit signed off in 2c.
 - **2026-06-15 (Speed Blitz 2c polish — signed off feel):** **`BlitzConnectPoseFreeze`**; connect/launch SFX; dash camera + charge_run blend. Dash numeric tuning still open in 2c.
 - **2026-06-14 (MP combat feel + Blitz 2b):** Tier 0–A3 + A2b predict; Blitz preview vs knockdown sign-off.

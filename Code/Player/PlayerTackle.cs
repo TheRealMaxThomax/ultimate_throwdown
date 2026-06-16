@@ -748,13 +748,16 @@ public sealed class PlayerTackle : Component
 		}
 
 		NotifyTackleImpactFeel( attacker, victim, speedBlitzKnockdown );
-		try
+		if ( !speedBlitzKnockdown )
 		{
-			TackleComicTextHud.NotifyHostKnockdown( Scene, victim.WorldPosition, tacklePowerForBall, launchDir );
-		}
-		catch ( System.Exception ex )
-		{
-			Log.Warning( $"[Tackle] Comic text spawn failed: {ex.Message}" );
+			try
+			{
+				TackleComicTextHud.NotifyHostKnockdown( Scene, victim.WorldPosition, tacklePowerForBall, launchDir );
+			}
+			catch ( System.Exception ex )
+			{
+				Log.Warning( $"[Tackle] Comic text spawn failed: {ex.Message}" );
+			}
 		}
 
 		// Moving hazards (traffic) skip pause — freeze holds the victim in world space while the car drives through.
@@ -770,7 +773,7 @@ public sealed class PlayerTackle : Component
 			victim.NetIsRagdolled = true;
 		}
 
-		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc, usePreLaunchPause, effectivePreLaunchPause, speedBlitzKnockdown, attacker );
+		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc, usePreLaunchPause, effectivePreLaunchPause, speedBlitzKnockdown, attacker, tacklePowerForBall );
 		HandleRagdollRecovery( victim );
 	}
 
@@ -883,7 +886,8 @@ public sealed class PlayerTackle : Component
 		bool usePreLaunchPause,
 		float preLaunchPauseSeconds,
 		bool speedBlitzKnockdown = false,
-		PlayerTackle attacker = null )
+		PlayerTackle attacker = null,
+		float comicTacklePower = 0f )
 	{
 		var ragdollGo = new GameObject( true, "PlayerRagdoll" );
 		var spawnPos = usePreLaunchPause ? victim.NetKnockdownFreezePosition : victim.WorldPosition + Vector3.Up * 10f;
@@ -955,6 +959,20 @@ public sealed class PlayerTackle : Component
 					spawnPos,
 					SpeedsterSpeedBlitzUlt.ResolveLaunchSoundResourcePath( attacker ),
 					SpeedsterSpeedBlitzUlt.ResolveLaunchSoundVolume( attacker ) );
+
+				try
+				{
+					TackleComicTextHud.NotifyHostKnockdown(
+						Scene,
+						ragdollGo.WorldPosition,
+						comicTacklePower,
+						tackleDir,
+						TackleComicTextHud.ComicBurstPalette.Ult );
+				}
+				catch ( System.Exception ex )
+				{
+					Log.Warning( $"[Tackle] Speed Blitz comic text spawn failed: {ex.Message}" );
+				}
 			}
 
 			ragdollGo.NetworkSpawn();

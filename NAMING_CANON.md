@@ -135,8 +135,9 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 | `IntermissionHud` | "Resuming in N…" during intermission |
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
 | `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |
-| `TackleComicTextHud` | Knockdown comic-word spawner (`ComicWords` pool; broadcasts tier + text + shadow dir + `WordTiltMaxDegrees*` + `LetterJitterSeed` + `ComicExitStyle` + `ExitDriftOctant`; `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*` per tier; `EnableHighlightExtrusion` / `EnableComicExitAnimations`; `BurstPanelPadding` for WorldPanel clip headroom; auto on main camera via `GameNetworkManager`) |
+| `TackleComicTextHud` | Knockdown comic-word spawner (`ComicWords` pool; broadcasts tier + text + `ComicBurstPalette` + shadow dir + `WordTiltMaxDegrees*` + `LetterJitterSeed` + `ComicExitStyle` + `ExitDriftOctant`; `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*` per tier; `EnableHighlightExtrusion` / `EnableComicExitAnimations`; `BurstPanelPadding` for WorldPanel clip headroom; auto on main camera via `GameNetworkManager`) |
 | `TackleComicBurst` | Short-lived `WorldPanel` + Razor burst (`div.letter` + `ComicLetterStyle`; shadow + highlight + fill layers; SCSS letter + exit anims; `ApplySpawnData` on spawn; spawned by `TackleComicTextHud`) |
+| `ComicBurstPalette` | Fill/highlight palette — `Tackle` (yellow/orange/red tiers) or `Ult` (blue fill for ult knockdowns) |
 | `ComicExitStyle` | Host-synced fade-out — whole-word CSS (`SpinVanish`, `Scatter`, `SlamDeflate`, `TackleDirectedDrift`, `InkPuff`) + C# letter (`LetterSuckInVortex`, `LetterTypingErase`, `LetterDominoTip`, `LetterPopOffScatter`, `LetterGlitchMelt`, `LetterComicStrikeThrough`, `LetterUnspellDrift`) |
 | `ComicLetterExitMotion` | C# per-letter exit — sequential vortex, typing-erase, domino tip, pop-off scatter (`TackleComicBurst`) |
 | `OrbitStartRadians` | Per-letter vortex start angle (host `LetterJitterSeed`) |

@@ -17,6 +17,13 @@ public sealed class TackleComicTextHud : Component
 		Chaos = 2
 	}
 
+	/// <summary>Fill/highlight palette — tackle uses yellow/orange/red tiers; ults use distinct blue.</summary>
+	public enum ComicBurstPalette
+	{
+		Tackle = 0,
+		Ult = 1
+	}
+
 	/// <summary>Diagonal offset for the black duplicate layer (3D comic depth, not a uniform outline).</summary>
 	public enum ComicShadowDirection
 	{
@@ -183,7 +190,12 @@ public sealed class TackleComicTextHud : Component
 	}
 
 	/// <summary>Host: pick word + font tier from tackle power and broadcast to all clients.</summary>
-	public static void NotifyHostKnockdown( Scene scene, Vector3 worldPosition, float tacklePower, Vector3 launchDirection = default )
+	public static void NotifyHostKnockdown(
+		Scene scene,
+		Vector3 worldPosition,
+		float tacklePower,
+		Vector3 launchDirection = default,
+		ComicBurstPalette palette = ComicBurstPalette.Tackle )
 	{
 		if ( !Networking.IsHost )
 			return;
@@ -203,7 +215,7 @@ public sealed class TackleComicTextHud : Component
 		var exitDriftOctant = ResolveExitDriftOctant( launchDirection );
 		// Stay below int.MaxValue — inclusive Random.Int(max+1) overflows and throws.
 		var letterJitterSeed = Game.Random.Int( 1, 2_000_000_000 );
-		hud.BroadcastSpawnRpc( worldPosition, (int)tier, text, shadowDir, wordTiltDegrees, letterJitterSeed, (int)exitStyle, exitDriftOctant );
+		hud.BroadcastSpawnRpc( worldPosition, (int)tier, text, shadowDir, wordTiltDegrees, letterJitterSeed, (int)exitStyle, exitDriftOctant, (int)palette );
 	}
 
 	public static void ResolveShadowOffset( ComicShadowDirection direction, Vector2 magnitude, out float offsetX, out float offsetY )
@@ -302,7 +314,7 @@ public sealed class TackleComicTextHud : Component
 	}
 
 	[Rpc.Broadcast]
-	private void BroadcastSpawnRpc( Vector3 worldPosition, int tier, string text, int shadowDirection, float wordTiltDegrees, int letterJitterSeed, int exitStyle, int exitDriftOctant )
+	private void BroadcastSpawnRpc( Vector3 worldPosition, int tier, string text, int shadowDirection, float wordTiltDegrees, int letterJitterSeed, int exitStyle, int exitDriftOctant, int palette )
 	{
 		if ( !EnableComicText || string.IsNullOrWhiteSpace( text ) )
 			return;
@@ -310,10 +322,20 @@ public sealed class TackleComicTextHud : Component
 		var dir = (ComicShadowDirection)MathX.Clamp( shadowDirection, 0, 3 );
 		var style = (ComicExitStyle)(int)MathX.Clamp( exitStyle, 0, (int)ComicExitStyle.LetterUnspellDrift );
 		var octant = (int)MathX.Clamp( exitDriftOctant, 0, 7 );
-		SpawnBurst( worldPosition, (ComicFontTier)tier, text.Trim(), dir, wordTiltDegrees, letterJitterSeed, style, octant );
+		var burstPalette = (ComicBurstPalette)MathX.Clamp( palette, 0, (int)ComicBurstPalette.Ult );
+		SpawnBurst( worldPosition, (ComicFontTier)tier, text.Trim(), dir, wordTiltDegrees, letterJitterSeed, style, octant, burstPalette );
 	}
 
-	void SpawnBurst( Vector3 worldPosition, ComicFontTier tier, string text, ComicShadowDirection shadowDirection, float wordTiltDegrees, int letterJitterSeed, ComicExitStyle exitStyle, int exitDriftOctant )
+	void SpawnBurst(
+		Vector3 worldPosition,
+		ComicFontTier tier,
+		string text,
+		ComicShadowDirection shadowDirection,
+		float wordTiltDegrees,
+		int letterJitterSeed,
+		ComicExitStyle exitStyle,
+		int exitDriftOctant,
+		ComicBurstPalette palette )
 	{
 		var letterStyles = BuildLetterStyles( text, tier, letterJitterSeed );
 
@@ -321,13 +343,14 @@ public sealed class TackleComicTextHud : Component
 		burstGo.WorldPosition = worldPosition + Vector3.Up * WorldHeightOffset;
 
 		var worldPanel = burstGo.Components.Create<Sandbox.WorldPanel>();
-		worldPanel.PanelSize = ResolveBurstPanelSize( text, tier, wordTiltDegrees, letterStyles );
+		worldPanel.PanelSize = ResolveBurstPanelSize( text, tier, palette, wordTiltDegrees, letterStyles );
 		worldPanel.LookAtCamera = true;
 
 		var spawnData = new ComicBurstSpawnData
 		{
 			Hud = this,
 			Tier = tier,
+			Palette = palette,
 			Text = text,
 			ShadowDirection = shadowDirection,
 			WordTiltDegrees = wordTiltDegrees,
@@ -384,14 +407,14 @@ public sealed class TackleComicTextHud : Component
 		};
 	}
 
-	Vector2 ResolveBurstPanelSize( string text, ComicFontTier tier, float wordTiltDegrees, IReadOnlyList<ComicLetterStyle> letterStyles )
+	Vector2 ResolveBurstPanelSize( string text, ComicFontTier tier, ComicBurstPalette palette, float wordTiltDegrees, IReadOnlyList<ComicLetterStyle> letterStyles )
 	{
 		const float popPeakScale = 1.16f;
 		var shakePadding = 14f + (EnableLetterImpactShake ? 6f : 0f);
 		const float glyphWidthRatio = 0.82f;
 
 		var charCount = Math.Max( 1, text?.Length ?? 1 );
-		var tierRenderScale = tier == ComicFontTier.Chaos ? ChaosRenderScaleMultiplier : 1f;
+		var tierRenderScale = UsesHeavyRenderScale( tier, palette ) ? ChaosRenderScaleMultiplier : 1f;
 		var baseFontSize = ResolveBaseFontSizePx( tier );
 
 		MeasureLetterRowBounds( letterStyles, glyphWidthRatio, baseFontSize, charCount, out var rowWidth, out var rowHeight );
@@ -600,6 +623,9 @@ public sealed class TackleComicTextHud : Component
 			_ => FontSage
 		};
 	}
+
+	public static bool UsesHeavyRenderScale( ComicFontTier tier, ComicBurstPalette palette )
+		=> tier == ComicFontTier.Chaos || palette == ComicBurstPalette.Ult;
 }
 
 /// <summary>Payload for runtime <see cref="TackleComicBurst"/> spawn — passed to <c>ApplySpawnData</c> immediately after create.</summary>
@@ -607,6 +633,7 @@ public sealed class ComicBurstSpawnData
 {
 	public TackleComicTextHud Hud { get; init; }
 	public TackleComicTextHud.ComicFontTier Tier { get; init; }
+	public TackleComicTextHud.ComicBurstPalette Palette { get; init; } = TackleComicTextHud.ComicBurstPalette.Tackle;
 	public string Text { get; init; }
 	public TackleComicTextHud.ComicShadowDirection ShadowDirection { get; init; }
 	public float WordTiltDegrees { get; init; }
