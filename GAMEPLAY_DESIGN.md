@@ -34,7 +34,7 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b/2c feel ✅ (2026-06-15)** — camera, connect crunch + launch SFX, body freeze; **dash numeric tuning** + optional preview art remain |
+| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b/2c ✅ (2026-06-16)** — dash feel/tuning signed off, ult blue comic, MP remote anims; **2d** phased electric VFX/SFX/pose next; optional preview art v3 later |
 
 ---
 
@@ -125,7 +125,7 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 
 **Juggernaut passive (built):** Stay at charge speed → tackle bonus stacks up to a cap. Drop below charge → bonus resets.
 
-**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** 2a + **2b** + **2c feel** shipped — MP authority + client dasher predict OK (**2026-06-14**); **2c (2026-06-15):** owner camera blends, **`BlitzConnectPoseFreeze`**, connect crunch + launch **`SoundEvent`** (host random A/B at stop, boom at ragdoll launch). Juggernaut stomp, Sniper path zones planned. See **Ultimates** and **Speed Blitz** below.
+**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** 2a + **2b** + **2c ✅ (2026-06-16)** — MP authority + client dasher predict OK; dash tuning signed off; **`ComicBurstPalette.Ult`** on launch; MP remote wind-up plant + throw hold clear; ball strip on carrier connect intentional. **2d** = phased electric VFX + SFX + Olympic pose (see **Speed Blitz** → Slice 2d). Juggernaut stomp, Sniper path zones planned. See **Ultimates** and **Speed Blitz** below.
 
 ---
 
@@ -192,9 +192,9 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 ### Feedback (v1 vs later)
 
 - v1: **`UltChargeHud`** — floored **%** (e.g. `99.9` → `99%`); panel left of `MovementRampHud`; at 100% stays **white** for **`ReadyHighlightDelaySeconds`** (~0.4 s) then **blue** while still charged.
-- v1: Speed Blitz owner-only ground preview (path + hit width).
+- v1: Speed Blitz owner-only ground preview (path + hit width; blue `#24b0ff` tint matches ult comic).
+- v1: **`ComicBurstPalette.Ult`** — blue knockdown comic on Speed Blitz launch (not connect hang); future ults reuse palette.
 - Later: **circular** ult meter — % in center, clockwise ring fill, ult icon unfade.
-- Later: ult comic burst (distinct **blue** palette — not tackle yellow/orange/red); SFX.
 
 ### Voided / not planned
 
@@ -204,7 +204,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 ### Ship order (first pass)
 
 1. Shared charge + HUD (`PlayerUltCharge`, `UltChargeHud`)  
-2. Speedster **Speed Blitz** — core dash → hold/release preview → polish  
+2. Speedster **Speed Blitz** — core dash → hold/release preview → **2c polish ✅** → **2d wind-up** (in progress)
 3. Assist charge  
 4. Per-class `maxPoints` balance (optional)  
 5. **Juggernaut** stomp → **Sniper** path zones  
@@ -214,7 +214,28 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 ## Speed Blitz (Speedster ult — first ship)
 
-**Status:** **Slices 2a + 2b + 2c feel complete** — hold/release preview matches knockdown (**2026-06-14**). **2c shipped (2026-06-15):** owner camera (wind-up→dash ease, **`BeginHitRecoveryBlend`** on connect), **`BlitzConnectPoseFreeze`**, connect crunch (**`ConnectImpactSoundA/B`**, host random) + launch boom (**`LaunchSound`**) at ragdoll impulse, faster dash **`charge_run`** blend. **Remaining 2c:** dash range/speed/wall-slide tuning, optional preview art v3, optional ult comic burst. **Class:** Speedster only.
+**Status:** **Slices 2a + 2b + 2c ✅ (2026-06-16)** — hold/release preview matches knockdown; dash range/speed/feel signed off at Speedster prefab values; owner camera + **`BlitzConnectPoseFreeze`** + connect/launch SFX; **`ComicBurstPalette.Ult`** comic on ragdoll launch; MP remote wind-up plant + throw hold clear; intentional ball strip on carrier connect. **Next:** **2d** phased electric VFX + SFX + Olympic pose (below). **Optional later:** preview art v3 (custom blue `.vmat` telegraph). **Class:** Speedster only.
+
+### Slice 2d (in progress — design locked 2026-06-16)
+
+**Fantasy:** Electric charge → dash carries energy → connect hang crackles → small discharge on ragdoll launch. **~2 s wind-up** — all layers ramp **together** (pose snap, sparks, SFX rise), not sequential acts.
+
+**VFX (one prefab, code phases — editor WIP `SpeedBlitzWindUpVFX`):**
+
+| Phase | Behavior |
+|-------|----------|
+| Wind-up | Blue **`#24b0ff`** sparks + attractor inward; ramp **`GetWindUpLerp()`**; only after release X |
+| Dash | Same pull-in follows dasher |
+| Connect + hang (~0.65s) | Sustained crackle on frozen bodies |
+| Ragdoll launch | **Small** blue discharge (brighter one frame, ~0.15–0.3s) at victim — accent only vs comic + launch boom; then off |
+| Miss | Fade at dash end — **no** launch burst |
+| Interrupt | Cut immediately |
+
+Optional later: soft ring/torus core if silhouette needs help at distance.
+
+**SFX:** Electricity bed + rising pitch over wind-up; optional dash-start burst; **cut/duck electric at connect crunch**; existing launch boom unchanged.
+
+**Pose:** Olympic blocks — full-body masked layer; fast weight-in (~0.25–0.4s); **`charge_run` off during wind-up**.
 
 ### Shipped in slice 2a + 2b (code)
 
@@ -227,7 +248,8 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 - **Owner camera (`SpeedBlitzDashCamera`):** wind-up pullback/FOV build → blended dash spike → on enemy hit **`BeginHitRecoveryBlend()`** eases to baseline at contact freeze (not victim launch); miss/timeout uses same end blend. **`ThrowChargeCamera`** release blend uses same transition-frame pattern.
 - **Connect feel (2c):** **`BlitzConnectPoseFreeze`** — attacker + victim body pose held during **0.65s** pre-launch hang (`PlaybackRate = 0`). Optional **`ConnectImpactChargeRunCycle`** for consistent impact stride.
 - **SFX (2c):** **`ConnectImpactSoundA/B`** — host picks one at random each hit, plays at dash stop (`PlaySpeedBlitzConnectImpactSoundRpc`). **`LaunchSound`** — boom when ragdoll launches after hang. Both **`SoundEvent`** drag-drop on Speedster prefab; **`[Rpc.Broadcast]`** so all clients hear the same pick.
-- **Dash anim:** **`PlayerChargeRunAnim.SpeedBlitzChargeRunBlendInSeconds`** — faster `charge_run` overlay during short dashes.
+- **Comic (2c):** **`ComicBurstPalette.Ult`** — host picks word/tier; blue fill; spawns at ragdoll **launch** (with **`LaunchSound`**), not at connect hang.
+- **MP anim (2c):** Wind-up **`ApplyPlantedHorizontalFreeze`** on all clients; throw release RPC shares owner **`throwPoseEndTime`**; full hold-param clear on remotes.
 
 ### Fantasy
 
@@ -253,7 +275,7 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 
 - Dash range, speed, hit width, wind-up duration (2 s default), launch force, slide friction along walls.
 - **Camera:** `WindUpToDashBlendDurationSeconds`, `DashEndBlendDurationSeconds` on **`SpeedBlitzDashCamera`** (hit recovery + miss end).
-- **SFX:** `ConnectImpactSoundA`, `ConnectImpactSoundB`, `LaunchSound`, `ConnectImpactSoundVolume`, `LaunchSoundVolume` on **`SpeedsterSpeedBlitzUlt`**. Defaults: `Assets/Sounds/Crunch/speed_blitz_connect_crunch_a/b.sound`, `Assets/Sounds/Explosions/speed_blitz_launch.sound`.
+- **SFX:** `ConnectImpactSoundA`, `ConnectImpactSoundB`, `LaunchSound`, `ConnectImpactSoundVolume`, `LaunchSoundVolume` on **`SpeedsterSpeedBlitzUlt`**. Defaults: `Assets/Sounds/Crunch/speed_blitz_connect_crunch_a/b.sound`, `Assets/Sounds/Explosions/speed_blitz_launch.sound`. **2d adds:** wind-up electric bed + rise (`SoundEvent` on ult); cut electric at connect crunch.
 
 ---
 

@@ -116,7 +116,7 @@
 **Often-used on `UltChargeHud`:** `ReadyHighlightDelaySeconds`, floored `ChargePercent` display, left of `MovementRampHud`
 **Input:** `Ultimate` → **X** (`Input.config`)
 
-Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. Ult comic burst: distinct **blue** palette — later.
+Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. Ult comic: **`ComicBurstPalette.Ult`** (Speed Blitz + future ults).
 
 ---
 

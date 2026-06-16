@@ -310,6 +310,7 @@ See [`SESSION_NOTES.md`](SESSION_NOTES.md) → **Known issues** (ragdoll jitter,
 | 2026-06-14 | Tier A3 shipped — `CombatFeelPredictDedupe` + apply-id feel RPC dedupe (replaces per-feature bools). |
 | 2026-06-14 | Tier A2 shipped — client-owner victim feel on pre-launch freeze frame + host RPC dedupe. |
 | 2026-06-14 | Tier A1 shipped — client-owner tackle attacker predict + dedupe on `PlayerTackle`. |
+| 2026-06-16 | Speed Blitz **2c signed off** — dash tuning; **`ComicBurstPalette.Ult`** on launch; MP remote wind-up plant + throw hold clear (`PlayerBallHoldAnim` full param reset + shared **`throwPoseEndTime`**). |
 | 2026-06-15 | Speed Blitz 2c SFX — host random **`ConnectImpactSoundA/B`** at dash stop + **`LaunchSound`** at ragdoll launch; **`[Rpc.Broadcast]`** on **`PlayerTackle`**. |
 | 2026-06-14 | Tier 0 shipped — client-owner Speed Blitz predict + attacker feel dedupe (`TryFindBestDashHitInSegment`, **`CombatFeelPredictDedupe.MarkOwnerPredictedAttackerFeel`**). |
 | 2026-06-14 | Initial doc — philosophy, tiers 0–C, Speed Blitz predict scope, tackle follow-up, per-feature checklist, current architecture snapshot. |
