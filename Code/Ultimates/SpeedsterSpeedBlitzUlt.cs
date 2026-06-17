@@ -45,8 +45,6 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 
 	[Property, Group( "Wind-up feel" )] public Vector3 WindUpFeelSoundLocalOffset { get; set; } = new( 0f, 0f, 48f );
 
-	[Property, Group( "Wind-up feel" )] public float WindUpVfxMinTimeScale { get; set; } = 0.25f;
-
 	/// <summary> Electric bed from wind-up through dash + connect hang. Drag <c>speedblitz_electric.sound</c>. </summary>
 	[Property, Group( "Wind-up feel" )] public SoundEvent WindUpElectricSound { get; set; }
 

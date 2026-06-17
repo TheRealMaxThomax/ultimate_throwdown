@@ -4,7 +4,7 @@
       "Name": "Default",
       "FrameRate": 20,
       "Origin": "0.5,0.5",
-      "LoopMode": "PingPong",
+      "LoopMode": "Loop",
       "Frames": [
         {
           "Texture": "vfx/kenney_particle-pack/png (transparent)/spark_01.png",

@@ -139,7 +139,6 @@ public sealed class SpeedBlitzWindUpFeel : Component
 		PlayElectricLoop();
 		PlayWindUpRiseOneShot();
 		EnsureDasherVfx();
-		ApplyVfxIntensity( ult.GetWindUpLerp() );
 	}
 
 	private void BeginDashFeel()
@@ -172,12 +171,6 @@ public sealed class SpeedBlitzWindUpFeel : Component
 	{
 		if ( IsMissFading() )
 		{
-			if ( missFadeDuration > 0.0001f )
-			{
-				var fadeT = 1f - ((missFadeUntil - Time.Now) / missFadeDuration).Clamp( 0f, 1f );
-				ApplyVfxIntensity( 1f - fadeT );
-			}
-
 			if ( Time.Now >= missFadeUntil )
 				DestroyVfxInstances();
 
@@ -196,9 +189,6 @@ public sealed class SpeedBlitzWindUpFeel : Component
 
 		if ( connectFrozen )
 			EnsureVictimVfx();
-
-		var intensity = windUp ? ult.GetWindUpLerp() : 1f;
-		ApplyVfxIntensity( intensity );
 	}
 
 	private void UpdateDashAttractorBoost( bool shouldBoost )
@@ -289,33 +279,6 @@ public sealed class SpeedBlitzWindUpFeel : Component
 
 			return null;
 		}
-	}
-
-	private void ApplyVfxIntensity( float normalizedIntensity )
-	{
-		if ( ult is null )
-			return;
-
-		var t = normalizedIntensity.Clamp( 0f, 1f );
-		var timeScale = MathX.Lerp( ult.WindUpVfxMinTimeScale.Clamp( 0.05f, 1f ), 1f, t );
-
-		ApplyVfxIntensityOnInstance( dasherVfxInstance, timeScale, t );
-		ApplyVfxIntensityOnInstance( victimVfxInstance, timeScale, t );
-	}
-
-	private static void ApplyVfxIntensityOnInstance( GameObject instance, float timeScale, float scaleT )
-	{
-		if ( !IsGameObjectAlive( instance ) )
-			return;
-
-		foreach ( var particle in instance.GetComponentsInChildren<ParticleEffect>( true ) )
-		{
-			if ( particle.IsValid() )
-				particle.TimeScale = timeScale;
-		}
-
-		var scale = MathX.Lerp( 0.65f, 1f, scaleT );
-		instance.LocalScale = new Vector3( scale, scale, scale );
 	}
 
 	private Vector3 GetFeelSoundWorldPosition()
