@@ -5,7 +5,7 @@
   "Decibels": 70,
   "SelectionMode": "Random",
   "Sounds": [
-    "sounds/rising pitch/speed_blitzrisingpitch.vsnd"
+    "sounds/rising pitch/speedblitzwindup2.vsnd"
   ],
   "OcclusionEnabled": true,
   "Occlusion": true,
