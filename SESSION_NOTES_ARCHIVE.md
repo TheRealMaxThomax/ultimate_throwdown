@@ -119,10 +119,25 @@
 
 **Key files:** `SpeedsterSpeedBlitzUlt.cs`, `PlayerTackle.cs`, `CombatFeelPredictDedupe.cs`, `SpeedBlitzAimPreview.cs` (`NetworkMode.Never` for owner preview meshes).
 
-**Verified:** 2–3 window idle-target soak feels good. **Not verified:** moving-target fairness (→ practice scene + Tier C1 lag-comp).
+**Verified:** 2–3 window idle-target soak feels good. **Not verified:** moving-target fairness (→ practice scene + Tier C1 lag-comp). **Speed Blitz 2d MP:** wind-up sparks, body glow, discharge — pending 2-window verify (2026-06-18).
 
 **False-positive policy (dash v1):** predicted hit but host miss → stay stopped until host ends dash.
 
 Full roadmap → [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md).
+
+</details>
+
+---
+
+## Speed Blitz 2d session detail (2026-06-16 — moved from SESSION_NOTES)
+
+<details>
+<summary>Expand — 2c sign-off + early 2d VFX</summary>
+
+- **2026-06-16 (night):** electric hard cut at connect ✅; **`speedblitzwindupvfx`** prefab shipped (later scoped to wind-up only on 2026-06-18).
+- **2026-06-16 (2d code):** **`SpeedBlitzWindUpFeel`** — parented clone, **`StopElectric(0)`** at connect; three wind-up sounds via **`PlayFeelSoundAt`**.
+- **2026-06-16 (2d design):** sound stack: electric / windup / dash (**speedblitz_dash**, not ragdoll LaunchSound).
+- **2026-06-16 (2c):** dash tuning signed off; ult blue comic; MP remote wind-up plant + throw hold clear; ball strip on carrier connect intentional.
+- **2026-06-16 (MP remote anim):** blitz wind-up plants on all clients; throw hold RPC fixes.
 
 </details>

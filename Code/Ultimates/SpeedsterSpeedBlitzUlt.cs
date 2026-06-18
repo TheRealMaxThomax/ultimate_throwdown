@@ -78,6 +78,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	internal const string DefaultWindUpRiseSoundPath = "sounds/rising pitch/speedblitz_windup.sound";
 	internal const string DefaultDashStartSoundPath = "sounds/woosh/speedblitz_dash.sound";
 	internal const string DefaultWindUpVfxPrefabPath = "vfx/speedblitzwindupvfx.prefab";
+	internal const string DefaultDischargeVfxPrefabPath = "vfx/speedblitzdischargevfx.prefab";
 
 	/// <summary> Total ground the dash tries to cover (walls reduce actual distance via slide). </summary>
 	[Property, Group( "Dash" )] public float DashRange { get; set; } = 1200f;
@@ -115,6 +116,14 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	[Property, Group( "Knockdown feel" )] public SoundEvent ConnectImpactSoundB { get; set; }
 
 	[Property, Group( "Knockdown feel" )] public float ConnectImpactSoundVolume { get; set; } = 1f;
+
+	/// <summary> One-shot electric burst on dasher chest when connect hang ends (ragdoll launch). Drag <c>speedblitzdischargevfx.prefab</c>. </summary>
+	[Property, Group( "Knockdown feel" )] public GameObject DischargeVfxPrefab { get; set; }
+
+	[Property, Group( "Knockdown feel" )] public Vector3 DischargeVfxLocalOffset { get; set; } = new( 0f, 0f, 48f );
+
+	/// <summary> Safety destroy for discharge clone if the prefab does not self-delete. </summary>
+	[Property, Group( "Knockdown feel" )] public float DischargeVfxCleanupSeconds { get; set; } = 1.25f;
 
 	/// <summary> Fallback when <see cref="LaunchSound"/> is unset on the Speedster prefab. </summary>
 	internal const string DefaultLaunchSoundPath = "sounds/explosions/speed_blitz_launch.sound";
@@ -333,6 +342,18 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		return SceneUtility.GetPrefabScene( prefabFile );
 	}
 
+	internal GameObject ResolveDischargeVfxPrefabRoot()
+	{
+		if ( DischargeVfxPrefab is not null && DischargeVfxPrefab.IsValid() )
+			return DischargeVfxPrefab;
+
+		var prefabFile = ResourceLibrary.Get<PrefabFile>( DefaultDischargeVfxPrefabPath );
+		if ( !prefabFile.IsValid() )
+			return null;
+
+		return SceneUtility.GetPrefabScene( prefabFile );
+	}
+
 	internal SoundEvent ResolveWindUpElectricSound()
 	{
 		if ( WindUpElectricSound is not null && WindUpElectricSound.IsValid() )
@@ -438,6 +459,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		tackleImpactFeel = Components.Get<TackleImpactFeel>();
 		Components.GetOrCreate<SpeedBlitzDashCamera>();
 		Components.GetOrCreate<SpeedBlitzWindUpFeel>();
+		Components.GetOrCreate<SpeedBlitzBodyGlow>();
 	}
 
 	protected override void OnUpdate()

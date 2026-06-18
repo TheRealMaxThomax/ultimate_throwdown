@@ -34,7 +34,7 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b/2c ✅ (2026-06-16)** — dash feel/tuning signed off, ult blue comic, MP remote anims; **2d** phased electric VFX/SFX/pose next; optional preview art v3 later |
+| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b/2c ✅**; **2d partial ✅ solo (2026-06-18)** — wind-up sparks, body glow, launch discharge; Olympic pose + 2-window MP left |
 
 ---
 
@@ -125,7 +125,7 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 
 **Juggernaut passive (built):** Stay at charge speed → tackle bonus stacks up to a cap. Drop below charge → bonus resets.
 
-**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** 2a + **2b** + **2c ✅ (2026-06-16)** — MP authority + client dasher predict OK; dash tuning signed off; **`ComicBurstPalette.Ult`** on launch; MP remote wind-up plant + throw hold clear; ball strip on carrier connect intentional. **2d** = phased electric VFX + SFX + Olympic pose (see **Speed Blitz** → Slice 2d). Juggernaut stomp, Sniper path zones planned. See **Ultimates** and **Speed Blitz** below.
+**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** 2a + **2b** + **2c ✅** — MP authority + client dasher predict OK; **2d partial ✅ solo (2026-06-18):** wind-up sparks only, body glow, launch discharge burst; Olympic pose + 2-window MP remain. Juggernaut stomp, Sniper path zones planned.
 
 ---
 
@@ -204,7 +204,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 ### Ship order (first pass)
 
 1. Shared charge + HUD (`PlayerUltCharge`, `UltChargeHud`)  
-2. Speedster **Speed Blitz** — core dash → hold/release preview → **2c polish ✅** → **2d wind-up** (in progress)
+2. Speedster **Speed Blitz** — core dash → hold/release preview → **2c polish ✅** → **2d wind-up** (partial ✅ solo 2026-06-18)
 3. Assist charge  
 4. Per-class `maxPoints` balance (optional)  
 5. **Juggernaut** stomp → **Sniper** path zones  
@@ -214,28 +214,30 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 ## Speed Blitz (Speedster ult — first ship)
 
-**Status:** **Slices 2a + 2b + 2c ✅ (2026-06-16)** — hold/release preview matches knockdown; dash range/speed/feel signed off at Speedster prefab values; owner camera + **`BlitzConnectPoseFreeze`** + connect/launch SFX; **`ComicBurstPalette.Ult`** comic on ragdoll launch; MP remote wind-up plant + throw hold clear; intentional ball strip on carrier connect. **Next:** **2d** phased electric VFX + SFX + Olympic pose (below). **Optional later:** preview art v3 (custom blue `.vmat` telegraph). **Class:** Speedster only.
+**Status:** **Slices 2a + 2b + 2c ✅ (2026-06-16)** — hold/release preview, dash feel, connect/launch SFX, ult comic. **2d partial ✅ solo (2026-06-18):** wind-up **`speedblitzwindupvfx`** only, **`SpeedBlitzBodyGlow`**, **`speedblitzdischargevfx`** at launch. **Next:** Olympic **`blitz_windup`** pose, **2-window MP**. **Optional later:** preview art v3. **Class:** Speedster only.
 
-### Slice 2d (in progress — design locked 2026-06-16)
+### Slice 2d (in progress — updated 2026-06-18)
 
-**Fantasy:** Electric charge → dash carries energy → connect hang crackles → small discharge on ragdoll launch. **~2 s wind-up** — all layers ramp **together** (pose snap, sparks, SFX rise), not sequential acts.
+**Fantasy:** Electric charge during wind-up → dash carries energy (body glow) → connect hang holds glow → **discharge burst + glow fade** at ragdoll launch. **~2 s wind-up** — sparks, SFX rise, body glow, and (when ready) pose ramp **together**.
 
-**VFX (one prefab, code phases — editor WIP `SpeedBlitzWindUpVFX`):**
+**VFX (editor prefabs + code phases):**
 
 | Phase | Behavior |
 |-------|----------|
-| Wind-up | Blue **`#24b0ff`** sparks + attractor inward; ramp **`GetWindUpLerp()`**; only after release X |
-| Dash | Same pull-in follows dasher |
-| Connect + hang (~0.65s) | Sustained crackle on frozen bodies |
-| Ragdoll launch | **Small** blue discharge (brighter one frame, ~0.15–0.3s) at victim — accent only vs comic + launch boom; then off |
-| Miss | Fade at dash end — **no** launch burst |
-| Interrupt | Cut immediately |
+| Wind-up | Blue **`#24b0ff`** sparks + attractor inward; body glow ramps **`GetWindUpLerp()`**; only after release X |
+| Dash | Body glow peak; **no** wind-up sparks |
+| Connect + hang (~0.65s) | Body glow peak; **no** sparks |
+| Ragdoll launch | **`speedblitzdischargevfx`** burst on **dasher chest** + body glow discharge — accent only vs comic + launch boom |
+| Miss | Body glow fade at dash end — **no** discharge burst |
+| Interrupt | Hard off |
 
 Optional later: soft ring/torus core if silhouette needs help at distance.
 
-**SFX:** Electricity bed + rising pitch over wind-up; optional dash-start burst; **cut/duck electric at connect crunch**; existing launch boom unchanged.
+**SFX:** Electricity bed + rising pitch over wind-up; dash-start woosh; **hard stop electric at connect crunch**; existing launch boom unchanged.
 
-**Pose:** Olympic blocks — full-body masked layer; fast weight-in (~0.25–0.4s); **`charge_run` off during wind-up**.
+**Pose (pending):** Olympic blocks — full-body masked layer; fast weight-in (~0.25–0.4s); **`charge_run` off during wind-up**.
+
+**Body glow (shipped):** **`SpeedBlitzBodyGlow`** — subtle blue tint + point light on dasher avatar; no ult outline (enemy red outline unchanged). Tune on Speedster prefab.
 
 ### Shipped in slice 2a + 2b (code)
 

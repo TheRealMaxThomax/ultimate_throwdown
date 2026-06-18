@@ -2,7 +2,7 @@ using Sandbox;
 using System;
 
 /// <summary>
-/// Speed Blitz slice 2d — phased electric VFX + wind-up/dash SFX on all clients.
+/// Speed Blitz slice 2d — wind-up electric VFX + wind-up/dash SFX + launch discharge burst on all clients.
 /// Driven by synced <see cref="SpeedsterSpeedBlitzUlt"/> phases (no extra RPCs).
 /// </summary>
 [Order( 10013 )]
@@ -22,6 +22,7 @@ public sealed class SpeedBlitzWindUpFeel : Component
 	private float missFadeUntil;
 	private float missFadeDuration;
 	private bool loggedMissingPrefab;
+	private bool loggedMissingDischargePrefab;
 	private bool loggedCloneFailure;
 	private bool loggedUpdateFailure;
 	private bool loggedMissingSound;
@@ -132,11 +133,12 @@ public sealed class SpeedBlitzWindUpFeel : Component
 	private void BeginConnectHangFeel()
 	{
 		StopElectric( 0f );
-		EnsureVictimVfx();
+		DestroyVfxInstances();
 	}
 
 	private void EndConnectHangFeel()
 	{
+		PlayDischargeVfx();
 		StopAllFeel( immediate: true );
 		ult.ClearBlitzConnectVictimOnHost();
 	}
@@ -159,7 +161,8 @@ public sealed class SpeedBlitzWindUpFeel : Component
 			return;
 		}
 
-		if ( !windUp && !dashing && !connectFrozen )
+		// Wind-up VFX only — dash + connect hang stay off (BeginDashFeel / BeginConnectHangFeel destroy clones).
+		if ( !windUp )
 		{
 			if ( IsGameObjectAlive( dasherVfxInstance ) || IsGameObjectAlive( victimVfxInstance ) )
 				DestroyVfxInstances();
@@ -167,14 +170,7 @@ public sealed class SpeedBlitzWindUpFeel : Component
 			return;
 		}
 
-		if ( windUp )
-			EnsureDasherVfx();
-
-		if ( connectFrozen )
-		{
-			EnsureDasherVfx();
-			EnsureVictimVfx();
-		}
+		EnsureDasherVfx();
 	}
 
 	private void UpdateElectricVolume()
@@ -201,16 +197,65 @@ public sealed class SpeedBlitzWindUpFeel : Component
 		}
 	}
 
-	private void EnsureVictimVfx()
+	private void PlayDischargeVfx()
 	{
-		if ( IsGameObjectAlive( victimVfxInstance ) )
+		if ( ult is null || !IsGameObjectAlive( GameObject ) )
 			return;
 
-		var victimGo = ult.ResolveConnectVictimGameObject();
-		if ( !IsGameObjectAlive( victimGo ) )
-			return;
+		_ = SpawnDischargeVfxAsync();
+	}
 
-		victimVfxInstance = CloneWindUpVfx( victimGo );
+	private async System.Threading.Tasks.Task SpawnDischargeVfxAsync()
+	{
+		GameObject instance = null;
+
+		try
+		{
+			var prefabRoot = ult.ResolveDischargeVfxPrefabRoot();
+			if ( !IsGameObjectAlive( GameObject ) || !IsGameObjectAlive( prefabRoot ) )
+			{
+				if ( !loggedMissingDischargePrefab )
+				{
+					loggedMissingDischargePrefab = true;
+					Log.Warning( "[SpeedBlitz] DischargeVfxPrefab missing — assign on SpeedsterSpeedBlitzUlt or add vfx/speedblitzdischargevfx.prefab." );
+				}
+
+				return;
+			}
+
+			var spawnPos = GameObject.WorldPosition + ult.DischargeVfxLocalOffset;
+			instance = prefabRoot.Clone( new CloneConfig
+			{
+				Transform = new Transform( spawnPos, GameObject.WorldRotation ),
+				StartEnabled = true
+			} );
+
+			if ( !IsGameObjectAlive( instance ) )
+				return;
+
+			instance.NetworkMode = NetworkMode.Never;
+			instance.Name = "SpeedBlitzDischargeVFX";
+			instance.Parent = GameObject;
+			instance.LocalPosition = ult.DischargeVfxLocalOffset;
+			instance.LocalRotation = Rotation.Identity;
+
+			var cleanupSeconds = ult.DischargeVfxCleanupSeconds.Clamp( 0.15f, 4f );
+			await GameTask.DelaySeconds( cleanupSeconds );
+
+			if ( IsGameObjectAlive( instance ) )
+				instance.Destroy();
+		}
+		catch ( Exception ex )
+		{
+			if ( IsGameObjectAlive( instance ) )
+				instance.Destroy();
+
+			if ( !loggedCloneFailure )
+			{
+				loggedCloneFailure = true;
+				Log.Warning( $"[SpeedBlitz] DischargeVfx clone failed: {ex.Message}" );
+			}
+		}
 	}
 
 	private GameObject CloneWindUpVfx( GameObject followTarget )
