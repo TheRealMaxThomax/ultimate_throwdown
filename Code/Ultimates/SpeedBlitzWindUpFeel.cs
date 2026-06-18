@@ -238,6 +238,7 @@ public sealed class SpeedBlitzWindUpFeel : Component
 			instance.Parent = GameObject;
 			instance.LocalPosition = ult.DischargeVfxLocalOffset;
 			instance.LocalRotation = Rotation.Identity;
+			SpeedBlitzVfxResources.ApplySparkSpriteToInstance( instance );
 
 			var cleanupSeconds = ult.DischargeVfxCleanupSeconds.Clamp( 0.15f, 4f );
 			await GameTask.DelaySeconds( cleanupSeconds );
@@ -287,7 +288,7 @@ public sealed class SpeedBlitzWindUpFeel : Component
 			instance.Parent = followTarget;
 			instance.LocalPosition = ult.WindUpVfxLocalOffset;
 			instance.LocalRotation = Rotation.Identity;
-			ConfigureAttractorsOnInstance( instance );
+			ConfigureWindUpVfxInstance( instance, followTarget );
 
 			return instance;
 		}
@@ -385,7 +386,31 @@ public sealed class SpeedBlitzWindUpFeel : Component
 
 	private bool IsMissFading() => missFadeUntil > 0f && Time.Now < missFadeUntil;
 
-	private void ConfigureAttractorsOnInstance( GameObject instance )
+	private void ConfigureWindUpVfxInstance( GameObject instance, GameObject followTarget )
+	{
+		SpeedBlitzVfxResources.ApplySparkSpriteToInstance( instance );
+
+		var simulateLocal = followTarget.IsProxy;
+		foreach ( var effect in instance.GetComponentsInChildren<ParticleEffect>( true ) )
+		{
+			if ( !effect.IsValid() )
+				continue;
+
+			if ( simulateLocal )
+			{
+				// World-space sparks on interpolated proxies never catch the chest attractor — owner stays on prefab defaults.
+				effect.LocalSpace = 1f;
+
+				var lifetimeMul = ult.WindUpRemoteLifetimeMultiplier.Clamp( 1f, 3f );
+				if ( lifetimeMul > 1.001f )
+					effect.Lifetime = effect.Lifetime.ConstantValue * lifetimeMul;
+			}
+		}
+
+		ConfigureAttractorsOnInstance( instance, followTarget );
+	}
+
+	private void ConfigureAttractorsOnInstance( GameObject instance, GameObject followTarget )
 	{
 		foreach ( var attractor in instance.GetComponentsInChildren<ParticleAttractor>( true ) )
 		{
@@ -393,6 +418,14 @@ public sealed class SpeedBlitzWindUpFeel : Component
 				continue;
 
 			attractor.Target = instance;
+
+			if ( !followTarget.IsProxy || ult is null )
+				continue;
+
+			var forceMul = ult.WindUpRemoteAttractorForceMultiplier.Clamp( 1f, 8f );
+			attractor.Force = attractor.Force.ConstantValue * forceMul;
+			attractor.MaxForce = attractor.MaxForce.ConstantValue * forceMul;
+			attractor.Radius *= ult.WindUpRemoteAttractorRadiusMultiplier.Clamp( 1f, 12f );
 		}
 	}
 

@@ -146,7 +146,7 @@
         "Scale": 2,
         "Shadows": false,
         "SortMode": "Unsorted",
-        "Sprite": "vfx/kenney_particle-pack/sprites/spark_01.sprite",
+        "Sprite": "vfx/spark_01.sprite",
         "StartingAnimationName": "Default",
         "TextureFilter": "Bilinear"
       },

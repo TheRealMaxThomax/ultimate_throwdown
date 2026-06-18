@@ -72,6 +72,15 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	/// <summary> Multiplier on prefab attractor radius during dash. </summary>
 	[Property, Group( "Wind-up feel" )] public float DashAttractorRadiusMultiplier { get; set; } = 2.5f;
 
+	/// <summary> Extra wind-up spark pull when simulating on a networked proxy (observer view). </summary>
+	[Property, Group( "Wind-up feel" )] public float WindUpRemoteAttractorForceMultiplier { get; set; } = 2.5f;
+
+	/// <summary> Wider absorb radius on proxies so sparks finish the pull before lifetime ends. </summary>
+	[Property, Group( "Wind-up feel" )] public float WindUpRemoteAttractorRadiusMultiplier { get; set; } = 3f;
+
+	/// <summary> Longer spark lifetime on proxies — pairs with remote attractor tuning. </summary>
+	[Property, Group( "Wind-up feel" )] public float WindUpRemoteLifetimeMultiplier { get; set; } = 1.35f;
+
 	[Property, Group( "Wind-up feel" )] public float MissVfxFadeSeconds { get; set; } = 0.25f;
 
 	internal const string DefaultWindUpElectricSoundPath = "sounds/electric/speedblitz_electric.sound";

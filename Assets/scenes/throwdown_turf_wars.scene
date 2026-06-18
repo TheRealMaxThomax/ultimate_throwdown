@@ -938,6 +938,9 @@
               "WindUpElectricSound": "sounds/electric/speedblitz_electric.sound",
               "WindUpElectricVolume": 0.5,
               "WindUpFeelSoundLocalOffset": "0,0,48",
+              "WindUpRemoteAttractorForceMultiplier": 1,
+              "WindUpRemoteAttractorRadiusMultiplier": 1,
+              "WindUpRemoteLifetimeMultiplier": 1.35,
               "WindUpRiseSound": "sounds/rising pitch/speedblitz_windup.sound",
               "WindUpRiseVolume": 0.5,
               "WindUpVfxLocalOffset": "0,0,10",
@@ -3116,7 +3119,7 @@
                   ]
                 },
                 {
-                  "__guid": "6e923cfd-1796-4248-b102-94adcf9e2a8d",
+                  "__guid": "3445554c-d42a-44a1-9bc9-de74fb4b2ffb",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3133,7 +3136,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "5dcc4a31-b9d5-4b83-82db-f0c44395ad07",
+                      "__guid": "9f5e9474-f59f-438c-9de2-ea15a793b8fb",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6413,7 +6416,7 @@
                   ]
                 },
                 {
-                  "__guid": "420ef51e-90e5-4b1e-833d-1d76591d6b2d",
+                  "__guid": "1d5461c4-ea23-4816-82f6-bc2b744f4716",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6430,7 +6433,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "cf725c53-8a06-4dcf-ab30-754d5c6db4fb",
+                      "__guid": "57c55572-ded5-491f-b731-bb7b1b69de83",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -9049,7 +9052,7 @@
                   ]
                 },
                 {
-                  "__guid": "6dcc8737-f651-43be-bb78-7dccb9d0af0a",
+                  "__guid": "62bc6509-6a47-4080-a92f-f35fe1f02c61",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -9066,7 +9069,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "ffd07dad-6233-4c4a-b2e2-72a820dd9f8a",
+                      "__guid": "427aa4cd-c75e-42d4-8cad-e8e4265cf9e8",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11685,7 +11688,7 @@
                   ]
                 },
                 {
-                  "__guid": "0c1df8b3-40c9-4662-820b-49dab68de64e",
+                  "__guid": "35c3de2f-00ff-4f1e-85f2-9c609a6a7e19",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11702,7 +11705,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "73d3fa51-a4b8-470f-bd23-ba2b3bc8b5f5",
+                      "__guid": "be1b8eae-483d-40bd-a7a6-b6e8e83e6359",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -87417,14 +87420,14 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.Clutter.ClutterGridSystem": {
-        "Storage": {
-          "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
-        }
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
+        }
+      },
+      "Sandbox.Clutter.ClutterGridSystem": {
+        "Storage": {
+          "$blob": "ebfcab75-4fee-4f9d-b62d-43388423d41e"
         }
       }
     }
