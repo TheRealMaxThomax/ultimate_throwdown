@@ -25,6 +25,7 @@
     "PerMapRanking": false,
     "LeaderboardType": "None",
     "CsProjName": "",
-    "StartupScene": "scenes/throwdown_prototype.scene"
+    "StartupScene": "scenes/throwdown_turf_wars.scene",
+    "LaunchMode": "Normal"
   }
 }

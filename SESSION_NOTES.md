@@ -10,6 +10,7 @@
 | [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) | Tuning dodge/tackle, classes, **ultimates** (permanent charge + ult rules), future weapons |
 | [`NAMING_CANON.md`](NAMING_CANON.md) | Exact script/property names — agents read this automatically when adding/renaming under `Code/` |
 | [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) | **MP feel & netcode** — host authority, client predict, reconciliation, priority roadmap, **checklist for new combat features** |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | **Read before slice 5/6** — folder layout, god components, spawn wiring, prefab split checklist, what to refactor first |
 | [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) | Something broke before and you want the long “why we did it” story |
 | [`Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md) | Custom citizen human anims — Blender export, ModelDoc, ScaleAndMirror, troubleshooting (throw, wave, hit, stand-up, …) |
 
@@ -272,7 +273,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **Speed Blitz launch discharge VFX:** **✅ Shipped (2026-06-18):** **`speedblitzdischargevfx`** on dasher chest at ragdoll launch (hit only); tune in prefab + **`DischargeVfxLocalOffset`** on ult.
 - **Speed Blitz impact stride `charge_run_cycle`:** snap dasher to a fixed cycle at connect (shoulder-in frame) vs freeze whatever pose contact landed on — scrub `charge_run` in ModelDoc; inspector default TBD in playtest.
 - **Speed Blitz victim flinch (later):** optional masked hit-react clip + graph layer during hang (same pattern as `throw_windup` / `charge_run`) — polish on top of body freeze v1; ship or skip after playtest
-- **Player prefab component count (3 classes):** **✅ Chosen: Option A — per-class prefab variants** before slice 5/6 (`Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; `GameNetworkManager` picks template by class). Not doing yet — see roadmap note before slice 5. Move **`BlitzConnectPoseFreeze`** off global auto-add when splitting.
+- **Player prefab component count (3 classes):** **✅ Chosen: Option A — per-class prefab variants** before slice 5/6 (`Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; `GameNetworkManager` picks template by class). Not doing yet — see [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6 + roadmap note below. Move **`BlitzConnectPoseFreeze`** off global auto-add when splitting.
 - **Post-tackle attacker ramp (attacker only, on connect — no whiff penalty):** leaning **walk** reset for all classes; **Juggernaut** exception **run** (sprint tier, not charge) for “unstoppable” feel — **bundle with loadout UI** (pick passive / ult / etc.), not a standalone tweak. **Future:** one passive slot per class → Juggernaut pick **tackle ramp bonus** *or* **post-tackle run recovery** (not both).
 - **Speed Blitz 2d — client wind-up spark sprites (MP):** editor join-client shows **blue squares**; owner OK. **Deferred** — fix when doing proper MP/publish testing; not blocking solo 2d.
 
@@ -399,7 +400,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [ ] `maxPoints` per class/ult (e.g. Juggernaut stomp 150, Speed Blitz 100)
 - [ ] Display still 0–100%; same universal event point awards
 
-**Before slice 5/6 (prefab split — not blocking 2d–4):** Split shared player into **per-class prefab variants** (Option A). Duplicate shared components (`PlayerTackle`, `BallGrab`, `PlayerUltCharge`, HUDs, …) on each; **class-only** ult + preview + wind-up VFX live only on that class prefab. Update **`GameNetworkManager`** to spawn the template matching **`PlayerClass`**. Remove Speedster-only **`BlitzConnectPoseFreeze`** from global auto-add — keep on Speedster prefab or `GetOrCreate` from blitz ult. Do this **before Juggernaut + Sniper** land, not required for Speed Blitz 2d.
+**Before slice 5/6 (prefab split — not blocking 2d–4):** **→ Read [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6 first** (spawn policy, tackle/ult splits, prefab checklist). Then: split shared player into **per-class prefab variants** (Option A). Duplicate shared components (`PlayerTackle`, `BallGrab`, `PlayerUltCharge`, HUDs, …) on each; **class-only** ult + preview + wind-up VFX live only on that class prefab. Update **`GameNetworkManager`** to spawn the template matching **`PlayerClass`**. Remove Speedster-only **`BlitzConnectPoseFreeze`** from global auto-add — keep on Speedster prefab or `GetOrCreate` from blitz ult. Do this **before Juggernaut + Sniper** land, not required for Speed Blitz 2d.
 
 #### Slice 5 — **Juggernaut** ult (ground stomp)
 
