@@ -251,6 +251,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		player.Components.GetOrCreate<BallCompassHud>();
 		player.Components.GetOrCreate<PlayerBallHoldAnim>();
 		player.Components.GetOrCreate<PlayerChargeRunAnim>();
+		player.Components.GetOrCreate<PlayerSpeedBlitzWindUpAnim>();
 		player.Components.GetOrCreate<BlitzConnectPoseFreeze>();
 		player.Components.GetOrCreate<TackleImpactFeel>();
 		player.Components.GetOrCreate<CombatFeelPredictDedupe>();

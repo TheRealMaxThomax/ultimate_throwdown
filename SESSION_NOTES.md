@@ -19,13 +19,12 @@
 
 ## Right now
 
-**Goal:** **Slice 2d** — nearly done. **Solo ✅ (2026-06-18):** wind-up sparks only, **`SpeedBlitzBodyGlow`**, launch **`speedblitzdischargevfx`**. **Left:** Olympic `blitz_windup` pose, **2-window MP** verify.
+**Goal:** **Slice 2d** — **solo ✅ (2026-06-18)** — VFX/SFX/glow/discharge + Olympic **`speedblitz_windup`** pose (`blitz_windup` / `blitz_windup_weight`, **`PlayerSpeedBlitzWindUpAnim`**). **Left:** **2-window MP** verify → then **2d ships**.
 
 **Next session (priority order):**
-1. **2d pose** — Olympic `blitz_windup` + animgraph layer (`blitz_windup` / `blitz_windup_weight`); code weight driver when graph ready
-2. **2-window MP** — wind-up sparks, body glow, discharge, SFX on remotes (connect / miss / interrupt)
-3. **Practice scene** — moving/charging dummies before C1 lag-comp
-4. **Later:** soft ring, aim preview art v3 (`.vmat` telegraph)
+1. **2-window MP (2d sign-off)** — wind-up sparks + **Olympic pose** + body glow + discharge + SFX on remotes (connect / miss / interrupt)
+2. **Practice scene** — moving/charging dummies before C1 lag-comp
+3. **Later:** soft ring, aim preview art v3 (`.vmat` telegraph)
 
 **Works today:**
 - Ball grab/throw — held ball on **`hold_R`** (`BallGrab` + `BallClientFeel`); **throw trajectory preview** + **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **`BallThrow.ThrowReleaseDelaySeconds`** — anim fires on release, ball stays on hand until delay elapses (tune to release frame); **`PlayerBallHoldAnim`** — built-in `holditem` RH hold + medium throw on release (`b_attack`) + **custom charge wind-up via forked animgraph masked layer** (`throw_charge`/`throw_charge_weight` on `utd_citizen_human_m.vanmgrph` scrub `throw_windup`; body keeps locomotion/look-at — **solo verified 2026-06-11**); **ball carrier glow** (`BallCarrierOutline`); **`BallCompassHud`**; **`main_ball`** art WIP (`ball_v2.vmat`); tackles/ragdolls; dodge; **crouch disabled**
@@ -46,7 +45,7 @@
 - **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** + **`ComicLetterExitMotion`**: entrance polish + **14 exit styles** (5 CSS + 7 letter C#); timing via `LifetimeSeconds` / `ExitFadeStartFraction` / `ExitFadeDurationFraction` / `ExitTailSeconds` — **good enough for v1**; MP verify + Les Flos optional
 - **Ult charge (slice 1)** — **`PlayerUltCharge`** + **`UltChargeHud`** on **player prefab** (manual — **not** auto-spawned). Passive regen **`Playing` only**; goal (scorer) + tackle (attacker, **enemy only**); FF tackle **no** charge; % **persists** across rounds; **rematch → 0%**. HUD: floored **%**, white → blue after **`ReadyHighlightDelaySeconds`** at 100%. **`Ultimate`** bound to **X** (ability slice 2).
 - **Speed Blitz (slice 2a/2b/2c ✅)** — **`SpeedsterSpeedBlitzUlt`** + owner **`SpeedBlitzAimPreview`** (blue `#24b0ff` tint); hold X → corridor preview; release → commit; **2c shipped (2026-06-16):** hang, dash cam, connect/launch SFX, **`ComicBurstPalette.Ult`** on launch, ball-strip on carrier connect (intentional), MP remote wind-up/throw anim fix; dash range/speed/feel signed off at current prefab values
-- **Speed Blitz wind-up feel (slice 2d — partial ✅ solo 2026-06-18)** — **`SpeedBlitzWindUpFeel`**: **`speedblitzwindupvfx`** **wind-up only** (off dash / connect hang); **`speedblitzdischargevfx`** on **dasher chest** at ragdoll launch (hit only). **`SpeedBlitzBodyGlow`** + **`SpeedBlitzBodyGlowRenderSystem`**: subtle blue tint + point light (`GetWindUpLerp()` ramp → dash/connect peak → discharge; dasher only; no enemy-outline conflict). **SFX:** electric hard stop at connect, windup rise, dash woosh — **`PlayFeelSoundAt`**. **Pending:** Olympic pose; **2-window MP**
+- **Speed Blitz wind-up feel (slice 2d — solo ✅ 2026-06-18)** — **`SpeedBlitzWindUpFeel`**: **`speedblitzwindupvfx`** **wind-up only** (off dash / connect hang); **`speedblitzdischargevfx`** on **dasher chest** at ragdoll launch (hit only). **`SpeedBlitzBodyGlow`** + render system: tint + point light (`GetWindUpLerp()` ramp → peak → discharge). **`PlayerSpeedBlitzWindUpAnim`**: masked **`speedblitz_windup`** via `blitz_windup` / `blitz_windup_weight` while **`IsWindUp`** (synced). **SFX:** electric hard stop at connect, windup rise, dash woosh — **`PlayFeelSoundAt`**. **Pending:** **2-window MP**
 - **Owner cameras (2026-06-15)** — **`PostCameraSetup`** for all owner FOV (PC resets preference FOV every frame). **`ThrowChargeCamera`** `[Order(10002)]`: charge offset + release blend after ball leaves hand (transition-frame hold — no pop). **`SpeedBlitzDashCamera`** `[Order(10012)]`: idle must **not** stomp **`CameraOffset`** (throw owns offset). **`TackleImpactFeel`**: blitz attacker uses overrides — hitstop freezes **world pose only**; dash cam eases during freeze; no blitz attacker offset/FOV punch (recovery blend owns it). Player tackles unchanged.
 - **MP combat feel predict** — **`CombatFeelPredictDedupe`** (auto on join): client-owner early **`TackleImpactFeel`** for blitz dash, tackle connect, victim freeze (tackle/blitz), traffic ragdoll; host **`NetCombatFeelApplyId`** dedupe. Details → [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md). **2–3 window idle-target soak OK (2026-06-14)**; moving-target fairness → practice scene + Tier C1 later.
 
@@ -81,7 +80,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | Folder | What’s in it |
 |--------|----------------|
 | `Code/Ball/` | Ball pickup, throw, charge bar, trajectory preview (`ThrowReleaseMath`), **`BallCarrierOutline`**, smooth ball on clients |
-| `Code/Player/` | Movement, dodge, tackle, **`CombatFeelPredictDedupe`**, team, class, cosmetics, **`PlayerBallHoldAnim`**, **`PlayerChargeRunAnim`**, **no crouch** |
+| `Code/Player/` | Movement, dodge, tackle, **`CombatFeelPredictDedupe`**, team, class, cosmetics, **`PlayerBallHoldAnim`**, **`PlayerChargeRunAnim`**, **`PlayerSpeedBlitzWindUpAnim`** (2d), **no crouch** |
 | `Code/Network/` | Spawning players when people join |
 | `Code/Match/` | `MatchDirector`, `GoalZone`, `MapMatchConfig` |
 | `Code/Ultimates/` | **`PlayerUltCharge`** (slice 1); **`SpeedsterSpeedBlitzUlt`** (2a–2c); **`SpeedBlitzWindUpFeel`**, **`SpeedBlitzBodyGlow`** (2d) |
@@ -119,7 +118,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Throw charge camera:** **`ThrowChargeCamera`** — `[Order(10002)]` after **`BallThrow`**; offset in `OnUpdate`; FOV in **`PostCameraSetup`**. Holds through **`IsPendingThrowRelease`**, then **`ReleaseCameraBlendDuration`** ease (transition FOV hold — no frame pop). Idle: does **not** touch **`CameraOffset`**. Yields to ragdoll, **`TackleImpactFeel`**, active Speed Blitz.
 - **Speed Blitz dash camera:** **`SpeedBlitzDashCamera`** — wind-up lerp → blended dash spike (`WindUpToDashBlendDurationSeconds`) → on hit **`BeginHitRecoveryBlend()`** (`DashEndBlendDurationSeconds` to baseline at contact). Auto-added by ult. Tune on Speedster prefab.
 - **Speed Blitz connect SFX:** Host picks random **`ConnectImpactSoundA/B`** at dash stop → **`PlaySpeedBlitzConnectImpactSoundRpc`** (all clients). **`LaunchSound`** at ragdoll impulse after hang. Drag-drop **`SoundEvent`** on Speedster prefab.
-- **Speed Blitz wind-up feel (2d):** **`SpeedBlitzWindUpFeel`** — synced **`NetPhase`** / **`IsConnectPoseFrozen`**; **`speedblitzwindupvfx`** clone **wind-up only**; **`speedblitzdischargevfx`** at connect-hang end (launch); **`PlayFeelSoundAt`** (electric / rise / dash); electric **stops at connect**. Tune **Wind-up feel** + **Knockdown feel** (`DischargeVfx*`) on ult.
+- **Speed Blitz wind-up feel (2d):** **`SpeedBlitzWindUpFeel`** — synced **`NetPhase`** / **`IsConnectPoseFrozen`**; **`speedblitzwindupvfx`** clone **wind-up only**; **`speedblitzdischargevfx`** at connect-hang end (launch); **`PlayFeelSoundAt`** (electric / rise / dash); electric **stops at connect**. **`PlayerSpeedBlitzWindUpAnim`** — `blitz_windup` scrub from **`GetWindUpLerp()`**, weight ~**0.3s** in; auto on network spawn. Tune **Wind-up feel** + **Knockdown feel** (`DischargeVfx*`) on ult.
 - **Speed Blitz body glow (2d):** **`SpeedBlitzBodyGlow`** — **`SceneObject.ColorTint`** + optional point light on dasher avatar meshes; **`SpeedBlitzBodyGlowRenderSystem`** applies after LOD lock; no **`HighlightOutline`** (enemy red outline unchanged). Tune **`BodyTintStrength`**, **`ClothingTintStrength`**, **`DischargeFadeSeconds`** on Speedster (auto-added by ult).
 - **Speed Blitz body freeze:** **`BlitzConnectPoseFreeze`** — attacker + victim **`PlaybackRate = 0`** during blitz hang only (`IsConnectPoseFrozen` / `IsAwaitingSpeedBlitzRagdollLaunch`). Optional **`ConnectImpactChargeRunCycle`** snap on dasher.
 - **Owner camera FOV rule:** Never set **`CameraComponent.FieldOfView`** only in `OnUpdate` — use **`PlayerController.IEvents.PostCameraSetup`**. **`CameraOffset`**: set in `OnUpdate` before PC setup; respect **`[Order]`** — idle ult cam must not stomp throw offset.
@@ -159,7 +158,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 11. Spam actions once to probe desync.
 12. **Ult charge:** % creeps in **Playing** only; frozen in celebration/intermission; goal/tackle bumps; FF tackle no bump; persists across rounds; rematch clears; HUD floored % + blue flash at 100%.
 13. **Combat feel predict:** client tackler / dasher / victim / car-hit — juice on contact frame, no double feel; idle targets OK (2026-06-14).
-14. **Speed Blitz 2d (MP):** wind-up sparks only on remotes; body glow ramp/discharge; discharge burst at launch (hit); electric cut + dash woosh; no sparks on dash/connect/miss; wind-up interrupt if tackled.
+14. **Speed Blitz 2d (MP):** wind-up sparks + **Olympic pose** on remotes; body glow ramp/discharge; discharge burst at launch (hit); electric cut + dash woosh; no sparks on dash/connect/miss; wind-up interrupt if tackled.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
 
@@ -355,7 +354,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 #### Slice 2d — Speed Blitz **electric charge** polish (VFX phases + SFX + Olympic pose) — **PARTIAL ✅ (solo 2026-06-18)**
 
-**Shipped:** **`speedblitzwindupvfx`** (wind-up sparks only) + **`speedblitzdischargevfx`** (launch burst) + **`SpeedBlitzWindUpFeel`**; **`SpeedBlitzBodyGlow`** + **`SpeedBlitzBodyGlowRenderSystem`**; electric SFX hard cut at connect; three wind-up sounds via **`PlayFeelSoundAt`**; miss/interrupt cleanup. **Solo sign-off ✅.**
+**Shipped solo:** **`speedblitzwindupvfx`** (wind-up sparks only) + **`speedblitzdischargevfx`** (launch burst) + **`SpeedBlitzWindUpFeel`**; **`SpeedBlitzBodyGlow`** + render system; electric SFX hard cut at connect; **`PlayFeelSoundAt`** wind-up sounds; **`speedblitz_windup`** animgraph layer + **`PlayerSpeedBlitzWindUpAnim`**. **Solo sign-off ✅.**
 
 **Still open:**
 
@@ -363,7 +362,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [x] **Wind-up VFX only** (no dash/connect/hang sparks)
 - [x] **Launch discharge VFX** — dasher chest at ragdoll launch
 - [x] **Body glow** — subtle tint + point light; discharge at launch
-- [ ] **Wind-up pose** — `blitz_windup` + animgraph + code weight driver
+- [x] **Wind-up pose** — `speedblitz_windup` + `blitz_windup` / `blitz_windup_weight` + **`PlayerSpeedBlitzWindUpAnim`**
 - [ ] **2-window MP** verify all phases
 - [ ] **Optional:** soft ring
 
@@ -426,7 +425,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 | **2a** ✅ | Commit, dash, knockdown, walk ramp; **2-window MP OK (2026-06-14)** |
 | **2b** ✅ | Preview owner-only; release aim = dash direction; preview matches hit incl. max range (**2026-06-14**) |
 | **2c** ✅ | Camera + hit recovery ✅; connect crunch + launch boom ✅; body freeze ✅; dash charge_run blend ✅; ult blue comic ✅; MP remote anims ✅; dash tuning signed off (**2026-06-16**) |
-| **2d** | Solo ✅ (2026-06-18): wind-up sparks only, body glow, discharge burst, SFX; pending: **pose**, **2-window MP** |
+| **2d** | Solo ✅ (2026-06-18): sparks, glow, discharge, SFX, **Olympic pose**; pending: **2-window MP** |
 
 ---
 
@@ -457,11 +456,12 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → Speed Blitz 2d finish (Olympic pose, 2-window MP), MULTIPLAYER_NETCODE.md (any net/combat work).
-Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped. Speed Blitz 2c ✅; 2d solo ✅ (2026-06-18) — wind-up sparks only; SpeedBlitzBodyGlow; speedblitzdischargevfx at launch.
+Read SESSION_NOTES.md → Speed Blitz 2d **2-window MP sign-off** (solo ✅ 2026-06-18), MULTIPLAYER_NETCODE.md (any net/combat work).
+Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped. Speed Blitz 2c ✅; 2d solo ✅ — sparks, glow, discharge, Olympic pose (PlayerSpeedBlitzWindUpAnim).
 Owner FOV: PostCameraSetup — not OnUpdate alone. ThrowChargeCamera [10002]; SpeedBlitzDashCamera idle must not stomp CameraOffset.
 2d audio: PlayFeelSoundAt (NOT GameObject.PlaySound). Electric stops at connect crunch. Launch boom = LaunchSound (not speedblitz_dash).
 2d VFX: speedblitzwindupvfx wind-up only; discharge prefab on dasher at launch; no sparks dash/connect/hang.
+2d pose: blitz_windup / blitz_windup_weight; charge_run off during wind-up.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 No GameNetworkManager auto-add for ult components — Speedster prefab manual.
 ```
@@ -472,7 +472,7 @@ No GameNetworkManager auto-add for ult components — Speedster prefab manual.
 
 ## Recent session notes
 
-- **2026-06-18 (Speed Blitz 2d — body glow + discharge):** **`SpeedBlitzBodyGlow`** — `SceneObject.ColorTint` + point light (wind-up ramp → peak → discharge at launch; dasher only). **`SpeedBlitzBodyGlowRenderSystem`** late apply. Wind-up VFX scoped to **wind-up only** (off dash/connect). **`speedblitzdischargevfx`** wired at connect-hang end. Solo sign-off ✅. **Next:** Olympic pose, 2-window MP.
-- **2026-06-16 (night — 2d VFX/SFX sign-off):** electric hard cut at connect ✅; **`speedblitzwindupvfx`** prefab shipped. Detail → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
+- **2026-06-18 (Speed Blitz 2d — Olympic pose):** **`speedblitz_windup`** in `utd_citizen_human_throw.vmdl` + masked layer in `utd_citizen_human_m.vanmgrph` (`blitz_windup` / `blitz_windup_weight`); **`PlayerSpeedBlitzWindUpAnim`** drives scrub from **`GetWindUpLerp()`** while **`IsWindUp`**. Solo sign-off ✅. **Next:** 2-window MP → 2d ships.
+- **2026-06-18 (2d — body glow + discharge):** **`SpeedBlitzBodyGlow`**, wind-up VFX wind-up-only scope, **`speedblitzdischargevfx`** at launch. Detail → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
 Older detail → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).

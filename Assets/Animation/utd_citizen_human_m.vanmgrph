@@ -17863,6 +17863,76 @@
 			{
 				key = 
 				{
+					m_id = 239532148
+				}
+				value = 
+				{
+					_class = "CBlendAnimNode"
+					m_sName = "1D Blendspace C"
+					m_vecPosition = [ 6128.0, -512.0 ]
+					m_nNodeID = 
+					{
+						m_id = 239532148
+					}
+					m_sNote = ""
+					m_children = 
+					[
+						{
+							m_inputConnection = 
+							{
+								m_nodeID = 
+								{
+									m_id = 1994871508
+								}
+								m_outputID = 
+								{
+									m_id = 4294967295
+								}
+							}
+							m_name = "1"
+							m_blendValue = 0.0
+						},
+						{
+							m_inputConnection = 
+							{
+								m_nodeID = 
+								{
+									m_id = 1194940614
+								}
+								m_outputID = 
+								{
+									m_id = 4294967295
+								}
+							}
+							m_name = "2"
+							m_blendValue = 1.0
+						},
+					]
+					m_blendValueSource = "Parameter"
+					m_param = 
+					{
+						m_id = 2118655888
+					}
+					m_blendKeyType = "BlendKey_UserValue"
+					m_bLockBlendOnReset = false
+					m_bSyncCycles = false
+					m_bLoop = true
+					m_bLockWhenWaning = true
+					m_damping = 
+					{
+						_class = "CAnimInputDamping"
+						m_speedFunction = "NoDamping"
+						m_fSpeedScale = 1.0
+						m_fMinSpeed = 10.0
+						m_fMaxTension = 1000.0
+						m_fTension = 100.0
+						m_fDamping = 5.0
+					}
+				}
+			},
+			{
+				key = 
+				{
 					m_id = 255951594
 				}
 				value = 
@@ -17928,6 +17998,27 @@
 						m_fTension = 100.0
 						m_fDamping = 5.0
 					}
+				}
+			},
+			{
+				key = 
+				{
+					m_id = 260320420
+				}
+				value = 
+				{
+					_class = "CSequenceAnimNode"
+					m_sName = "Unnamed"
+					m_vecPosition = [ 6128.0, -672.0 ]
+					m_nNodeID = 
+					{
+						m_id = 260320420
+					}
+					m_sNote = ""
+					m_tagSpans = [  ]
+					m_sequenceName = "speedblitz_windup"
+					m_playbackSpeed = 0.0
+					m_bLoop = false
 				}
 			},
 			{
@@ -28894,7 +28985,7 @@
 					{
 						m_nodeID = 
 						{
-							m_id = 1994871508
+							m_id = 239532148
 						}
 						m_outputID = 
 						{
@@ -35317,6 +35408,39 @@
 							}
 						},
 					]
+				}
+			},
+			{
+				key = 
+				{
+					m_id = 927918325
+				}
+				value = 
+				{
+					_class = "CCycleControlAnimNode"
+					m_sName = "Unnamed"
+					m_vecPosition = [ 6128.0, -624.0 ]
+					m_nNodeID = 
+					{
+						m_id = 927918325
+					}
+					m_sNote = ""
+					m_inputConnection = 
+					{
+						m_nodeID = 
+						{
+							m_id = 260320420
+						}
+						m_outputID = 
+						{
+							m_id = 4294967295
+						}
+					}
+					m_valueSource = "Parameter"
+					m_param = 
+					{
+						m_id = 1762329666
+					}
 				}
 			},
 			{
@@ -43387,6 +43511,59 @@
 							}
 						},
 					]
+				}
+			},
+			{
+				key = 
+				{
+					m_id = 1194940614
+				}
+				value = 
+				{
+					_class = "CBoneMaskAnimNode"
+					m_sName = "Unnamed"
+					m_vecPosition = [ 6128.0, -576.0 ]
+					m_nNodeID = 
+					{
+						m_id = 1194940614
+					}
+					m_sNote = ""
+					m_weightListName = "Everything"
+					m_inputConnection1 = 
+					{
+						m_nodeID = 
+						{
+							m_id = 1994871508
+						}
+						m_outputID = 
+						{
+							m_id = 4294967295
+						}
+					}
+					m_inputConnection2 = 
+					{
+						m_nodeID = 
+						{
+							m_id = 927918325
+						}
+						m_outputID = 
+						{
+							m_id = 4294967295
+						}
+					}
+					m_blendSpace = "BlendSpace_Parent"
+					m_bUseBlendScale = false
+					m_blendValueSource = "Parameter"
+					m_blendParameter = 
+					{
+						m_id = 4294967295
+					}
+					m_timingBehavior = "UseChild2"
+					m_flTimingBlend = 0.5
+					m_flRootMotionBlend = 0.0
+					m_footMotionTiming = "Child1"
+					m_bResetChild1 = true
+					m_bResetChild2 = true
 				}
 			},
 			{
@@ -89867,6 +90044,34 @@
 				m_id = 
 				{
 					m_id = 2090280333
+				}
+				m_previewButton = "ANIMPARAM_BUTTON_NONE"
+				m_bUseMostRecentValue = false
+				m_bAutoReset = false
+				m_fDefaultValue = 0.0
+				m_fMinValue = 0.0
+				m_fMaxValue = 1.0
+			},
+			{
+				_class = "CFloatAnimParameter"
+				m_name = "blitz_windup"
+				m_id = 
+				{
+					m_id = 1762329666
+				}
+				m_previewButton = "ANIMPARAM_BUTTON_NONE"
+				m_bUseMostRecentValue = false
+				m_bAutoReset = false
+				m_fDefaultValue = 0.0
+				m_fMinValue = 0.0
+				m_fMaxValue = 1.0
+			},
+			{
+				_class = "CFloatAnimParameter"
+				m_name = "blitz_windup_weight"
+				m_id = 
+				{
+					m_id = 2118655888
 				}
 				m_previewButton = "ANIMPARAM_BUTTON_NONE"
 				m_bUseMostRecentValue = false

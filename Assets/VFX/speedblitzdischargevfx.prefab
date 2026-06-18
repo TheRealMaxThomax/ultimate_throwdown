@@ -187,7 +187,7 @@
           ],
           "alpha": []
         },
-        "LifeTime": 0.1,
+        "LifeTime": 0.25,
         "MaxPoints": 64,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
