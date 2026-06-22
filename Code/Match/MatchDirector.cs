@@ -49,6 +49,8 @@ public sealed class MatchDirector : Component
 
 	protected override void OnStart()
 	{
+		mapMatchConfig = MapMatchConfig.FindInScene( Scene );
+
 		if ( !Networking.IsHost )
 			return;
 
@@ -98,7 +100,7 @@ public sealed class MatchDirector : Component
 
 		NetLastGoalScoringTeamId = scoringTeamId;
 
-		if ( NetIsOvertime )
+		if ( !IsPracticeArena && NetIsOvertime )
 		{
 			EndMatch( scoringTeamId, "overtime golden goal" );
 			return;
@@ -109,11 +111,14 @@ public sealed class MatchDirector : Component
 		else
 			NetTeam1RoundWins++;
 
-		var roundWins = scoringTeamId == MatchTeamIds.Team0 ? NetTeam0RoundWins : NetTeam1RoundWins;
-		if ( roundWins >= RoundWinsToWinMatch )
+		if ( !IsPracticeArena )
 		{
-			EndMatch( scoringTeamId, $"reached {RoundWinsToWinMatch} round wins" );
-			return;
+			var roundWins = scoringTeamId == MatchTeamIds.Team0 ? NetTeam0RoundWins : NetTeam1RoundWins;
+			if ( roundWins >= RoundWinsToWinMatch )
+			{
+				EndMatch( scoringTeamId, $"reached {RoundWinsToWinMatch} round wins" );
+				return;
+			}
 		}
 
 		BeginGoalCelebration( scoringTeamId );
@@ -135,10 +140,13 @@ public sealed class MatchDirector : Component
 
 	private void ResetMatchState()
 	{
+		if ( !mapMatchConfig.IsValid() )
+			mapMatchConfig = MapMatchConfig.FindInScene( Scene );
+
 		NetPhase = (int)MatchPhase.Playing;
 		NetTeam0RoundWins = 0;
 		NetTeam1RoundWins = 0;
-		NetMatchTimeRemaining = MatchDurationSeconds;
+		NetMatchTimeRemaining = IsPracticeArena ? 0f : MatchDurationSeconds;
 		NetPhaseTimeRemaining = 0f;
 		NetLastGoalScoringTeamId = NoTeam;
 		NetIsOvertime = false;
@@ -149,6 +157,9 @@ public sealed class MatchDirector : Component
 
 	private void TickMatchTimer()
 	{
+		if ( IsPracticeArena )
+			return;
+
 		if ( CurrentPhase != MatchPhase.Playing )
 			return;
 
@@ -313,6 +324,11 @@ public sealed class MatchDirector : Component
 
 		return null;
 	}
+
+	private bool IsPracticeArena =>
+		mapMatchConfig.IsValid() && mapMatchConfig.PracticeArenaMode;
+
+	private MapMatchConfig mapMatchConfig;
 
 	private GameNetworkManager ResolveNetworkManager()
 	{

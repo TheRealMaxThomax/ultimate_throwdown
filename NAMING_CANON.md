@@ -31,7 +31,7 @@
 
 | Name | Job |
 |------|-----|
-| `MapMatchConfig` | Per-map team display names (`Team0DisplayName`, `Team1DisplayName`) |
+| `MapMatchConfig` | Per-map team display names; **`PracticeArenaMode`** + **`PracticeSpawnTeamId`** on practice maps only (unlimited clock/goals, single-team spawns) |
 | `MatchTeamIds` | Constants `Team0` / `Team1` (ids `0` / `1`) |
 | `MatchDirector` | Phase state machine, round wins, match timer, debug force goal |
 | `MatchPhase` | Enum: `Playing`, `GoalCelebration`, `Intermission`, `MatchOver` |

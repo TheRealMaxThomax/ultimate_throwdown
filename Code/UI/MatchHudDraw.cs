@@ -25,6 +25,12 @@ public static class MatchHudDraw
 		return false;
 	}
 
+	/// <summary> Top score + clock HUDs hide on practice maps (<see cref="MapMatchConfig.PracticeArenaMode"/>). </summary>
+	public static bool ShowTopMatchHud( MapMatchConfig config )
+	{
+		return !config.IsValid() || !config.PracticeArenaMode;
+	}
+
 	/// <summary> Minutes + zero-padded seconds, e.g. 10.00 → 9.59 → 9.58. </summary>
 	public static string FormatMatchClock( float secondsRemaining, bool isOvertime )
 	{

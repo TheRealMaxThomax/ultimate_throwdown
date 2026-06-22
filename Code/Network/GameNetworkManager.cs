@@ -309,6 +309,10 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 	private int AssignTeamForConnection( Connection connection )
 	{
+		var config = ResolveMapMatchConfig();
+		if ( config.IsValid() && config.PracticeArenaMode )
+			return config.ResolveSpawnTeamId( MatchTeamIds.Team0 );
+
 		var steamId = (long)connection.SteamId;
 		if ( preferredTeamBySteamId.TryGetValue( steamId, out var preferredTeam ) && MatchTeamIds.IsValid( preferredTeam ) )
 			return preferredTeam;
@@ -453,6 +457,10 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 	private Transform GetSpawnTransformForTeam( int teamId, int teamSlotIndex )
 	{
+		var config = ResolveMapMatchConfig();
+		if ( config.IsValid() && config.PracticeArenaMode )
+			teamId = config.ResolveSpawnTeamId( teamId );
+
 		var spawnList = teamId == MatchTeamIds.Team0 ? Team0Spawns : Team1Spawns;
 		var freePoint = PickFreeSpawnPoint( spawnList, teamId );
 		Transform t;

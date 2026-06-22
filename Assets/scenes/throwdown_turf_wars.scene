@@ -166,7 +166,7 @@
                 "go": "3b48003a-a639-45e7-aafb-6c72d40b2e98"
               },
               "DebugForceGoalAction": "DebugForceGoal",
-              "EnableDebugForceGoal": true,
+              "EnableDebugForceGoal": false,
               "EnableMatchDebugLogs": true,
               "GoalCelebrationSeconds": 5,
               "IntermissionSeconds": 20,

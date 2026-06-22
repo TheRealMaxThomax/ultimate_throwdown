@@ -17,6 +17,9 @@ public sealed class MatchScoreHud : Component
 		if ( !MatchHudDraw.TryGetHudState( Scene, out var team, out var config ) )
 			return;
 
+		if ( !MatchHudDraw.ShowTopMatchHud( config ) )
+			return;
+
 		if ( team.SyncedMatchPhase == MatchPhase.MatchOver )
 			return;
 

@@ -14,7 +14,10 @@ public sealed class MatchClockHud : Component
 		if ( Scene.Camera is null )
 			return;
 
-		if ( !MatchHudDraw.TryGetHudState( Scene, out var team, out _ ) )
+		if ( !MatchHudDraw.TryGetHudState( Scene, out var team, out var config ) )
+			return;
+
+		if ( !MatchHudDraw.ShowTopMatchHud( config ) )
 			return;
 
 		if ( team.SyncedMatchPhase == MatchPhase.MatchOver )
