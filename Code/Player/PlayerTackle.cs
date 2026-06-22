@@ -639,7 +639,7 @@ public sealed class PlayerTackle : Component
 
 	/// <summary>Host: hazard knockdown (traffic, etc.) — same ragdoll path as tackle without attacker bookkeeping.</summary>
 	/// <returns><c>true</c> if knockdown started.</returns>
-	public bool ApplyKnockdownFromHost( Vector3 launchDir, float launchSpeed, float launchArc = -1f, PlayerTackle attacker = null, float? preLaunchPauseSecondsOverride = null )
+	public bool ApplyKnockdownFromHost( Vector3 launchDir, float launchSpeed, float launchArc = -1f, PlayerTackle attacker = null, float? preLaunchPauseSecondsOverride = null, float? preLaunchPauseStartedAt = null )
 	{
 		if ( !Networking.IsHost )
 			return false;
@@ -649,7 +649,7 @@ public sealed class PlayerTackle : Component
 			return false;
 
 		var arc = launchArc >= 0f ? launchArc : TackleLaunchArc;
-		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, HazardKnockdownComicPower, attackerGrabForCarrierLockout: null, attacker, preLaunchPauseSecondsOverride );
+		ApplyVictimKnockdownFromHost( this, launchDir, launchSpeed, arc, HazardKnockdownComicPower, attackerGrabForCarrierLockout: null, attacker, preLaunchPauseSecondsOverride, preLaunchPauseStartedAt );
 		return true;
 	}
 
@@ -695,7 +695,8 @@ public sealed class PlayerTackle : Component
 		float tacklePowerForBall,
 		BallGrab attackerGrabForCarrierLockout,
 		PlayerTackle attacker,
-		float? preLaunchPauseSecondsOverride = null )
+		float? preLaunchPauseSecondsOverride = null,
+		float? preLaunchPauseStartedAt = null )
 	{
 		CapturePracticeNpcPreTacklePoseIfTagged( victim );
 
@@ -773,7 +774,17 @@ public sealed class PlayerTackle : Component
 			victim.NetIsRagdolled = true;
 		}
 
-		SpawnRagdollObject( victim, launchDir, effectiveLaunchSpeed, launchArc, usePreLaunchPause, effectivePreLaunchPause, speedBlitzKnockdown, attacker, tacklePowerForBall );
+		SpawnRagdollObject(
+			victim,
+			launchDir,
+			effectiveLaunchSpeed,
+			launchArc,
+			usePreLaunchPause,
+			effectivePreLaunchPause,
+			speedBlitzKnockdown,
+			attacker,
+			tacklePowerForBall,
+			preLaunchPauseStartedAt );
 		HandleRagdollRecovery( victim );
 	}
 
@@ -784,14 +795,18 @@ public sealed class PlayerTackle : Component
 		SpeedsterSpeedBlitzUlt.PlayLaunchSoundAt( worldPosition, sound, volume );
 	}
 
-	internal void BroadcastSpeedBlitzConnectImpactSound( Vector3 worldPosition, string soundResourcePath, float volume )
+	internal void BroadcastSpeedBlitzConnectImpactSound( Vector3 worldPosition, string soundResourcePath, float volume, Guid dasherRootId )
 	{
-		PlaySpeedBlitzConnectImpactSoundRpc( worldPosition, soundResourcePath, volume );
+		PlaySpeedBlitzConnectImpactSoundRpc( worldPosition, soundResourcePath, volume, dasherRootId );
 	}
 
 	[Rpc.Broadcast]
-	private void PlaySpeedBlitzConnectImpactSoundRpc( Vector3 worldPosition, string soundResourcePath, float volume )
+	private void PlaySpeedBlitzConnectImpactSoundRpc( Vector3 worldPosition, string soundResourcePath, float volume, Guid dasherRootId )
 	{
+		if ( dasherRootId != Guid.Empty
+			&& SpeedsterSpeedBlitzUlt.TryConsumeHostConnectSoundDedupeForDasher( Scene, dasherRootId ) )
+			return;
+
 		var sound = ResourceLibrary.Get<SoundEvent>( soundResourcePath );
 		SpeedsterSpeedBlitzUlt.PlayConnectImpactSoundAt( worldPosition, sound, volume );
 	}
@@ -887,8 +902,14 @@ public sealed class PlayerTackle : Component
 		float preLaunchPauseSeconds,
 		bool speedBlitzKnockdown = false,
 		PlayerTackle attacker = null,
-		float comicTacklePower = 0f )
+		float comicTacklePower = 0f,
+		float? preLaunchPauseStartedAt = null )
 	{
+		// Pause timer starts at knockdown — body init runs in parallel so launch aligns with connect hang end.
+		var pauseStartedAt = usePreLaunchPause
+			? (preLaunchPauseStartedAt ?? Time.Now)
+			: 0f;
+
 		var ragdollGo = new GameObject( true, "PlayerRagdoll" );
 		var spawnPos = usePreLaunchPause ? victim.NetKnockdownFreezePosition : victim.WorldPosition + Vector3.Up * 10f;
 		ragdollGo.WorldPosition = spawnPos;
@@ -942,10 +963,15 @@ public sealed class PlayerTackle : Component
 
 			FreezeRagdollPhysics( ragdollPhysics );
 
-			if ( EnableTackleDebugLogs )
-				Log.Info( $"[Tackle] Pre-launch pause | bodies={bodiesReady} pause={pause * 1000f:F0}ms victim-visible" );
+			var elapsedPause = Time.Now - pauseStartedAt;
+			var remainingPause = Math.Max( 0f, pause - elapsedPause );
 
-			await GameTask.DelaySeconds( pause );
+			if ( EnableTackleDebugLogs )
+				Log.Info( $"[Tackle] Pre-launch pause | bodies={bodiesReady} pause={pause * 1000f:F0}ms remaining={remainingPause * 1000f:F0}ms victim-visible" );
+
+			if ( remainingPause > 0.0001f )
+				await GameTask.DelaySeconds( remainingPause );
+
 			if ( !ragdollGo.IsValid() || !victim.IsValid() )
 				return;
 
@@ -955,6 +981,8 @@ public sealed class PlayerTackle : Component
 
 			if ( speedBlitzKnockdown && launched && Networking.IsHost )
 			{
+				attacker?.Components.Get<SpeedsterSpeedBlitzUlt>()?.EndConnectHangOnHostAtLaunch();
+
 				victim.PlaySpeedBlitzLaunchSoundRpc(
 					spawnPos,
 					SpeedsterSpeedBlitzUlt.ResolveLaunchSoundResourcePath( attacker ),

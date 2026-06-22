@@ -63,10 +63,35 @@ public sealed class SpeedBlitzBodyGlow : Component
 	protected override void OnUpdate()
 	{
 		TickGlowState();
-		TickPointLight();
+		SyncPointLightToGlowState();
 
 		if ( !WantsPreDrawGlow && IsGlowVisualActive )
 			RestorePreDrawGlow();
+	}
+
+	/// <summary> Render-system safety net — proxies must not keep a stale local point light after glow ends. </summary>
+	internal void SyncPointLightToGlowState()
+	{
+		if ( !EnablePointLight || !shouldRenderGlow || renderIntensity <= 0.001f )
+		{
+			DestroyPointLight();
+			return;
+		}
+
+		EnsurePointLight();
+		if ( !pointLight.IsValid() )
+			return;
+
+		pointLight.Enabled = true;
+		var visual = renderIntensity.Clamp( 0f, 1f );
+		var brightness = PointLightBrightnessMax * visual;
+		pointLight.LightColor = new Color(
+			GlowColor.r * brightness,
+			GlowColor.g * brightness,
+			GlowColor.b * brightness,
+			1f );
+		pointLight.Radius = PointLightRadius;
+		pointLight.Attenuation = 3.5f;
 	}
 
 	/// <summary> Called from <see cref="SpeedBlitzBodyGlowRenderSystem"/> after LOD lock, right before draw. </summary>
@@ -231,6 +256,7 @@ public sealed class SpeedBlitzBodyGlow : Component
 		missFadeDuration = 0f;
 		dischargeFadeUntil = 0f;
 		dischargeFadeDuration = 0f;
+		DestroyPointLight();
 	}
 
 	private void BeginMissFade()
@@ -293,47 +319,18 @@ public sealed class SpeedBlitzBodyGlow : Component
 		return true;
 	}
 
-	private void TickPointLight()
-	{
-		if ( !EnablePointLight || !shouldRenderGlow || renderIntensity <= 0.001f )
-		{
-			DisablePointLight();
-			return;
-		}
-
-		EnsurePointLight();
-		if ( !pointLight.IsValid() )
-			return;
-
-		pointLight.Enabled = true;
-		var visual = renderIntensity.Clamp( 0f, 1f );
-		var brightness = PointLightBrightnessMax * visual;
-		pointLight.LightColor = new Color(
-			GlowColor.r * brightness,
-			GlowColor.g * brightness,
-			GlowColor.b * brightness,
-			1f );
-		pointLight.Radius = PointLightRadius;
-		pointLight.Attenuation = 3.5f;
-	}
-
 	private void EnsurePointLight()
 	{
 		if ( pointLight.IsValid() )
 			return;
 
 		pointLightObject = new GameObject( true, "SpeedBlitzBodyGlowLight" );
+		pointLightObject.NetworkMode = NetworkMode.Never;
 		pointLightObject.Parent = GameObject;
 		pointLightObject.LocalPosition = PointLightLocalOffset;
 		pointLightObject.LocalRotation = Rotation.Identity;
 		pointLight = pointLightObject.Components.Create<PointLight>();
 		pointLight.Shadows = false;
-	}
-
-	private void DisablePointLight()
-	{
-		if ( pointLight.IsValid() )
-			pointLight.Enabled = false;
 	}
 
 	private void DestroyPointLight()
@@ -390,6 +387,8 @@ public sealed class SpeedBlitzBodyGlowRenderSystem : GameObjectSystem<SpeedBlitz
 				glow.ApplyPreDrawGlow();
 			else if ( glow.IsGlowVisualActive )
 				glow.RestorePreDrawGlow();
+
+			glow.SyncPointLightToGlowState();
 		}
 	}
 }

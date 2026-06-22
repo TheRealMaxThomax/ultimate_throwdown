@@ -203,6 +203,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private Vector3 ownerDashCorridorOrigin;
 	private Vector3 ownerLastLocalDashCheckPos;
 	private bool ownerPredictedHitThisDash;
+	private bool ownerPredictedConnectSoundThisDash;
 	private float ownerConnectPoseFreezeUntil;
 
 	private PlayerUltCharge ultCharge;
@@ -429,6 +430,12 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		NetConnectVictimId = Guid.Empty;
 	}
 
+	/// <summary> Host: sync connect hang off when ragdoll launches so remotes drop glow / point light promptly. </summary>
+	internal void EndConnectHangOnHostAtLaunch()
+	{
+		ClearConnectPoseFreezeOnHost();
+	}
+
 	private static Vector3 GetBlitzConnectImpactSoundPosition( Vector3 dasherStopPosition, PlayerTackle victim )
 	{
 		if ( !victim.IsValid() )
@@ -450,7 +457,45 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		victim.BroadcastSpeedBlitzConnectImpactSound(
 			contactPos,
 			PickConnectImpactSoundResourcePath(),
-			ConnectImpactSoundVolume.Clamp( 0f, 2f ) );
+			ConnectImpactSoundVolume.Clamp( 0f, 2f ),
+			GameObject.Id );
+	}
+
+	/// <summary> Client-owner dasher already played crunch on predict — skip host broadcast duplicate. </summary>
+	internal static bool TryConsumeHostConnectSoundDedupeForDasher( Scene scene, Guid dasherRootId )
+	{
+		if ( scene is null || dasherRootId == Guid.Empty )
+			return false;
+
+		foreach ( var ult in scene.GetAllComponents<SpeedsterSpeedBlitzUlt>() )
+		{
+			if ( !ult.IsValid() || ult.GameObject.Id != dasherRootId || !ult.Network.IsOwner )
+				continue;
+
+			return ult.TryConsumeHostConnectSoundDedupe();
+		}
+
+		return false;
+	}
+
+	private bool TryConsumeHostConnectSoundDedupe()
+	{
+		if ( !ownerPredictedConnectSoundThisDash )
+			return false;
+
+		ownerPredictedConnectSoundThisDash = false;
+		return true;
+	}
+
+	private void OwnerPlayPredictedConnectImpactSound( PlayerTackle victim, Vector3 dasherStopPosition )
+	{
+		if ( Networking.IsHost || ownerPredictedConnectSoundThisDash )
+			return;
+
+		var contactPos = GetBlitzConnectImpactSoundPosition( dasherStopPosition, victim );
+		var sound = ResourceLibrary.Get<SoundEvent>( PickConnectImpactSoundResourcePath() );
+		PlayConnectImpactSoundAt( contactPos, sound, ConnectImpactSoundVolume.Clamp( 0f, 2f ) );
+		ownerPredictedConnectSoundThisDash = true;
 	}
 
 	private float DashDurationSeconds => (DashRange / MathF.Max( DashSpeed, 1f )).Clamp( 0.05f, 6f );
@@ -526,7 +571,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	private void HostUpdate()
 	{
 		if ( NetConnectPoseFreezeUntil > 0f && Time.Now >= NetConnectPoseFreezeUntil )
-			NetConnectVictimId = Guid.Empty;
+			ClearConnectPoseFreezeOnHost();
 
 		switch ( NetPhase )
 		{
@@ -756,7 +801,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			Components.Get<SpeedBlitzDashCamera>()?.BeginHitRecoveryBlend();
 		}
 
-		BeginConnectPoseFreezeOnHost();
+		var connectPauseStartedAt = BeginConnectPoseFreezeOnHost();
 
 		var victimBody = victim.Components.Get<Rigidbody>();
 		if ( victimBody.IsValid() )
@@ -766,7 +811,13 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		if ( victimController.IsValid() )
 			victimController.WishVelocity = Vector3.Zero;
 
-		victim.ApplyKnockdownFromHost( knockDir, KnockdownLaunchSpeed, KnockdownLaunchArc, playerTackle, KnockdownPreLaunchPauseSeconds );
+		victim.ApplyKnockdownFromHost(
+			knockDir,
+			KnockdownLaunchSpeed,
+			KnockdownLaunchArc,
+			playerTackle,
+			KnockdownPreLaunchPauseSeconds,
+			connectPauseStartedAt );
 		hostHasHitTarget = true;
 
 		if ( EnableSpeedBlitzDebugLogs )
@@ -1169,9 +1220,11 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			knockDir = knockDir.Normal;
 
 		SnapDasherToDashHitContact( victim, victimAlong, ownerDashCorridorOrigin, knockDir );
-		ownerLastLocalDashCheckPos = GameObject.WorldPosition;
+		var dasherStopPosition = GameObject.WorldPosition;
+		ownerLastLocalDashCheckPos = dasherStopPosition;
 
 		ownerPredictedHitThisDash = true;
+		OwnerPlayPredictedConnectImpactSound( victim, dasherStopPosition );
 		ownerDashMovementBlocked = true;
 		OwnerZeroHorizontalVelocity();
 		BeginConnectPoseFreezeForOwnerPredict();
@@ -1191,6 +1244,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		ownerHasLocalDashCheckPos = false;
 		ownerDashCorridorOrigin = default;
 		ownerPredictedHitThisDash = false;
+		ownerPredictedConnectSoundThisDash = false;
 	}
 
 	// ---------------------------------------------------------------------
@@ -1341,12 +1395,14 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		return MathF.Max( NetConnectPoseFreezeUntil, ownerConnectPoseFreezeUntil );
 	}
 
-	private void BeginConnectPoseFreezeOnHost()
+	private float BeginConnectPoseFreezeOnHost()
 	{
 		if ( !Networking.IsHost )
-			return;
+			return 0f;
 
-		NetConnectPoseFreezeUntil = Time.Now + KnockdownPreLaunchPauseSeconds.Clamp( 0f, 1.5f );
+		var startedAt = Time.Now;
+		NetConnectPoseFreezeUntil = startedAt + KnockdownPreLaunchPauseSeconds.Clamp( 0f, 1.5f );
+		return startedAt;
 	}
 
 	private void BeginConnectPoseFreezeForOwnerPredict()
