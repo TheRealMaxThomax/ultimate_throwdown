@@ -10,7 +10,7 @@
   "TimeToSprintSpeed": 2.25,
   "TimeToCatchUpSpeed": 4.25,
   "TimeToCatchUpSpeedAfterRagdoll": 0,
-  "TimeToCatchUpSpeedAfterAttack": 4,
+  "TimeToCatchUpSpeedAfterAttack": 0,
   "MomentumMultiplier": 1,
   "ThrowPower": 1.3,
   "ThrowChargeSpeedScale": 1.2,

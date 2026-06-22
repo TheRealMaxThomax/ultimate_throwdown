@@ -81,11 +81,6 @@ public sealed class PlayerTackle : Component
 	/// <summary>Host-authoritative; owners read this so remote tackle RPCs line up with cooldown.</summary>
 	[Sync( SyncFlags.FromHost )]
 	private float NetTackleBlockedUntil { get => netTackleBlockedUntil; set => netTackleBlockedUntil = value; }
-	/// <summary>Increments on host when this pawn lands a tackle; owning <see cref="CatchUpSpeedBoost"/> resets charge ramp (drop to sprint tier).</summary>
-	private int netTackleStripRampId;
-	[Sync( SyncFlags.FromHost )]
-	private int NetTackleStripRampId { get => netTackleStripRampId; set => netTackleStripRampId = value; }
-
 	/// <summary>Host-authored; replicated. After ragdoll stand-up: sprint→charge uses <see cref="ClassData.TimeToCatchUpSpeedAfterRagdoll"/>.</summary>
 	private float netPostRagdollSlowCatchUpUntil;
 	[Sync( SyncFlags.FromHost )]
@@ -157,8 +152,6 @@ public sealed class PlayerTackle : Component
 	public bool IsAwaitingSpeedBlitzRagdollLaunch => netAwaitingRagdollLaunch && netLastKnockdownWasSpeedBlitz;
 	/// <summary> Owning client: easing main camera from ragdoll orbit back to <see cref="PlayerController"/> third-person. </summary>
 	public bool IsStandUpCameraBlending => standUpCameraBlendStartTime >= 0f;
-	/// <summary>Host bumps after successful tackles; <see cref="CatchUpSpeedBoost"/> consumes changes to strip charge speed.</summary>
-	public int TackleStripRampSequence => netTackleStripRampId;
 	public bool IsPostRagdollSlowCatchUpRampActive => netPostRagdollSlowCatchUpUntil > 0f && Time.Now < netPostRagdollSlowCatchUpUntil;
 	public bool IsPostAttackSlowCatchUpRampActive => netPostAttackSlowCatchUpUntil > 0f && Time.Now < netPostAttackSlowCatchUpUntil;
 
@@ -659,7 +652,8 @@ public sealed class PlayerTackle : Component
 		{
 			Components.Get<PlayerUltCharge>()?.TryGrantTackleChargeOnHost( victim );
 
-			NetTackleStripRampId++;
+			speedBoost ??= Components.Get<CatchUpSpeedBoost>();
+			speedBoost?.TriggerForceWalkRampOnHost();
 			var atkClass = playerClass?.CurrentClass;
 			var atkSlow = atkClass?.TimeToCatchUpSpeedAfterAttack ?? 0f;
 			if ( atkSlow > 0f && PostAttackCatchUpRampDuration > 0f )

@@ -29,7 +29,7 @@
 - **2026-05-06** — Tackle direction toward victim; pelvis `ApplyImpulse`; disable capsule immediately; separate ragdoll GO; ragdoll clothing via `BoneMergeTarget`; client tackle RPC.
 - **2026-05-18** — MP launch parity: poll bodies → impulse → `NetworkSpawn` (not spawn-then-fixed-delay). Owner `ownerTackleChargeBonus` in `RequestTackleApplyOnHost`. **Don’t** use `StartAsleep` or collision-sound mute without explicit wake — zero launch.
 - **2026-05-07** — Ragdoll camera + stand-up blend; ball XOR weapon (future); weapon speed penalties (future).
-- **2026-05-08** — Dodge + whiff design linked; dodge shove from `EyeAngles.ToRotation().Right`; `PlayerDodge` in `CatchUpSpeedBoost.cs`.
+- **2026-05-08** — Dodge shove from `EyeAngles.ToRotation().Right`; `PlayerDodge` in `CatchUpSpeedBoost.cs`.
 - **2026-05-10** — `practice_npc` tag; `Network.IsOwner` for camera; momentum multiplier; forward intent for charge.
 - **2026-06-06** — Stand up when grounded + settled; `RagdollMaxDuration` cap.
 

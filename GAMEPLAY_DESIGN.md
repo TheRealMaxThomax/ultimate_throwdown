@@ -17,7 +17,6 @@
 | Throw cooldown | **Not planned** — `PickupDelayAfterThrow` only blocks instant re-grab after release |
 | Tackle + ragdoll | Built (launch strength still tuning) |
 | Dodge (double-tap strafe) | Built |
-| Tackle whiff (miss penalty) | **Deferred** — not building unless playtests need it |
 | Teams + team spawns (balance on join) | **Built** — see [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) |
 | Match phases (celebration / intermission / timer / OT) | **Built** — `MatchDirector` |
 | Goal zones + dwell scoring | **Built** — `GoalZone`; own-goal impossible by `DefendingTeam` |
@@ -73,25 +72,6 @@ Think of three gears:
 **Design goal:** Dodge should reward good timing, not let carriers jog to the goal by spamming dodge. Throwing/passing should stay the main way to advance.
 
 **Tuning knobs (change one at a time in playtests):** shove strength, cooldown, iframe length, how long until charge returns.
-
----
-
-## Tackle whiff (deferred)
-
-**Decision (2026-05-18):** **Not building now.** Dodge + **charge yaw** (`ChargeYawMaxDegreesPerSecond` on `CatchUpSpeedBoost`) already buy the carrier time to throw, run, or dodge again after cooldown. Revisit only if playtests show chargers getting unfair second tackles too often.
-
-**Counterplay today (no whiff code):**
-- Carrier dodge → **walk** + dodge cooldown
-- Attacker at charge keeps speed but **slow turn** to re-aim after a lateral dodge
-- Attacker pays full cost only when a tackle **lands** (charge strip, tackle cooldown)
-
-**If we add it later (preferred shape — not the old attacker-sprint idea):**
-- **Outer / inner zone** — host tracks “committed” threaten state when attacker is inner range
-- On committed miss (dodge out, iframe, peel off, no tackle landed): **ball carrier stays at sprint** instead of dodge’s usual drop to walk
-- **Do not** drop the attacker to sprint — they keep charge; re-chase cost stays mostly **yaw + time**
-- Still pairs with `PlayerDodge` iframe (no hit during iframe; whiff = tier outcome on carrier, not a second attacker penalty)
-
-**Skill idea (unchanged):** Late dodge when attacker is already close = good for carrier. Early dodge while attacker is still far = attacker can adjust.
 
 ---
 
@@ -198,7 +178,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 ### Voided / not planned
 
-- **Speedster dodge-reward** / stay-at-run-speed ult — voided (no tackle-whiff system).
+- **Speedster dodge-reward** / stay-at-run-speed ult — voided.
 - **Throw** granting ult charge — not planned.
 
 ### Ship order (first pass)
@@ -288,8 +268,6 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 | **Juggernaut** | Ground stomp | AOE knockdown around self |
 | **Sniper** | Path zones (name TBD) | Ball throw creates ragdoll zones along path; requires ball |
 
-Speedster dodge-reward / stay-at-run-speed ult idea is **voided** — no tackle-whiff system planned.
-
 ---
 
 ## Weapons (future — not built)
@@ -306,7 +284,6 @@ Speedster dodge-reward / stay-at-run-speed ult idea is **voided** — no tackle-
 - Good dodge should sometimes force a missed tackle — not every time
 - Good tackles should still land often enough to feel fair
 - Carriers shouldn’t reliably dodge past **every** defender to score; passing matters
-- Whiff is optional tuning later; don’t ship it until charge yaw + dodge numbers are settled in real 2-player tests
 
 For exact field names on `ClassData`, see [`NAMING_CANON.md`](NAMING_CANON.md). Ult component names → [`NAMING_CANON.md`](NAMING_CANON.md) (`Code/Ultimates/`) when built.
 

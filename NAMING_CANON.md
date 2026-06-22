@@ -101,7 +101,7 @@
 
 **Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `NetIsRagdolled`, **`IsAwaitingRagdollLaunch`**, **`IsAwaitingSpeedBlitzRagdollLaunch`**, **`IsKnockedDown`**, **`NetLastKnockdownWasHazard`** (host — hazard vs player knockdown for client victim predict), `IsTackleImmune`, `SetHostTackleImmune(bool)`, `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay`, **`PreLaunchPauseSeconds`**, `ApplyKnockdownFromHost()`; RPC `RequestTackleApplyOnHost`; owner RPCs `TriggerTackleImpactFeelAsAttackerRpc(combatFeelApplyId)` / `TriggerTackleImpactFeelAsVictimRpc(combatFeelApplyId, hazardKnockdown)` → `TackleImpactFeel` + **`CombatFeelPredictDedupe`**; blitz SFX **`BroadcastSpeedBlitzConnectImpactSound`** / **`PlaySpeedBlitzConnectImpactSoundRpc`**, **`PlaySpeedBlitzLaunchSoundRpc`**
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
-**Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`, `TriggerForceWalkRampOnHost()` (host — force owner ramp back to walk, e.g. Speed Blitz miss)  
+**Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`, `TriggerForceWalkRampOnHost()` (host — force owner ramp back to walk: tackle connect, knockdown, Speed Blitz end)  
 **Tag for test dummies only:** `practice_npc`
 
 ---

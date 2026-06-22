@@ -47,7 +47,6 @@ public sealed class CatchUpSpeedBoost : Component
 	private PlayerDodge playerDodge;
 	private SpeedsterSpeedBlitzUlt speedBlitzUlt;
 	private int dodgeRampApplySeqHandled;
-	private int tackleRampStripSeqHandled;
 	private int forceWalkRampSeqHandled;
 	private float forwardMoveTime;
 	private float nonHoldingSprintTime;
@@ -106,7 +105,7 @@ public sealed class CatchUpSpeedBoost : Component
 	[Sync] private bool NetAtChargeSpeed { get; set; }
 	public bool IsAtChargeSpeed => Network.IsOwner ? ownerAtChargeSpeed : NetAtChargeSpeed;
 
-	/// <summary> Host bumps to force owner ramp back to walk (e.g. Speed Blitz miss). </summary>
+	/// <summary> Host bumps to force owner ramp back to walk (tackle connect, knockdown, Speed Blitz end). </summary>
 	private int netForceWalkRampId;
 	[Sync( SyncFlags.FromHost )]
 	private int NetForceWalkRampId { get => netForceWalkRampId; set => netForceWalkRampId = value; }
@@ -185,8 +184,6 @@ public sealed class CatchUpSpeedBoost : Component
 		playerClass = Components.Get<PlayerClass>();
 		playerDodge = Components.Get<PlayerDodge>();
 		dodgeRampApplySeqHandled = playerDodge?.DodgeApplySequence ?? 0;
-		playerTackle = Components.Get<PlayerTackle>();
-		tackleRampStripSeqHandled = playerTackle?.TackleStripRampSequence ?? 0;
 		forceWalkRampSeqHandled = NetForceWalkRampId;
 		if ( playerController.IsValid() )
 		{
@@ -242,7 +239,6 @@ public sealed class CatchUpSpeedBoost : Component
 			speedBlitzUlt = Components.Get<SpeedsterSpeedBlitzUlt>();
 
 		ApplySyncedDodgeRampPulse();
-		ApplySyncedTackleStripPulse();
 		ApplySyncedForceWalkRampPulse();
 
 		playerTackle ??= Components.Get<PlayerTackle>();
@@ -620,20 +616,7 @@ public sealed class CatchUpSpeedBoost : Component
 		}
 	}
 
-	/// <summary>Host bumps tackle strip counter on hit; owner resets charge tier like dodge <c>StripChargeKeepSprint</c>.</summary>
-	private void ApplySyncedTackleStripPulse()
-	{
-		playerTackle ??= Components.Get<PlayerTackle>();
-		if ( playerTackle == null )
-			return;
-		var seq = playerTackle.TackleStripRampSequence;
-		if ( seq == tackleRampStripSeqHandled )
-			return;
-		tackleRampStripSeqHandled = seq;
-		nonHoldingSprintTime = 0f;
-	}
-
-	/// <summary>Host bumps force-walk counter (e.g. Speed Blitz miss); owner resets full ramp to walk.</summary>
+	/// <summary>Host bumps force-walk counter; owner resets full ramp to walk.</summary>
 	private void ApplySyncedForceWalkRampPulse()
 	{
 		var seq = NetForceWalkRampId;

@@ -51,7 +51,7 @@
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
-**Still later:** Tackle tuning, map vote (30s, all players, `Slot1`–`N`), tackle whiff deferred → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md).
+**Still later:** Tackle tuning, map vote (30s, all players, `Slot1`–`N`).
 
 **Avatar (WIP):** On branch **`feature/human-avatar`**, Player **Body** uses **`citizen_human_*`** (`models/citizen/citizen_human/`) + human locomotion graph — **not** `citizen.vmdl` / **`citizen_holdball_test`**. Male/female from account via **`PlayerCosmeticsSync`** / `ClothingContainer`; no dual-body v1. Solo + 2-window MP: cosmetics, tackle ragdoll, launch distance OK vs old citizen. **Leaning human for release** (goofy tone from gameplay, not silhouette); merge TBD.
 
@@ -128,7 +128,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Walk into the ball = pick it up.** No kick button. While held, ball follows **`hold_R`** on **Body** `SkinnedModelRenderer` (`BallGrab.HoldBoneName`; falls back to `HoldAnchor`). Old `HandHoldPoint` + `citizen_holdball_test` IK was for classic citizen — human uses bone attach.
 - **Ball carrier hold/throw anim (v1):** **`PlayerBallHoldAnim`** — **`holditem`** + **RH** while holding; on release **`b_attack`** (built-in medium throw). **`ThrowPoseHoldSeconds`** / **`ThrowPlaybackRate`**; **`BallThrow.ThrowReleaseDelaySeconds`** delays ball velocity. Charge = masked **`throw_windup`** layer on forked **`utd_citizen_human_m.vanmgrph`** (`throw_charge` / `throw_charge_weight`; body alive). Sequences on **`utd_citizen_human_throw.vmdl`**. Auto-added on network spawn.
 - **Online: the host is the referee** — clients request; host decides.
-- **Tackles:** Only at full charge speed (`NetAtChargeSpeed`). Host ragdoll + client **request** RPC. **`PreLaunchPauseSeconds` > 0:** **`NetAwaitingRagdollLaunch`** — victim **visible + frozen**, then impulse + ragdoll. **Client victim/attacker feel predict** (Tier A) — host still owns knockdown. **`CombatFeelPredictDedupe`** dedupes host feel RPCs.
+- **Tackles:** Only at full charge speed (`NetAtChargeSpeed`). Host ragdoll + client **request** RPC. **Attacker on connect → walk ramp reset** (all classes). **`PreLaunchPauseSeconds` > 0:** **`NetAwaitingRagdollLaunch`** — victim **visible + frozen**, then impulse + ragdoll. **Client victim/attacker feel predict** (Tier A) — host still owns knockdown. **`CombatFeelPredictDedupe`** dedupes host feel RPCs.
 - **Charge run overlay:** **`PlayerChargeRunAnim`** drives graph params when **`IsAtChargeSpeed`** (synced) — not owner-only ramp HUD.
 - **Dodge:** Double-tap A or D. Tackle iframe only.
 - **Ragdoll / knockdown:** **Walk** ramp resets **on knockdown** (`TriggerForceWalkRampOnHost` + local snap of `smoothedMoveSpeedCap` in `CatchUpSpeedBoost`); ramp timers frozen while down. **✅ Working.**
@@ -275,7 +275,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **Speed Blitz impact stride `charge_run_cycle`:** snap dasher to a fixed cycle at connect (shoulder-in frame) vs freeze whatever pose contact landed on — scrub `charge_run` in ModelDoc; inspector default TBD in playtest.
 - **Speed Blitz victim flinch (later):** optional masked hit-react clip + graph layer during hang (same pattern as `throw_windup` / `charge_run`) — polish on top of body freeze v1; ship or skip after playtest
 - **Player prefab component count (3 classes):** **✅ Chosen: Option A — per-class prefab variants** before slice 5/6 (`Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; `GameNetworkManager` picks template by class). Not doing yet — see [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6 + roadmap note below. Move **`BlitzConnectPoseFreeze`** off global auto-add when splitting.
-- **Post-tackle attacker ramp (attacker only, on connect — no whiff penalty):** leaning **walk** reset for all classes; **Juggernaut** exception **run** (sprint tier, not charge) for “unstoppable” feel — **bundle with loadout UI** (pick passive / ult / etc.), not a standalone tweak. **Future:** one passive slot per class → Juggernaut pick **tackle ramp bonus** *or* **post-tackle run recovery** (not both).
+- **Juggernaut post-tackle run recovery (passive slot):** optional passive keeps **run** (sprint tier, not charge) after landing a tackle instead of walk reset — bundle with loadout UI; mutually exclusive with **tackle ramp bonus** passive.
 - **Speed Blitz 2d — client wind-up spark sprites (MP):** editor join-client shows **blue squares**; owner OK. **Confirmed engine limitation (2026-06-22):** s&box "Join via new instance" does not mount compiled texture/sprite assets; sounds/code/data work fine. Not fixable in editor — will work on publish.
 
 ---
@@ -479,6 +479,7 @@ No GameNetworkManager auto-add for ult components — Speedster prefab manual.
 
 ## Recent session notes
 
+- **2026-06-22 (tackle attacker ramp):** regular tackle connect → **`TriggerForceWalkRampOnHost`** for attacker (all classes); removed sprint-only **`TackleStripRamp`** path. Juggernaut run-recovery passive still open for loadout UI.
 - **2026-06-22 (Speed Blitz polish):** **Contact-only dash hits** — `TryFindDashHitAlongSegment` (3D touch + **`MaxHitVerticalSeparation`** + LOS trace; no corridor teleport). **Connect crunch on client predict** + host broadcast dedupe. **Connect-hang pause** parallel with ragdoll body init. **`SpeedBlitzBodyGlow`** point light destroy on end (remote host-dasher spotlight fix).
 - **2026-06-18 (2d):** wind-up sparks/glow/discharge/Olympic pose; client join spark sprites = editor limitation ([#5177](https://github.com/Facepunch/sbox-public/issues/5177)). Detail → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md).
 
