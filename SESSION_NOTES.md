@@ -20,7 +20,7 @@
 
 ## Right now
 
-**Goal:** **Slice 2d** — **solo ✅ (2026-06-18)**. **2-window MP:** partial — **known issue:** joining **client** sees blitz wind-up **spark sprites as blue squares** (host/owner OK). **Deferred** — fix later (likely editor join-new-instance asset mount; see Known issues + MP gotcha). Other 2d MP (pose, glow, SFX, etc.) not fully signed off yet.
+**Goal:** **Slice 2d** — **solo ✅ (2026-06-18)**. **2-window MP:** partial — **known engine limitation:** joining client sees blitz wind-up **spark sprites as blue squares** (texture/sprite assets don't mount in editor "Join via new instance"; sounds/code/data work fine). **Not fixable in editor — will work on publish.** Other 2d MP (pose, glow, SFX, etc.) not fully signed off yet.
 
 **Next session (priority order):**
 1. **Practice scene** — moving/charging dummies before C1 lag-comp
@@ -160,7 +160,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 11. Spam actions once to probe desync.
 12. **Ult charge:** % creeps in **Playing** only; frozen in celebration/intermission; goal/tackle bumps; FF tackle no bump; persists across rounds; rematch clears; HUD floored % + blue flash at 100%.
 13. **Combat feel predict:** client tackler / dasher / victim / car-hit — juice on contact frame, no double feel; idle targets OK (2026-06-14).
-14. **Speed Blitz 2d (MP):** **Olympic pose** + body glow + discharge + SFX on remotes; electric cut + dash woosh; no sparks on dash/connect/miss. **Known:** joining **client** wind-up **spark sprites = blue squares** (owner OK) — not a 2d sign-off blocker for now.
+14. **Speed Blitz 2d (MP):** **Olympic pose** + body glow + discharge + SFX on remotes; electric cut + dash woosh; no sparks on dash/connect/miss. **Known engine limitation:** joining client wind-up **spark sprites = blue squares** (texture assets don't mount in editor "Join via new instance" — sounds/code work fine; will work on publish). Not a 2d sign-off blocker.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
 
@@ -275,7 +275,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **Speed Blitz victim flinch (later):** optional masked hit-react clip + graph layer during hang (same pattern as `throw_windup` / `charge_run`) — polish on top of body freeze v1; ship or skip after playtest
 - **Player prefab component count (3 classes):** **✅ Chosen: Option A — per-class prefab variants** before slice 5/6 (`Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; `GameNetworkManager` picks template by class). Not doing yet — see [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6 + roadmap note below. Move **`BlitzConnectPoseFreeze`** off global auto-add when splitting.
 - **Post-tackle attacker ramp (attacker only, on connect — no whiff penalty):** leaning **walk** reset for all classes; **Juggernaut** exception **run** (sprint tier, not charge) for “unstoppable” feel — **bundle with loadout UI** (pick passive / ult / etc.), not a standalone tweak. **Future:** one passive slot per class → Juggernaut pick **tackle ramp bonus** *or* **post-tackle run recovery** (not both).
-- **Speed Blitz 2d — client wind-up spark sprites (MP):** editor join-client shows **blue squares**; owner OK. **Deferred** — fix when doing proper MP/publish testing; not blocking solo 2d.
+- **Speed Blitz 2d — client wind-up spark sprites (MP):** editor join-client shows **blue squares**; owner OK. **Confirmed engine limitation (2026-06-22):** s&box "Join via new instance" does not mount compiled texture/sprite assets; sounds/code/data work fine. Not fixable in editor — will work on publish.
 
 ---
 
@@ -451,7 +451,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [ ] **Clutter** sometimes missing after **engine reload** — save scene after paint; check clutter **Volume** bounds; verify in **Play** (not only editor flycam)
 - [ ] **Traffic engine loops** — seam click in-game vs clean Audacity preview; re-export with DC offset remove + zero-crossing trim if needed
 - [ ] **Tackle ragdoll after ModelDoc changes** — if victims freeze ~8s with no flop (`ApplyRagdollLocally` in console but no physics ragdoll), try **editor reboot** or `utd_citizen_human_throw.vmdl` Save + Full Compile before chasing code. Stale compiled extension cache suspected (2026-06-11 — reboot fixed). Code fallback (spawn ragdoll on base `citizen_human_*`) deferred unless it returns.
-- **Speed Blitz 2d client wind-up spark sprites:** **Joining client** (editor **Join via new instance**) shows **blue squares** instead of `vfx/spark_01.sprite` sparks; **dasher owner / host view OK**. Console: `spark_01.sprite_c` **ERROR_FILEOPEN**. Suspected editor local-asset mount issue — **deferred** (try scene prefab mount, publish/server test, later). Assets: `vfx/spark_01.sprite` + `spark_01`–`04.png`, prefab `speedblitzwindupvfx`.
+- **Speed Blitz 2d client wind-up spark sprites:** **Joining client** (editor **Join via new instance**) shows **blue squares** instead of `vfx/spark_01.sprite` sparks; **dasher owner / host view OK**. Console: `spark_01.sprite_c` / `spark_01.png` **ERROR_FILEOPEN**. **Confirmed (2026-06-22):** s&box "Join via new instance" does not mount compiled texture/sprite assets (`.png_c`, `.sprite_c`) from the local project — sounds, code, and class data all work fine; textures/sprites specifically do not. Disabled scene prefab + direct sprite component workarounds do not fix this. **Not a game bug — will work correctly for real players on publish.** Editor-only limitation; use a publish test to verify VFX appearance on clients.
 
 ---
 
