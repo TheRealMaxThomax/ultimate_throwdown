@@ -17,8 +17,8 @@ using System;
 /// dashes (you slide along it).
 /// </para>
 /// <para>
-/// The <b>host</b> validates the commit, spends the charge, owns phase timing, runs enemy hit-detection,
-/// applies the knockdown, keeps the dasher tackle-immune while dashing, and blocks all ult-charge gain
+/// The <b>host</b> validates the commit, spends the charge, owns phase timing, runs contact hit-detection
+/// (physical touch + line-of-sight — no corridor teleport hits), applies the knockdown, keeps the dasher tackle-immune while dashing, and blocks all ult-charge gain
 /// until the ult is over (so % only climbs again afterwards).
 /// </para>
 /// See GAMEPLAY_DESIGN.md → Speed Blitz.
@@ -165,8 +165,11 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	/// <summary> Multiplier on dash-speed × fixed delta when capping host sweep steps (client RPC can arrive in bursts). </summary>
 	[Property, Group( "Dash" )] public float DashSweepStepMultiplier { get; set; } = 2.5f;
 
-	/// <summary> Extra gap (units) between dasher and victim body at dash stop — prevents overlap read as lag. </summary>
+	/// <summary> Extra gap (units) between dasher and victim body at dash stop — contact radius includes this. </summary>
 	[Property, Group( "Dash" )] public float HitStopContactGap { get; set; } = 4f;
+
+	/// <summary> Max vertical separation (units) for a dash hit — blocks roof-to-street knockdowns through the corridor. </summary>
+	[Property, Group( "Dash" )] public float MaxHitVerticalSeparation { get; set; } = 56f;
 
 	[Property] public bool EnableSpeedBlitzDebugLogs { get; set; }
 
@@ -678,49 +681,41 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			Log.Info( $"[SpeedBlitz] {GameObject.Name}: dash start dur={DashDurationSeconds:F2}s" );
 	}
 
-	/// <summary> Host: swept corridor check from last position to current; first enemy ends the dash. </summary>
+	/// <summary> Host: contact check at the dasher's current dash sample — no corridor teleport hits. </summary>
 	private void HostDashHitCheck()
 	{
 		var currRaw = GetHostDashCheckCurrentPosition();
 		var curr = ClampDashSweepEndPosition( hostLastDashCheckPos, currRaw );
 
-		if ( TryFindBestDashHitInSegment( hostLastDashCheckPos, curr, hostDashCorridorOrigin, out var best, out var victimAlong ) )
-			HostApplyDashKnockdown( best, victimAlong );
+		if ( TryFindDashHitAlongSegment( hostLastDashCheckPos, curr, hostDashCorridorOrigin, out var best ) )
+			HostApplyDashKnockdown( best );
 
 		hostLastDashCheckPos = curr;
 	}
 
-	/// <summary> Host: last sweep to committed corridor end so max-range targets are not skipped when the dash timer ends. </summary>
+	/// <summary> Host: last tick — only count a hit if the dasher actually reached contact range. </summary>
 	private void HostDashFinalHitCheck()
 	{
 		if ( hostHasHitTarget )
 			return;
 
-		var dir = NetCommittedDirection.WithZ( 0f );
-		if ( dir.Length < 0.001f )
-			return;
-
-		dir = dir.Normal;
 		var curr = GetHostDashCheckCurrentPosition();
-		var currAlong = ProjectAlongDashCorridor( hostDashCorridorOrigin, dir, curr );
-		var sweepEndAlong = MathF.Max( currAlong, DashRange );
-		var sweepEnd = hostDashCorridorOrigin + dir * sweepEndAlong;
-		sweepEnd = new Vector3( sweepEnd.x, sweepEnd.y, curr.z );
 
-		if ( TryFindBestDashHitInSegment( hostLastDashCheckPos, sweepEnd, hostDashCorridorOrigin, out var best, out var victimAlong ) )
-			HostApplyDashKnockdown( best, victimAlong );
+		if ( TryFindDashHitAlongSegment( hostLastDashCheckPos, curr, hostDashCorridorOrigin, out var best ) )
+			HostApplyDashKnockdown( best );
 	}
 
-	/// <summary> Shared corridor sweep — host hit test and owner predict use the same filters/width. </summary>
-	private bool TryFindBestDashHitInSegment(
+	/// <summary>
+	/// Physical contact hit test along the dash movement segment — corridor is a coarse aim filter only;
+	/// dasher must touch the victim (3D), stay within vertical tolerance, and have clear line-of-sight.
+	/// </summary>
+	private bool TryFindDashHitAlongSegment(
 		Vector3 segStartRaw,
 		Vector3 segEndRaw,
 		Vector3 corridorOriginRaw,
-		out PlayerTackle victim,
-		out float victimAlong )
+		out PlayerTackle victim )
 	{
 		victim = null;
-		victimAlong = 0f;
 
 		var corridorDir = NetCommittedDirection.WithZ( 0f );
 		if ( corridorDir.Length < 0.001f )
@@ -730,38 +725,32 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		var corridorOrigin = corridorOriginRaw.WithZ( 0f );
 		var halfWidth = HitHalfWidth.Clamp( 4f, 200f );
 		var maxAlong = DashRange;
-
-		var segStartAlong = ProjectAlongDashCorridor( corridorOrigin, corridorDir, segStartRaw );
-		var segEndAlong = ProjectAlongDashCorridor( corridorOrigin, corridorDir, segEndRaw );
-		var segAlongMin = MathF.Min( segStartAlong, segEndAlong );
-		var segAlongMax = MathF.Max( segStartAlong, segEndAlong );
+		var segStart = segStartRaw;
+		var segEnd = segEndRaw;
 
 		PlayerTackle best = null;
-		var bestAlong = float.MaxValue;
+		var bestDist = float.MaxValue;
 
 		foreach ( var candidate in Scene.GetAllComponents<PlayerTackle>() )
 		{
 			if ( !IsValidDashTarget( candidate ) )
 				continue;
 
-			var target = candidate.WorldPosition.WithZ( 0f );
-			var along = ProjectAlongDashCorridor( corridorOrigin, corridorDir, target );
-			var lateral = LateralDistanceToDashCorridor( corridorOrigin, corridorDir, target );
-			var targetBodyRadius = GetDashTargetBodyRadius( candidate );
-
-			if ( lateral + targetBodyRadius > halfWidth )
+			if ( !IsDashTargetInCorridor( candidate, corridorOrigin, corridorDir, halfWidth, maxAlong ) )
 				continue;
 
-			if ( along + targetBodyRadius < 0f || along - targetBodyRadius > maxAlong )
+			var victimPos = candidate.WorldPosition;
+			if ( !TryGetDashContactPointOnSegment( segStart, segEnd, victimPos, candidate, out var contactPoint ) )
 				continue;
 
-			if ( along + targetBodyRadius < segAlongMin || along - targetBodyRadius > segAlongMax )
+			if ( !IsDashHitPathClear( contactPoint, victimPos, candidate ) )
 				continue;
 
-			if ( along < bestAlong )
+			var dist = contactPoint.Distance( victimPos );
+			if ( dist < bestDist )
 			{
 				best = candidate;
-				bestAlong = along;
+				bestDist = dist;
 			}
 		}
 
@@ -769,12 +758,133 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return false;
 
 		victim = best;
-		victimAlong = bestAlong;
 		return true;
 	}
 
-	/// <summary> Host: always launch along committed dash dir (MP-safe); brief pre-launch pause like tackles. </summary>
-	private void HostApplyDashKnockdown( PlayerTackle victim, float victimAlong )
+	private bool IsDashTargetInCorridor(
+		PlayerTackle candidate,
+		Vector3 corridorOrigin,
+		Vector3 corridorDir,
+		float halfWidth,
+		float maxAlong )
+	{
+		var target = candidate.WorldPosition.WithZ( 0f );
+		var along = ProjectAlongDashCorridor( corridorOrigin, corridorDir, target );
+		var lateral = LateralDistanceToDashCorridor( corridorOrigin, corridorDir, target );
+		var targetBodyRadius = GetDashTargetBodyRadius( candidate );
+
+		if ( lateral + targetBodyRadius > halfWidth )
+			return false;
+
+		if ( along + targetBodyRadius < 0f || along - targetBodyRadius > maxAlong )
+			return false;
+
+		return true;
+	}
+
+	private bool TryGetDashContactPointOnSegment(
+		Vector3 segStart,
+		Vector3 segEnd,
+		Vector3 victimPos,
+		PlayerTackle candidate,
+		out Vector3 contactPoint )
+	{
+		contactPoint = default;
+
+		var maxVertical = MaxHitVerticalSeparation.Clamp( 8f, 256f );
+		if ( MathF.Abs( segEnd.z - victimPos.z ) > maxVertical )
+			return false;
+
+		var contactDist = GetDashContactDistance( candidate );
+
+		if ( segEnd.Distance( victimPos ) <= contactDist )
+		{
+			if ( MathF.Abs( segEnd.z - victimPos.z ) > maxVertical )
+				return false;
+
+			contactPoint = segEnd;
+			return true;
+		}
+
+		var closest = ClosestPointOnSegment( segStart, segEnd, victimPos );
+		if ( MathF.Abs( closest.z - victimPos.z ) > maxVertical )
+			return false;
+
+		if ( closest.Distance( victimPos ) > contactDist )
+			return false;
+
+		contactPoint = closest;
+		return true;
+	}
+
+	private float GetDashContactDistance( PlayerTackle candidate )
+	{
+		return GetDasherBodyRadius() + GetDashTargetBodyRadius( candidate ) + HitStopContactGap.Clamp( 0f, 32f );
+	}
+
+	private bool IsDashHitPathClear( Vector3 fromPos, Vector3 toPos, PlayerTackle victim )
+	{
+		var from = fromPos + Vector3.Up * 32f;
+		var to = toPos + Vector3.Up * 32f;
+		var dist = from.Distance( to );
+		if ( dist <= 0.001f )
+			return true;
+
+		var trace = BuildDashHitTrace( from, to, victim?.GameObject ).Run();
+		if ( !trace.Hit )
+			return true;
+
+		var hitDist = trace.HitPosition.Distance( from );
+		const float slop = 16f;
+		return hitDist >= dist - slop;
+	}
+
+	private SceneTrace BuildDashHitTrace( Vector3 from, Vector3 to, GameObject victimRoot )
+	{
+		var trace = Scene.Trace.Ray( from, to )
+			.WithoutTags( "ragdoll" )
+			.IgnoreGameObjectHierarchy( GameObject );
+
+		if ( victimRoot.IsValid() )
+			trace = trace.IgnoreGameObjectHierarchy( victimRoot );
+
+		foreach ( var tackle in Scene.GetAllComponents<PlayerTackle>() )
+		{
+			if ( !tackle.IsValid() || tackle.GameObject == GameObject )
+				continue;
+
+			if ( victimRoot.IsValid() && tackle.GameObject == victimRoot )
+				continue;
+
+			trace = trace.IgnoreGameObjectHierarchy( tackle.GameObject );
+		}
+
+		foreach ( var go in Scene.GetAllObjects( true ) )
+		{
+			if ( go.IsValid() && go.Name == "main_ball" )
+			{
+				trace = trace.IgnoreGameObjectHierarchy( go );
+				break;
+			}
+		}
+
+		return trace;
+	}
+
+	private static Vector3 ClosestPointOnSegment( Vector3 segStart, Vector3 segEnd, Vector3 point )
+	{
+		var ab = segEnd - segStart;
+		var lenSq = ab.LengthSquared;
+		if ( lenSq <= 0.0001f )
+			return segStart;
+
+		var t = Vector3.Dot( point - segStart, ab ) / lenSq;
+		t = t.Clamp( 0f, 1f );
+		return segStart + ab * t;
+	}
+
+	/// <summary> Host: knockdown at the dasher's actual dash position — no corridor snap-through. </summary>
+	private void HostApplyDashKnockdown( PlayerTackle victim )
 	{
 		var knockDir = NetCommittedDirection.WithZ( 0 );
 		if ( knockDir.Length < 0.001f )
@@ -782,9 +892,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		else
 			knockDir = knockDir.Normal;
 
-		var snappedPos = SnapDasherToDashHitContact( victim, victimAlong, hostDashCorridorOrigin, knockDir );
+		var stopPos = GameObject.WorldPosition;
 
-		BroadcastConnectImpactSoundOnHost( victim, snappedPos );
+		BroadcastConnectImpactSoundOnHost( victim, stopPos );
 		NetConnectVictimId = victim.GameObject.Id;
 
 		playerBody ??= Components.Get<Rigidbody>();
@@ -823,7 +933,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		if ( EnableSpeedBlitzDebugLogs )
 			Log.Info( $"[SpeedBlitz] {GameObject.Name}: dash hit {victim.GameObject.Name}" );
 
-		EndBlitzOnHost( "hit_enemy", ownerDashStopPosition: Network.IsOwner ? null : snappedPos );
+		EndBlitzOnHost( "hit_enemy", ownerDashStopPosition: Network.IsOwner ? null : stopPos );
 	}
 
 	/// <summary> Prevents lagged owner samples from sweeping a huge corridor in one host tick. </summary>
@@ -1184,7 +1294,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	}
 
 	/// <summary>
-	/// Client owner only: local corridor sweep during dash — stop + attacker feel on first overlap.
+	/// Client owner only: local contact hit test during dash — stop + attacker feel on touch.
 	/// Host-as-owner already gets instant host hit detection; false-positive v1 stays stopped until host ends.
 	/// </summary>
 	private void OwnerPredictDashHitCheck()
@@ -1202,24 +1312,17 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return;
 		}
 
-		if ( !TryFindBestDashHitInSegment( ownerLastLocalDashCheckPos, curr, ownerDashCorridorOrigin, out var victim, out var victimAlong ) )
+		if ( !TryFindDashHitAlongSegment( ownerLastLocalDashCheckPos, curr, ownerDashCorridorOrigin, out var victim ) )
 		{
 			ownerLastLocalDashCheckPos = curr;
 			return;
 		}
 
-		OwnerApplyPredictedDashHit( victim, victimAlong );
+		OwnerApplyPredictedDashHit( victim );
 	}
 
-	private void OwnerApplyPredictedDashHit( PlayerTackle victim, float victimAlong )
+	private void OwnerApplyPredictedDashHit( PlayerTackle victim )
 	{
-		var knockDir = NetCommittedDirection.WithZ( 0 );
-		if ( knockDir.Length < 0.001f )
-			knockDir = Vector3.Forward;
-		else
-			knockDir = knockDir.Normal;
-
-		SnapDasherToDashHitContact( victim, victimAlong, ownerDashCorridorOrigin, knockDir );
 		var dasherStopPosition = GameObject.WorldPosition;
 		ownerLastLocalDashCheckPos = dasherStopPosition;
 
@@ -1320,34 +1423,6 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 			return classData.CapsuleRadius;
 
 		return DefaultTargetBodyRadius.Clamp( 1f, 64f );
-	}
-
-	/// <summary>
-	/// Place the dasher at first body contact along the corridor (not at overshoot position).
-	/// Host + owner predict share the same formula.
-	/// </summary>
-	private Vector3 SnapDasherToDashHitContact(
-		PlayerTackle victim,
-		float victimAlong,
-		Vector3 corridorOriginRaw,
-		Vector3 corridorDirRaw )
-	{
-		var corridorDir = corridorDirRaw.WithZ( 0f );
-		if ( corridorDir.Length < 0.001f )
-			return GameObject.WorldPosition;
-
-		corridorDir = corridorDir.Normal;
-		var corridorOrigin = corridorOriginRaw.WithZ( 0f );
-		var victimRadius = GetDashTargetBodyRadius( victim );
-		var dasherRadius = GetDasherBodyRadius();
-		var gap = HitStopContactGap.Clamp( 0f, 32f );
-		var stopAlong = MathF.Max( 0f, victimAlong - victimRadius - dasherRadius - gap );
-
-		var stopFlat = corridorOrigin + corridorDir * stopAlong;
-		var pos = GameObject.WorldPosition;
-		var snapped = new Vector3( stopFlat.x, stopFlat.y, pos.z );
-		GameObject.WorldPosition = snapped;
-		return snapped;
 	}
 
 	private float GetDashTargetBodyRadius( PlayerTackle candidate )

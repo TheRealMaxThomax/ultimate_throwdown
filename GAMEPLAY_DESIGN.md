@@ -237,14 +237,14 @@ Optional later: soft ring/torus core if silhouette needs help at distance.
 
 **Pose (pending):** Olympic blocks — full-body masked layer; fast weight-in (~0.25–0.4s); **`charge_run` off during wind-up**.
 
-**Body glow (shipped):** **`SpeedBlitzBodyGlow`** — subtle blue tint + point light on dasher avatar; no ult outline (enemy red outline unchanged). Tune on Speedster prefab.
+**Body glow (shipped):** **`SpeedBlitzBodyGlow`** — subtle blue tint + point light on dasher avatar (destroyed when glow ends); no ult outline (enemy red outline unchanged). Tune on Speedster prefab.
 
 ### Shipped in slice 2a + 2b (code)
 
 - **Hold X** at 100% → owner-only corridor preview; **release X** commits (RMB cancel while aiming).
 - Wind-up: planted, look locked to committed aim, vulnerable, no cancel.
 - Dash: invulnerable; owner-driven through `PlayerController` (wall-slide, step-up); charge_run anim; time-based range.
-- First enemy in corridor → knockdown; dash **stops** on hit; **client-owner predict** for stop + attacker feel (host dedupe).
+- First enemy **physically reached** (3D contact + line-of-sight + vertical cap) → knockdown; dash **stops** at actual position; **client-owner predict** for stop + attacker feel + connect crunch (host dedupe).
 - Dash end (hit or miss) → forced **walk** ramp (rebuild to charge).
 - No charge gain, ball pickup, or dodge during ult.
 - **Owner camera (`SpeedBlitzDashCamera`):** wind-up pullback/FOV build → blended dash spike → on enemy hit **`BeginHitRecoveryBlend()`** eases to baseline at contact freeze (not victim launch); miss/timeout uses same end blend. **`ThrowChargeCamera`** release blend uses same transition-frame pattern.
@@ -260,14 +260,14 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 ### Flow (full design)
 
 1. Charge must be **100%**. Not holding the ball. `MatchPhase.Playing` or post-match celebration.
-2. **Hold X** → owner-only preview: **dash line** (max range), **hit width** (capsule corridor), faint **end marker**. Preview geometry = host hit geometry (“between the lines = guaranteed hit” at dash time).
+2. **Hold X** → owner-only preview: **dash line** (max range), **hit width** (capsule corridor), faint **end marker**. Preview = **aim helper** (corridor filter); **hits** require physical touch + LOS — preview may still show targets behind walls until clip pass.
 3. **Release X** → **commit** (cannot cancel):
    - Charge immediately drops to **0%**.
-   - **Camera locks** (full lock — signed off; lane corridor hit = guaranteed knockdown, no yaw-only or wider cone planned).
+   - **Camera locks** (full lock — signed off).
    - **3 s wind-up** — player is **vulnerable** (can be tackled; wasted ult if knocked down).
 4. **Dash** — player is **invulnerable** during movement:
    - Very fast, long range.
-   - **First enemy** along the committed corridor (closest along ray) takes a heavy knockdown launch (host ragdoll path, like tackle).
+   - **First enemy actually touched** along the dash (contact radius + **`MaxHitVerticalSeparation`** + LOS trace; corridor width/range is coarse filter only) takes a heavy knockdown launch (host ragdoll path, like tackle).
    - **Enemies only** — no friendly fire on dash hit (may revisit).
    - **Walls / traffic:** cannot pass through; on contact **slide along** the surface at the impact angle (tangent motion keeps burning remaining dash distance — not a hard dead stop).
    - No ball pickup during the ult.

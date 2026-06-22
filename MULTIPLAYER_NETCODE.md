@@ -84,7 +84,7 @@ Common symptoms **still open** after Tier 0–A:
 | System | Owner local | Host authority | Feel RPC / sync |
 |--------|-------------|----------------|-----------------|
 | **Tackle** | Input, movement; **attacker predict** on RPC send (A1) | `RequestTackleApplyOnHost`, `ExecuteTackle`, ragdoll spawn | `TriggerTackleImpactFeel*Rpc(applyId)` + **`CombatFeelPredictDedupe`** |
-| **Speed Blitz** | Dash velocity, aim preview; **dasher predict** on local hit (Tier 0) | Commit, phase, hit sweep, `ApplyKnockdownFromHost`, walk ramp; **connect/launch SFX** (host random crunch + launch boom via **`[Rpc.Broadcast]`**) | `NotifyOwnerDashEndedRpc`; impact feel via tackle path + dedupe |
+| **Speed Blitz** | Dash velocity, aim preview; **dasher predict** on local **contact** hit (Tier 0) | Commit, phase, contact hit sweep, `ApplyKnockdownFromHost`, walk ramp; **connect/launch SFX** (host random crunch + launch boom via **`[Rpc.Broadcast]`**) | `NotifyOwnerDashEndedRpc`; impact feel via tackle path + dedupe; **client-owner connect crunch on predict** (broadcast dedupes) |
 | **Tackle/blitz victim** | **Victim predict** on freeze (A2) or direct ragdoll (A2b) | Knockdown + `NetLastKnockdownWasHazard` | Victim feel RPC + dedupe |
 | **Dodge** | Shove on owner when `NetDodgeApplyId` bumps | `RequestDodgeOnHostRpc` | Synced apply id (dedupe pattern) |
 | **Ball throw** | Trajectory preview, charge camera | Host ball / grab | `BallClientFeel` smooths for viewers |
@@ -111,7 +111,7 @@ Common symptoms **still open** after Tier 0–A:
 
 Scope (agreed):
 
-- **Predict (owner only):** local corridor sweep during dash → on first valid enemy overlap: block dash movement, trigger **`TackleImpactFeel.TriggerAsAttacker`**, optional local SFX.
+- **Predict (owner only):** local **contact** sweep during dash (`TryFindDashHitAlongSegment` — 3D touch + vertical cap + LOS) → on valid enemy: block dash movement, trigger **`TackleImpactFeel.TriggerAsAttacker`**, optional local connect crunch SFX (host broadcast dedupes).
 - **Do not predict:** knockdown, ragdoll, `NetPhase`, walk ramp, charge, victim state.
 - **Dedupe:** when host confirms (`NotifyOwnerDashEndedRpc` / impact RPC), skip second attacker feel if already played this dash.
 - **Victim:** unchanged **or** one RPC timing tweak so victim owner feel aligns with pre-launch pause (small pass).
@@ -181,8 +181,8 @@ When adding **Juggernaut stomp**, **Sniper zones**, **weapons**, or any **owner 
 ### Predict locally (owner)
 
 - Each dash fixed tick: segment `lastLocalSample → current WorldPosition`.
-- Same filters as host: `IsValidDashTarget`, `HitHalfWidth`, victim `BodyRadius`, committed direction corridor.
-- First hit → set `ownerPredictedHitThisDash`, `ownerDashMovementBlocked = true`, zero velocity, **`CombatFeelPredictDedupe.MarkOwnerPredictedAttackerFeel()`**, `TackleImpactFeel.TriggerAsAttacker()`.
+- Same filters as host: `IsValidDashTarget`, contact radius, **`MaxHitVerticalSeparation`**, LOS trace, committed-direction corridor filter.
+- First hit → set `ownerPredictedHitThisDash`, `ownerDashMovementBlocked = true`, zero velocity, **`CombatFeelPredictDedupe.MarkOwnerPredictedAttackerFeel()`**, `TackleImpactFeel.TriggerAsAttacker()`, local connect crunch (deduped on host broadcast).
 
 ### Stay host-only
 
@@ -305,6 +305,7 @@ See [`SESSION_NOTES.md`](SESSION_NOTES.md) → **Known issues** (ragdoll jitter,
 
 | Date | Change |
 |------|--------|
+| 2026-06-22 | Speed Blitz dash hits → **physical contact + LOS** (`TryFindDashHitAlongSegment`); no corridor teleport. Client-owner **connect crunch on predict** + broadcast dedupe by dasher id. |
 | 2026-06-14 | **Wrap-up** — Tier 0–A marked complete; testing acceptance; symptoms table updated; `What's next` → B/C. |
 | 2026-06-14 | Tier A2b shipped — client-owner hazard victim feel on direct ragdoll + `NetLastKnockdownWasHazard`. |
 | 2026-06-14 | Tier A3 shipped — `CombatFeelPredictDedupe` + apply-id feel RPC dedupe (replaces per-feature bools). |
