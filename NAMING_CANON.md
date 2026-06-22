@@ -31,7 +31,7 @@
 
 | Name | Job |
 |------|-----|
-| `MapMatchConfig` | Per-map team display names; **`PracticeArenaMode`** + **`PracticeSpawnTeamId`** on practice maps only (unlimited clock/goals, single-team spawns) |
+| `MapMatchConfig` | Per-map team display names; **`PracticeArenaMode`** + **`PracticeSpawnTeamId`** on practice maps only (unlimited clock/goals, single-team spawns, **no top score/clock HUD**) |
 | `MatchTeamIds` | Constants `Team0` / `Team1` (ids `0` / `1`) |
 | `MatchDirector` | Phase state machine, round wins, match timer, debug force goal |
 | `MatchPhase` | Enum: `Playing`, `GoalCelebration`, `Intermission`, `MatchOver` |
@@ -176,6 +176,10 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 |------|-----|
 | `GameNetworkManager` | Spawns players when joining; team balance + team spawns (`Code/Network/`) |
 | `StartupMapBootstrap` | Scene startup; locks `practice_npc` rigidbodies (`Code/Map/`) |
+| `PracticeLaunchMeasure` | Practice arena lane scoring — band pitch 128, pelvis max along lane (`Code/Map/`) |
+| `PracticeLaunchReadout` | Practice arena sign/TV WorldPanel score display (`Code/Map/`) |
+| `PracticeLaunchReadoutRoot` | WorldPanel root `PanelComponent` for readout (`Code/UI/`) |
+| `PracticeLaunchScorePanel` | C# flex panel — score label on readout TV (`Code/UI/`) |
 | `StreetLightFlicker` | One lamp cluster: flickers child `SpotLight` + bulb material slot (`Code/Map/`) |
 | `StationLightFlicker` | Petrol-station light block: flickers child `SpotLight` + optional mesh visual on/off (`Code/Map/`) |
 | `TrafficSpawner` | Host lane spawner: clones disabled **`CarTemplate`**, **`CarModelVariants`** (after **`NetworkSpawn`**: Body renderer + collider), filleted **`Waypoints`**, speed/knockdown/hit box (`Code/Map/`) |
@@ -188,6 +192,10 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 **Often-used on `StreetLightFlicker`:** `Spot`, `LampModel`, `BulbOffMaterial`, `BulbMaterialIndex` (`-1` = auto-detect `light.vmat` / emissive slot), `SyncBulbEmissive`
 
 **Often-used on `GameNetworkManager`:** `Team0Spawns`, `Team1Spawns`, `SpawnPointOccupiedRadius`, `MatchConfig`, `SnapPositionToGround()`, `SnapBallToGround()`, `ApplyRoundResetToAllPlayers()`, `ApplyRoundResetToPlayer()` (legacy: `Team0Spawn`, `Team1Spawn`, `JoinSpawnSpacing`); auto-adds on join: **`PlayerDisableCrouch`**, **`PlayerEnemyOutline`**, **`BallCompassHud`**, **`PlayerBallHoldAnim`**, **`PlayerChargeRunAnim`**, **`TackleImpactFeel`**, **`CombatFeelPredictDedupe`**
+
+**Often-used on `PracticeLaunchMeasure`:** `BandPitch` (128), `LocalLaneDirection` (local Y `(0,1,0)`), **`ReadoutSign`** (GameObject with `PracticeLaunchReadout`), wire on `PracticeLaunchLane` empty
+
+**Often-used on `PracticeLaunchReadout`:** `PanelSize`, `LookAtCamera`, `HoldSeconds`, **`ScoreFontSize`**, **`ScoreFontFamily`**, **`ScoreColor`**, **`ScoreFontWeight`**, **`PanelBackgroundColor`**, `ShowScoreOnHost()` — on `LaunchReadoutSign` TV (+ optional `WorldPanel`)
 
 ---
 

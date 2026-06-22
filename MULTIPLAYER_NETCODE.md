@@ -289,7 +289,7 @@ Existing gotcha (keep): **do not** add extra host-side charge gates on tackle RP
 | Priority | When |
 |----------|------|
 | **Tier B** | Ongoing — ragdoll interp, ball smooth, checklist on new combat features |
-| **Practice scene** | Moving/charging dummies — prerequisite for fair moving-target MP tests |
+| **Practice scene** | **Partial ✅** — `practice_arena.scene`: static dummies + **`PracticeLaunchMeasure`** band readout. **Still need:** moving/charging `practice_npc` before fair moving-target MP / C1 |
 | **Tier C1** | Lag-comp rewind on host hit tests if misses still feel wrong after practice scene |
 | **Tier C2–C3** | Spectator polish, long soak |
 
@@ -305,6 +305,7 @@ See [`SESSION_NOTES.md`](SESSION_NOTES.md) → **Known issues** (ragdoll jitter,
 
 | Date | Change |
 |------|--------|
+| 2026-06-22 | Practice arena — **`PracticeArenaMode`**, **`PracticeLaunchMeasure`** (128 bands, pelvis max), **`PracticeLaunchReadout`** TV. |
 | 2026-06-22 | Speed Blitz dash hits → **physical contact + LOS** (`TryFindDashHitAlongSegment`); no corridor teleport. Client-owner **connect crunch on predict** + broadcast dedupe by dasher id. |
 | 2026-06-14 | **Wrap-up** — Tier 0–A marked complete; testing acceptance; symptoms table updated; `What's next` → B/C. |
 | 2026-06-14 | Tier A2b shipped — client-owner hazard victim feel on direct ragdoll + `NetLastKnockdownWasHazard`. |
