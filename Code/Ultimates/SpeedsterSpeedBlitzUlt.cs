@@ -1053,7 +1053,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		if ( stopPosition.HasValue )
 			Components.Get<SpeedBlitzDashCamera>()?.BeginHitRecoveryBlend();
 
-		if ( stopPosition.HasValue )
+		// Client predict already stopped at contact — host sample can lag behind and rewind the dasher.
+		if ( stopPosition.HasValue && !ownerPredictedHitThisDash )
 		{
 			var flat = stopPosition.Value;
 			GameObject.WorldPosition = new Vector3( flat.x, flat.y, GameObject.WorldPosition.z );
@@ -1337,6 +1338,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 		Components.GetOrCreate<CombatFeelPredictDedupe>().MarkOwnerPredictedAttackerFeel();
 		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
 		tackleImpactFeel?.TriggerAsAttacker( GetKnockdownImpactFeelOverrides() );
+
+		if ( victim.GameObject.Tags.Has( CitizenAvatarLod.PracticeNpcTag ) )
+			victim.BeginPracticeNpcClientContactFreeze( speedBlitzKnockdown: true );
 
 		if ( EnableSpeedBlitzDebugLogs )
 			Log.Info( $"[SpeedBlitz] {GameObject.Name}: owner predict hit {victim.GameObject.Name}" );

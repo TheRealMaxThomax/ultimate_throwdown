@@ -3,7 +3,8 @@ using Sandbox;
 /// <summary>
 /// Host-driven practice dummy: ping-pong between two waypoints at charge tier speed with instant 180° turns.
 /// Requires <see cref="CitizenAvatarLod.PracticeNpcTag"/>; pauses while knocked down and resumes after stand-up snap-back.
-/// Position is host-teleported (RB stays locked). Run legs use animgraph <c>move_groundspeed</c> — not <see cref="PlayerController"/> (scene NPCs throw if PC is enabled).
+/// Position is host-teleported each fixed tick; clients mirror pose via <see cref="PracticeNpcPatrolPoseRelay"/>.
+/// Run legs use animgraph <c>move_groundspeed</c> — not <see cref="PlayerController"/> (scene NPCs throw if PC is enabled).
 /// </summary>
 [Order( -50 )]
 public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.ExecuteInEditor
@@ -34,22 +35,22 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 
 	[Property] public bool EnableDebugLogs { get; set; }
 
-	[Sync( SyncFlags.FromHost )] private bool NetIsPatrolling { get; set; }
+	private bool netIsPatrolling;
 
-	[Sync( SyncFlags.FromHost )] private float SyncedChargeRunCycle { get; set; }
+	private float syncedChargeRunCycle;
 
-	[Sync( SyncFlags.FromHost )] private Vector3 NetPatrolMoveDirection { get; set; }
+	private Vector3 netPatrolMoveDirection;
 
-	[Sync( SyncFlags.FromHost )] private float NetPatrolMoveSpeed { get; set; }
+	private float netPatrolMoveSpeed;
 
-	public override bool IsPatrollingAtChargeSpeed => NetIsPatrolling;
+	public override bool IsPatrollingAtChargeSpeed => netIsPatrolling;
 
-	public override float NetChargeRunCycle => SyncedChargeRunCycle;
+	public override float NetChargeRunCycle => syncedChargeRunCycle;
 
 	private PlayerTackle playerTackle;
 	private PlayerClass playerClass;
-	private GameObject hostTravelTarget;
-	private bool hostPatrolInitialized;
+	private GameObject travelTarget;
+	private bool patrolInitialized;
 
 	protected override void OnStart()
 	{
@@ -63,7 +64,7 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 		ResolveBodyRenderer();
 
 		if ( Networking.IsHost && Game.IsPlaying )
-			TryInitializeHostPatrol();
+			TryInitializePatrol();
 	}
 
 	protected override void OnUpdate()
@@ -71,15 +72,15 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 		if ( !Game.IsPlaying )
 			return;
 
-		if ( NetIsPatrolling && !IsMovementBlocked() )
-			ApplyPatrolLocomotionAnim( NetPatrolMoveSpeed );
+		if ( netIsPatrolling && !IsMovementBlocked() )
+			ApplyPatrolLocomotionAnim( netPatrolMoveSpeed );
 		else
 			ClearPatrolLocomotionAnim();
 	}
 
 	protected override void OnFixedUpdate()
 	{
-		if ( IsProxy || !Networking.IsHost || !Game.IsPlaying )
+		if ( !Game.IsPlaying || !Networking.IsHost || IsProxy )
 			return;
 
 		if ( !HasValidPath() )
@@ -88,7 +89,49 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 			return;
 		}
 
-		TryInitializeHostPatrol();
+		RunPatrolStep();
+	}
+
+	/// <summary>Host relay: latest authoritative pose for client mirror.</summary>
+	public void GetPatrolPoseForClientSync(
+		out Vector3 worldPosition,
+		out Rotation worldRotation,
+		out bool isPatrolling,
+		out float moveSpeed,
+		out float chargeRunCycle )
+	{
+		worldPosition = WorldPosition;
+		worldRotation = WorldRotation;
+		isPatrolling = netIsPatrolling;
+		moveSpeed = netPatrolMoveSpeed;
+		chargeRunCycle = syncedChargeRunCycle;
+	}
+
+	/// <summary>Client: snap to host patrol pose (skipped while knocked down — knockdown RPCs own transform).</summary>
+	public void ApplyHostPatrolPoseFromRelay(
+		Vector3 worldPosition,
+		Rotation worldRotation,
+		bool isPatrolling,
+		float moveSpeed,
+		float chargeRunCycle )
+	{
+		if ( Networking.IsHost )
+			return;
+
+		netIsPatrolling = isPatrolling;
+		netPatrolMoveSpeed = moveSpeed;
+		syncedChargeRunCycle = chargeRunCycle;
+
+		if ( IsMovementBlocked() )
+			return;
+
+		WorldPosition = worldPosition;
+		WorldRotation = worldRotation;
+	}
+
+	private void RunPatrolStep()
+	{
+		TryInitializePatrol();
 
 		if ( IsMovementBlocked() )
 		{
@@ -105,32 +148,32 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 		horizontalVelocity = default;
 		approachDirection = default;
 
-		if ( !Networking.IsHost || !NetIsPatrolling )
+		if ( !Networking.IsHost || !netIsPatrolling )
 			return false;
 
-		var dir = NetPatrolMoveDirection.WithZ( 0f );
+		var dir = netPatrolMoveDirection.WithZ( 0f );
 		if ( dir.Length < 0.001f )
 			return false;
 
 		approachDirection = dir.Normal;
-		horizontalVelocity = approachDirection * NetPatrolMoveSpeed;
+		horizontalVelocity = approachDirection * netPatrolMoveSpeed;
 		return horizontalVelocity.Length >= 1f;
 	}
 
-	private void TryInitializeHostPatrol()
+	private void TryInitializePatrol()
 	{
-		if ( hostPatrolInitialized || !HasValidPath() )
+		if ( patrolInitialized || !HasValidPath() )
 			return;
 
-		hostTravelTarget = PickInitialTravelTarget();
-		FaceToward( GetHorizontalDirectionTo( hostTravelTarget ) );
-		var initDir = GetHorizontalDirectionTo( hostTravelTarget );
+		travelTarget = PickInitialTravelTarget();
+		FaceToward( GetHorizontalDirectionTo( travelTarget ) );
+		var initDir = GetHorizontalDirectionTo( travelTarget );
 		if ( initDir.LengthSquared >= 0.0001f )
 			SyncPatrolMoveState( initDir.Normal, ResolveMoveSpeed() );
-		hostPatrolInitialized = true;
+		patrolInitialized = true;
 
 		if ( EnableDebugLogs )
-			Log.Info( $"[PracticeNpcPatrol] {GameObject.Name} init → {hostTravelTarget.Name}" );
+			Log.Info( $"[PracticeNpcPatrol] {GameObject.Name} init → {travelTarget.Name}" );
 	}
 
 	private bool HasValidPath()
@@ -153,20 +196,20 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 
 	private void SetPatrolActive( bool active )
 	{
-		NetIsPatrolling = active;
+		netIsPatrolling = active;
 		if ( !active )
 		{
-			NetPatrolMoveDirection = Vector3.Zero;
-			NetPatrolMoveSpeed = 0f;
+			netPatrolMoveDirection = Vector3.Zero;
+			netPatrolMoveSpeed = 0f;
 		}
 	}
 
 	private void StepPatrol( float delta )
 	{
-		if ( !hostTravelTarget.IsValid() )
+		if ( !travelTarget.IsValid() )
 		{
-			hostTravelTarget = PickInitialTravelTarget();
-			if ( !hostTravelTarget.IsValid() )
+			travelTarget = PickInitialTravelTarget();
+			if ( !travelTarget.IsValid() )
 				return;
 		}
 
@@ -177,7 +220,7 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 		AdvanceChargeRunCycle( speed, delta );
 
 		var pos = WorldPosition;
-		var targetPos = hostTravelTarget.WorldPosition;
+		var targetPos = travelTarget.WorldPosition;
 		var toTarget = targetPos - pos;
 		var horizontal = toTarget.WithZ( 0f );
 		var dist = horizontal.Length;
@@ -205,24 +248,24 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 	private void ArriveAtEndpoint( Vector3 endpointPos )
 	{
 		WorldPosition = endpointPos;
-		hostTravelTarget = GetOppositeEndpoint( hostTravelTarget );
+		travelTarget = GetOppositeEndpoint( travelTarget );
 		ApplyInstantTurnAround();
 
-		var dir = GetHorizontalDirectionTo( hostTravelTarget );
+		var dir = GetHorizontalDirectionTo( travelTarget );
 		if ( dir.LengthSquared >= 0.0001f )
 			SyncPatrolMoveState( dir.Normal, ResolveMoveSpeed() );
 		else
 			SyncPatrolMoveState( WorldRotation.Forward.WithZ( 0f ).Normal, ResolveMoveSpeed() );
 
 		if ( EnableDebugLogs )
-			Log.Info( $"[PracticeNpcPatrol] {GameObject.Name} turn → {hostTravelTarget.Name}" );
+			Log.Info( $"[PracticeNpcPatrol] {GameObject.Name} turn → {travelTarget.Name}" );
 	}
 
 	private void SyncPatrolMoveState( Vector3 horizontalDirection, float speed )
 	{
 		var dir = horizontalDirection.WithZ( 0f );
-		NetPatrolMoveDirection = dir.Length >= 0.001f ? dir.Normal : Vector3.Zero;
-		NetPatrolMoveSpeed = speed;
+		netPatrolMoveDirection = dir.Length >= 0.001f ? dir.Normal : Vector3.Zero;
+		netPatrolMoveSpeed = speed;
 	}
 
 	private void ApplyInstantTurnAround()
@@ -320,7 +363,7 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 		var cycleSeconds = ChargeRunCycleSeconds.Clamp( 0.05f, 4f );
 		var cycleDelta = delta / cycleSeconds;
 		cycleDelta *= speed / 320f;
-		SyncedChargeRunCycle = (SyncedChargeRunCycle + cycleDelta) % 1f;
+		syncedChargeRunCycle = (syncedChargeRunCycle + cycleDelta) % 1f;
 	}
 
 	private static float GetHorizontalDistance( Vector3 a, Vector3 b )

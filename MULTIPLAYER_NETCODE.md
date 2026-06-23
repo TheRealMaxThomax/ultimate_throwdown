@@ -6,7 +6,7 @@
 
 **Companion docs:** [`SESSION_NOTES.md`](SESSION_NOTES.md) (day-to-day checklist, MP test steps), [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) (mechanics), [`NAMING_CANON.md`](NAMING_CANON.md) (script names).
 
-**Status:** **Tier 0–A complete ✅ (2026-06-14).** Verified 2–3 window idle-target soak. **Next:** Tier B ongoing tuning; Tier C1 lag-comp if moving targets feel unfair after practice scene.
+**Status:** **Tier 0–A complete ✅ (2026-06-14).** **Practice arena moving targets ✅ (2026-06-23).** Verified 2–3 window idle + patrol runner soak. **Next:** Tier B ongoing tuning; Tier C1 lag-comp only if normal-ping misses still feel unfair.
 
 ---
 
@@ -35,7 +35,7 @@ Common symptoms **still open** after Tier 0–A:
 - **Ragdoll jitter** on non-host viewers (`RagdollClientFeel` interpolation) — Tier B2.
 - **Ball jitter** on clients (`BallClientFeel`) — Tier B3.
 - Remote players **slightly behind** where the owner sees them — Tier C2.
-- **Moving-target misses** at latency — idle soak OK; practice scene + **Tier C1** lag-comp if still unfair.
+- **Moving-target misses** at latency — idle soak OK; **practice patrol runner MP ✅ (2026-06-23)** — Tier C1 only if normal-ping misses still unfair.
 
 **Largely addressed (Tier 0–A, 2026-06-14):**
 
@@ -278,7 +278,7 @@ Existing gotcha (keep): **do not** add extra host-side charge gates on tackle RP
 - [x] Client traffic victim → shake aligned with ragdoll sync.
 - [x] No double feel on host confirm (dedupe).
 - [x] **Blitz connect + launch SFX** — host picks random crunch; all clients hear same sound via broadcast RPC (**2026-06-15**).
-- [ ] **Moving targets** — not validated; need practice scene before C1.
+- [x] **Moving targets** — **practice patrol runner 2-window OK (2026-06-23)** — `PracticeNpcPatrolPoseRelay` + contact freeze pin; Tier C1 only if normal-ping misses still unfair.
 
 **Optional debug:** `EnableSpeedBlitzDebugLogs` / `EnableTackleDebugLogs` on prefab.
 
@@ -289,7 +289,7 @@ Existing gotcha (keep): **do not** add extra host-side charge gates on tackle RP
 | Priority | When |
 |----------|------|
 | **Tier B** | Ongoing — ragdoll interp, ball smooth, checklist on new combat features |
-| **Practice scene** | **Partial ✅** — static dummies + launch readout + **`PracticeNpcPatrol`** runner; **idle MP knockdown visuals ✅ (2026-06-23)** via **`PracticeNpcClient*Rpc`** (scene dummies stay Snapshot — **do not NetworkSpawn**). **Open:** patrol runner 2-window MP feel; then C1 if needed |
+| **Practice scene** | **✅ (2026-06-23)** — static dummies + launch readout + **`PracticeNpcPatrol`** runner; idle knockdown **`PracticeNpcClient*Rpc`**; patrol pose **`PracticeNpcPatrolPoseRelay`**; blitz contact freeze pin. Scene dummies stay Snapshot — **do not NetworkSpawn**. Tier C1 only if normal-ping misses still unfair |
 | **Tier C1** | Lag-comp rewind on host hit tests if misses still feel wrong after practice scene |
 | **Tier C2–C3** | Spectator polish, long soak |
 
@@ -305,7 +305,8 @@ See [`SESSION_NOTES.md`](SESSION_NOTES.md) → **Known issues** (ragdoll jitter,
 
 | Date | Change |
 |------|--------|
-| 2026-06-23 | Practice **`practice_npc`** MP — idle knockdown client visuals via **`PracticeNpcClient*Rpc`** broadcast (Snapshot scene dummies; **not** `NetworkSpawn`). Documented why player-prefab NPC network spawn breaks solo/MP (shared Input, camera, cosmetics). |
+| 2026-06-23 | Practice arena MP **signed off** — **`PracticeNpcClient*Rpc`** knockdown + **`PracticeNpcPatrolPoseRelay`** pose sync + blitz contact freeze pin (`BeginPracticeNpcClientContactFreeze`). |
+| 2026-06-23 | Practice patrol runner — **`PracticeNpcPatrolPoseRelay`** host fixed-tick pose broadcast (replaces client-side sim that drifted from host). |
 | 2026-06-22 | Practice arena — **`PracticeArenaMode`**, **`PracticeLaunchMeasure`** (128 bands, pelvis max), **`PracticeLaunchReadout`** TV. |
 | 2026-06-22 | Speed Blitz dash hits → **physical contact + LOS** (`TryFindDashHitAlongSegment`); no corridor teleport. Client-owner **connect crunch on predict** + broadcast dedupe by dasher id. |
 | 2026-06-14 | **Wrap-up** — Tier 0–A marked complete; testing acceptance; symptoms table updated; `What's next` → B/C. |

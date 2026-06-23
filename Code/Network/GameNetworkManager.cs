@@ -256,6 +256,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		player.Components.GetOrCreate<BlitzConnectPoseFreeze>();
 		player.Components.GetOrCreate<TackleImpactFeel>();
 		player.Components.GetOrCreate<CombatFeelPredictDedupe>();
+		player.Components.GetOrCreate<PracticeNpcPatrolPoseRelay>();
 
 		player.NetworkSpawn( connection );
 
