@@ -993,7 +993,19 @@ public sealed class PlayerTackle : Component
 			: victim.Components.Get<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants );
 
 		var primaryRenderer = ragdollGo.AddComponent<SkinnedModelRenderer>();
-		primaryRenderer.Model = baseVictimRenderer?.Model;
+		if ( baseVictimRenderer.IsValid() )
+		{
+			// CopyFrom carries the skin material override + body groups + LOD the ClothingContainer
+			// applied to the standing body; setting Model alone left the ragdoll on the model's default skin.
+			primaryRenderer.CopyFrom( baseVictimRenderer );
+			primaryRenderer.UseAnimGraph = false;
+			primaryRenderer.CreateBoneObjects = false;
+			primaryRenderer.LodOverride = 0;
+		}
+		else
+		{
+			primaryRenderer.Model = null;
+		}
 
 		var ragdollPhysics = ragdollGo.AddComponent<ModelPhysics>();
 		ragdollPhysics.Renderer = primaryRenderer;
