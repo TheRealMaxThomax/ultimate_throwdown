@@ -289,7 +289,7 @@ Existing gotcha (keep): **do not** add extra host-side charge gates on tackle RP
 | Priority | When |
 |----------|------|
 | **Tier B** | Ongoing — ragdoll interp, ball smooth, checklist on new combat features |
-| **Practice scene** | **Partial ✅** — `practice_arena.scene`: static dummies + **`PracticeLaunchMeasure`** band readout. **Still need:** moving/charging `practice_npc` before fair moving-target MP / C1 |
+| **Practice scene** | **Partial ✅** — static dummies + launch readout + **`PracticeNpcPatrol`** runner (move + tackle OK). **Open:** run-leg locomotion (idle slide); then 2-window MP moving-target verify before C1 |
 | **Tier C1** | Lag-comp rewind on host hit tests if misses still feel wrong after practice scene |
 | **Tier C2–C3** | Spectator polish, long soak |
 

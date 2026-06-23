@@ -23,7 +23,7 @@
 **Goal:** **Slice 2d** — **solo ✅ (2026-06-18)**. **2-window MP:** partial — **known engine limitation:** joining client sees blitz wind-up **spark sprites as blue squares** (texture/sprite assets don't mount in editor "Join via new instance"; sounds/code/data work fine). **Not fixable in editor — will work on publish.** Other 2d MP (pose, glow, SFX, etc.) not fully signed off yet.
 
 **Next session (priority order):**
-1. **Practice arena — moving/charging dummies** (static lane + launch readout ✅) before C1 lag-comp
+1. **Practice patrol runner — run-leg locomotion** (partial ✅ movement + tackles; **still slides** — charge_run overlay only; see Known issues + Open decisions). Then 2-window MP on moving targets.
 2. **Later:** soft ring; aim preview art v3 + **wall/LOS clip** (preview still shows corridor through walls — hits use contact rules)
 
 **Works today:**
@@ -48,7 +48,7 @@
 - **Speed Blitz wind-up feel (slice 2d — solo ✅ 2026-06-18)** — **`SpeedBlitzWindUpFeel`**: **`speedblitzwindupvfx`** **wind-up only** (off dash / connect hang); **`speedblitzdischargevfx`** on **dasher chest** at ragdoll launch (hit only). **`SpeedBlitzBodyGlow`** + render system: tint + point light (`GetWindUpLerp()` ramp → peak → discharge); **point light destroyed on end** (remote host-dasher fix **2026-06-22**). **`PlayerSpeedBlitzWindUpAnim`**: masked **`speedblitz_windup`** via `blitz_windup` / `blitz_windup_weight` while **`IsWindUp`** (synced). **SFX:** electric hard stop at connect, windup rise, dash woosh — **`PlayFeelSoundAt`**; **client dasher connect crunch on predict** (host broadcast dedupes — **2026-06-22**). **Connect hang timing:** pre-launch pause runs **parallel** with ragdoll body init — launch aligns with pose unfreeze (**2026-06-22**). **MP:** owner/host wind-up looks OK; **joining client spark sprites = blue squares** (engine limitation — publish only)
 - **Owner cameras (2026-06-15)** — **`PostCameraSetup`** for all owner FOV (PC resets preference FOV every frame). **`ThrowChargeCamera`** `[Order(10002)]`: charge offset + release blend after ball leaves hand (transition-frame hold — no pop). **`SpeedBlitzDashCamera`** `[Order(10012)]`: idle must **not** stomp **`CameraOffset`** (throw owns offset). **`TackleImpactFeel`**: blitz attacker uses overrides — hitstop freezes **world pose only**; dash cam eases during freeze; no blitz attacker offset/FOV punch (recovery blend owns it). Player tackles unchanged.
 - **MP combat feel predict** — **`CombatFeelPredictDedupe`** (auto on join): client-owner early **`TackleImpactFeel`** for blitz dash, tackle connect, victim freeze (tackle/blitz), traffic ragdoll; host **`NetCombatFeelApplyId`** dedupe. Details → [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md). **2–3 window idle-target soak OK (2026-06-14)**; moving-target fairness → practice moving dummies + Tier C1 later.
-- **Practice arena (`practice_arena.scene`) ✅ (2026-06-22)** — **`MapMatchConfig.PracticeArenaMode`**: unlimited clock/goals, all joiners team **0** + team-0 spawns only, **no top score/clock HUD**. **`PracticeLaunchMeasure`** on **`PracticeLaunchLane`** (origin = first line at NPC feet; local **Y** down lane; **`BandPitch` 128** → score **1, 2, 3…** from max pelvis **`along`**). **`PracticeLaunchReadout`** on **`LaunchReadoutSign`** TV — tune **`ScoreFontSize`** / **`ScoreFontFamily`** / **`ScoreColor`** / **`PanelSize`**. Wire **`ReadoutSign`** GameObject on measure. Three static **`practice_npc`** class dummies + ruler art (editor). **Moving/charging dummies — not yet.**
+- **Practice arena (`practice_arena.scene`) ✅ (2026-06-22)** — **`MapMatchConfig.PracticeArenaMode`**: unlimited clock/goals, all joiners team **0** + team-0 spawns only, **no top score/clock HUD**. **`PracticeLaunchMeasure`** on **`PracticeLaunchLane`** (origin = first line at NPC feet; local **Y** down lane; **`BandPitch` 128** → score **1, 2, 3…** from max pelvis **`along`**). **`PracticeLaunchReadout`** on **`LaunchReadoutSign`** TV. Three static **`practice_npc`** dummies + ruler art (editor). **`PracticeNpcPatrol` + `PracticeNpcPatrolHostState` (2026-06-23):** host ping-pong **Point A ↔ Point B** at charge speed, instant 180°, knockdown pause + pre-hit snap-back resume; **can tackle player** (`TryGetHostTackleMove`) and **be tackled**; **`PlayerBallHoldAnim`** required for forked graph + **`charge_run`** overlay. **Known gap:** legs still **idle-slide** (overlay arm/lean only) — do **not** enable **`PlayerController`** on runner (Update exceptions). Locomotion fix deferred.
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -88,7 +88,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | `Code/Match/` | `MatchDirector`, `GoalZone`, **`MapMatchConfig`** (`PracticeArenaMode` on practice map only) |
 | `Code/Ultimates/` | **`PlayerUltCharge`** (slice 1); **`SpeedsterSpeedBlitzUlt`** (2a–2c); **`SpeedBlitzWindUpFeel`**, **`SpeedBlitzBodyGlow`** (2d) |
 | `Code/UI/` | Match HUD + owner HUDs + **`UltChargeHud`** + **`BallCompassHud`** + **`TackleComicTextHud`** / **`TackleComicBurst`** + **`PracticeLaunchReadoutRoot`** / **`PracticeLaunchScorePanel`** |
-| `Code/Map/` | `StartupMapBootstrap` (practice NPC locks); **`PracticeLaunchMeasure`** / **`PracticeLaunchReadout`**; **`StreetLightFlicker`**; **`StationLightFlicker`**; **`TrafficSpawner`** / **`TrafficCar`** |
+| `Code/Map/` | `StartupMapBootstrap` (practice NPC locks); **`PracticeLaunchMeasure`** / **`PracticeLaunchReadout`**; **`PracticeNpcPatrol`**; **`StreetLightFlicker`**; **`StationLightFlicker`**; **`TrafficSpawner`** / **`TrafficCar`** |
 
 **Scenes:** `scenes/throwdown_turf_wars.scene` (Turf Wars WIP) · **`scenes/practice_arena.scene`** (training — enable **`PracticeArenaMode`**) · `throwdown_prototype.scene` = greybox fallback.
 
@@ -258,6 +258,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **`LaunchReadoutSign`** — **`PracticeLaunchReadout`** (+ optional **`WorldPanel`**); tune **`Panel Size`**, **`Score Font Size`**, **`Score Font Family`**, **`Score Color`**
 - Three **`practice_npc`** dummies (player prefab); ruler lines every **128** (12 line + 116 gap); gap labels **1, 2, 3…** (visual only)
 - One **`GoalZone`** if testing scoring — **`Defending Team`** = **1** when all players are team **0**
+- **Moving runner dummy (separate section):** duplicate player prefab → tag **`practice_npc`** → **Speedster** `PlayerClass` → **`PlayerController` disabled** → add **`PlayerBallHoldAnim`** (forked graph) + **`PracticeNpcPatrol`** with **Point A** / **Point B** empties. Optional: wire **`BodyRenderer`** on patrol. **Do not** enable PC on runner.
 
 ---
 
@@ -265,8 +266,9 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 - **Player body for v1:** **`citizen_human_*`** (branch tested) vs classic **`citizen.vmdl`** — leaning **human** (audience + looks good); citizen fits chaotic meme tone. No custom rig (account cosmetics).
 - Closed roof on arena vs open roof + sun for lighting
-- **Tackle victim oof/grunt** — layered on built-in ragdoll collision audio (not shipped)
-- **Practice arena — moving/charging `practice_npc`** — static lane + launch band readout ✅; patrol/charge AI still open (MP moving-target tests)
+- **Tackle oof/grunt** — layered on built-in ragdoll collision audio (not shipped)
+- **Practice patrol zigzag** — optional intermediate waypoints between A/B (straight ping-pong only for now)
+- **Practice patrol runner locomotion** — **`PracticeNpcPatrol`** host-teleport + tackle OK; **`charge_run`** overlay OK with **`PlayerBallHoldAnim`**; **run legs still idle-slide**. Tried: `WishVelocity`/RB velocity (enabling PC → Update exceptions); animgraph **`move_groundspeed`** alone — still slides. Next chat: graph params / `@sbox docs` / alternate approach (PC without camera? baked run layer?). **Keep PC disabled** on scene dummies.
 - Map vote: allow changing vote during the 30s window?
 - **Traffic knockdown tuning:** **`KnockdownLaunchSpeed`** / hit box vs dodgeability
 - **Ball compass polish:** optional distance readout on `BallCompassHud`
@@ -452,7 +454,8 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 - [ ] **Tackle comic text** — Les Flos import + **2-window MP verify** (optional; exits good enough for v1)
 - [ ] **Speed Blitz aim preview vs hits** — hits use contact + LOS; dev-box **corridor preview** may still show enemies through walls / wrong floor until wall-clip pass (bundled with aim preview v3)
-- [ ] **Tackle juice — moving victims** — predict tested on **idle** targets only (2026-06-14); moving fairness → practice scene + Tier C1 lag-comp
+- [ ] **Practice patrol runner locomotion** — moves + tackles work; **legs idle-slide** (charge_run arm/lean only). **`PlayerController` must stay disabled** on dummies. Code sets **`move_groundspeed`**; insufficient so far. See Open decisions.
+- [ ] **Tackle juice — moving victims** — predict tested on **idle** targets only (2026-06-14); patrol runner exists but **not useful for feel tuning** until run legs fixed; then 2-window MP + Tier C1 lag-comp
 - [ ] **Throw charge wind-up — MP verify + polish** — ✅ **WORKS solo (2026-06-11)**: masked layer in forked graph `utd_citizen_human_m.vanmgrph`; body keeps locomotion/look-at while arm winds up. Remaining: 2-window MP check (remotes scrub via `NetThrowChargeLerp`); improve the wind-up clip in Blender if wanted (overwrite `throw_windup.fbx` — see workflow doc "Iterating on a clip"); pick final bone mask (see Open decisions).
 - [ ] Throw strength still needs playtest tuning
 - [ ] Walk/run animations while charging throw (legs still locomote in place — `PlayerBallHoldAnim` does not fix; charge blocks move input)
@@ -471,12 +474,9 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → practice_arena ✅ (PracticeArenaMode, launch band readout); moving/charging dummies still open. Speed Blitz 2d solo ✅; MP partial — client wind-up spark sprites blue squares (editor/publish only). MULTIPLAYER_NETCODE.md for net/combat work.
-Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped. Speed Blitz 2c ✅; 2d solo ✅; 2026-06-22: contact-only dash hits, practice launch measure (BandPitch 128, pelvis max, score floor(along/128)+1).
-Practice: MapMatchConfig.PracticeArenaMode only on practice_arena.scene — hides top score/clock HUD; unlimited goals/clock; team-0 spawns. PracticeLaunchMeasure LocalLaneDirection (0,1,0); ReadoutSign GameObject wire.
-Owner FOV: PostCameraSetup — not OnUpdate alone. ThrowChargeCamera [10002]; SpeedBlitzDashCamera idle must not stomp CameraOffset.
+Read SESSION_NOTES.md → practice_arena ✅; PracticeNpcPatrol partial ✅ (A↔B move, NPC↔player tackle) — run legs still idle-slide (charge_run overlay only); fix locomotion next. Speed Blitz 2d solo ✅; MP partial — client wind-up spark sprites blue squares (editor/publish only). MULTIPLAYER_NETCODE.md for net/combat work.
+Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped. PracticeNpcPatrolHostState + PracticeNpcPatrol; PlayerBallHoldAnim required on runner; PC disabled on dummies.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
-No GameNetworkManager auto-add for ult components — Speedster prefab manual.
 ```
 
 **Undecided list:** Add bullets under **Open decisions** when we postpone a choice; remove when settled.
@@ -485,7 +485,8 @@ No GameNetworkManager auto-add for ult components — Speedster prefab manual.
 
 ## Recent session notes
 
-- **2026-06-22 (practice arena):** **`practice_arena.scene`** + **`PracticeArenaMode`** (unlimited clock/goals, team-0 spawns, hide top match HUD). **`PracticeLaunchMeasure`** / **`PracticeLaunchReadout`** — 128-unit bands, pelvis max, TV readout (font/size/color inspector). Static class **`practice_npc`** + ruler; moving/charging dummies still open.
+- **2026-06-23 (practice patrol — partial):** **`PracticeNpcPatrol`** + **`PracticeNpcPatrolHostState`** — A↔B host teleport, charge tier + **`charge_run`** via **`CatchUpSpeedBoost`** / **`PlayerChargeRunAnim`**; NPC can tackle player. **`PlayerBallHoldAnim`** required on runner. **Open:** run legs idle-slide (`move_groundspeed` + overlay insufficient; PC enable → exceptions). Deferred next chat.
+- **2026-06-22 (practice arena):** **`practice_arena.scene`** + **`PracticeArenaMode`**, **`PracticeLaunchMeasure`** / readout, static **`practice_npc`** + ruler.
 - **2026-06-22 (tackle attacker ramp):** regular tackle connect → **`TriggerForceWalkRampOnHost`** for attacker (all classes); removed sprint-only **`TackleStripRamp`** path.
 - **2026-06-22 (Speed Blitz polish):** contact-only dash hits + client predict connect crunch + hang/body-init timing + remote body-glow light cleanup.
 

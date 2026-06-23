@@ -25,6 +25,7 @@ public sealed class PlayerChargeRunAnim : Component
 	private PlayerTeam playerTeam;
 	private PlayerBallHoldAnim ballHoldAnim;
 	private SpeedsterSpeedBlitzUlt speedBlitzUlt;
+	private PracticeNpcPatrolHostState practiceNpcPatrol;
 	private float chargeRunPoseWeight;
 
 	protected override void OnStart()
@@ -91,6 +92,10 @@ public sealed class PlayerChargeRunAnim : Component
 		if ( ballThrow?.IsChargingThrow == true )
 			return false;
 
+		practiceNpcPatrol ??= Components.Get<PracticeNpcPatrolHostState>();
+		if ( practiceNpcPatrol?.IsPatrollingAtChargeSpeed == true )
+			return true;
+
 		if ( catchUpSpeedBoost is null )
 			return false;
 
@@ -106,7 +111,13 @@ public sealed class PlayerChargeRunAnim : Component
 			: chargeRunPoseWeight.Approach( targetWeight, Time.Delta / blendSeconds );
 
 		if ( wantPose )
-			renderer.Set( ChargeRunCycleParamName, ChargeRunCycle.Clamp( 0f, 1f ) );
+		{
+			practiceNpcPatrol ??= Components.Get<PracticeNpcPatrolHostState>();
+			var cycle = practiceNpcPatrol?.IsPatrollingAtChargeSpeed == true
+				? practiceNpcPatrol.NetChargeRunCycle
+				: ChargeRunCycle;
+			renderer.Set( ChargeRunCycleParamName, cycle.Clamp( 0f, 1f ) );
+		}
 
 		renderer.Set( ChargeRunWeightParamName, chargeRunPoseWeight );
 	}

@@ -46,6 +46,7 @@ public sealed class CatchUpSpeedBoost : Component
 	private PlayerTackle playerTackle;
 	private PlayerDodge playerDodge;
 	private SpeedsterSpeedBlitzUlt speedBlitzUlt;
+	private PracticeNpcPatrolHostState practiceNpcPatrol;
 	private int dodgeRampApplySeqHandled;
 	private int forceWalkRampSeqHandled;
 	private float forwardMoveTime;
@@ -208,6 +209,9 @@ public sealed class CatchUpSpeedBoost : Component
 		if ( IsProxy )
 			return;
 
+		if ( TryApplyPracticeNpcPatrolChargeTier() )
+			return;
+
 		if ( !playerController.IsValid() )
 			playerController = Components.Get<PlayerController>();
 
@@ -358,6 +362,26 @@ public sealed class CatchUpSpeedBoost : Component
 	{
 		var team = Components.Get<PlayerTeam>();
 		return team is null || team.IsMatchGameplayInputAllowed;
+	}
+
+	/// <summary> Practice patrol dummies use disabled <see cref="PlayerController"/> — force charge tier for anim + tackle targets. </summary>
+	private bool TryApplyPracticeNpcPatrolChargeTier()
+	{
+		practiceNpcPatrol ??= Components.Get<PracticeNpcPatrolHostState>();
+		if ( !practiceNpcPatrol.IsValid() || !practiceNpcPatrol.IsPatrollingAtChargeSpeed )
+			return false;
+
+		playerTackle ??= Components.Get<PlayerTackle>();
+		if ( playerTackle is { IsKnockedDown: true } )
+		{
+			ownerAtChargeSpeed = false;
+			NetAtChargeSpeed = false;
+			return true;
+		}
+
+		ownerAtChargeSpeed = true;
+		NetAtChargeSpeed = true;
+		return true;
 	}
 
 	private void ApplyFrozenMovement()

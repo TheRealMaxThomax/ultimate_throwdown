@@ -30,6 +30,7 @@ public sealed class StartupMapBootstrap : GameObjectSystem<StartupMapBootstrap>,
 	/// <summary>
 	/// Practice NPCs use the same prefab as players (<see cref="Rigidbody"/> + <see cref="PlayerController"/>).
 	/// A dynamic body gets pushed by other character controllers and slides; locking translation makes them act like solid obstacles.
+	/// Patrol runners move via host teleport in <see cref="PracticeNpcPatrol"/> — lock keeps them from being shoved off lane.
 	/// </summary>
 	private void ApplyPracticeNpcRigidbodyLocks()
 	{

@@ -178,6 +178,8 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 | `StartupMapBootstrap` | Scene startup; locks `practice_npc` rigidbodies (`Code/Map/`) |
 | `PracticeLaunchMeasure` | Practice arena lane scoring — band pitch 128, pelvis max along lane (`Code/Map/`) |
 | `PracticeLaunchReadout` | Practice arena sign/TV WorldPanel score display (`Code/Map/`) |
+| `PracticeNpcPatrolHostState` | Abstract patrol API for practice runner dummies — player systems reference this; implemented by `PracticeNpcPatrol` (`Code/Map/`) |
+| `PracticeNpcPatrol` | Practice dummy ping-pong patrol A↔B at charge speed (`Code/Map/`; extends `PracticeNpcPatrolHostState`) |
 | `PracticeLaunchReadoutRoot` | WorldPanel root `PanelComponent` for readout (`Code/UI/`) |
 | `PracticeLaunchScorePanel` | C# flex panel — score label on readout TV (`Code/UI/`) |
 | `StreetLightFlicker` | One lamp cluster: flickers child `SpotLight` + bulb material slot (`Code/Map/`) |
@@ -194,6 +196,8 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 **Often-used on `GameNetworkManager`:** `Team0Spawns`, `Team1Spawns`, `SpawnPointOccupiedRadius`, `MatchConfig`, `SnapPositionToGround()`, `SnapBallToGround()`, `ApplyRoundResetToAllPlayers()`, `ApplyRoundResetToPlayer()` (legacy: `Team0Spawn`, `Team1Spawn`, `JoinSpawnSpacing`); auto-adds on join: **`PlayerDisableCrouch`**, **`PlayerEnemyOutline`**, **`BallCompassHud`**, **`PlayerBallHoldAnim`**, **`PlayerChargeRunAnim`**, **`TackleImpactFeel`**, **`CombatFeelPredictDedupe`**
 
 **Often-used on `PracticeLaunchMeasure`:** `BandPitch` (128), `LocalLaneDirection` (local Y `(0,1,0)`), **`ReadoutSign`** (GameObject with `PracticeLaunchReadout`), wire on `PracticeLaunchLane` empty
+
+**Often-used on `PracticeNpcPatrol`:** `PointA`, `PointB`, `MoveSpeedOverride`, `ArrivalThreshold` (default **8**), `ChargeRunCycleSeconds` (default **0.55**), optional **`BodyRenderer`**; host teleport + animgraph **`move_groundspeed`** for run legs (PC stays disabled)
 
 **Often-used on `PracticeLaunchReadout`:** `PanelSize`, `LookAtCamera`, `HoldSeconds`, **`ScoreFontSize`**, **`ScoreFontFamily`**, **`ScoreColor`**, **`ScoreFontWeight`**, **`PanelBackgroundColor`**, `ShowScoreOnHost()` — on `LaunchReadoutSign` TV (+ optional `WorldPanel`)
 

@@ -387,13 +387,7 @@ public sealed class PlayerTackle : Component
 		if ( speedBoost == null || !speedBoost.IsAtChargeSpeed )
 			return;
 
-		var myVelocity = playerController?.Velocity ?? Vector3.Zero;
-		var horizontalVelocity = myVelocity.WithZ( 0f );
-		if ( horizontalVelocity.Length < 1f )
-			return;
-
-		var approachDir = GetHorizontalTackleApproachDirection();
-		if ( approachDir.Length < 0.001f )
+		if ( !TryGetHostTackleMove( out var horizontalVelocity, out var approachDir ) )
 			return;
 
 		var tackleRadius = playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f;
@@ -559,6 +553,24 @@ public sealed class PlayerTackle : Component
 			Log.Info( $"[Tackle] Rpc {GameObject.Name} → {victim.GameObject.Name} | Dir={tackleDir} hostBonus={tackleChargeBonus:F3} ownerBonus={clampedOwnerBonus:F3}" );
 
 		ExecuteTackle( victim, tackleDir, clampedOwnerBonus );
+	}
+
+	/// <summary> Host tackle gate — practice patrol dummies use synced move dir/speed (disabled PC, no physics velocity). </summary>
+	private bool TryGetHostTackleMove( out Vector3 horizontalVelocity, out Vector3 approachDirection )
+	{
+		horizontalVelocity = default;
+		approachDirection = default;
+
+		var patrol = Components.Get<PracticeNpcPatrolHostState>();
+		if ( patrol.IsValid() && patrol.TryGetHostTackleMove( out horizontalVelocity, out approachDirection ) )
+			return true;
+
+		horizontalVelocity = (playerController?.Velocity ?? Vector3.Zero).WithZ( 0f );
+		if ( horizontalVelocity.Length < 1f )
+			return false;
+
+		approachDirection = GetHorizontalTackleApproachDirection();
+		return approachDirection.Length >= 0.001f;
 	}
 
 	/// <summary>Horizontal view-forward for tackle cone; same basis as dodge shove (EyeAngles, not velocity).</summary>
