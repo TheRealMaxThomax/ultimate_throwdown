@@ -212,6 +212,15 @@ public sealed class CatchUpSpeedBoost : Component
 		if ( TryApplyPracticeNpcPatrolChargeTier() )
 			return;
 
+		// Static practice dummies share the host machine's global Input — never read W/S/charge ramp here
+		// or they can counter-tackle the human player on the same frame (patrol runners use the path above).
+		if ( GameObject.Tags.Has( CitizenAvatarLod.PracticeNpcTag ) )
+		{
+			ownerAtChargeSpeed = false;
+			NetAtChargeSpeed = false;
+			return;
+		}
+
 		if ( !playerController.IsValid() )
 			playerController = Components.Get<PlayerController>();
 

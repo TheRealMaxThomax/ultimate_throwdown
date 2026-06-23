@@ -841,7 +841,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PassivePointsPerSecond": 0.2,
+              "PassivePointsPerSecond": 100,
               "TackleChargePoints": 10
             },
             {
@@ -3097,7 +3097,7 @@
                   ]
                 },
                 {
-                  "__guid": "e66d3f5f-95b7-45e6-b32c-856eda7d6aab",
+                  "__guid": "abca45fc-d925-4c06-b4c1-cadcf459b278",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3114,7 +3114,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "e21d4033-d114-4371-923b-2560f8d796f1",
+                      "__guid": "547b3ba0-fe8e-40b4-99e9-b76a8bdd6768",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6203,7 +6203,7 @@
                   ]
                 },
                 {
-                  "__guid": "d2ae2243-1793-468b-bd52-be7e2a8b73c5",
+                  "__guid": "0f0b0c5e-5c6d-4b40-91a1-bd7d4101c75c",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6220,7 +6220,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "bd970908-f1f1-4124-a6e1-82278850e3d0",
+                      "__guid": "71b9062a-2838-43ab-8d28-16b8815c07c9",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6352,8 +6352,8 @@
           "__version": 2,
           "Flags": 0,
           "Name": "NPC_Running",
-          "Position": "464.00061,-1742.00024,-93.8355865",
-          "Rotation": "0,0,-0.707106769,0.707106829",
+          "Position": "464.000549,-1742.00037,-93.8355865",
+          "Rotation": "0,0,-0.707106769,-0.707106829",
           "Scale": "1,1,1",
           "Tags": "practice_npc",
           "Enabled": true,
@@ -6724,6 +6724,29 @@
               "TackleRpcRadiusFudge": 1.12
             },
             {
+              "__type": "TackleImpactFeel",
+              "__guid": "97574afc-9b51-47b9-8194-b23c589bf057",
+              "__enabled": true,
+              "Flags": 0,
+              "AttackerCameraOffsetPunchX": 22,
+              "AttackerCameraOffsetPunchZ": 4,
+              "AttackerFovPunchDegrees": -4,
+              "AttackerPunchDurationSeconds": 0.12,
+              "EnableHitstop": true,
+              "HitstopDurationSeconds": 0.055,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "ShakeDurationSeconds": 0.14,
+              "ShakeForAttacker": true,
+              "ShakeForVictim": true,
+              "ShakePositionAmplitude": 7,
+              "ShakeRotationAmplitudeDegrees": 1.2
+            },
+            {
               "__type": "RagdollClientFeel",
               "__guid": "e9ef89f6-2186-4b3a-a456-0c50c7979df2",
               "__enabled": true,
@@ -6783,6 +6806,12 @@
               "__enabled": true,
               "Flags": 0,
               "ArrivalThreshold": 8,
+              "BodyRenderer": {
+                "_type": "component",
+                "component_id": "00432272-fe24-47e2-a9cf-07644c266561",
+                "go": "f0e22ec6-d4f3-43f4-a600-991131eb8eb7",
+                "component_type": "SkinnedModelRenderer"
+              },
               "ChargeRunCycleSeconds": 0.55,
               "EnableDebugLogs": false,
               "MoveSpeedOverride": 0,
@@ -6800,7 +6829,8 @@
               "PointB": {
                 "_type": "gameobject",
                 "go": "6f82a8ed-8989-4eb7-bcae-c492792da7f7"
-              }
+              },
+              "TackleChargeBonus": 0
             },
             {
               "__type": "PlayerBallHoldAnim",
@@ -6842,7 +6872,7 @@
               "Flags": 0,
               "Name": "Body",
               "Position": "-0.000244140625,0,0",
-              "Rotation": "0,0,1,-4.37113883E-08",
+              "Rotation": "0,0,0,1",
               "Scale": "1,1,1",
               "Tags": "",
               "Enabled": true,
@@ -6858,7 +6888,7 @@
                   "__enabled": true,
                   "Flags": 0,
                   "AnimationGraph": "animation/utd_citizen_human_m.vanmgrph",
-                  "BodyGroups": 5441,
+                  "BodyGroups": 5185,
                   "BoneMergeTarget": null,
                   "CreateAttachments": false,
                   "CreateBoneObjects": true,
@@ -8916,7 +8946,7 @@
                   ]
                 },
                 {
-                  "__guid": "5b85b520-d302-4726-9b5f-d12ae0e9bbdb",
+                  "__guid": "c145795f-4bd3-4502-bfc2-ee20070065f5",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8933,7 +8963,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "6ad39da6-bf91-4d94-a230-d957d2685de0",
+                      "__guid": "35ac94cd-0a1c-4f16-9905-4f57e9ac1cd7",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11552,7 +11582,7 @@
                   ]
                 },
                 {
-                  "__guid": "8bc8cdb2-2f23-418b-a934-d1a72727382f",
+                  "__guid": "e879bf6d-17a0-44ca-8daf-61c1d1a6cb75",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11569,7 +11599,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "978402bb-20cf-4f19-acaa-4985ea69b83d",
+                      "__guid": "5cf242ca-99ae-4923-a6a4-8d3589dee525",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -14188,7 +14218,7 @@
                   ]
                 },
                 {
-                  "__guid": "47b7aa58-1509-4cd0-a911-62b70d4a8aaa",
+                  "__guid": "3a1035f2-5056-4f4a-a048-5983b6cbcac2",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -14205,7 +14235,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "e28ae2d8-9b49-45fc-b0c5-56d30e9187da",
+                      "__guid": "938b44d4-0883-4752-b5da-2a4ff09b0c8a",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,

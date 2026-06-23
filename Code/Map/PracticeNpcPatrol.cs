@@ -27,6 +27,11 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 
 	[Property] public Color PathGizmoColor { get; set; } = new( 0.35f, 0.85f, 1f, 0.9f );
 
+	/// <summary> Fixed tackle charge bonus override. 0 = use class <c>TackleChargeRampRate</c> / <c>MaxTackleChargeBonus</c> (same ramp logic as players); &gt;0 = forced floor regardless of class stats. </summary>
+	[Property] public float TackleChargeBonus { get; set; } = 0f;
+
+	public override float PatrolTackleChargeBonus => TackleChargeBonus;
+
 	[Property] public bool EnableDebugLogs { get; set; }
 
 	[Sync( SyncFlags.FromHost )] private bool NetIsPatrolling { get; set; }
@@ -138,7 +143,12 @@ public sealed class PracticeNpcPatrol : PracticeNpcPatrolHostState, Component.Ex
 
 	private bool IsMovementBlocked()
 	{
-		return playerTackle is { IsKnockedDown: true };
+		if ( playerTackle is { IsKnockedDown: true } )
+			return true;
+
+		// After landing a tackle, freeze in place during the cooldown window so the victim
+		// gets a clean launch impulse instead of being continuously shoved by a charging NPC.
+		return playerTackle is { IsInTackleCooldown: true };
 	}
 
 	private void SetPatrolActive( bool active )

@@ -118,6 +118,7 @@ public sealed class PlayerTackle : Component
 	private PlayerController playerController;
 	private TackleImpactFeel tackleImpactFeel;
 	private CombatFeelPredictDedupe combatFeelDedupe;
+	private PracticeNpcPatrolHostState practiceNpcPatrol;
 	private CameraComponent activeCamera;
 
 	// Last ragdoll orbit camera (owner); used as blend start when standing up
@@ -133,6 +134,9 @@ public sealed class PlayerTackle : Component
 	private bool deferringRagdollCamForImpactFeel;
 
 	public bool IsTackleImmune => isTackleImmune;
+
+	/// <summary>True while the tackle cooldown is active (attacker cannot tackle again). Practice patrol NPCs pause movement during this window so the victim gets a clean launch.</summary>
+	public bool IsInTackleCooldown => Time.Now < netTackleBlockedUntil;
 
 	/// <summary>Host: force tackle immunity on/off (e.g. invulnerable during a Speed Blitz dash).</summary>
 	public void SetHostTackleImmune( bool immune )
@@ -154,6 +158,9 @@ public sealed class PlayerTackle : Component
 	public bool IsStandUpCameraBlending => standUpCameraBlendStartTime >= 0f;
 	public bool IsPostRagdollSlowCatchUpRampActive => netPostRagdollSlowCatchUpUntil > 0f && Time.Now < netPostRagdollSlowCatchUpUntil;
 	public bool IsPostAttackSlowCatchUpRampActive => netPostAttackSlowCatchUpUntil > 0f && Time.Now < netPostAttackSlowCatchUpUntil;
+
+	/// <summary>Practice dummies must never drive Main Camera ragdoll orbit (even if network-owned on host).</summary>
+	private bool ShouldApplyOwnerKnockdownCamera => Network.IsOwner && !GameObject.Tags.Has( PracticeNpcTag );
 
 	/// <summary> Host: end ragdoll immediately (match reset). Skips post-tackle invincibility. </summary>
 	public void ForceStandUpFromHost()
@@ -197,6 +204,7 @@ public sealed class PlayerTackle : Component
 		playerController = Components.Get<PlayerController>();
 		tackleImpactFeel = Components.Get<TackleImpactFeel>();
 		combatFeelDedupe = Components.Get<CombatFeelPredictDedupe>();
+		practiceNpcPatrol = Components.Get<PracticeNpcPatrolHostState>();
 
 		foreach ( var cam in Scene.GetAllComponents<CameraComponent>() )
 		{
@@ -263,7 +271,7 @@ public sealed class PlayerTackle : Component
 			if ( Networking.IsHost )
 				WorldPosition = NetRagdollPosition;
 
-			if ( this.Network.IsOwner )
+			if ( this.Network.IsOwner && ShouldApplyOwnerKnockdownCamera )
 			{
 				// Free look while down: PlayerController is disabled, so apply look here and keep EyeAngles
 				// in sync for stand-up. Camera uses the same angles (third-person orbit).
@@ -294,7 +302,7 @@ public sealed class PlayerTackle : Component
 				StepTackleChargeBonus( ref ownerTackleChargeBonus );
 		}
 
-		if ( Networking.IsHost && IsMatchGameplayInputAllowed() )
+		if ( Networking.IsHost && IsMatchGameplayInputAllowed() && CanUseHostTackleDetection() )
 			TryDetectAndApplyHostTackle();
 
 		// Remote owners: host often has near-zero Velocity for our pawn (movement runs locally),
@@ -312,7 +320,7 @@ public sealed class PlayerTackle : Component
 
 	protected override void OnPreRender()
 	{
-		if ( !this.Network.IsOwner || !activeCamera.IsValid() )
+		if ( !ShouldApplyOwnerKnockdownCamera || !activeCamera.IsValid() )
 			return;
 
 		// Place ragdoll orbit last so later components (e.g. charge camera offset restore) cannot overwrite it.
@@ -376,6 +384,15 @@ public sealed class PlayerTackle : Component
 		var toRot = activeCamera.WorldRotation;
 		activeCamera.WorldPosition = Vector3.Lerp( standUpCameraBlendFromPos, toPos, t );
 		activeCamera.WorldRotation = Rotation.Slerp( standUpCameraBlendFromRot, toRot, t );
+	}
+
+	private bool CanUseHostTackleDetection()
+	{
+		if ( !GameObject.Tags.Has( PracticeNpcTag ) )
+			return true;
+
+		practiceNpcPatrol ??= Components.Get<PracticeNpcPatrolHostState>();
+		return practiceNpcPatrol?.IsPatrollingAtChargeSpeed == true;
 	}
 
 	private void TryDetectAndApplyHostTackle()
@@ -774,10 +791,12 @@ public sealed class PlayerTackle : Component
 		{
 			victim.NetKnockdownFreezePosition = victim.WorldPosition;
 			victim.NetAwaitingRagdollLaunch = true;
+			BroadcastPracticeNpcFreezeForClient( attacker, victim, victim.NetKnockdownFreezePosition );
 		}
 		else
 		{
 			victim.NetIsRagdolled = true;
+			BroadcastPracticeNpcRagdollForClient( attacker, victim );
 		}
 
 		SpawnRagdollObject(
@@ -1014,6 +1033,7 @@ public sealed class PlayerTackle : Component
 			victim.NetAwaitingRagdollLaunch = false;
 			victim.NetRagdollPosition = ragdollGo.WorldPosition;
 			victim.NetIsRagdolled = true;
+			BroadcastPracticeNpcRagdollForClient( attacker, victim );
 
 			if ( EnableTackleDebugLogs )
 				Log.Info( $"[Tackle] Post-pause impulse + spawn | launched={launched} bodies={bodyCount}" );
@@ -1255,6 +1275,7 @@ public sealed class PlayerTackle : Component
 			victim.NetPostRagdollSlowCatchUpUntil = 0f;
 
 		victim.NetIsRagdolled = false;
+		BroadcastPracticeNpcStandUpForClient( victim );
 
 		victim.NetIsTackleImmune = true;
 		await GameTask.DelaySeconds( invincDuration );
@@ -1296,6 +1317,19 @@ public sealed class PlayerTackle : Component
 
 	private void StepTackleChargeBonus( ref float bonus )
 	{
+		// Practice patrol NPC: skip the warm-up ramp and use a fixed designer-tunable bonus.
+		// This runs host-side only (NPC is host-owned, owner+!host path never fires for it).
+		practiceNpcPatrol ??= Components.Get<PracticeNpcPatrolHostState>();
+		if ( practiceNpcPatrol?.IsPatrollingAtChargeSpeed == true )
+		{
+			var patrolBonus = practiceNpcPatrol.PatrolTackleChargeBonus;
+			if ( patrolBonus > 0f )
+			{
+				bonus = patrolBonus;
+				return;
+			}
+		}
+
 		var c = playerClass?.CurrentClass;
 		var rate = c?.TackleChargeRampRate ?? 0f;
 		var maxBonus = c?.MaxTackleChargeBonus ?? 0f;
@@ -1390,7 +1424,7 @@ public sealed class PlayerTackle : Component
 
 		playerClass?.ApplyClassAppearance();
 
-		if ( this.Network.IsOwner && StandUpCameraBlendDuration > 0.001f && activeCamera.IsValid() )
+		if ( this.Network.IsOwner && StandUpCameraBlendDuration > 0.001f && activeCamera.IsValid() && ShouldApplyOwnerKnockdownCamera )
 		{
 			standUpCameraBlendFromPos = lastRagdollCameraPos;
 			standUpCameraBlendFromRot = lastRagdollCameraRot;
@@ -1410,5 +1444,144 @@ public sealed class PlayerTackle : Component
 		var orbit = -lookRot.Forward * RagdollCameraDistance + Vector3.Up * RagdollCameraHeight;
 		position = WorldPosition + orbit;
 		rotation = lookRot;
+	}
+
+	// --- Practice NPC client visuals (scene dummies stay NetworkMode.Snapshot — [Sync] does not replicate) ---
+
+	private static void BroadcastPracticeNpcFreezeForClient( PlayerTackle broadcaster, PlayerTackle victim, Vector3 freezePosition )
+	{
+		if ( !Networking.IsHost || !victim.IsValid() || !victim.GameObject.Tags.Has( PracticeNpcTag ) )
+			return;
+
+		ResolvePracticeNpcVisualBroadcaster( broadcaster )?.PracticeNpcClientFreezeRpc( victim.GameObject.Id, freezePosition );
+	}
+
+	private static void BroadcastPracticeNpcRagdollForClient( PlayerTackle broadcaster, PlayerTackle victim )
+	{
+		if ( !Networking.IsHost || !victim.IsValid() || !victim.GameObject.Tags.Has( PracticeNpcTag ) )
+			return;
+
+		ResolvePracticeNpcVisualBroadcaster( broadcaster )?.PracticeNpcClientRagdollRpc( victim.GameObject.Id );
+	}
+
+	private static void BroadcastPracticeNpcStandUpForClient( PlayerTackle victim )
+	{
+		if ( !Networking.IsHost || !victim.IsValid() || !victim.GameObject.Tags.Has( PracticeNpcTag ) )
+			return;
+
+		ResolvePracticeNpcVisualBroadcaster( null )?.PracticeNpcClientStandUpRpc( victim.GameObject.Id, victim.NetStandUpPosition, victim.NetPracticeNpcStandEyeAngles );
+	}
+
+	/// <summary>RPC must originate from a network-spawned player — scene practice dummies are not networked objects.</summary>
+	private static PlayerTackle ResolvePracticeNpcVisualBroadcaster( PlayerTackle preferred )
+	{
+		if ( preferred.IsValid() && preferred.GameObject.Network.Active )
+			return preferred;
+
+		var scene = Game.ActiveScene;
+		if ( scene is null )
+			return null;
+
+		foreach ( var tackle in scene.GetAllComponents<PlayerTackle>() )
+		{
+			if ( tackle.GameObject.Tags.Has( PracticeNpcTag ) )
+				continue;
+			if ( !tackle.GameObject.Network.Active )
+				continue;
+
+			return tackle;
+		}
+
+		return null;
+	}
+
+	[Rpc.Broadcast]
+	private void PracticeNpcClientFreezeRpc( Guid victimRootId, Vector3 freezePosition )
+	{
+		if ( Networking.IsHost )
+			return;
+
+		if ( !TryFindPracticeNpcTackle( victimRootId, out var victim ) )
+			return;
+
+		victim.MirrorPracticeNpcFreezeFromHost( freezePosition );
+	}
+
+	[Rpc.Broadcast]
+	private void PracticeNpcClientRagdollRpc( Guid victimRootId )
+	{
+		if ( Networking.IsHost )
+			return;
+
+		if ( !TryFindPracticeNpcTackle( victimRootId, out var victim ) )
+			return;
+
+		victim.MirrorPracticeNpcRagdollFromHost();
+	}
+
+	[Rpc.Broadcast]
+	private void PracticeNpcClientStandUpRpc( Guid victimRootId, Vector3 standUpPosition, Angles standEyeAngles )
+	{
+		if ( Networking.IsHost )
+			return;
+
+		if ( !TryFindPracticeNpcTackle( victimRootId, out var victim ) )
+			return;
+
+		victim.MirrorPracticeNpcStandUpFromHost( standUpPosition, standEyeAngles );
+	}
+
+	private static bool TryFindPracticeNpcTackle( Guid victimRootId, out PlayerTackle victim )
+	{
+		victim = null;
+		var scene = Game.ActiveScene;
+		if ( scene is null )
+			return false;
+
+		foreach ( var tackle in scene.GetAllComponents<PlayerTackle>() )
+		{
+			if ( tackle.GameObject.Id != victimRootId )
+				continue;
+			if ( !tackle.GameObject.Tags.Has( PracticeNpcTag ) )
+				continue;
+
+			victim = tackle;
+			return true;
+		}
+
+		return false;
+	}
+
+	private void MirrorPracticeNpcFreezeFromHost( Vector3 freezePosition )
+	{
+		NetKnockdownFreezePosition = freezePosition;
+		netAwaitingRagdollLaunch = true;
+		ApplyKnockdownAwaitingFreezeLocally();
+		WorldPosition = freezePosition;
+	}
+
+	private void MirrorPracticeNpcRagdollFromHost()
+	{
+		netAwaitingRagdollLaunch = false;
+		if ( isRagdolled )
+			return;
+
+		isRagdolled = true;
+		wasRagdolled = true;
+		ApplyRagdollLocally();
+	}
+
+	private void MirrorPracticeNpcStandUpFromHost( Vector3 standUpPosition, Angles standEyeAngles )
+	{
+		netAwaitingRagdollLaunch = false;
+		NetStandUpPosition = standUpPosition;
+		NetPracticeNpcStandEyeAngles = standEyeAngles;
+
+		if ( !isRagdolled && !knockdownAwaitingFreezeApplied )
+			return;
+
+		isRagdolled = false;
+		wasRagdolled = false;
+		StandUpLocally();
 	}
 }

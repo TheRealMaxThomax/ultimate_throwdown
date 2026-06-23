@@ -20,6 +20,12 @@ public sealed class PlayerCosmeticsSync : Component
 
 	protected override void OnStart()
 	{
+		if ( GameObject.Tags.Has( CitizenAvatarLod.PracticeNpcTag ) )
+		{
+			Enabled = false;
+			return;
+		}
+
 		dresser = Components.Get<Dresser>( FindMode.EverythingInSelfAndDescendants );
 		DisableDresserAutoApply();
 		bodyRenderer = Components.Get<SkinnedModelRenderer>( FindMode.EverythingInSelfAndDescendants );

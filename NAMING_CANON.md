@@ -197,7 +197,7 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 
 **Often-used on `PracticeLaunchMeasure`:** `BandPitch` (128), `LocalLaneDirection` (local Y `(0,1,0)`), **`ReadoutSign`** (GameObject with `PracticeLaunchReadout`), wire on `PracticeLaunchLane` empty
 
-**Often-used on `PracticeNpcPatrol`:** `PointA`, `PointB`, `MoveSpeedOverride`, `ArrivalThreshold` (default **8**), `ChargeRunCycleSeconds` (default **0.55**), optional **`BodyRenderer`**; host teleport + animgraph **`move_groundspeed`** for run legs (PC stays disabled)
+**Often-used on `PracticeNpcPatrol`:** `PointA`, `PointB`, `MoveSpeedOverride`, `ArrivalThreshold` (default **8**), `ChargeRunCycleSeconds` (default **0.55**), **`TackleChargeBonus`** (default **0** — 0 = class ramp same as player; >0 = forced floor), optional **`BodyRenderer`**; host teleport + animgraph **`move_groundspeed`** / **`move_x`** for run legs (PC stays disabled); freezes during tackle cooldown (`IsInTackleCooldown`) so victim gets clean launch; `PatrolTackleChargeBonus` (abstract API from `PracticeNpcPatrolHostState` — used by `PlayerTackle.StepTackleChargeBonus`)
 
 **Often-used on `PracticeLaunchReadout`:** `PanelSize`, `LookAtCamera`, `HoldSeconds`, **`ScoreFontSize`**, **`ScoreFontFamily`**, **`ScoreColor`**, **`ScoreFontWeight`**, **`PanelBackgroundColor`**, `ShowScoreOnHost()` — on `LaunchReadoutSign` TV (+ optional `WorldPanel`)
 

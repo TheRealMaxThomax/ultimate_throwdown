@@ -289,7 +289,7 @@ Existing gotcha (keep): **do not** add extra host-side charge gates on tackle RP
 | Priority | When |
 |----------|------|
 | **Tier B** | Ongoing — ragdoll interp, ball smooth, checklist on new combat features |
-| **Practice scene** | **Partial ✅** — static dummies + launch readout + **`PracticeNpcPatrol`** runner (move + tackle OK). **Open:** run-leg locomotion (idle slide); then 2-window MP moving-target verify before C1 |
+| **Practice scene** | **Partial ✅** — static dummies + launch readout + **`PracticeNpcPatrol`** runner; **idle MP knockdown visuals ✅ (2026-06-23)** via **`PracticeNpcClient*Rpc`** (scene dummies stay Snapshot — **do not NetworkSpawn**). **Open:** patrol runner 2-window MP feel; then C1 if needed |
 | **Tier C1** | Lag-comp rewind on host hit tests if misses still feel wrong after practice scene |
 | **Tier C2–C3** | Spectator polish, long soak |
 
@@ -305,6 +305,7 @@ See [`SESSION_NOTES.md`](SESSION_NOTES.md) → **Known issues** (ragdoll jitter,
 
 | Date | Change |
 |------|--------|
+| 2026-06-23 | Practice **`practice_npc`** MP — idle knockdown client visuals via **`PracticeNpcClient*Rpc`** broadcast (Snapshot scene dummies; **not** `NetworkSpawn`). Documented why player-prefab NPC network spawn breaks solo/MP (shared Input, camera, cosmetics). |
 | 2026-06-22 | Practice arena — **`PracticeArenaMode`**, **`PracticeLaunchMeasure`** (128 bands, pelvis max), **`PracticeLaunchReadout`** TV. |
 | 2026-06-22 | Speed Blitz dash hits → **physical contact + LOS** (`TryFindDashHitAlongSegment`); no corridor teleport. Client-owner **connect crunch on predict** + broadcast dedupe by dasher id. |
 | 2026-06-14 | **Wrap-up** — Tier 0–A marked complete; testing acceptance; symptoms table updated; `What's next` → B/C. |
