@@ -703,6 +703,7 @@
               "AttackerPickupLockoutAfterCarrierTackle": 0.45,
               "EnableTackleDebugLogs": true,
               "HazardKnockdownComicPower": 1.55,
+              "MaxTackleVerticalSeparation": 56,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3097,7 +3098,7 @@
                   ]
                 },
                 {
-                  "__guid": "abca45fc-d925-4c06-b4c1-cadcf459b278",
+                  "__guid": "88c7d2c6-2652-474a-9540-9800edc2fb82",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3114,7 +3115,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "547b3ba0-fe8e-40b4-99e9-b76a8bdd6768",
+                      "__guid": "46489ce9-254b-470a-ab54-d2c057080d1f",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -4067,6 +4068,7 @@
               "AttackerPickupLockoutAfterCarrierTackle": 0.45,
               "EnableTackleDebugLogs": false,
               "HazardKnockdownComicPower": 1.55,
+              "MaxTackleVerticalSeparation": 56,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -6203,7 +6205,7 @@
                   ]
                 },
                 {
-                  "__guid": "0f0b0c5e-5c6d-4b40-91a1-bd7d4101c75c",
+                  "__guid": "daaf0551-97bd-4de9-9ede-9d8461bdb0e5",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6220,7 +6222,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "71b9062a-2838-43ab-8d28-16b8815c07c9",
+                      "__guid": "f58f5523-40b5-45ba-8503-8deb17117558",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6703,6 +6705,7 @@
               "AttackerPickupLockoutAfterCarrierTackle": 0.45,
               "EnableTackleDebugLogs": false,
               "HazardKnockdownComicPower": 1.55,
+              "MaxTackleVerticalSeparation": 56,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -8946,7 +8949,7 @@
                   ]
                 },
                 {
-                  "__guid": "c145795f-4bd3-4502-bfc2-ee20070065f5",
+                  "__guid": "024d798b-7bf0-4d57-9fba-4252e8899c75",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8963,7 +8966,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "35ac94cd-0a1c-4f16-9905-4f57e9ac1cd7",
+                      "__guid": "db1605ff-beb5-4e14-821a-67d2ae31c421",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -9446,6 +9449,7 @@
               "AttackerPickupLockoutAfterCarrierTackle": 0.45,
               "EnableTackleDebugLogs": false,
               "HazardKnockdownComicPower": 1.55,
+              "MaxTackleVerticalSeparation": 56,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -11582,7 +11586,7 @@
                   ]
                 },
                 {
-                  "__guid": "e879bf6d-17a0-44ca-8daf-61c1d1a6cb75",
+                  "__guid": "f70e219d-e24f-430b-9157-d21dcbf99a17",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11599,7 +11603,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "5cf242ca-99ae-4923-a6a4-8d3589dee525",
+                      "__guid": "9fb8f8ac-48ab-43fe-8cb0-c88a6318d76b",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -12082,6 +12086,7 @@
               "AttackerPickupLockoutAfterCarrierTackle": 0.45,
               "EnableTackleDebugLogs": false,
               "HazardKnockdownComicPower": 1.55,
+              "MaxTackleVerticalSeparation": 56,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -14218,7 +14223,7 @@
                   ]
                 },
                 {
-                  "__guid": "3a1035f2-5056-4f4a-a048-5983b6cbcac2",
+                  "__guid": "293b4dac-c10e-49b0-b89a-fae3cadc69a0",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -14235,7 +14240,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "938b44d4-0883-4752-b5da-2a4ff09b0c8a",
+                      "__guid": "b284a4e2-2173-4a72-9704-18b8db8ce457",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,

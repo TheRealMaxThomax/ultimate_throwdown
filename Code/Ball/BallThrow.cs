@@ -258,6 +258,13 @@ public sealed class BallThrow : Component
 		throwChargeBar?.Hide();
 	}
 
+	/// <summary> Owning client: cancel charge and pending release (knockdown, etc.). </summary>
+	public void CancelThrowAimingState()
+	{
+		ClearThrowChargeLocal();
+		CancelPendingThrowRelease();
+	}
+
 	private bool IsMatchGameplayInputAllowed()
 	{
 		var team = Components.Get<PlayerTeam>();

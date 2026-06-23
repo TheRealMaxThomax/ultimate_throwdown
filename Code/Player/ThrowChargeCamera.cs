@@ -55,8 +55,8 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 
 		playerTackle ??= Components.Get<PlayerTackle>();
 		var knockedDown = playerTackle.IsValid() && (playerTackle.IsKnockedDown || playerTackle.IsStandUpCameraBlending);
-		if ( wasKnockedDown && !knockedDown && TryEnsureReady() )
-			RefreshBaselineFromController();
+		if ( knockedDown != wasKnockedDown && TryEnsureReady() )
+			RestoreBaselineCamera();
 		wasKnockedDown = knockedDown;
 
 		if ( !TryEnsureReady() )
@@ -70,11 +70,17 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 
 		if ( ShouldLeaveCameraAlone() )
 		{
-			wasChargingThrow = false;
-			wasPendingThrowRelease = false;
-			releaseBlendStartTime = -1f;
-			releaseBlendAwaitingPostCameraClear = false;
-			hasLastAppliedChargeFieldOfView = false;
+			if ( playerTackle.IsValid() && (playerTackle.IsKnockedDown || playerTackle.IsStandUpCameraBlending) )
+				RestoreBaselineCamera();
+			else
+			{
+				wasChargingThrow = false;
+				wasPendingThrowRelease = false;
+				releaseBlendStartTime = -1f;
+				releaseBlendAwaitingPostCameraClear = false;
+				hasLastAppliedChargeFieldOfView = false;
+			}
+
 			return;
 		}
 
@@ -220,15 +226,19 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 		return playerTackle.IsKnockedDown || playerTackle.IsStandUpCameraBlending;
 	}
 
-	void RefreshBaselineFromController()
+	void RestoreBaselineCamera()
 	{
 		if ( !playerController.IsValid() )
 			return;
 
-		baselineCameraOffset = playerController.CameraOffset;
-		baselineCaptured = true;
+		playerController.CameraOffset = baselineCameraOffset;
+		wasChargingThrow = false;
+		wasPendingThrowRelease = false;
+		lastChargeCameraLerp = 0f;
 		releaseBlendStartTime = -1f;
 		releaseBlendAwaitingPostCameraClear = false;
+		releaseBlendUseZeroT = false;
+		hasLastAppliedChargeFieldOfView = false;
 	}
 
 	void TryCaptureBaselineOffset()

@@ -21,6 +21,8 @@ public sealed class PlayerTackle : Component
 
 	/// <summary>Min dot product between horizontal <see cref="PlayerController.EyeAngles"/> forward and direction to victim (1 = straight at them).</summary>
 	[Property] public float TackleDirectionThreshold { get; set; } = 0.95f;
+	/// <summary>Max |ΔZ| between attacker and victim for a tackle to connect — jumpers within this band still get hit.</summary>
+	[Property] public float MaxTackleVerticalSeparation { get; set; } = 56f;
 	[Property] public float TackleCooldown { get; set; } = 1f;
 	[Property] public float TackleLaunchSpeed { get; set; } = 500f;
 	[Property] public float TackleLaunchArc { get; set; } = 1f; // upward blend vs flat tackleDir for ragdoll + tackled ball knock-off
@@ -412,7 +414,7 @@ public sealed class PlayerTackle : Component
 			return;
 
 		var tackleRadius = playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f;
-		if ( !TryFindTackleVictim( Scene, this, WorldPosition, approachDir, tackleRadius, TackleDirectionThreshold, out var victim, out var tackleDir ) )
+		if ( !TryFindTackleVictim( Scene, this, WorldPosition, approachDir, tackleRadius, TackleDirectionThreshold, MaxTackleVerticalSeparation, out var victim, out var tackleDir ) )
 			return;
 
 		ApplyTackleCooldownOnHost();
@@ -445,7 +447,7 @@ public sealed class PlayerTackle : Component
 			return;
 
 		var tackleRadius = playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f;
-		if ( !TryFindTackleVictim( Scene, this, WorldPosition, approachDir, tackleRadius, TackleDirectionThreshold, out var victim, out _ ) )
+		if ( !TryFindTackleVictim( Scene, this, WorldPosition, approachDir, tackleRadius, TackleDirectionThreshold, MaxTackleVerticalSeparation, out var victim, out _ ) )
 			return;
 
 		OwnerApplyPredictedTackleAttackerFeel();
@@ -544,29 +546,23 @@ public sealed class PlayerTackle : Component
 		}
 
 		var tackleRadius = (playerClass?.CurrentClass?.TriggerSphereRadius ?? 40f) * TackleRpcRadiusFudge;
-		var toVictimOwner = (victimWorldPosFromOwner - attackerWorldPosFromOwner).WithZ( 0f );
-		if ( toVictimOwner.Length < 0.001f )
-			return;
-
-		var distOwner = toVictimOwner.Length;
-		if ( distOwner > tackleRadius )
+		if ( !TryValidateTackleHitGeometry(
+			attackerWorldPosFromOwner,
+			victimWorldPosFromOwner,
+			moveDir,
+			tackleRadius,
+			TackleDirectionThreshold,
+			MaxTackleVerticalSeparation,
+			out var tackleDir ) )
 		{
 			if ( EnableTackleDebugLogs )
-				Log.Info( $"[Tackle] Rpc reject: owner distance {distOwner:F0} > {tackleRadius:F0}" );
-			return;
-		}
-
-		if ( Vector3.Dot( moveDir, toVictimOwner.Normal ) < TackleDirectionThreshold )
-		{
-			if ( EnableTackleDebugLogs )
-				Log.Info( "[Tackle] Rpc reject: approach cone" );
+				Log.Info( "[Tackle] Rpc reject: geometry (vertical / horizontal radius / cone)" );
 			return;
 		}
 
 		ApplyTackleCooldownOnHost();
 		// Launch uses owner snapshot (client detected the hit). Host-only distance/cone checks
 		// waited for host positions to catch up and made tackles feel late.
-		var tackleDir = toVictimOwner.Normal;
 		var maxBonus = playerClass?.CurrentClass?.MaxTackleChargeBonus ?? 0f;
 		var clampedOwnerBonus = MathX.Clamp( chargeBonusFromOwner, 0f, maxBonus );
 
@@ -619,6 +615,7 @@ public sealed class PlayerTackle : Component
 		Vector3 horizontalApproachDirection,
 		float tackleRadius,
 		float directionThreshold,
+		float maxVerticalSeparation,
 		out PlayerTackle victim,
 		out Vector3 tackleDir )
 	{
@@ -644,23 +641,63 @@ public sealed class PlayerTackle : Component
 			if ( candidate.IsKnockedDown )
 				continue;
 
-			var distance = Vector3.DistanceBetween( attackerWorldPos, candidate.WorldPosition );
-			if ( distance > tackleRadius )
-				continue;
-
-			var toVictim = (candidate.WorldPosition - attackerWorldPos).WithZ( 0f );
-			if ( toVictim.Length < 0.001f )
-				continue;
-
-			if ( Vector3.Dot( hvNorm, toVictim.Normal ) < directionThreshold )
+			if ( !TryValidateTackleHitGeometry(
+				attackerWorldPos,
+				candidate.WorldPosition,
+				hvNorm,
+				tackleRadius,
+				directionThreshold,
+				maxVerticalSeparation,
+				out var candidateTackleDir ) )
 				continue;
 
 			victim = candidate;
-			tackleDir = toVictim.Normal;
+			tackleDir = candidateTackleDir;
 			return true;
 		}
 
 		return false;
+	}
+
+	/// <summary>Horizontal tackle radius + vertical band + approach cone (shared by host find and owner RPC).</summary>
+	private static bool TryValidateTackleHitGeometry(
+		Vector3 attackerWorldPos,
+		Vector3 victimWorldPos,
+		Vector3 horizontalApproachDirection,
+		float tackleRadius,
+		float directionThreshold,
+		float maxVerticalSeparation,
+		out Vector3 tackleDir )
+	{
+		tackleDir = default;
+
+		var maxVertical = maxVerticalSeparation.Clamp( 8f, 256f );
+		if ( MathF.Abs( victimWorldPos.z - attackerWorldPos.z ) > maxVertical )
+			return false;
+
+		var toVictimHoriz = (victimWorldPos - attackerWorldPos).WithZ( 0f );
+		var horizDist = toVictimHoriz.Length;
+		if ( horizDist > tackleRadius )
+			return false;
+
+		var hvNorm = horizontalApproachDirection.WithZ( 0f );
+		if ( hvNorm.Length < 0.001f )
+			return false;
+
+		hvNorm = hvNorm.Normal;
+
+		if ( horizDist >= 0.001f )
+		{
+			if ( Vector3.Dot( hvNorm, toVictimHoriz.Normal ) < directionThreshold )
+				return false;
+
+			tackleDir = toVictimHoriz.Normal;
+			return true;
+		}
+
+		// Directly above/below within horizontal radius — still in the tackle cylinder.
+		tackleDir = hvNorm;
+		return true;
 	}
 
 	/// <summary>Host: hazard knockdown (traffic, etc.) — same ragdoll path as tackle without attacker bookkeeping.</summary>
@@ -1100,6 +1137,9 @@ public sealed class PlayerTackle : Component
 		if ( knockdownAwaitingFreezeApplied )
 			return;
 
+		if ( Network.IsOwner )
+			Components.Get<BallThrow>()?.CancelThrowAimingState();
+
 		knockdownAwaitingFreezeApplied = true;
 
 		awaitingDisabledColliders.Clear();
@@ -1381,6 +1421,9 @@ public sealed class PlayerTackle : Component
 	private void ApplyRagdollLocally()
 	{
 		Log.Info( $"[Tackle] ApplyRagdollLocally on {GameObject.Name} | IsProxy={IsProxy}" );
+
+		if ( Network.IsOwner )
+			Components.Get<BallThrow>()?.CancelThrowAimingState();
 
 		ClearKnockdownAwaitingFreezeLocally();
 		standUpCameraBlendStartTime = -1f;
