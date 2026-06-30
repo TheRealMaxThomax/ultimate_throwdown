@@ -172,7 +172,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 ### Feedback (v1 vs later)
 
 - v1: **`UltChargeHud`** — floored **%** (e.g. `99.9` → `99%`); panel left of `MovementRampHud`; at 100% stays **white** for **`ReadyHighlightDelaySeconds`** (~0.4 s) then **blue** while still charged.
-- v1: Speed Blitz owner-only ground preview (path + hit width; blue `#24b0ff` tint matches ult comic).
+- v1: Speed Blitz owner-only **segmented ground** preview (`SpeedBlitzAimPreview` — path + hit width; blue `#24b0ff`; `speed_blitz_preview.vmat`). Tune **`PlaneWidthBaseSize`** / **`PlaneLengthBaseSize`** separately.
 - v1: **`ComicBurstPalette.Ult`** — blue knockdown comic on Speed Blitz launch (not connect hang); future ults reuse palette.
 - Later: **circular** ult meter — % in center, clockwise ring fill, ult icon unfade.
 
@@ -184,7 +184,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 ### Ship order (first pass)
 
 1. Shared charge + HUD (`PlayerUltCharge`, `UltChargeHud`)  
-2. Speedster **Speed Blitz** — core dash → hold/release preview → **2c polish ✅** → **2d wind-up** (partial ✅ solo 2026-06-18)
+2. Speedster **Speed Blitz** — core dash → hold/release preview → **2c polish ✅** → **2d wind-up ✅** → **aim preview v3 ✅ (2026-06-30)**
 3. Assist charge  
 4. Per-class `maxPoints` balance (optional)  
 5. **Juggernaut** stomp → **Sniper** path zones  
@@ -194,7 +194,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 ## Speed Blitz (Speedster ult — first ship)
 
-**Status:** **Slices 2a + 2b + 2c ✅ (2026-06-16)** — hold/release preview, dash feel, connect/launch SFX, ult comic. **2d partial ✅ solo (2026-06-18):** wind-up **`speedblitzwindupvfx`** only, **`SpeedBlitzBodyGlow`**, **`speedblitzdischargevfx`** at launch. **Next:** Olympic **`blitz_windup`** pose, **2-window MP**. **Optional later:** preview art v3. **Class:** Speedster only.
+**Status:** **Slices 2a–2d + aim preview v3 ✅ (2026-06-30)** — hold/release preview (segmented ground planes, `speed_blitz_preview.vmat`), dash feel, connect/launch SFX, ult comic, wind-up VFX/pose/glow. **Class:** Speedster only.
 
 ### Slice 2d (in progress — updated 2026-06-18)
 
@@ -240,7 +240,7 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 ### Flow (full design)
 
 1. Charge must be **100%**. Not holding the ball. `MatchPhase.Playing` or post-match celebration.
-2. **Hold X** → owner-only preview: **dash line** (max range), **hit width** (capsule corridor), faint **end marker**. Preview = **aim helper** (corridor filter); **hits** require physical touch + LOS — preview may still show targets behind walls until clip pass.
+2. **Hold X** → owner-only preview: segmented **ground plane** corridor (max range + hit width; `SpeedBlitzAimPreview`). Preview = aim helper; may show through walls — **wall clip won't do**. **Hits** require physical touch + LOS.
 3. **Release X** → **commit** (cannot cancel):
    - Charge immediately drops to **0%**.
    - **Camera locks** (full lock — signed off).

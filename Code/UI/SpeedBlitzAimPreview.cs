@@ -32,8 +32,10 @@ public sealed class SpeedBlitzAimPreview : Component
 
 	[Property, Group( "Meshes" )] public string CorridorModelPath { get; set; } = DefaultPlaneModelPath;
 	[Property, Group( "Meshes" )] public string MarkerModelPath { get; set; } = DefaultPlaneModelPath;
-	/// <summary>Native width/length of <see cref="CorridorModelPath"/> (dev plane ≈ 100).</summary>
-	[Property, Group( "Meshes" )] public float PlaneModelBaseSize { get; set; } = 100f;
+	/// <summary>Native mesh width (local Y) used to scale corridor half-width × 2 — tune hit-width read without shrinking segment length.</summary>
+	[Property, Group( "Meshes" )] public float PlaneWidthBaseSize { get; set; } = 100f;
+	/// <summary>Native mesh length (local X) used to scale each segment along the dash.</summary>
+	[Property, Group( "Meshes" )] public float PlaneLengthBaseSize { get; set; } = 100f;
 
 	[Property, Group( "Materials" )] public string CorridorMaterialPath { get; set; } = DefaultCorridorMaterialPath;
 	[Property, Group( "Materials" )] public string MarkerMaterialPath { get; set; } = DefaultMarkerMaterialPath;
@@ -120,11 +122,12 @@ public sealed class SpeedBlitzAimPreview : Component
 		moveDir = moveDir.Normal;
 
 		var corridorWidth = hitHalfWidth.Clamp( 4f, 200f ) * 2f;
-		var modelBase = PlaneModelBaseSize.Clamp( 1f, 500f );
+		var widthBase = PlaneWidthBaseSize.Clamp( 1f, 500f );
+		var lengthBase = PlaneLengthBaseSize.Clamp( 1f, 500f );
 
 		BuildStraightPath( origin.WithZ( 0f ), moveDir, dashRange, pathSamples );
-		UpdateCorridorSegments( pathSamples, moveDir, corridorWidth, modelBase );
-		UpdateEndMarker( pathSamples[^1], moveDir, corridorWidth, modelBase );
+		UpdateCorridorSegments( pathSamples, moveDir, corridorWidth, widthBase, lengthBase );
+		UpdateEndMarker( pathSamples[^1], moveDir, corridorWidth, widthBase );
 	}
 
 	void BuildStraightPath( Vector3 startFlat, Vector3 moveDir, float dashRange, List<Vector3> samples )
@@ -156,7 +159,8 @@ public sealed class SpeedBlitzAimPreview : Component
 		IReadOnlyList<Vector3> samples,
 		Vector3 moveDir,
 		float corridorWidth,
-		float modelBase )
+		float widthBase,
+		float lengthBase )
 	{
 		var activeCount = 0;
 
@@ -183,8 +187,8 @@ public sealed class SpeedBlitzAimPreview : Component
 			slot.Root.WorldRotation = Rotation.FromYaw( yawDegrees );
 			// Dev plane: local X = segment length, local Y = corridor width (flat on ground).
 			slot.Root.WorldScale = new Vector3(
-				length / modelBase,
-				corridorWidth / modelBase,
+				length / lengthBase,
+				corridorWidth / widthBase,
 				1f );
 
 			slot.Renderer.Model = planeModel;
@@ -200,7 +204,7 @@ public sealed class SpeedBlitzAimPreview : Component
 		Vector3 endGround,
 		Vector3 moveDir,
 		float corridorWidth,
-		float modelBase )
+		float widthBase )
 	{
 		var yawDegrees = MathF.Atan2( moveDir.y, moveDir.x ) * (180f / MathF.PI);
 
@@ -209,8 +213,8 @@ public sealed class SpeedBlitzAimPreview : Component
 		markerGo.WorldPosition = new Vector3( endGround.x, endGround.y, endGround.z + MarkerLift );
 		markerGo.WorldRotation = Rotation.FromYaw( yawDegrees );
 		markerGo.WorldScale = new Vector3(
-			corridorWidth / modelBase,
-			corridorWidth / modelBase,
+			corridorWidth / widthBase,
+			corridorWidth / widthBase,
 			1f );
 
 		markerRenderer.Model = planeModel;
