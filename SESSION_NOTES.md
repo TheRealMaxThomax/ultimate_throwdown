@@ -20,11 +20,12 @@
 
 ## Right now
 
-**Goal:** **Slice 2d** — **solo ✅ (2026-06-18)**. **2-window MP:** partial — **known engine limitation:** joining client sees blitz wind-up **spark sprites as blue squares** (texture/sprite assets don't mount in editor "Join via new instance"; sounds/code/data work fine). **Not fixable in editor — will work on publish.** Other 2d MP (pose, glow, SFX, etc.) not fully signed off yet.
+**Goal:** **Slice 2d ✅ shipped (2026-06-30)** — wind-up VFX/SFX/pose/glow/discharge solo + 2-window MP (practice patrol). **Deferred:** joining-client wind-up spark sprites (editor only → publish smoke test). **Skipped:** soft ring. **Next:** Speed Blitz **aim preview v3 art** (ground plane telegraph — **no wall clip**; players learn walls).
 
 **Next session (priority order):**
-1. **Speed Blitz 2d MP sign-off** — practice patrol + idle dummies **✅ (2026-06-23)**; only **deferred:** joining-client wind-up spark sprites (editor/publish). Optional: soft ring
-2. **Later:** aim preview art v3 + **wall/LOS clip** (preview still shows corridor through walls — hits use contact rules); Tier B tuning / Tier C1 lag-comp if misses still feel unfair at normal ping
+1. **Speed Blitz aim preview v3 art** — flat ground telegraph + `speed_blitz_preview.vmat` (**wall/LOS clip won't do** — 2026-06-30)
+2. **Slice 3** assist charge — or MP verify backlog (throw wind-up / hold-throw 2-window)
+3. **Tier B** tuning / **Tier C1** lag-comp only if normal-ping misses still feel unfair
 
 **Works today:**
 - Ball grab/throw — held ball on **`hold_R`** (`BallGrab` + `BallClientFeel`); **throw trajectory preview** + **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **`BallThrow.ThrowReleaseDelaySeconds`** — anim fires on release, ball stays on hand until delay elapses (tune to release frame); **`PlayerBallHoldAnim`** — built-in `holditem` RH hold + medium throw on release (`b_attack`) + **custom charge wind-up via forked animgraph masked layer** (`throw_charge`/`throw_charge_weight` on `utd_citizen_human_m.vanmgrph` scrub `throw_windup`; body keeps locomotion/look-at — **solo verified 2026-06-11**); **ball carrier glow** (`BallCarrierOutline`); **`BallCompassHud`**; **`main_ball`** art WIP (`ball_v2.vmat`); tackles/ragdolls; dodge; **crouch disabled**
@@ -44,7 +45,7 @@
 - **Traffic knockdown** — no pre-launch pause; **`HazardKnockdownComicPower`** default **1.55** (Chaos/red); **`TriggerAsHazardVictim()`** + **`IsHazardImpact`** car camera path (defer ragdoll cam, orbit shake baseline, enter blend). **Player tackles** use simpler path — hitstop during freeze, ragdoll cam when `isRagdolled`
 - **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** + **`ComicLetterExitMotion`**: entrance polish + **14 exit styles** (5 CSS + 7 letter C#); timing via `LifetimeSeconds` / `ExitFadeStartFraction` / `ExitFadeDurationFraction` / `ExitTailSeconds` — **good enough for v1**; MP verify + Les Flos optional
 - **Ult charge (slice 1)** — **`PlayerUltCharge`** + **`UltChargeHud`** on **player prefab** (manual — **not** auto-spawned). Passive regen **`Playing` only**; goal (scorer) + tackle (attacker, **enemy only**); FF tackle **no** charge; % **persists** across rounds; **rematch → 0%**. HUD: floored **%**, white → blue after **`ReadyHighlightDelaySeconds`** at 100%. **`Ultimate`** bound to **X** (ability slice 2).
-- **Speed Blitz (slice 2a/2b/2c ✅)** — **`SpeedsterSpeedBlitzUlt`** + owner **`SpeedBlitzAimPreview`** (blue `#24b0ff` tint); hold X → corridor preview; release → commit; **2c shipped (2026-06-16):** hang, dash cam, connect/launch SFX, **`ComicBurstPalette.Ult`** on launch, ball-strip on carrier connect (intentional), MP remote wind-up/throw anim fix; dash range/speed/feel signed off at current prefab values. **Dash hits (2026-06-22):** **physical contact** only — 3D body-radius touch + **`MaxHitVerticalSeparation`** (default **56**) + line-of-sight trace; **no corridor teleport** through walls/roofs; stop at actual dash position. Corridor / preview = coarse aim filter only.
+- **Speed Blitz (slice 2a/2b/2c ✅)** — **`SpeedsterSpeedBlitzUlt`** + owner **`SpeedBlitzAimPreview`** (ground plane telegraph, blue `#24b0ff`, `speed_blitz_preview.vmat`); hold X → corridor preview; release → commit; **2c shipped (2026-06-16):** hang, dash cam, connect/launch SFX, **`ComicBurstPalette.Ult`** on launch, ball-strip on carrier connect (intentional), MP remote wind-up/throw anim fix; dash range/speed/feel signed off at current prefab values. **Dash hits (2026-06-22):** **physical contact** only — 3D body-radius touch + **`MaxHitVerticalSeparation`** (default **56**) + line-of-sight trace; **no corridor teleport** through walls/roofs; stop at actual dash position. Corridor / preview = coarse aim filter only.
 - **Speed Blitz wind-up feel (slice 2d — solo ✅ 2026-06-18)** — **`SpeedBlitzWindUpFeel`**: **`speedblitzwindupvfx`** **wind-up only** (off dash / connect hang); **`speedblitzdischargevfx`** on **dasher chest** at ragdoll launch (hit only). **`SpeedBlitzBodyGlow`** + render system: tint + point light (`GetWindUpLerp()` ramp → peak → discharge); **point light destroyed on end** (remote host-dasher fix **2026-06-22**). **`PlayerSpeedBlitzWindUpAnim`**: masked **`speedblitz_windup`** via `blitz_windup` / `blitz_windup_weight` while **`IsWindUp`** (synced). **SFX:** electric hard stop at connect, windup rise, dash woosh — **`PlayFeelSoundAt`**; **client dasher connect crunch on predict** (host broadcast dedupes — **2026-06-22**). **Connect hang timing:** pre-launch pause runs **parallel** with ragdoll body init — launch aligns with pose unfreeze (**2026-06-22**). **MP:** owner/host wind-up looks OK; **joining client spark sprites = blue squares** (engine limitation — publish only)
 - **Owner cameras (2026-06-15)** — **`PostCameraSetup`** for all owner FOV (PC resets preference FOV every frame). **`ThrowChargeCamera`** `[Order(10002)]`: charge offset + release blend after ball leaves hand (transition-frame hold — no pop). **`SpeedBlitzDashCamera`** `[Order(10012)]`: idle must **not** stomp **`CameraOffset`** (throw owns offset). **`TackleImpactFeel`**: blitz attacker uses overrides — hitstop freezes **world pose only**; dash cam eases during freeze; no blitz attacker offset/FOV punch (recovery blend owns it). Player tackles unchanged.
 - **MP combat feel predict** — **`CombatFeelPredictDedupe`** (auto on join): client-owner early **`TackleImpactFeel`** for blitz dash, tackle connect, victim freeze (tackle/blitz), traffic ragdoll; host **`NetCombatFeelApplyId`** dedupe. Details → [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md). **2–3 window idle-target soak OK (2026-06-14)**; **practice patrol runner MP ✅ (2026-06-23)** — Tier C1 only if normal-ping misses still feel wrong.
@@ -231,7 +232,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **`SpeedBlitzDashCamera`** — auto on Speedster (from ult). **Wind-up** / **Dash** FOV + pullback groups; **`WindUpToDashBlendDurationSeconds`** (~0.15); **`DashEndBlendDurationSeconds`** (~0.18) for miss end + **hit recovery** on connect.
 - **`PlayerUltCharge`** — ult % meter (host sync); tune `PassivePointsPerSecond`, `GoalChargePoints`, `TackleChargePoints`. **Add on prefab** (not auto-spawned).
 - **`SpeedsterSpeedBlitzUlt`** — **Speedster only** (class gate). **Add on Speedster prefab** (not auto-spawned). Tune `WindUpDurationSeconds` (default **2**), `DashRange`, `DashSpeed`, `HitHalfWidth`, **`MaxHitVerticalSeparation`** (default **56**), `DefaultTargetBodyRadius`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`. **Knockdown feel:** `KnockdownPreLaunchPauseSeconds` (**0.65**), **`ConnectImpactChargeRunCycle`**, **`LaunchSound`**, **`ConnectImpactSoundA/B`**, volumes, impact feel fields; **`DischargeVfxPrefab`** → `speedblitzdischargevfx.prefab`, **`DischargeVfxLocalOffset`**, **`DischargeVfxCleanupSeconds`**. **Wind-up feel (2d):** **`WindUpVfxPrefab`** → `speedblitzwindupvfx.prefab`; electric/rise/dash **`SoundEvent`**s; offsets, volumes, **`MissVfxFadeSeconds`**. Auto-adds **`SpeedBlitzDashCamera`**, **`SpeedBlitzWindUpFeel`**, **`SpeedBlitzBodyGlow`**. Optional **`Enable Speed Blitz Debug Logs`**.
-- **`SpeedBlitzAimPreview`** — **Speedster only**, same prefab as ult (manual). Owner corridor while holding X; default **`CorridorTint`** / **`MarkerTint`** = ult blue (`#24b0ff`); tune `CorridorAlpha`, `SegmentSpacing`, **`MarkerModelBaseSize`** (default **80** on Speedster prefab).
+- **`SpeedBlitzAimPreview`** — **Speedster only**, same prefab as ult (manual). Owner ground corridor while holding X; defaults: `models/dev/plane.vmdl`, `materials/turfwarspoly/speed_blitz_preview.vmat`, **`PlaneModelBaseSize`** **100**; tune `CorridorAlpha`, `CorridorLift`, `SegmentSpacing`, `MarkerAlpha`.
 - **`UltChargeHud`** — floored **%** centered (left of `MovementRampHud`); **`ReadyHighlightDelaySeconds`** (~0.4s white at 100% then blue). **Add on prefab** with `PlayerUltCharge`.
 - **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
 - **`PlayerBallHoldAnim`** — auto-added on network spawn. Tune `IdleHoldPoseHand` (~0.1), `ThrowAttackStrong`, `ThrowPoseHoldSeconds` (~0.9), `ThrowPlaybackRate` (~0.7). **Throw charge:** `UseAnimGraphChargePose` on — `throw_charge`/`throw_charge_weight` on **`utd_citizen_human_m.vanmgrph`**; tune **`ChargeWindupCycleEnd`** if wind-up finishes before bar is full (or spread keys in Blender ~3 s). Graph re-applied after cosmetics.
@@ -291,7 +292,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **Ult charge point values** — goal / tackle / passive rates TBD in playtest (`PlayerUltCharge` inspector defaults are placeholders).
 - **Charge tier + backward (S) while W held:** **✅ Fixed** — mutex was writing forward/back on `AnalogMove.y` (strafe axis); s&box uses `.x` for forward/back. W wins when both held.
 - **Speed Blitz ball strip on connect:** During blitz connect hang, **`BallGrab`** on the victim can lose the ball to the dasher if pickup overlap runs — **intentional** (reward for hitting carriers); not a bug to remove without design pass.
-- **Speed Blitz aim preview v3 (2c+):** replace dev-box corridor/end with **custom translucent blue `.vmat`** + **`Model.Plane`** or **`DecalRenderer`** (SMITE-like ground telegraph); Max authors material in editor. **Also:** clip preview to **walls/LOS** so corridor matches contact hit rules (hits already physical-only — **2026-06-22**).
+- **Speed Blitz aim preview v3:** **✅ Art shipped (2026-06-30)** — `models/dev/plane.vmdl` ground strips + `materials/turfwarspoly/speed_blitz_preview.vmat`. **Wall/LOS clip: won't do** — preview may show through walls; hits still contact + LOS.
 - **Speed Blitz 2d electric at connect:** **✅ Shipped:** electric **SFX** hard stop at connect crunch; wind-up **VFX** off dash/connect/hang (**2026-06-18**).
 - **Speed Blitz wind-up VFX scope:** **✅ Shipped (2026-06-18):** **`speedblitzwindupvfx`** **wind-up only** — not dash/connect/hang.
 - **Speed Blitz body glow:** **✅ Shipped (2026-06-18):** **`SpeedBlitzBodyGlow`** — tint + point light on dasher; discharge at launch; no victim glow; no ult outline (enemy red outline unchanged).
@@ -300,7 +301,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **Speed Blitz victim flinch (later):** optional masked hit-react clip + graph layer during hang (same pattern as `throw_windup` / `charge_run`) — polish on top of body freeze v1; ship or skip after playtest
 - **Player prefab component count (3 classes):** **✅ Chosen: Option A — per-class prefab variants** before slice 5/6 (`Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; `GameNetworkManager` picks template by class). Not doing yet — see [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6 + roadmap note below. Move **`BlitzConnectPoseFreeze`** off global auto-add when splitting.
 - **Juggernaut post-tackle run recovery (passive slot):** optional passive keeps **run** (sprint tier, not charge) after landing a tackle instead of walk reset — bundle with loadout UI; mutually exclusive with **tackle ramp bonus** passive.
-- **Speed Blitz 2d — client wind-up spark sprites (MP):** editor join-client shows **blue squares**; owner OK. **Confirmed engine limitation (2026-06-22):** s&box "Join via new instance" does not mount compiled texture/sprite assets; sounds/code/data work fine. Not fixable in editor — will work on publish.
+- **Speed Blitz 2d — client wind-up spark sprites (MP):** editor join-client shows **blue squares**; owner OK. **Deferred to publish smoke test (2026-06-30).** **Soft ring:** skipped — pose + VFX + audio sufficient.
 
 ---
 
@@ -380,19 +381,14 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [x] ~~Optional: yaw-only camera lock or wider hit cone~~ — **signed off (2026-06-15):** keep **full camera lock** + lane corridor aim filter; **hits = physical contact + LOS (2026-06-22)**, not corridor teleport
 - [x] Ult **blue** comic burst — `ComicBurstPalette.Ult`; Speed Blitz spawns on launch (not connect)
 
-#### Slice 2d — Speed Blitz **electric charge** polish (VFX phases + SFX + Olympic pose) — **PARTIAL ✅ (solo 2026-06-18)**
+#### Slice 2d — Speed Blitz **electric charge** polish (VFX phases + SFX + Olympic pose) — **✅ SHIPPED (2026-06-30)**
 
-**Shipped solo:** **`speedblitzwindupvfx`** (wind-up sparks only) + **`speedblitzdischargevfx`** (launch burst) + **`SpeedBlitzWindUpFeel`**; **`SpeedBlitzBodyGlow`** + render system; electric SFX hard cut at connect; **`PlayFeelSoundAt`** wind-up sounds; **`speedblitz_windup`** animgraph layer + **`PlayerSpeedBlitzWindUpAnim`**. **Solo sign-off ✅.**
+**Shipped:** **`speedblitzwindupvfx`** (wind-up sparks only) + **`speedblitzdischargevfx`** (launch burst) + **`SpeedBlitzWindUpFeel`**; **`SpeedBlitzBodyGlow`** + render system; electric SFX hard cut at connect; **`PlayFeelSoundAt`** wind-up sounds; **`speedblitz_windup`** animgraph layer + **`PlayerSpeedBlitzWindUpAnim`**. **2-window MP ✅** (practice patrol 2026-06-23). **Dash jump-over fix ✅ (2026-06-30)** — contact cylinder matches tackle (`TryValidateContactCylinder`).
 
-**Still open:**
+**Deferred / skipped:**
 
-- [x] **Electric hard cut at connect** (SFX)
-- [x] **Wind-up VFX only** (no dash/connect/hang sparks)
-- [x] **Launch discharge VFX** — dasher chest at ragdoll launch
-- [x] **Body glow** — subtle tint + point light; discharge at launch
-- [x] **Wind-up pose** — `speedblitz_windup` + `blitz_windup` / `blitz_windup_weight` + **`PlayerSpeedBlitzWindUpAnim`**
-- [ ] **2-window MP** verify remaining 2d phases (pose/glow/SFX OK on remotes + **practice patrol ✅ 2026-06-23**; **client wind-up spark sprites deferred** — blue squares)
-- [ ] **Optional:** soft ring
+- **Joining-client wind-up spark sprites** — blue squares in editor "Join via new instance"; publish smoke test only
+- **Soft ring** — skipped after playtest (pose + VFX + audio sufficient at distance)
 
 **Design reference:** energy-anime blue **`#24b0ff`**; wind-up = sparks + SFX rise + body glow ramp; launch discharge = accent only vs comic + launch boom.
 
@@ -453,7 +449,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 | **2a** ✅ | Commit, dash, knockdown, walk ramp; **2-window MP OK (2026-06-14)** |
 | **2b** ✅ | Preview owner-only; release aim = dash direction; corridor shows max range (**2026-06-14**). Hits = **contact + LOS** since **2026-06-22** — preview may still show targets behind walls until clip pass |
 | **2c** ✅ | Camera + hit recovery ✅; connect crunch + launch boom ✅; body freeze ✅; dash charge_run blend ✅; ult blue comic ✅; MP remote anims ✅; dash tuning signed off (**2026-06-16**) |
-| **2d** | Solo ✅ (2026-06-18): sparks, glow, discharge, SFX, **Olympic pose**. MP **✅ practice arena (2026-06-23)** — patrol pose relay, blitz contact, knockdown visuals. **Deferred:** client wind-up spark sprites = blue squares (editor only) |
+| **2d** ✅ | Solo + MP (practice patrol); soft ring skipped; spark sprites deferred (editor/publish); dash jump-over = tackle cylinder (**2026-06-30**) |
 
 ---
 
@@ -467,7 +463,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 - [ ] **Ragdoll arms z-fight (LEFT AS-IS 2026-06-23)** — ragdoll **body skin now matches** standing (fixed via `primaryRenderer.CopyFrom(baseVictimRenderer)` in `PlayerTackle.SpawnRagdollObject`, replacing `Model = …` which left the model's default skin → whole-black ragdoll). **Remaining:** the **arms flicker/z-fight** (black vs white) on the ragdoll. **Not caused by the last 15 commits** — ragdoll body-skin code dates to May 6–7 (`fa93cf2` / `8c2a2b04`); avatar LOD/cosmetics from May 13 (`1c97a9c`). **Leading untested theory:** citizen arms are a **separate bone-merged `SkinnedModelRenderer`** ("body extras merge to torso" per `CitizenAvatarLod`); `AddVictimClothingToRagdoll` clones that arms mesh on top of the body's own arm geometry → two overlapping arm meshes fight. Possible fix to try **only if revisited:** skip cloning the arms/body-part renderer (clone clothing only), or hide the body's arm body-group on the ragdoll — **do not** add a second full body mesh (that was the earlier z-fight cause). Max chose to **leave it** — current state is acceptable.
 - [ ] **Tackle comic text** — Les Flos import + **2-window MP verify** (optional; exits good enough for v1)
-- [ ] **Speed Blitz aim preview vs hits** — hits use contact + LOS; dev-box **corridor preview** may still show enemies through walls / wrong floor until wall-clip pass (bundled with aim preview v3)
+- [ ] **Speed Blitz aim preview** — v3 ground plane + blue mat **✅ (2026-06-30)**; optional further mat polish in editor. Wall clip **won't do**.
 - [ ] **Tackle juice — moving victims** — idle soak **✅ (2026-06-14)**; **practice patrol runner MP ✅ (2026-06-23)** (`PracticeNpcPatrolPoseRelay` + contact freeze pin). Tier C1 lag-comp only if normal-ping misses still unfair.
 - [ ] **Throw charge wind-up — MP verify + polish** — ✅ **WORKS solo (2026-06-11)**: masked layer in forked graph `utd_citizen_human_m.vanmgrph`; body keeps locomotion/look-at while arm winds up. Remaining: 2-window MP check (remotes scrub via `NetThrowChargeLerp`); improve the wind-up clip in Blender if wanted (overwrite `throw_windup.fbx` — see workflow doc "Iterating on a clip"); pick final bone mask (see Open decisions).
 - [ ] Throw strength still needs playtest tuning
@@ -475,6 +471,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [ ] **Hold/throw anim MP verify** — post-throw stuck hold on remotes **fixed (2026-06-16)**; still verify charge wind-up scrub (`NetThrowChargeLerp`) + release + ball detach in 2-window MP
 - [ ] **MP join visual glitch (host)** — brief **black mesh face** flash when client joins; stops when client leaves; likely joining player **`PlayerCosmeticsSync`** / human body before `ClothingContainer.ApplyAsync` (~0.25s delay) — **unconfirmed**; not caused by compass HUD (lines only)
 - [ ] Need longer multiplayer playtests (15–20 min, two windows)
+- [ ] **Spot-light shadow lines on ground (LEFT AS-IS — engine)** — thin camera-dependent black lines on pavement; **not** MP/post-process/game code. **Isolated:** `Spot Light` **Shadows off** on a lamp removes lines locally; hardness bump helps only a little. Likely same class as [s&box #10960](https://github.com/Facepunch/sbox-public/issues/10960) (shadow map cube edges). **Turf Wars** — street/station lamp spots; **practice arena** — mostly **Sun** cascades if lines appear there too. **Defer** until Facepunch patch or pre-ship pass; fallback = shadows off on non-hero lamps only.
 - [ ] **Clutter** sometimes missing after **engine reload** — save scene after paint; check clutter **Volume** bounds; verify in **Play** (not only editor flycam)
 - [ ] **Traffic engine loops** — seam click in-game vs clean Audacity preview; re-export with DC offset remove + zero-crossing trim if needed
 - [ ] **Tackle ragdoll after ModelDoc changes** — if victims freeze ~8s with no flop (`ApplyRagdollLocally` in console but no physics ragdoll), try **editor reboot** or `utd_citizen_human_throw.vmdl` Save + Full Compile before chasing code. Stale compiled extension cache suspected (2026-06-11 — reboot fixed). Code fallback (spawn ragdoll on base `citizen_human_*`) deferred unless it returns.
@@ -487,7 +484,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → practice_arena MP ✅ (2026-06-23): PracticeNpcClient*Rpc knockdown + PracticeNpcPatrolPoseRelay patrol sync + blitz contact freeze pin — do NOT NetworkSpawn scene dummies. Speed Blitz 2d solo ✅; MP partial — client wind-up spark sprites blue squares (editor/publish only). MULTIPLAYER_NETCODE.md for net/combat work.
+Read SESSION_NOTES.md → Slice 2d ✅ (2026-06-30). Next: Speed Blitz aim preview v3 + wall/LOS clip. Spark sprites = publish smoke test only.
 Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped. PracticeNpcPatrolHostState + PracticeNpcPatrol + PracticeNpcPatrolPoseRelay; PlayerBallHoldAnim on runner; PC disabled on dummies; PlayerCosmeticsSync off on practice_npc.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 ```
@@ -498,7 +495,7 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
-- **2026-06-23 (practice arena MP ✅):** Idle + patrol **`practice_npc`** — **`PracticeNpcClient*Rpc`** knockdown visuals; **`PracticeNpcPatrolPoseRelay`** host pose broadcast (no client path sim — drift/invisible hits); client Speed Blitz contact **`BeginPracticeNpcClientContactFreeze`** (no host rewind); dasher predict stop preserved. **2-window signed off.**
+- **2026-06-30 (aim preview v3 art):** Ground **`plane.vmdl`** strips + **`speed_blitz_preview.vmat`**; wall clip **won't do**. Slice 2d shipped.
 - **2026-06-23 (practice patrol solo):** Run legs (`move_x` + `move_groundspeed`); `IsInTackleCooldown` clean launch; **`PracticeNpcPatrol`** A↔B host patrol + NPC counter-tackle.
 - **2026-06-22 (practice arena + blitz hits):** **`practice_arena.scene`**, launch measure/readout; contact-only dash hits + predict connect crunch.
 

@@ -3098,7 +3098,7 @@
                   ]
                 },
                 {
-                  "__guid": "88c7d2c6-2652-474a-9540-9800edc2fb82",
+                  "__guid": "c6d4015f-b7c9-4fb5-bcc9-7382b9010e3a",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3115,7 +3115,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "46489ce9-254b-470a-ab54-d2c057080d1f",
+                      "__guid": "34d61366-854e-41c9-86cb-58312c06f03b",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -3128,7 +3128,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": 0,
+                      "LodOverride": null,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -6205,7 +6205,7 @@
                   ]
                 },
                 {
-                  "__guid": "daaf0551-97bd-4de9-9ede-9d8461bdb0e5",
+                  "__guid": "c8415e91-3e7f-481e-a213-47ba395756e1",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6222,7 +6222,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "f58f5523-40b5-45ba-8503-8deb17117558",
+                      "__guid": "378f2c13-f6a6-412d-9efd-a2cdb3c5aad3",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6235,7 +6235,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": 0,
+                      "LodOverride": null,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -8949,7 +8949,7 @@
                   ]
                 },
                 {
-                  "__guid": "024d798b-7bf0-4d57-9fba-4252e8899c75",
+                  "__guid": "89a235cf-095c-49cc-827c-8f0ebfbec7ff",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -8966,7 +8966,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "db1605ff-beb5-4e14-821a-67d2ae31c421",
+                      "__guid": "4f81511e-bc4b-42a5-9fae-655da03c7123",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -8979,7 +8979,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": 0,
+                      "LodOverride": null,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -11586,7 +11586,7 @@
                   ]
                 },
                 {
-                  "__guid": "f70e219d-e24f-430b-9157-d21dcbf99a17",
+                  "__guid": "df1f7ca3-e84e-4bb5-bdce-1979b44bc2f4",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -11603,7 +11603,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "9fb8f8ac-48ab-43fe-8cb0-c88a6318d76b",
+                      "__guid": "5e6de7b7-465c-4116-ae6d-54d6ed7293ec",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11616,7 +11616,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": 0,
+                      "LodOverride": null,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -14223,7 +14223,7 @@
                   ]
                 },
                 {
-                  "__guid": "293b4dac-c10e-49b0-b89a-fae3cadc69a0",
+                  "__guid": "24dfdc51-7d8c-4d51-a11c-5713c8cfbb72",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -14240,7 +14240,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "b284a4e2-2173-4a72-9704-18b8db8ce457",
+                      "__guid": "46716894-978f-4f8e-be54-5567b26c60a5",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -14253,7 +14253,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": 0,
+                      "LodOverride": null,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,

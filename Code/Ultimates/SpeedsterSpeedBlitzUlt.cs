@@ -168,7 +168,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	/// <summary> Extra gap (units) between dasher and victim body at dash stop — contact radius includes this. </summary>
 	[Property, Group( "Dash" )] public float HitStopContactGap { get; set; } = 4f;
 
-	/// <summary> Max vertical separation (units) for a dash hit — blocks roof-to-street knockdowns through the corridor. </summary>
+	/// <summary> Max |ΔZ| for a dash hit — jumpers within this band still connect (same rule as <see cref="PlayerTackle.MaxTackleVerticalSeparation"/>). </summary>
 	[Property, Group( "Dash" )] public float MaxHitVerticalSeparation { get; set; } = 56f;
 
 	[Property] public bool EnableSpeedBlitzDebugLogs { get; set; }
@@ -791,26 +791,11 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	{
 		contactPoint = default;
 
-		var maxVertical = MaxHitVerticalSeparation.Clamp( 8f, 256f );
-		if ( MathF.Abs( segEnd.z - victimPos.z ) > maxVertical )
-			return false;
-
 		var contactDist = GetDashContactDistance( candidate );
-
-		if ( segEnd.Distance( victimPos ) <= contactDist )
-		{
-			if ( MathF.Abs( segEnd.z - victimPos.z ) > maxVertical )
-				return false;
-
-			contactPoint = segEnd;
-			return true;
-		}
-
 		var closest = ClosestPointOnSegment( segStart, segEnd, victimPos );
-		if ( MathF.Abs( closest.z - victimPos.z ) > maxVertical )
-			return false;
 
-		if ( closest.Distance( victimPos ) > contactDist )
+		// Same cylinder as tackle — horizontal body radii + vertical band, not 3D distance.
+		if ( !PlayerTackle.TryValidateContactCylinder( closest, victimPos, contactDist, MaxHitVerticalSeparation ) )
 			return false;
 
 		contactPoint = closest;

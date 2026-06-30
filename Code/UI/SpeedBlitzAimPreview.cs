@@ -5,19 +5,19 @@ using Sandbox.Movement;
 
 /// <summary>
 /// Owner-only aim telegraph while <see cref="SpeedsterSpeedBlitzUlt.IsAiming"/>.
-/// Add manually on the same GameObject as <see cref="SpeedsterSpeedBlitzUlt"/>.
-/// Straight max-range segmented corridor + end marker (slice 2b).
+/// Flat ground corridor strips + end cap (slice 2b / v3 art).
 /// Corridor half-width = <see cref="SpeedsterSpeedBlitzUlt.HitHalfWidth"/> (outer body-edge lines; host subtracts victim body radius).
 /// Ground samples ignore players + <c>main_ball</c>; rise per segment capped to <see cref="MoveModeWalk.StepUpHeight"/>.
 /// </summary>
 [Order( 10012 )]
 public sealed class SpeedBlitzAimPreview : Component
 {
-	const string DefaultMarkerMaterialPath = "materials/turfwarspoly/ball_translucent.vmat";
-	const string DefaultMarkerModelPath = "models/dev/box.vmdl";
+	const string DefaultCorridorMaterialPath = "materials/turfwarspoly/speed_blitz_preview.vmat";
+	const string DefaultMarkerMaterialPath = "materials/turfwarspoly/speed_blitz_preview.vmat";
+	const string DefaultPlaneModelPath = "models/dev/plane.vmdl";
 	const string MainBallName = "main_ball";
 
-	/// <summary>Matches <c>TackleComicBurst</c> <c>palette-ult</c> fill (<c>#24b0ff</c>).</summary>
+	/// <summary>Matches ult preview / comic blue (<c>#24b0ff</c>).</summary>
 	static readonly Color UltPreviewBlue = new( 36f / 255f, 176f / 255f, 1f, 1f );
 
 	private sealed class SegmentSlot
@@ -26,32 +26,38 @@ public sealed class SpeedBlitzAimPreview : Component
 		public ModelRenderer Renderer;
 	}
 
+	private static Material corridorMaterialBase;
 	private static Material markerMaterialBase;
+	private static Model planeModel;
+
+	[Property, Group( "Meshes" )] public string CorridorModelPath { get; set; } = DefaultPlaneModelPath;
+	[Property, Group( "Meshes" )] public string MarkerModelPath { get; set; } = DefaultPlaneModelPath;
+	/// <summary>Native width/length of <see cref="CorridorModelPath"/> (dev plane ≈ 100).</summary>
+	[Property, Group( "Meshes" )] public float PlaneModelBaseSize { get; set; } = 100f;
+
+	[Property, Group( "Materials" )] public string CorridorMaterialPath { get; set; } = DefaultCorridorMaterialPath;
+	[Property, Group( "Materials" )] public string MarkerMaterialPath { get; set; } = DefaultMarkerMaterialPath;
 
 	[Property, Group( "Corridor" )] public Color CorridorTint { get; set; } = UltPreviewBlue;
 	[Property, Group( "Corridor" )] public float CorridorAlpha { get; set; } = 0.38f;
-	[Property, Group( "Corridor" )] public float CorridorHeight { get; set; } = 10f;
-	[Property, Group( "Corridor" )] public float CorridorLift { get; set; } = 0.5f;
+	[Property, Group( "Corridor" )] public float CorridorLift { get; set; } = 0.75f;
 	[Property, Group( "Corridor" )] public float SegmentSpacing { get; set; } = 48f;
 	[Property, Group( "Corridor" )] public float MinSegmentLength { get; set; } = 4f;
 	[Property, Group( "Corridor" )] public int MaxSegments { get; set; } = 48;
 
 	[Property, Group( "End marker" )] public Color MarkerTint { get; set; } = UltPreviewBlue;
 	[Property, Group( "End marker" )] public float MarkerAlpha { get; set; } = 0.55f;
-	[Property, Group( "End marker" )] public float MarkerHeight { get; set; } = 18f;
-
-	[Property] public string MarkerMaterialPath { get; set; } = DefaultMarkerMaterialPath;
-	[Property] public string MarkerModelPath { get; set; } = DefaultMarkerModelPath;
-	[Property] public float MarkerLift { get; set; } = 0.5f;
-	/// <summary> Native size of <see cref="MarkerModelPath"/> (dev box ≈ 50). World size = hit width / this. </summary>
-	[Property] public float MarkerModelBaseSize { get; set; } = 80f;
+	[Property, Group( "End marker" )] public float MarkerLift { get; set; } = 0.75f;
 
 	/// <summary> Used when <see cref="MoveModeWalk"/> is missing. Otherwise reads prefab <c>Step Up Height</c>. </summary>
 	[Property, Group( "Corridor" )] public float StepUpHeightFallback { get; set; } = 20f;
 
+	private string loadedCorridorModelPath;
+	private string loadedCorridorMaterialSourcePath;
+	private string loadedMarkerMaterialSourcePath;
+
 	private SpeedsterSpeedBlitzUlt ult;
 	private MoveModeWalk moveModeWalk;
-	private Model markerModel;
 	private Material corridorMaterial;
 	private Material markerMaterial;
 
@@ -114,7 +120,7 @@ public sealed class SpeedBlitzAimPreview : Component
 		moveDir = moveDir.Normal;
 
 		var corridorWidth = hitHalfWidth.Clamp( 4f, 200f ) * 2f;
-		var modelBase = MarkerModelBaseSize.Clamp( 1f, 500f );
+		var modelBase = PlaneModelBaseSize.Clamp( 1f, 500f );
 
 		BuildStraightPath( origin.WithZ( 0f ), moveDir, dashRange, pathSamples );
 		UpdateCorridorSegments( pathSamples, moveDir, corridorWidth, modelBase );
@@ -152,7 +158,6 @@ public sealed class SpeedBlitzAimPreview : Component
 		float corridorWidth,
 		float modelBase )
 	{
-		var corridorHeight = CorridorHeight.Clamp( 4f, 200f );
 		var activeCount = 0;
 
 		for ( var i = 0; i < samples.Count - 1 && activeCount < MaxSegments; i++ )
@@ -174,15 +179,15 @@ public sealed class SpeedBlitzAimPreview : Component
 			activeCount++;
 
 			var mid = (a + b) * 0.5f;
-			slot.Root.WorldPosition = mid + Vector3.Up * (corridorHeight * 0.5f + CorridorLift);
+			slot.Root.WorldPosition = new Vector3( mid.x, mid.y, mid.z + CorridorLift );
 			slot.Root.WorldRotation = Rotation.FromYaw( yawDegrees );
-			// Dev box + FromYaw: local X = segment length, local Y = corridor width.
+			// Dev plane: local X = segment length, local Y = corridor width (flat on ground).
 			slot.Root.WorldScale = new Vector3(
 				length / modelBase,
 				corridorWidth / modelBase,
-				corridorHeight / modelBase );
+				1f );
 
-			slot.Renderer.Model = markerModel;
+			slot.Renderer.Model = planeModel;
 			ApplyMaterial( slot.Renderer, corridorMaterial, CorridorTint, CorridorAlpha );
 			slot.Root.Enabled = true;
 		}
@@ -197,19 +202,18 @@ public sealed class SpeedBlitzAimPreview : Component
 		float corridorWidth,
 		float modelBase )
 	{
-		var markerHeight = MarkerHeight.Clamp( 4f, 200f );
 		var yawDegrees = MathF.Atan2( moveDir.y, moveDir.x ) * (180f / MathF.PI);
 
 		EnsureMarkerObject();
 
-		markerGo.WorldPosition = endGround + Vector3.Up * (markerHeight * 0.5f + MarkerLift);
+		markerGo.WorldPosition = new Vector3( endGround.x, endGround.y, endGround.z + MarkerLift );
 		markerGo.WorldRotation = Rotation.FromYaw( yawDegrees );
 		markerGo.WorldScale = new Vector3(
 			corridorWidth / modelBase,
 			corridorWidth / modelBase,
-			markerHeight / modelBase );
+			1f );
 
-		markerRenderer.Model = markerModel;
+		markerRenderer.Model = planeModel;
 		ApplyMaterial( markerRenderer, markerMaterial, MarkerTint, MarkerAlpha );
 		markerGo.Enabled = true;
 	}
@@ -297,22 +301,49 @@ public sealed class SpeedBlitzAimPreview : Component
 
 	bool EnsureAssets()
 	{
-		if ( !markerModel.IsValid() )
-			markerModel = Model.Load( MarkerModelPath );
+		var corridorModelPath = string.IsNullOrWhiteSpace( CorridorModelPath )
+			? DefaultPlaneModelPath
+			: CorridorModelPath;
 
-		if ( !markerModel.IsValid() )
+		if ( !planeModel.IsValid() || loadedCorridorModelPath != corridorModelPath )
+		{
+			planeModel = Model.Load( corridorModelPath );
+			loadedCorridorModelPath = corridorModelPath;
+		}
+
+		if ( !planeModel.IsValid() )
 			return false;
 
-		var path = string.IsNullOrWhiteSpace( MarkerMaterialPath )
+		var corridorMatPath = string.IsNullOrWhiteSpace( CorridorMaterialPath )
+			? DefaultCorridorMaterialPath
+			: CorridorMaterialPath;
+
+		if ( !corridorMaterialBase.IsValid() || loadedCorridorMaterialSourcePath != corridorMatPath )
+		{
+			corridorMaterialBase = Material.Load( corridorMatPath );
+			loadedCorridorMaterialSourcePath = corridorMatPath;
+			corridorMaterial = default;
+		}
+
+		if ( !corridorMaterialBase.IsValid() )
+			return false;
+
+		var markerMatPath = string.IsNullOrWhiteSpace( MarkerMaterialPath )
 			? DefaultMarkerMaterialPath
 			: MarkerMaterialPath;
 
-		markerMaterialBase ??= Material.Load( path );
+		if ( !markerMaterialBase.IsValid() || loadedMarkerMaterialSourcePath != markerMatPath )
+		{
+			markerMaterialBase = Material.Load( markerMatPath );
+			loadedMarkerMaterialSourcePath = markerMatPath;
+			markerMaterial = default;
+		}
+
 		if ( !markerMaterialBase.IsValid() )
-			return false;
+			markerMaterialBase = corridorMaterialBase;
 
 		if ( !corridorMaterial.IsValid() )
-			corridorMaterial = markerMaterialBase.CreateCopy( "speed_blitz_aim_corridor" );
+			corridorMaterial = corridorMaterialBase.CreateCopy( "speed_blitz_aim_corridor" );
 
 		if ( !markerMaterial.IsValid() )
 			markerMaterial = markerMaterialBase.CreateCopy( "speed_blitz_aim_end" );
@@ -368,10 +399,7 @@ public sealed class SpeedBlitzAimPreview : Component
 	void SetVisible( bool visible )
 	{
 		if ( !visible )
-		{
 			ClearPreviewObjects();
-			return;
-		}
 	}
 
 	void ClearPreviewObjects()

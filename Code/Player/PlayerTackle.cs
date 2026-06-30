@@ -659,6 +659,24 @@ public sealed class PlayerTackle : Component
 		return false;
 	}
 
+	/// <summary>
+	/// Horizontal-radius cylinder + vertical band — jumpers within the band still connect.
+	/// Shared by tackle and Speed Blitz dash contact (not 3D distance).
+	/// </summary>
+	internal static bool TryValidateContactCylinder(
+		Vector3 referenceWorldPos,
+		Vector3 victimWorldPos,
+		float horizontalRadius,
+		float maxVerticalSeparation )
+	{
+		var maxVertical = maxVerticalSeparation.Clamp( 8f, 256f );
+		if ( MathF.Abs( victimWorldPos.z - referenceWorldPos.z ) > maxVertical )
+			return false;
+
+		var horizDist = (victimWorldPos - referenceWorldPos).WithZ( 0f ).Length;
+		return horizDist <= horizontalRadius;
+	}
+
 	/// <summary>Horizontal tackle radius + vertical band + approach cone (shared by host find and owner RPC).</summary>
 	private static bool TryValidateTackleHitGeometry(
 		Vector3 attackerWorldPos,
@@ -671,14 +689,11 @@ public sealed class PlayerTackle : Component
 	{
 		tackleDir = default;
 
-		var maxVertical = maxVerticalSeparation.Clamp( 8f, 256f );
-		if ( MathF.Abs( victimWorldPos.z - attackerWorldPos.z ) > maxVertical )
+		if ( !TryValidateContactCylinder( attackerWorldPos, victimWorldPos, tackleRadius, maxVerticalSeparation ) )
 			return false;
 
 		var toVictimHoriz = (victimWorldPos - attackerWorldPos).WithZ( 0f );
 		var horizDist = toVictimHoriz.Length;
-		if ( horizDist > tackleRadius )
-			return false;
 
 		var hvNorm = horizontalApproachDirection.WithZ( 0f );
 		if ( hvNorm.Length < 0.001f )
