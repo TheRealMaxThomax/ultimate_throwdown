@@ -959,7 +959,7 @@
               "__enabled": true,
               "Flags": 0,
               "CorridorAlpha": 0.8,
-              "CorridorLift": 0.5,
+              "CorridorLift": 3,
               "CorridorMaterialPath": "materials/turfwarspoly/speed_blitz_preview.vmat",
               "CorridorModelPath": "models/dev/plane.vmdl",
               "CorridorTint": "0.14118,0.6902,1,1",
