@@ -3,12 +3,13 @@ using System;
 
 /// <summary>
 /// Host-authoritative ult charge (0–100%). Passive regen during <see cref="MatchPhase.Playing"/> only;
-/// goal / assist / enemy-tackle bumps; rematch reset. See GAMEPLAY_DESIGN.md → Ultimates.
+/// goal / assist / enemy-tackle bumps; rematch reset. Max cap comes from the equipped <see cref="IPlayerUlt"/>.
+/// See GAMEPLAY_DESIGN.md Ultimates section.
 /// </summary>
 public sealed class PlayerUltCharge : Component
 {
-	/// <summary> Internal points required for 100% (v1: same for all classes). </summary>
-	[Property, Group( "Charge" )] public float MaxChargePoints { get; set; } = 100f;
+	/// <summary> Fallback when no <see cref="IPlayerUlt"/> is on the player (e.g. class without ult wired yet). </summary>
+	public const float DefaultMaxChargePoints = 100f;
 
 	/// <summary> Passive points per second while <see cref="MatchPhase.Playing"/> (default ≈ 1 pt / 5 s). </summary>
 	[Property, Group( "Charge" )] public float PassivePointsPerSecond { get; set; } = 0.2f;
@@ -49,10 +50,11 @@ public sealed class PlayerUltCharge : Component
 		if ( !AllowsPassiveRegen() )
 			return;
 
-		if ( PassivePointsPerSecond <= 0f || MaxChargePoints <= 0f )
+		var maxPoints = ResolveMaxChargePoints();
+		if ( PassivePointsPerSecond <= 0f || maxPoints <= 0f )
 			return;
 
-		if ( hostChargePoints >= MaxChargePoints )
+		if ( hostChargePoints >= maxPoints )
 			return;
 
 		AddChargePointsOnHost( PassivePointsPerSecond * Time.Delta, "passive" );
@@ -108,13 +110,14 @@ public sealed class PlayerUltCharge : Component
 		hostChargeGainBlocked = blocked;
 	}
 
-	/// <summary> Host: spend full charge (Speed Blitz commit — slice 2). </summary>
+	/// <summary> Host: spend full charge (ult commit). </summary>
 	public bool TrySpendFullChargeOnHost()
 	{
 		if ( !Networking.IsHost )
 			return false;
 
-		if ( hostChargePoints < MaxChargePoints || MaxChargePoints <= 0f )
+		var maxPoints = ResolveMaxChargePoints();
+		if ( hostChargePoints < maxPoints || maxPoints <= 0f )
 			return false;
 
 		hostChargePoints = 0f;
@@ -137,7 +140,18 @@ public sealed class PlayerUltCharge : Component
 		SyncPercentFromHostPoints();
 	}
 
-	/// <summary> Host: zero every player&apos;s ult charge (rematch). </summary>
+	/// <summary>
+	/// Host: re-normalize % after equipped ult changes (loadout swap). Raw points carry over; no swap penalty.
+	/// </summary>
+	public void ResyncFromEquippedUltOnHost()
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		SyncPercentFromHostPoints();
+	}
+
+	/// <summary> Host: zero every player ult charge (rematch). </summary>
 	public static void ResetAllPlayersInScene( Scene scene )
 	{
 		if ( !Networking.IsHost || scene is null )
@@ -157,11 +171,12 @@ public sealed class PlayerUltCharge : Component
 		if ( hostChargeGainBlocked )
 			return;
 
-		if ( points <= 0f || MaxChargePoints <= 0f )
+		var maxPoints = ResolveMaxChargePoints();
+		if ( points <= 0f || maxPoints <= 0f )
 			return;
 
 		var before = hostChargePoints;
-		hostChargePoints = MathF.Min( MaxChargePoints, hostChargePoints + points );
+		hostChargePoints = MathF.Min( maxPoints, hostChargePoints + points );
 
 		if ( MathF.Abs( hostChargePoints - before ) < 0.0001f )
 			return;
@@ -174,9 +189,40 @@ public sealed class PlayerUltCharge : Component
 
 	private void SyncPercentFromHostPoints()
 	{
-		NetChargePercent = MaxChargePoints <= 0f
+		var maxPoints = ResolveMaxChargePoints();
+		NetChargePercent = maxPoints <= 0f
 			? 0f
-			: (hostChargePoints / MaxChargePoints * 100f).Clamp( 0f, 100f );
+			: (hostChargePoints / maxPoints * 100f).Clamp( 0f, 100f );
+	}
+
+	private float ResolveMaxChargePoints()
+	{
+		var equipped = ResolveEquippedUlt();
+		if ( equipped is null )
+			return DefaultMaxChargePoints;
+
+		var max = equipped.MaxChargePoints;
+		return max > 0f ? max : DefaultMaxChargePoints;
+	}
+
+	/// <summary>
+	/// v1: first enabled <see cref="IPlayerUlt"/> on the player.
+	/// Loadout UI should replace this with an explicit equipped-ult reference and call <see cref="ResyncFromEquippedUltOnHost"/>.
+	/// </summary>
+	private IPlayerUlt ResolveEquippedUlt()
+	{
+		foreach ( var component in Components.GetAll<Component>( FindMode.EverythingInSelf ) )
+		{
+			if ( component is not IPlayerUlt ult )
+				continue;
+
+			if ( !component.Enabled )
+				continue;
+
+			return ult;
+		}
+
+		return null;
 	}
 
 	private bool AllowsPassiveRegen()

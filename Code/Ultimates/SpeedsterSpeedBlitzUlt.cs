@@ -24,7 +24,7 @@ using System;
 /// See GAMEPLAY_DESIGN.md → Speed Blitz.
 /// </summary>
 [Order( 10011 )]
-public sealed class SpeedsterSpeedBlitzUlt : Component
+public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 {
 	public enum SpeedBlitzPhase : byte
 	{
@@ -34,6 +34,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component
 	}
 
 	private const string SpeedsterClassName = "Speedster";
+
+	/// <summary> Raw points for 100% on Speed Blitz (tune per ult on prefab). </summary>
+	[Property, Group( "Charge" )] public float MaxChargePoints { get; set; } = 100f;
 
 	[Property] public string UltimateAction { get; set; } = "Ultimate";
 

@@ -105,7 +105,7 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 
 **Juggernaut passive (built):** Stay at charge speed → tackle bonus stacks up to a cap. Drop below charge → bonus resets.
 
-**Class ultimates (partial):** Shared charge system shipped. **Speedster Speed Blitz** 2a + **2b** + **2c ✅** — MP authority + client dasher predict OK; **2d partial ✅ solo (2026-06-18):** wind-up sparks only, body glow, launch discharge burst; Olympic pose + 2-window MP remain. Juggernaut stomp, Sniper path zones planned.
+**Class ultimates (partial):** Shared charge + assist + per-ult max (slice 4 ✅). **Speedster Speed Blitz** 2a–2d + aim preview v3 ✅. **Juggernaut** ground stomp and **Sniper** path zones planned (slices 5–6).
 
 ---
 
@@ -116,8 +116,8 @@ Every player carries **0% → 100%** ult charge. At **100%** they can use their 
 ### What players see
 
 - HUD shows **percentage only** (0–100%).
-- Internally the host tracks **points** (`currentPoints` / `maxPoints`). v1: **100 points = 100%** for every class.
-- **Future balance:** a stronger ult might need e.g. **150 points** to reach 100% while a weaker ult needs **100** — event rewards stay the same in raw points (goal always +40, etc.), but the bar fills slower on heavy ults. Display stays 0–100%.
+- Internally the host tracks **points** (`currentPoints` / equipped ult `maxPoints`). v1: **100 points = 100%** when no ult is wired; each ult declares its own cap on its component.
+- **Balance:** a stronger ult might need e.g. **150 points** to reach 100% while a lighter ult needs **100** — event rewards stay the same in raw points (goal always +40, etc.), but the bar fills slower on heavy ults. Display stays 0–100%. **Ult swap:** raw points carry over; % recalculates against the new ult&apos;s max (no swap penalty).
 
 ### Passive regen
 
@@ -136,7 +136,7 @@ Every player carries **0% → 100%** ult charge. At **100%** they can use their 
 | **Assist** | **Passer** (throw only) | Teammate scores within **`AssistWindowSeconds`** (default **10**) after first solid ball contact or teammate catch. **Void:** enemy grab, enemy tackle on carrier, relay re-throw resets chain. **Off** in practice arena. Default **25** pts — **playtest OK (2026-06-30)** |
 | **Throw** | — | **Not planned** — throwing does not grant charge |
 
-Event point defaults (**40** / **25** / **10**) signed off at playtest; passive rate still tune as needed. Per-class `maxPoints` (slice 4) can stretch ult fill time without changing these awards.
+Event point defaults (**40** / **25** / **10**) signed off at playtest; passive rate still tune as needed. Per-ult `MaxChargePoints` (slice 4 ✅) can stretch ult fill time without changing these awards.
 
 ### When ults can be used
 
@@ -186,7 +186,7 @@ Event point defaults (**40** / **25** / **10**) signed off at playtest; passive 
 1. Shared charge + HUD (`PlayerUltCharge`, `UltChargeHud`)  
 2. Speedster **Speed Blitz** — core dash → hold/release preview → **2c polish ✅** → **2d wind-up ✅** → **aim preview v3 ✅ (2026-06-30)**
 3. Assist charge ✅  
-4. Per-class `maxPoints` balance (optional)  
+4. Per-ult `MaxChargePoints` balance ✅  
 5. **Juggernaut** stomp → **Sniper** path zones  
 6. **Weapons** (after all three first ults)
 
@@ -196,7 +196,7 @@ Event point defaults (**40** / **25** / **10**) signed off at playtest; passive 
 
 **Status:** **Slices 2a–2d + aim preview v3 ✅ (2026-06-30)** — hold/release preview (segmented ground planes, `speed_blitz_preview.vmat`), dash feel, connect/launch SFX, ult comic, wind-up VFX/pose/glow. **Class:** Speedster only.
 
-### Slice 2d (in progress — updated 2026-06-18)
+### Slice 2d ✅ (shipped 2026-06-30)
 
 **Fantasy:** Electric charge during wind-up → dash carries energy (body glow) → connect hang holds glow → **discharge burst + glow fade** at ragdoll launch. **~2 s wind-up** — sparks, SFX rise, body glow, and (when ready) pose ramp **together**.
 

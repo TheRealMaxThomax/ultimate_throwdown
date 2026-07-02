@@ -858,16 +858,16 @@
               "__guid": "b9b18421-a6d6-4c15-9c3f-77e0dad32050",
               "__enabled": true,
               "Flags": 0,
+              "AssistChargePoints": 25,
               "EnableUltChargeDebugLogs": false,
               "GoalChargePoints": 40,
-              "MaxChargePoints": 100,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "PassivePointsPerSecond": 100,
+              "PassivePointsPerSecond": 0.2,
               "TackleChargePoints": 15
             },
             {
@@ -929,6 +929,7 @@
               "KnockdownPreLaunchPauseSeconds": 0.65,
               "LaunchSound": "sounds/explosions/speed_blitz_launch.sound",
               "LaunchSoundVolume": 1,
+              "MaxChargePoints": 100,
               "MaxHitVerticalSeparation": 56,
               "MissVfxFadeSeconds": 0.25,
               "OnComponentDestroy": null,
@@ -3124,7 +3125,7 @@
                   ]
                 },
                 {
-                  "__guid": "52ac2f79-2aa5-48ac-b9b1-8b83106c5456",
+                  "__guid": "26bd7b92-e53c-4bd6-ab05-87068177c595",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3141,7 +3142,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "12836b81-a93c-457e-ab50-0a02036fcc8c",
+                      "__guid": "5d20aff7-a461-427d-a58d-37935b4fd4a2",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
