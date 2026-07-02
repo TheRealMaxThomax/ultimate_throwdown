@@ -251,6 +251,7 @@ public sealed class BallGrab : Component
 
 		PickUpBall();
 		AssignBallOwner( Connection.Host );
+		BallPassAssistState.GetOrCreate( ballObject )?.NotifyPickupOnHost( GameObject );
 		if ( EnableNetDebugLogs )
 		{
 			Log.Info( $"[NetDebug] Host approved pickup. HolderObject={GameObject.Name}" );

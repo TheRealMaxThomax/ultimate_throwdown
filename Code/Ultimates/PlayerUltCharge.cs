@@ -3,7 +3,7 @@ using System;
 
 /// <summary>
 /// Host-authoritative ult charge (0–100%). Passive regen during <see cref="MatchPhase.Playing"/> only;
-/// goal / enemy-tackle bumps; rematch reset. See GAMEPLAY_DESIGN.md → Ultimates.
+/// goal / assist / enemy-tackle bumps; rematch reset. See GAMEPLAY_DESIGN.md → Ultimates.
 /// </summary>
 public sealed class PlayerUltCharge : Component
 {
@@ -14,7 +14,8 @@ public sealed class PlayerUltCharge : Component
 	[Property, Group( "Charge" )] public float PassivePointsPerSecond { get; set; } = 0.2f;
 
 	[Property, Group( "Events" )] public float GoalChargePoints { get; set; } = 40f;
-	[Property, Group( "Events" )] public int TackleChargePoints { get; set; } = 15;
+	[Property, Group( "Events" )] public float AssistChargePoints { get; set; } = 25f;
+	[Property, Group( "Events" )] public int TackleChargePoints { get; set; } = 10;
 
 	[Property] public bool EnableUltChargeDebugLogs { get; set; }
 
@@ -64,6 +65,15 @@ public sealed class PlayerUltCharge : Component
 			return;
 
 		AddChargePointsOnHost( GoalChargePoints, "goal" );
+	}
+
+	/// <summary> Host: assist passer bump when a teammate scores within the assist window. </summary>
+	public void GrantAssistChargeOnHost()
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		AddChargePointsOnHost( AssistChargePoints, "assist" );
 	}
 
 	/// <summary> Host: attacker bump when tackle lands on an enemy (no friendly-fire credit). </summary>

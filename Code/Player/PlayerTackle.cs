@@ -804,6 +804,9 @@ public sealed class PlayerTackle : Component
 				}
 
 				victimBallGrab.BlockPickupForSeconds( ballLockout );
+
+				if ( Networking.IsHost && attacker.IsValid() && TryIsEnemyPlayerTackle( attacker, victim ) )
+					BallPassAssistState.GetOrCreate( droppedBall )?.VoidOnEnemyTackleCarrierOnHost();
 			}
 
 			if ( attackerGrabForCarrierLockout.IsValid() && AttackerPickupLockoutAfterCarrierTackle > 0f )
@@ -1701,5 +1704,24 @@ public sealed class PlayerTackle : Component
 		isRagdolled = false;
 		wasRagdolled = false;
 		StandUpLocally();
+	}
+
+	private static bool TryIsEnemyPlayerTackle( PlayerTackle attacker, PlayerTackle victim )
+	{
+		if ( !attacker.IsValid() || !victim.IsValid() )
+			return false;
+
+		if ( attacker.GameObject.Tags.Has( CitizenAvatarLod.PracticeNpcTag ) )
+			return false;
+
+		var attackerTeam = attacker.Components.Get<PlayerTeam>();
+		var victimTeam = victim.Components.Get<PlayerTeam>();
+		if ( !attackerTeam.IsValid() || !victimTeam.IsValid() )
+			return false;
+
+		if ( !MatchTeamIds.IsValid( attackerTeam.TeamId ) || !MatchTeamIds.IsValid( victimTeam.TeamId ) )
+			return false;
+
+		return attackerTeam.TeamId != victimTeam.TeamId;
 	}
 }

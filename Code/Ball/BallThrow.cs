@@ -247,6 +247,8 @@ public sealed class BallThrow : Component
 		{
 			Log.Info( $"[NetDebug] Host applied throw. Speed={releasedBallBody.Velocity.Length}" );
 		}
+
+		BallPassAssistState.GetOrCreate( releasedBall )?.NotifyThrowOnHost( GameObject );
 	}
 
 	/// <summary> Owning client: cancel windup without throwing (e.g. approved dodge). </summary>

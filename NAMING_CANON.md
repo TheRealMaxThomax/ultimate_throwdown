@@ -17,6 +17,7 @@
 | `ThrowChargeBar` | Owner screen HUD while charging throw (vertical bar above dodge; placeholder) |
 | `ThrowTrajectoryPreview` | Owner-only dashed arc + first-hit landing sphere while charging throw |
 | `BallCarrierOutline` | Team pulse `HighlightOutline` on held ball — white ↔ green (teammate) / white ↔ red (enemy); non-carrier viewers; no wallhack |
+| `BallPassAssistState` | Host-only throw assist chain on `main_ball` — window from first solid contact or teammate catch; void on enemy grab / enemy tackle carrier |
 | `ThrowReleaseMath` | Shared throw release + first-arc sim (`ComputeRelease`, `TryGetBallFlightParameters`, `TrySimulateFirstImpact`) |
 
 **Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `HoldBoneName`, `BodyRenderer`, `HoldBoneLocalOffset`, `TryGetHoldAnchorWorldTransform()`, `GetPredictedThrowReleasePivotPosition()`  
@@ -120,7 +121,8 @@
 **Often-used on `SpeedBlitzWindUpFeel`:** auto on Speedster via ult; wind-up VFX clone on dasher only; **`PlayDischargeVfx`** on connect-hang end (ragdoll launch, hit only)
 **Often-used on `SpeedBlitzBodyGlow`:** `GlowColor`, `BodyTintStrength`, `ClothingTintStrength`, `DischargeFadeSeconds`, `EnablePointLight`, `PointLightRadius`, `PointLightBrightnessMax`, `PointLightLocalOffset`, `BodyRenderer`, `IsGlowVisualActive`; draw via **`SpeedBlitzBodyGlowRenderSystem`** (`SceneObject.ColorTint` at `Stage.Interpolation` after LOD lock)
 **Often-used on `SpeedBlitzAimPreview`:** `CorridorModelPath` / `MarkerModelPath` (default `models/dev/plane.vmdl`), **`PlaneWidthBaseSize`** / **`PlaneLengthBaseSize`** (default **100** each — **width** = corridor Y + end cap; **length** = segment X; playtest width **~175** on Speedster prefab), `CorridorMaterialPath` / `MarkerMaterialPath` (default `materials/turfwarspoly/speed_blitz_preview.vmat`), `CorridorTint`, `CorridorAlpha`, `CorridorLift`, `SegmentSpacing`, `MaxSegments`, `MarkerTint`, `MarkerAlpha`, `MarkerLift`, `StepUpHeightFallback` (uses `MoveModeWalk.StepUpHeight` when present)  
-**Often-used on `PlayerUltCharge`:** `MaxChargePoints`, `PassivePointsPerSecond`, `GoalChargePoints`, `TackleChargePoints`, `NetChargePercent`, `ChargePercent`, `IsFullyCharged`, `GrantGoalChargeOnHost()`, `TryGrantTackleChargeOnHost()`, `TrySpendFullChargeOnHost()`, `SetHostChargeGainBlocked(bool)` (no charge gain while an ult is active), `ResetAllPlayersInScene()`  
+**Often-used on `BallPassAssistState`:** `AssistWindowSeconds` (default **10**), `EnableAssistDebugLogs`, `NotifyThrowOnHost()`, `NotifyPickupOnHost()`, `TryGrantAssistChargeOnHost()`, `VoidOnEnemyTackleCarrierOnHost()`, `ResetOnHost()`, `GetOrCreate(ball)`  
+**Often-used on `PlayerUltCharge`:** `MaxChargePoints`, `PassivePointsPerSecond`, `GoalChargePoints`, `AssistChargePoints` (default **25**), `TackleChargePoints` (default **10**), `NetChargePercent`, `ChargePercent`, `IsFullyCharged`, `GrantGoalChargeOnHost()`, `GrantAssistChargeOnHost()`, `TryGrantTackleChargeOnHost()`, `TrySpendFullChargeOnHost()`, `SetHostChargeGainBlocked(bool)` (no charge gain while an ult is active), `ResetAllPlayersInScene()`  
 **Often-used on `UltChargeHud`:** `ReadyHighlightDelaySeconds`, floored `ChargePercent` display, left of `MovementRampHud`
 **Input:** `Ultimate` → **X** (`Input.config`)
 

@@ -33,7 +33,7 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Partial** — charge + **Speed Blitz 2a/2b/2c ✅**; **2d partial ✅ solo (2026-06-18)** — wind-up sparks, body glow, launch discharge; Olympic pose + 2-window MP left |
+| Ultimates (charge + Speed Blitz) | **Partial** — charge + assist ✅ + **Speed Blitz 2a–2d ✅** + aim preview v3 ✅; slice 4 per-class max points not built |
 
 ---
 
@@ -130,13 +130,13 @@ Every player carries **0% → 100%** ult charge. At **100%** they can use their 
 
 | Source | Who gets credit | Notes |
 |--------|-----------------|-------|
-| **Passive regen** | Holder | Playing only; rate TBD (points per second) |
-| **Goal** | **Scorer only** | Large bump; exact points TBD |
-| **Tackle** | **Attacker only** | Enemy victims only — **no charge on friendly-fire tackles** |
-| **Assist** | TBD | Not v1; pass → teammate scores within ~**10 s**. **Void** if an enemy touches the ball in that window, or if a teammate receives a relay pass and scores (credit goes to the immediate passer, not the original passer) |
+| **Passive regen** | Holder | Playing only; default **0.2**/s |
+| **Goal** | **Scorer only** | Default **40** pts |
+| **Tackle** | **Attacker only** | Enemy victims only — **no charge on friendly-fire tackles**. Default **10** pts |
+| **Assist** | **Passer** (throw only) | Teammate scores within **`AssistWindowSeconds`** (default **10**) after first solid ball contact or teammate catch. **Void:** enemy grab, enemy tackle on carrier, relay re-throw resets chain. **Off** in practice arena. Default **25** pts — **playtest OK (2026-06-30)** |
 | **Throw** | — | **Not planned** — throwing does not grant charge |
 
-Point values for goal / tackle / passive are **not chosen yet** — tune in playtests.
+Event point defaults (**40** / **25** / **10**) signed off at playtest; passive rate still tune as needed. Per-class `maxPoints` (slice 4) can stretch ult fill time without changing these awards.
 
 ### When ults can be used
 
@@ -185,7 +185,7 @@ Point values for goal / tackle / passive are **not chosen yet** — tune in play
 
 1. Shared charge + HUD (`PlayerUltCharge`, `UltChargeHud`)  
 2. Speedster **Speed Blitz** — core dash → hold/release preview → **2c polish ✅** → **2d wind-up ✅** → **aim preview v3 ✅ (2026-06-30)**
-3. Assist charge  
+3. Assist charge ✅  
 4. Per-class `maxPoints` balance (optional)  
 5. **Juggernaut** stomp → **Sniper** path zones  
 6. **Weapons** (after all three first ults)
