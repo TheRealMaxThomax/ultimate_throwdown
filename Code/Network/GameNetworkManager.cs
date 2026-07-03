@@ -62,6 +62,9 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 
 		EnsurePlayersForActiveConnections();
 		TackleComicTextHud.EnsureOnMainCamera( Scene );
+		OutOfBoundsBannerHud.EnsureOnMainCamera( Scene );
+		BallOobDropZoneHud.EnsureOnMainCamera( Scene );
+		BallOutOfBoundsHost.EnsureOnMainBall( Scene );
 		SpeedBlitzVfxResources.EnsureLoaded();
 		nextEnsurePlayersAt = Time.Now + 1f;
 		CitizenAvatarLod.SceneWideLockEnabled = LockPlayerModelLodInPreRender;

@@ -250,6 +250,8 @@ public sealed class MatchDirector : Component
 		if ( !Networking.IsHost )
 			return;
 
+		BallOutOfBoundsHost.CancelSequenceInScene( Scene );
+
 		SpeedsterSpeedBlitzUlt.CancelAllInScene( Scene );
 
 		foreach ( var tackle in Scene.GetAllComponents<PlayerTackle>() )

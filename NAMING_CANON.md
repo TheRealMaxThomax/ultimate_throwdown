@@ -18,6 +18,8 @@
 | `ThrowTrajectoryPreview` | Owner-only dashed arc + first-hit landing sphere while charging throw |
 | `BallCarrierOutline` | Team pulse `HighlightOutline` on held ball — white ↔ green (teammate) / white ↔ red (enemy); non-carrier viewers; no wallhack |
 | `BallPassAssistState` | Host-only throw assist chain on `main_ball` — window from first solid contact or teammate catch; void on enemy grab / enemy tackle carrier |
+| `BallLastTouchLedger` | Host last-touch credit + XY anchor for OOB sky-drop (throw / drop / tackle knock-off carrier) |
+| `BallOutOfBoundsHost` | Host OOB watcher + sequence on `main_ball` (dwell confirm, hide ball, whistle, sky-drop); auto on `GameNetworkManager` start |
 | `ThrowReleaseMath` | Shared throw release + first-arc sim (`ComputeRelease`, `TryGetBallFlightParameters`, `TrySimulateFirstImpact`) |
 
 **Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `HoldBoneName`, `BodyRenderer`, `HoldBoneLocalOffset`, `TryGetHoldAnchorWorldTransform()`, `GetPredictedThrowReleasePivotPosition()`  
@@ -37,8 +39,9 @@
 | `MatchDirector` | Phase state machine, round wins, match timer, debug force goal |
 | `MatchPhase` | Enum: `Playing`, `GoalCelebration`, `Intermission`, `MatchOver` |
 | `GoalZone` | Defended goal volume + host dwell scoring (`DefendingTeam`, `ScoreDwellSeconds`) |
+| `OutOfBoundsZone` | Passive oriented box for ball OOB overlap tests (`BoxSize`, gizmo) |
 
-**Often-used on `PlayerTeam`:** `TeamId`, `NetMatchPhase`, `NetTeam0RoundWins`, `NetTeam1RoundWins`, `NetMatchTimeRemaining`, `NetPhaseTimeRemaining`, `NetLastGoalScoringTeamId`, `NetIsOvertime`, `NetMatchWinnerTeamId`, `NetRoundResetSequence`, `IsMatchGameplayInputAllowed`, `ApplyRoundResetTransform()` (synced, host-assigned)
+**Often-used on `PlayerTeam`:** `TeamId`, `NetMatchPhase`, `NetTeam0RoundWins`, `NetTeam1RoundWins`, `NetMatchTimeRemaining`, `NetPhaseTimeRemaining`, `NetLastGoalScoringTeamId`, `NetIsOvertime`, `NetMatchWinnerTeamId`, `NetBallOobActive`, `NetBallOobSequenceId`, `NetBallOobSequenceStartTime`, `NetBallOobDropAnchor`, `NetBallOobDropAt`, `NetRoundResetSequence`, `IsMatchGameplayInputAllowed`, `ApplyRoundResetTransform()` (synced, host-assigned)
 
 **Often-used on `MatchDirector`:** `CurrentPhase`, `IsGameplayInputAllowed`, `BallSpawn`, `RegisterGoal()`, `PushMatchHudStateToPlayers()`, `HostRequestRematch()`, `MatchOverCelebrationSeconds`, `NetTeam0RoundWins`, `NetTeam1RoundWins`, `NetMatchTimeRemaining`, `NetPhaseTimeRemaining`, `NetLastGoalScoringTeamId`, `NetIsOvertime`, `NetMatchWinnerTeamId`, `EnableDebugForceGoal`, `DebugForceGoalAction` (`DebugForceGoal` → `,` in `Input.config`)
 
@@ -143,6 +146,9 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 | `MatchScoreHud` | Top bar: team names + round wins |
 | `MatchClockHud` | Match timer `M.SS` (10.00, 9.59, …); `OVERTIME` label |
 | `GoalBannerHud` | "TEAM A SCORED!" during celebration |
+| `OutOfBoundsBannerHud` | White screen `OUT OF BOUNDS!` during ball OOB (~3s; auto on main camera) |
+| `BallOobDropZoneHud` | Spawns white world drop marker from synced `PlayerTeam` OOB fields (auto on main camera) |
+| `BallOobDropZoneMarker` | Ephemeral ground ring + Sage billboard stack (countdown / ▼ / DROP ZONE) |
 | `IntermissionHud` | "Resuming in N…" during intermission |
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
 | `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |

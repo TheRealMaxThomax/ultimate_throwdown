@@ -805,8 +805,13 @@ public sealed class PlayerTackle : Component
 
 				victimBallGrab.BlockPickupForSeconds( ballLockout );
 
-				if ( Networking.IsHost && attacker.IsValid() && TryIsEnemyPlayerTackle( attacker, victim ) )
-					BallPassAssistState.GetOrCreate( droppedBall )?.VoidOnEnemyTackleCarrierOnHost();
+				if ( Networking.IsHost )
+				{
+					BallLastTouchLedger.GetOrCreate( droppedBall )?.NotifyTouchOnHost( victim.GameObject, droppedBall.WorldPosition );
+
+					if ( attacker.IsValid() && TryIsEnemyPlayerTackle( attacker, victim ) )
+						BallPassAssistState.GetOrCreate( droppedBall )?.VoidOnEnemyTackleCarrierOnHost();
+				}
 			}
 
 			if ( attackerGrabForCarrierLockout.IsValid() && AttackerPickupLockoutAfterCarrierTackle > 0f )

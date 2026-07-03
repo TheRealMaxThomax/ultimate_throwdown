@@ -44,6 +44,22 @@ public sealed class PlayerTeam : Component
 	[Sync( SyncFlags.FromHost )]
 	public int NetMatchWinnerTeamId { get; set; } = MatchDirector.NoTeam;
 
+	/// <summary> Ball OOB sky-drop sequence — pushed from host (<see cref="BallOutOfBoundsHost"/>). </summary>
+	[Sync( SyncFlags.FromHost )]
+	public bool NetBallOobActive { get; set; }
+
+	[Sync( SyncFlags.FromHost )]
+	public int NetBallOobSequenceId { get; set; }
+
+	[Sync( SyncFlags.FromHost )]
+	public float NetBallOobSequenceStartTime { get; set; }
+
+	[Sync( SyncFlags.FromHost )]
+	public Vector3 NetBallOobDropAnchor { get; set; }
+
+	[Sync( SyncFlags.FromHost )]
+	public float NetBallOobDropAt { get; set; }
+
 	public bool IsTeam0 => TeamId == 0;
 	public bool IsTeam1 => TeamId == 1;
 

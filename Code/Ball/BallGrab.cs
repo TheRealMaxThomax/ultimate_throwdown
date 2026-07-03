@@ -273,7 +273,10 @@ public sealed class BallGrab : Component
 			return;
 
 		AssignBallOwner( Connection.Host );
-		ReleaseHeldBall( playerVelocity );
+		var releasedBall = ReleaseHeldBall( playerVelocity );
+		if ( releasedBall.IsValid() )
+			BallLastTouchLedger.GetOrCreate( releasedBall )?.NotifyTouchOnHost( GameObject, releasedBall.WorldPosition );
+
 		BlockPickupForSeconds( PickupDelayAfterDrop );
 		nextAutoGrabAttemptAt = Time.Now + PickupDelayAfterDrop;
 		dropperNoPushUntilTime = Time.Now + DropperNoPushWindow;
