@@ -84,7 +84,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | Folder | What’s in it |
 |--------|----------------|
 | `Code/Ball/` | Ball pickup, throw, charge bar, trajectory preview (`ThrowReleaseMath`), **`BallCarrierOutline`**, **`BallPassAssistState`** (host assist chain), smooth ball on clients |
-| `Code/Player/` | Movement, dodge, tackle, **`CombatFeelPredictDedupe`**, team, class, cosmetics, **`PlayerBallHoldAnim`**, **`PlayerChargeRunAnim`**, **`PlayerSpeedBlitzWindUpAnim`** (2d), **no crouch** |
+| `Code/Player/` | Movement, dodge, tackle, **`CombatFeelPredictDedupe`**, team, class, cosmetics, anim overlays; *(planned)* **`PlayerMelee`** (unarmed + shared melee pipeline for weapons) |
 | `Code/Network/` | Spawning players when people join |
 | `Code/Match/` | `MatchDirector`, `GoalZone`, **`MapMatchConfig`**; *(planned)* **`OutOfBoundsZone`** + host ball OOB state |
 | `Code/Ultimates/` | **`PlayerUltCharge`** (slice 1); **`SpeedsterSpeedBlitzUlt`** (2a–2c); **`SpeedBlitzWindUpFeel`**, **`SpeedBlitzBodyGlow`** (2d) |
@@ -137,7 +137,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Charge tier + W+S:** **✅ Fixed** — `ApplyMutuallyExclusiveForwardBackwardInput` patches `AnalogMove.x` (not `.y`); `[Order(-100)]` + `OnFixedUpdate` so `PlayerController` sees mutex before movement.
 - **Crouch:** Disabled — do not rebind `Duck` without re-enabling intentionally.
 - **Test dummies:** Tag `practice_npc` on **dummies only**. Scene-placed dummies = **`NetworkMode.Snapshot`** — **`[Sync]` on `PlayerTackle` / `PracticeNpcPatrol` does not replicate**; MP knockdown = host **`PracticeNpcClient*Rpc`**; patrol runner movement = host **`PracticeNpcPatrolPoseRelay`** → **`PracticeNpcPatrolPoseRpc`** (clients snap to host pose). **Never `NetworkSpawn` player-prefab practice NPCs**. Static dummies must not run host tackle detect (patrol runners only). **`PlayerCosmeticsSync`** disabled on tag.
-- **Weapons later:** Ball **or** weapon, not both (not implemented).
+- **Weapons later:** Ball **or** weapon, not both (not implemented). **Unarmed melee** specced — **combat slice 1** (before weapons slice 7); LMB shared with throw when not holding ball.
 - **Ultimates:** Shared **`PlayerUltCharge`** (0–100%); class ult components in `Code/Ultimates/`. Host authority. **Do not** put ult logic in `MatchDirector`. Prefab components **manual** — not `GameNetworkManager` auto-add.
 - **Enemy outlines:** Camera needs **`Highlight`** post-process (`EnemyOutlineCameraSetup` on Main Camera, or add `Highlight` manually). Per-player **`HighlightOutline`** on the prefab is the style source; ragdolls copy it on the host (`NetVictimTeamId` synced for clients).
 - **Traffic cars:** Host-only movement + hits. **`TrafficCarTemplate` stays disabled** — clone while disabled, **`ConfigureLane`** → enable → **`NetworkSpawn`** → apply **`CarModelVariants`** (renderer + collider, same `.vmdl`) → **`Network.Refresh`**. **Do not** apply variants before `NetworkSpawn` (spawn resets to template mesh). Template **Body** must reference a **valid** fallback `.vmdl` (not a deleted asset). **`TrafficSpawner`** runs only when **`Game.IsPlaying`**. Per lane: 3 model variants (physics mesh + `solid`). Engine audio on template; never sound lifecycle on template. Clients: proxy pose + **`NetDriveBlend`**; colliders off on client.
@@ -280,7 +280,9 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 ## Open decisions (not chosen yet)
 
+- **Competitive vs casual FF (later):** v1 = friendly fire **on** for tackles + melee; **ults enemies-only** (no FF). Future competitive mode may enable FF on everything; casual may disable FF — single host flag when that mode ships.
 - **Ult loadout UI (later):** replace `PlayerUltCharge` v1 equipped-ult discovery (first enabled `IPlayerUlt`) with explicit picker + **`ResyncFromEquippedUltOnHost()`** on swap; show per-ult % preview on loadout screen.
+- **Sumo / shrinking-ring gamemode (later):** separate **mode slice** — reuses combat slice 1 melee; not a separate melee ruleset.
 - **Player body for v1:** **`citizen_human_*`** (branch tested) vs classic **`citizen.vmdl`** — leaning **human** (audience + looks good); citizen fits chaotic meme tone. No custom rig (account cosmetics).
 - Closed roof on arena vs open roof + sun for lighting
 - **Tackle oof/grunt** — layered on built-in ragdoll collision audio (not shipped)
@@ -440,7 +442,9 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 | **2** | **Prefab split** | [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6 — per-class prefabs before Juggernaut + Sniper ults |
 | **3** | **Ult slice 5** — Juggernaut stomp | |
 | **4** | **Ult slice 6** — Sniper path zones | |
-| **5** | **Ult slice 7** — Weapons | |
+| **5** | **Combat slice 1** — unarmed melee | Before weapons; foundation for sumo endgame + slice 7 |
+| **6** | **Combat slice 2** — parry | Melee only — not tackles |
+| **7** | **Ult slice 7** — Weapons | Armed swings reuse melee hit pipeline |
 
 ---
 
@@ -481,7 +485,44 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [ ] Zones along throw path — ties into `BallThrow` / trajectory
 - [ ] Most complex of the three first ults
 
-#### Ult slice 7 — **Weapons** (after all three first ults)
+### Combat slice 1 — unarmed melee (`PlayerMelee`)
+
+**Why:** Scrappy knockdown when there’s no room to **charge** tackle (future sumo shrink endgame, tight spaces). Weaker than tackle; **2 hits** to confirm. **Weapons slice 7** reuses this pipeline for armed LMB swings.
+
+**Movement tiers (3 only):** Walk → Sprint (HUD “Sprint” = middle tier) → Charge (`CatchUpSpeedBoost.IsAtChargeSpeed`). **Tackle** = charge tier only. **Melee** = walk + sprint only — **blocked at charge tier**.
+
+**Input:** **LMB** tap without ball → melee (future: weapon swing when armed). Hold LMB with ball = throw charge (unchanged). No ball → no throw; holding ball → no melee.
+
+**Hierarchy:** Tackle (charge, 1 hit, unparriable, class mass) → unarmed 2-hit → parry punish (slice 2).
+
+#### Combat slice 1a — core (solo / host)
+
+- [ ] **`Code/Player/PlayerMelee.cs`** — host validates hits; owner predict feel (like tackle — **`CombatFeelPredictDedupe`**)
+- [ ] **LMB** swing — short range, aim at target (tackle-like validation; tune range/arc in playtest). Active hit frames per swing (~**0.2–0.3s**, tunable). **Whiff** uses swing recovery too (anti-spam)
+- [ ] **Per-victim combo** (host): **2 hits** within **`ComboWindowSeconds`** (default **5**, tunable) from **first hit on that victim** → knockdown. Stacks **persist** if attacker switches targets (1v2: hit B, hit C, hit B again → B knocks down). **Dodge does not** clear attacker’s stack on victim
+- [ ] **Hit 1:** hitmarker UI + COD-style tick SFX; micro-hitstop; **tiny** knockback (tunable). **No** ball drop. **No** victim speed-tier drop (attacker **swing recovery** only)
+- [ ] **Hit 1 on target in committed ult wind-up:** hitmarker + micro-hitstop **only** — **no knockback**; wind-up **not** interrupted until knockdown
+- [ ] **Hit 2 / knockdown:** **`ApplyKnockdownFromHost`** — **weak** universal ragdoll impulse (**not** class-scaled; class balance stays on tackles). Ball drops on knockdown (like tackle). **Enemy-only** ult charge **+10** (same as tackle; **no** FF charge)
+- [ ] **Knockdown** interrupts committed ult wind-up (e.g. Speed Blitz) — harder than tackle (needs 2 connects in wind-up window). Hit 1 does **not** reset wind-up timer
+- [ ] **Can melee hit ball carriers**; **carriers cannot** melee or parry (can throw / dodge / space)
+- [ ] **Cannot melee while:** holding ball, ragdolled, active ult, dodging, **~1s after dodge** (tunable), charging throw, **`IsAtChargeSpeed`** (charge tier). **Can** melee while walking backward
+- [ ] **Dodge iframes:** melee hits respect same iframes as tackle
+- [ ] **No hits** on victim while ragdolled or on post-stand-up tackle invincibility (same as tackle)
+- [ ] **Friendly fire:** can hit teammates; **no** ult charge on FF knockdown (same as tackle). **All ults enemies-only** for v1 (no ult FF)
+- [ ] **No** tackle comic on hit 1 — hitmarker only
+
+#### Combat slice 1b — MP + tune
+
+- [ ] 2-window verify; tune range, swing recovery, combo window, knockback, ragdoll impulse
+- [ ] [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) checklist — owner predict + host dedupe on confirm
+
+### Combat slice 2 — parry (later)
+
+- [ ] **Melee swings only** — **cannot** parry tackles (tackles stay premium)
+- [ ] Successful parry → next melee confirm on that attacker = **1-hit** knockdown (within window — tune with slice 2)
+- [ ] Not while holding ball (same as melee)
+
+#### Ult slice 7 — **Weapons** (after combat slice 1)
 
 - [ ] Per [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Weapons
 
@@ -498,6 +539,9 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 | **2d** ✅ | Solo + MP (practice patrol); soft ring skipped; spark sprites deferred (editor/publish); dash jump-over = tackle cylinder (**2026-06-30**) |
 | **3** ✅ | Throw → teammate goal &lt; window; bounce / perfect catch; enemy grab / tackle void; relay A→B→C — **playtest OK (2026-06-30)** |
 | **4** ✅ | Per-ult **`MaxChargePoints`** via **`IPlayerUlt`**; HUD still 0–100%; event awards unchanged; **`ResyncFromEquippedUltOnHost()`** ready for loadout — **playtest OK (2026-07-02)** |
+| **Map 1** | OOB stop dwell, last-touch sky-drop, assist void, **`BallSpawn`** fallback if no credit |
+| **Combat 1** | 2-hit unarmed LMB, walk/sprint only, carrier can’t attack, enemy KD +10, ult wind-up chip rules |
+| **Combat 2** | Parry → 1-hit punish (melee only) |
 
 ---
 
@@ -533,8 +577,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → Slice 4 ✅. Next: Map slice 1 out of bounds (before prefab split + ult 5). OOB: stop-in-zone, last-touch sky-drop, BallSpawn fallback only if no credit.
-Match flow slices 1–6 done. MP combat predict Tier 0–A3 + A2b shipped.
+Read SESSION_NOTES.md → Slice 4 ✅. Ship order: Map 1 OOB → prefab split → ult 5–6 → Combat 1 melee → Combat 2 parry → Weapons.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 ```
 
@@ -544,6 +587,7 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
+- **2026-07-03 (combat slice 1 + 2 spec):** Unarmed **LMB** melee — 2-hit combo per victim (**`ComboWindowSeconds`** default 5), walk/sprint only (not charge). Hitmarker + chip; weak KD; enemy +10 charge. Parry slice 2 later. Ship after ult 6, before weapons.
 - **2026-07-02 (slice 4 ✅ playtest + OOB spec):** Per-ult **`MaxChargePoints`** shipped. **Map slice 1** specced — OOB zones, stop dwell, last-touch sky-drop, **`BallSpawn`** fallback only; ship **before prefab split**.
 - **2026-06-30 (aim preview v3 ✅):** Segmented `plane.vmdl` + `speed_blitz_preview.vmat`; **`PlaneWidthBaseSize`** / **`PlaneLengthBaseSize`** (width ~175 playtest, length 100); wall/comic/grid clip **won't do**. **Blitz jump-over** = `TryValidateContactCylinder`. Spot-light shadow lines deferred (#10960).
 - **2026-06-23 (practice patrol solo):** Run legs (`move_x` + `move_groundspeed`); `IsInTackleCooldown` clean launch; **`PracticeNpcPatrol`** A↔B host patrol + NPC counter-tackle.
