@@ -1,3 +1,4 @@
+using System;
 using Sandbox.UI;
 
 /// <summary> Vertical world stack for <see cref="BallOobDropZoneMarker"/> — DROP ZONE, countdown, ▼. </summary>
@@ -74,5 +75,18 @@ public sealed class BallOobDropZoneStackPanel : Panel
 	public void SetCountdownSeconds( int seconds )
 	{
 		countdownRow.SetText( Math.Max( 0, seconds ).ToString() );
+	}
+
+	public void UpdateMotion( BallOobDropZoneHud settings, float timeNow )
+	{
+		if ( settings is null )
+			return;
+
+		var dropPulse = 0.5f + 0.5f * MathF.Sin( timeNow * settings.DropZonePulseSpeed );
+		var dropScale = MathX.Lerp( settings.DropZonePulseScaleMin, settings.DropZonePulseScaleMax, dropPulse );
+		dropZoneRow.SetPulseScale( dropScale );
+
+		var arrowBob = MathF.Sin( timeNow * settings.ArrowBobSpeed ) * settings.ArrowBobPixels;
+		arrowRow.SetBobOffsetY( arrowBob );
 	}
 }

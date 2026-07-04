@@ -282,12 +282,17 @@
               "__guid": "a0d0c9da-cc7c-499d-93aa-e2774a9b0e63",
               "__enabled": true,
               "Flags": 0,
+              "ArrowBobPixels": 14,
+              "ArrowBobSpeed": 4,
               "ArrowFontSize": 122,
               "ArrowFontWeight": 800,
               "CountdownFontSize": 146,
               "CountdownFontWeight": 800,
               "DropZoneFontSize": 98,
               "DropZoneFontWeight": 700,
+              "DropZonePulseScaleMax": 1.1,
+              "DropZonePulseScaleMin": 0.9,
+              "DropZonePulseSpeed": 4,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -3186,7 +3191,7 @@
                   ]
                 },
                 {
-                  "__guid": "78d9cadc-76f7-48ab-a63c-6206a5e1fb86",
+                  "__guid": "1ccee6f1-2221-45e8-a810-6caceca5054c",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3203,7 +3208,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "9368ddc2-bb3d-4e21-9ba0-a96d450be0b0",
+                      "__guid": "e5a55b2a-bbc9-4569-a926-98539dccfe95",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,

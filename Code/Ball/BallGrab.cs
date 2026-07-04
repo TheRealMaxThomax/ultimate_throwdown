@@ -106,18 +106,10 @@ public sealed class BallGrab : Component
 			UpdateSyncedBallState();
 		}
 
-		var inRange = IsBallInPickupRange( ballObject.WorldPosition );
-
-		if ( !Network.IsOwner )
-			return;
-
-		// Auto-grab: entering grab range picks up the ball automatically.
-		// Rate-limited to avoid RPC spam; host validates and ignores if already held elsewhere.
-		if ( !isHolding && inRange && IsMatchGameplayInputAllowed() && PlayerAllowsBallPickup() && !IsMainBallHeldByAnyone() && NetPickupBlockedRemain <= 0f && Time.Now >= nextAutoGrabAttemptAt )
-		{
-			RequestPickUpBallOnHost();
-			nextAutoGrabAttemptAt = Time.Now + 0.1f;
-		}
+		// Auto-grab is host-authoritative for every player — same path that makes host self-pickup reliable
+		// (authoritative ball position, no owner-RPC latency). Clients do not request pickup locally.
+		if ( Networking.IsHost )
+			TryAutoPickupOnHostAuthority();
 	}
 
 	private void FindMainBall()
@@ -227,17 +219,24 @@ public sealed class BallGrab : Component
 	[Rpc.Host]
 	private void RequestPickUpBallOnHost()
 	{
-		if ( !IsMatchGameplayInputAllowed() )
-			return;
-
-		var hostDistanceToBall = ballObject.IsValid()
-			? GetPickupHorizontalDistanceToBall( ballObject.WorldPosition )
-			: -1f;
-
 		if ( EnableNetDebugLogs )
 		{
+			var hostDistanceToBall = ballObject.IsValid()
+				? GetPickupHorizontalDistanceToBall( ballObject.WorldPosition )
+				: -1f;
 			Log.Info( $"[NetDebug] Host pickup request received. Caller={Rpc.Caller.DisplayName} HolderObject={GameObject.Name} BallValid={ballObject.IsValid()} IsHolding={isHolding} HostHorizontalToBall={hostDistanceToBall}" );
 		}
+
+		TryAutoPickupOnHostAuthority();
+	}
+
+	void TryAutoPickupOnHostAuthority()
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		if ( !IsMatchGameplayInputAllowed() )
+			return;
 
 		if ( !ballObject.IsValid() || isHolding )
 			return;
@@ -257,10 +256,9 @@ public sealed class BallGrab : Component
 		PickUpBall();
 		AssignBallOwner( Connection.Host );
 		BallPassAssistState.GetOrCreate( ballObject )?.NotifyPickupOnHost( GameObject );
+
 		if ( EnableNetDebugLogs )
-		{
 			Log.Info( $"[NetDebug] Host approved pickup. HolderObject={GameObject.Name}" );
-		}
 	}
 
 	[Rpc.Host]

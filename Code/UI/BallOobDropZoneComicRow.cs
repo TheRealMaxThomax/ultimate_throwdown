@@ -8,6 +8,8 @@ sealed class BallOobDropZoneComicRow : Panel
 	private readonly Panel wordStack;
 	private readonly Label shadowLabel;
 	private readonly Label fillLabel;
+	private int baseFontSize;
+	private float baseMarginTop;
 
 	public BallOobDropZoneComicRow()
 	{
@@ -48,6 +50,8 @@ sealed class BallOobDropZoneComicRow : Panel
 		int fontWeight,
 		float marginTop )
 	{
+		baseFontSize = fontSize;
+		baseMarginTop = marginTop;
 		Style.MarginTop = Length.Pixels( marginTop );
 
 		wordStack.Style.MinHeight = Length.Pixels( fontSize * 1.05f );
@@ -56,6 +60,20 @@ sealed class BallOobDropZoneComicRow : Panel
 
 		ApplyLayerStyle( shadowLabel, font, fontSize, fontWeight, shadowColor, shadowOffset );
 		ApplyLayerStyle( fillLabel, font, fontSize, fontWeight, fillColor, Vector2.Zero );
+	}
+
+	public void SetPulseScale( float scale )
+	{
+		var clamped = MathF.Max( 0.1f, scale );
+		var size = (int)(baseFontSize * clamped);
+		shadowLabel.Style.FontSize = size;
+		fillLabel.Style.FontSize = size;
+		wordStack.Style.MinHeight = Length.Pixels( size * 1.05f );
+	}
+
+	public void SetBobOffsetY( float offsetY )
+	{
+		Style.MarginTop = Length.Pixels( baseMarginTop + offsetY );
 	}
 
 	static void ApplyLayerStyle(

@@ -41,6 +41,7 @@ public sealed class BallOobDropZoneMarker : Component
 			return;
 
 		UpdateCountdown();
+		UpdateStackMotion();
 		UpdateRingPulse();
 		UpdateStackOrientation();
 
@@ -208,6 +209,11 @@ public sealed class BallOobDropZoneMarker : Component
 	{
 		var seconds = (int)MathF.Ceiling( MathF.Max( 0f, dropAtTime - Time.Now ) );
 		panelRoot?.SetCountdownSeconds( seconds );
+	}
+
+	void UpdateStackMotion()
+	{
+		panelRoot?.UpdateMotion( settings, Time.Now );
 	}
 
 	void UpdateRingPulse()

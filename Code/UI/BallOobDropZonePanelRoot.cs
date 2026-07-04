@@ -24,4 +24,9 @@ public sealed class BallOobDropZonePanelRoot : PanelComponent
 	{
 		stackPanel?.SetCountdownSeconds( seconds );
 	}
+
+	public void UpdateMotion( BallOobDropZoneHud settings, float timeNow )
+	{
+		stackPanel?.UpdateMotion( settings, timeNow );
+	}
 }

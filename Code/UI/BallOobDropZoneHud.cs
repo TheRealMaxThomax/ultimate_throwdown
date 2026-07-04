@@ -58,6 +58,11 @@ public sealed class BallOobDropZoneHud : Component
 	[Property, Group( "World stack" )] public int ArrowFontWeight { get; set; } = 800;
 	[Property, Group( "World stack" )] public int DropZoneFontSize { get; set; } = 48;
 	[Property, Group( "World stack" )] public int DropZoneFontWeight { get; set; } = 700;
+	[Property, Group( "World stack" )] public float DropZonePulseSpeed { get; set; } = 4f;
+	[Property, Group( "World stack" )] public float DropZonePulseScaleMin { get; set; } = 0.9f;
+	[Property, Group( "World stack" )] public float DropZonePulseScaleMax { get; set; } = 1.1f;
+	[Property, Group( "World stack" )] public float ArrowBobSpeed { get; set; } = 4f;
+	[Property, Group( "World stack" )] public float ArrowBobPixels { get; set; } = 14f;
 
 	/// <summary> Your ring/torus <c>.vmdl</c> — flat on XY, Z up. Empty = no ring until wired. </summary>
 	[Property, Group( "Ground ring" )] public string RingModelPath { get; set; } = "";
