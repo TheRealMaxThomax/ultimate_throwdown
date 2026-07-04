@@ -202,6 +202,10 @@ public sealed class CatchUpSpeedBoost : Component
 
 		// PlayerController reads AnalogMove in FixedUpdate — patch before movement integrates.
 		ApplyMutuallyExclusiveForwardBackwardInput();
+
+		ballThrow ??= Components.Get<BallThrow>();
+		if ( ballThrow?.IsThrowPlantLocked == true || IsSpeedBlitzPlantedChannel() )
+			ApplyPlantedHorizontalFreeze();
 	}
 
 	protected override void OnUpdate()
@@ -270,10 +274,10 @@ public sealed class CatchUpSpeedBoost : Component
 		}
 
 		var isHoldingBall = ballGrab?.IsHolding ?? false;
-		var isChargingThrow = ballThrow?.IsChargingThrow ?? false;
+		var isThrowPlantLocked = ballThrow?.IsThrowPlantLocked == true;
 		var isMovingForward = IsForwardIntentForChargeRamp();
 
-		if ( isChargingThrow || IsSpeedBlitzPlantedChannel() )
+		if ( isThrowPlantLocked || IsSpeedBlitzPlantedChannel() )
 		{
 			ApplyPlantedMovementChannelLock();
 			return;
@@ -551,20 +555,23 @@ public sealed class CatchUpSpeedBoost : Component
 		NetAtChargeSpeed = false;
 		ApplyChargeLookDamp( atChargeSpeed: false );
 
-		// Grounded channel = planted. Airborne throw wind-up keeps gravity (BallThrow disables built-in input + wish velocity).
-		if ( playerController.IsOnGround )
-		{
-			smoothedMoveSpeedCap = 0f;
-			playerController.WalkSpeed = 0f;
-			playerController.RunSpeed = 0f;
-			ResetPlayerControllerMomentumTimesToBaseline();
-		}
-		else
-		{
-			var airMoveCap = ClassStat( playerClass?.CurrentClass?.StartMoveSpeed, StartMoveSpeed );
-			playerController.WalkSpeed = airMoveCap;
-			playerController.RunSpeed = airMoveCap;
-		}
+		// Planted on ground and in air — gravity only, no steer (BallThrow also blocks jump + zeros horizontal vel).
+		smoothedMoveSpeedCap = 0f;
+		playerController.WalkSpeed = 0f;
+		playerController.RunSpeed = 0f;
+		ResetPlayerControllerMomentumTimesToBaseline();
+	}
+
+	void ApplyPlantedHorizontalFreeze()
+	{
+		if ( !playerController.IsValid() )
+			return;
+
+		playerController.WishVelocity = Vector3.Zero;
+
+		var body = Components.Get<Rigidbody>();
+		if ( body.IsValid() )
+			body.Velocity = new Vector3( 0f, 0f, body.Velocity.z );
 	}
 
 	private float GetTargetSpeed( bool isHoldingBall, bool isMovingForward )

@@ -42,6 +42,8 @@ public sealed class PlayerBallHoldAnim : Component
 	[Property, Group( "Anim graph charge pose" )] public float ChargeWindupCycleEnd { get; set; } = 1f;
 	[Property, Group( "Anim graph charge pose" )] public float ChargeWeightBlendInSeconds { get; set; } = 0.12f;
 	[Property, Group( "Anim graph charge pose" )] public float ChargeWeightBlendOutSeconds { get; set; } = 0.15f;
+	/// <summary> RMB / dodge cancel — quick ease off the masked wind-up back to idle hold. </summary>
+	[Property, Group( "Anim graph charge pose" )] public float ChargeCancelBlendOutSeconds { get; set; } = 0.1f;
 
 	private BallGrab ballGrab;
 	private BallThrow ballThrow;
@@ -53,6 +55,8 @@ public sealed class PlayerBallHoldAnim : Component
 	private float playbackRateRestoreUntil;
 	private float savedPlaybackRate = 1f;
 	private float chargePoseWeight;
+	private float lastChargeCycle;
+	private bool isChargePoseBlendingOut;
 	private bool loggedMissingAnimGraph;
 
 	protected override void OnStart()
@@ -121,6 +125,7 @@ public sealed class PlayerBallHoldAnim : Component
 			ResetGraphChargePose( renderer );
 			wasShowingHoldPose = false;
 			wasChargingThrow = false;
+			isChargePoseBlendingOut = false;
 			throwPoseUntil = 0f;
 			return;
 		}
@@ -134,6 +139,12 @@ public sealed class PlayerBallHoldAnim : Component
 		{
 			if ( chargingThrow )
 				UpdateGraphChargePose( renderer, true, ballThrow.GetThrowChargeLerp() );
+			else if ( isChargePoseBlendingOut )
+			{
+				UpdateGraphChargePose( renderer, false, 0f, ChargeCancelBlendOutSeconds );
+				if ( chargePoseWeight <= 0.001f )
+					isChargePoseBlendingOut = false;
+			}
 			else if ( wasChargingThrow )
 				UpdateGraphChargePose( renderer, false, 0f );
 		}
@@ -157,6 +168,56 @@ public sealed class PlayerBallHoldAnim : Component
 		var throwPoseEndTime = Time.Now + ThrowPoseHoldSeconds;
 		PlayThrowReleaseAnim( throwPoseEndTime );
 		PlayThrowReleaseAnimRpc( throwPoseEndTime );
+	}
+
+	/// <summary> Owner calls when throw charge is cancelled (RMB, dodge, etc.) — ease back to idle hold pose. </summary>
+	public void NotifyThrowChargeCancelled()
+	{
+		if ( !Network.IsOwner )
+			return;
+
+		ApplyThrowChargeCancelledPose();
+		NotifyThrowChargeCancelledRpc();
+	}
+
+	[Rpc.Broadcast]
+	private void NotifyThrowChargeCancelledRpc()
+	{
+		if ( Network.IsOwner )
+			return;
+
+		ApplyThrowChargeCancelledPose();
+	}
+
+	void ApplyThrowChargeCancelledPose()
+	{
+		if ( !TryGetBodyRenderer( out var renderer ) )
+			return;
+
+		if ( playerTackle?.IsRagdolled == true )
+			return;
+
+		if ( chargePoseWeight <= 0.001f )
+		{
+			ResetGraphChargePose( renderer );
+			isChargePoseBlendingOut = false;
+		}
+		else
+		{
+			isChargePoseBlendingOut = true;
+		}
+
+		wasChargingThrow = false;
+
+		if ( ballGrab?.IsHolding == true )
+		{
+			ApplyHoldPose( renderer );
+			wasShowingHoldPose = true;
+		}
+		else
+		{
+			wasShowingHoldPose = false;
+		}
 	}
 
 	[Rpc.Broadcast]
@@ -184,11 +245,13 @@ public sealed class PlayerBallHoldAnim : Component
 		ApplyThrowPlaybackRate( renderer );
 	}
 
-	private void UpdateGraphChargePose( SkinnedModelRenderer renderer, bool charging, float chargeLerp )
+	private void UpdateGraphChargePose( SkinnedModelRenderer renderer, bool charging, float chargeLerp, float? blendOutSecondsOverride = null )
 	{
 		var previousWeight = chargePoseWeight;
 		var targetWeight = charging ? 1f : 0f;
-		var blendSeconds = charging ? ChargeWeightBlendInSeconds : ChargeWeightBlendOutSeconds;
+		var blendSeconds = charging
+			? ChargeWeightBlendInSeconds
+			: (blendOutSecondsOverride ?? ChargeWeightBlendOutSeconds);
 		chargePoseWeight = blendSeconds <= 0.001f
 			? targetWeight
 			: chargePoseWeight.Approach( targetWeight, Time.Delta / blendSeconds );
@@ -198,7 +261,13 @@ public sealed class PlayerBallHoldAnim : Component
 
 		if ( charging )
 		{
-			var cycle = ChargeWindupCycleStart.LerpTo( ChargeWindupCycleEnd, chargeLerp.Clamp( 0f, 1f ) );
+			lastChargeCycle = ChargeWindupCycleStart.LerpTo( ChargeWindupCycleEnd, chargeLerp.Clamp( 0f, 1f ) );
+			renderer.Set( ChargeCycleParamName, lastChargeCycle );
+		}
+		else
+		{
+			var unwindT = 1f - chargePoseWeight.Clamp( 0f, 1f );
+			var cycle = lastChargeCycle.LerpTo( ChargeWindupCycleStart, unwindT );
 			renderer.Set( ChargeCycleParamName, cycle );
 		}
 
@@ -211,6 +280,8 @@ public sealed class PlayerBallHoldAnim : Component
 			return;
 
 		chargePoseWeight = 0f;
+		lastChargeCycle = ChargeWindupCycleStart;
+		isChargePoseBlendingOut = false;
 		renderer.Set( ChargeWeightParamName, 0f );
 		renderer.Set( ChargeCycleParamName, ChargeWindupCycleStart );
 	}

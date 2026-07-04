@@ -245,7 +245,7 @@ public sealed class PlayerDodge : Component
 		lastConsumedDodgeApplyId = NetDodgeApplyId;
 
 		if ( NetDodgeClearsThrowCharge )
-			ballThrow?.ClearThrowChargeLocal();
+			ballThrow?.CancelActiveThrowCharge();
 
 		ApplyShoveVelocity( NetLastDodgeDirectionSign, NetLastDodgeDistanceStat );
 	}

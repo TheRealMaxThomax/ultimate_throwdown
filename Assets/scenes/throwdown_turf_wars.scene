@@ -559,6 +559,7 @@
               "__guid": "0d02e223-50c4-4dbe-b1b0-bb4390716a20",
               "__enabled": true,
               "Flags": 0,
+              "CancelChargeAction": "attack2",
               "EnableNetDebugLogs": false,
               "MaxThrowChargeTime": 3,
               "MinThrowChargeTime": 0.05,
@@ -651,6 +652,7 @@
                 "go": "1fd410e6-7794-4786-86cc-25ad691cdd92",
                 "component_type": "SkinnedModelRenderer"
               },
+              "ChargeCancelBlendOutSeconds": 0.1,
               "ChargeCycleParamName": "throw_charge",
               "ChargeWeightBlendInSeconds": 0.12,
               "ChargeWeightBlendOutSeconds": 0.15,
@@ -3191,7 +3193,7 @@
                   ]
                 },
                 {
-                  "__guid": "1ccee6f1-2221-45e8-a810-6caceca5054c",
+                  "__guid": "7307401d-d2ce-41d4-ad7a-8fdd4047b23d",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3208,7 +3210,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "e5a55b2a-bbc9-4569-a926-98539dccfe95",
+                      "__guid": "b9eb4cae-5ee7-487d-9ec3-b5306e47abb7",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,

@@ -7,6 +7,7 @@ using System;
 public sealed class BallThrow : Component
 {
 	[Property] public string ThrowAction { get; set; } = "attack1";
+	[Property] public string CancelChargeAction { get; set; } = "attack2";
 	[Property] public float ThrowForce { get; set; } = 1000f;
 	[Property] public float ThrowUpForce { get; set; } = 150f;
 	[Property] public float ThrowStartOffset { get; set; } = 40f;
@@ -24,8 +25,11 @@ public sealed class BallThrow : Component
 	private ThrowChargeBar throwChargeBar;
 	private PlayerClass playerClass;
 	private PlayerController playerController;
+	private Rigidbody playerBody;
 	private PlayerBallHoldAnim playerBallHoldAnim;
 	private bool isChargingThrow;
+	private bool jumpSpeedSuppressed;
+	private float baselineJumpSpeed;
 	private bool isPendingThrowRelease;
 	/// <summary> Owner writes; host reads for dodge validation. </summary>
 	[Sync] private bool NetIsChargingThrow { get; set; }
@@ -37,6 +41,8 @@ public sealed class BallThrow : Component
 	private Vector3 pendingThrowDirection;
 	public bool IsChargingThrow => Network.IsOwner ? isChargingThrow : NetIsChargingThrow;
 	public bool IsPendingThrowRelease => Network.IsOwner && isPendingThrowRelease;
+	/// <summary> Owner wind-up + release-delay — movement/jump plant (see <see cref="CatchUpSpeedBoost"/>). </summary>
+	public bool IsThrowPlantLocked => Network.IsOwner && (isChargingThrow || isPendingThrowRelease);
 
 	public readonly struct ThrowPreviewSnapshot
 	{
@@ -116,6 +122,12 @@ public sealed class BallThrow : Component
 			StartThrowCharge();
 		}
 
+		if ( isChargingThrow && Input.Pressed( CancelChargeAction ) )
+		{
+			CancelActiveThrowCharge();
+			return;
+		}
+
 		if ( isChargingThrow && Input.Released( ThrowAction ) )
 		{
 			BeginThrowRelease( GetThrowChargeLerp(), GetThrowDirectionWorld() );
@@ -123,7 +135,7 @@ public sealed class BallThrow : Component
 
 		if ( isChargingThrow )
 		{
-			// Block locomotion input; <see cref="OnFixedUpdate"/> disables built-in jump/move on <see cref="PlayerController"/>.
+			// Block locomotion input; <see cref="OnFixedUpdate"/> plants movement (jump off, horizontal vel zero).
 			Input.AnalogMove = Vector3.Zero;
 			var chargeLerp = GetThrowChargeLerp();
 			NetThrowChargeLerp = chargeLerp;
@@ -141,10 +153,9 @@ public sealed class BallThrow : Component
 			return;
 
 		if ( isChargingThrow || isPendingThrowRelease )
-		{
-			// Keep look / aim alive; movement is blocked via AnalogMove + CatchUpSpeedBoost zeroing speeds.
-			playerController.WishVelocity = Vector3.Zero;
-		}
+			ApplyThrowPlantMovementLock();
+		else
+			RestoreJumpSpeedAfterThrowPlant();
 	}
 
 	private void BeginThrowRelease( float chargeLerp, Vector3 throwDirection )
@@ -193,6 +204,7 @@ public sealed class BallThrow : Component
 		throwChargeStartedAt = Time.Now;
 		throwChargeBar?.Show();
 		throwChargeBar?.SetCharge( 0f );
+		ZeroOwnerHorizontalVelocity();
 	}
 
 	[Rpc.Host]
@@ -252,7 +264,22 @@ public sealed class BallThrow : Component
 		BallLastTouchLedger.GetOrCreate( releasedBall )?.NotifyTouchOnHost( GameObject, GameObject.WorldPosition );
 	}
 
-	/// <summary> Owning client: cancel windup without throwing (e.g. approved dodge). </summary>
+	/// <summary> Owning client: cancel windup without throwing (charge bar, sync, movement plant). </summary>
+	public void CancelActiveThrowCharge()
+	{
+		ClearThrowChargeLocal();
+		RestoreJumpSpeedAfterThrowPlant();
+		playerBallHoldAnim ??= Components.Get<PlayerBallHoldAnim>();
+		playerBallHoldAnim?.NotifyThrowChargeCancelled();
+	}
+
+	/// <summary> Owning client: cancel charge and pending release (knockdown, etc.). </summary>
+	public void CancelThrowAimingState()
+	{
+		CancelActiveThrowCharge();
+		CancelPendingThrowRelease();
+	}
+
 	public void ClearThrowChargeLocal()
 	{
 		isChargingThrow = false;
@@ -261,11 +288,46 @@ public sealed class BallThrow : Component
 		throwChargeBar?.Hide();
 	}
 
-	/// <summary> Owning client: cancel charge and pending release (knockdown, etc.). </summary>
-	public void CancelThrowAimingState()
+	void ApplyThrowPlantMovementLock()
 	{
-		ClearThrowChargeLocal();
-		CancelPendingThrowRelease();
+		playerController ??= Components.Get<PlayerController>();
+		playerBody ??= Components.Get<Rigidbody>();
+
+		if ( playerController.IsValid() )
+		{
+			playerController.WishVelocity = Vector3.Zero;
+
+			if ( !jumpSpeedSuppressed )
+			{
+				baselineJumpSpeed = playerController.JumpSpeed;
+				jumpSpeedSuppressed = true;
+			}
+
+			playerController.JumpSpeed = 0f;
+		}
+
+		ZeroOwnerHorizontalVelocity();
+	}
+
+	void RestoreJumpSpeedAfterThrowPlant()
+	{
+		if ( !jumpSpeedSuppressed )
+			return;
+
+		playerController ??= Components.Get<PlayerController>();
+		if ( playerController.IsValid() )
+			playerController.JumpSpeed = baselineJumpSpeed;
+
+		jumpSpeedSuppressed = false;
+	}
+
+	void ZeroOwnerHorizontalVelocity()
+	{
+		playerBody ??= Components.Get<Rigidbody>();
+		if ( !playerBody.IsValid() )
+			return;
+
+		playerBody.Velocity = new Vector3( 0f, 0f, playerBody.Velocity.z );
 	}
 
 	private bool IsMatchGameplayInputAllowed()
