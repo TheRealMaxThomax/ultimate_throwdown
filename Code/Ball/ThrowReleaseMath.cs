@@ -134,6 +134,8 @@ public static class ThrowReleaseMath
 			var trace = flight.TraceRadius > 0f
 				? scene.Trace.Sphere( flight.TraceRadius, position, nextPosition )
 				: scene.Trace.Ray( position, nextPosition );
+			// Match ball physics — ball + playerclip → Ignore in Collision.config.
+			trace = trace.WithoutTags( "playerclip" );
 			if ( ignoreHierarchy.IsValid() )
 				trace = trace.IgnoreGameObjectHierarchy( ignoreHierarchy );
 			if ( alsoIgnoreHierarchy.IsValid() )

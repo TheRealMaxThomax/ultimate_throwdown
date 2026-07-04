@@ -14,6 +14,15 @@ public sealed class BallOutOfBoundsHost : Component
 	[Property] public float MaxSupportTraceDistance { get; set; } = 96f;
 	[Property] public float DropCountdownSeconds { get; set; } = 10f;
 	[Property] public float SkyDropHeight { get; set; } = 200f;
+	/// <summary> Trace begins this far above credited player feet — avoids hitting overhead roofs from a sky-high start. </summary>
+	[Property] public float DropAnchorTraceAboveFeet { get; set; } = 8f;
+	[Property] public float DropAnchorTraceDownDistance { get; set; } = 512f;
+	/// <summary> Reject downward hits more than this far above credited feet (elevated decks / mis-snapped roofs). </summary>
+	[Property] public float DropAnchorMaxAboveFeet { get; set; } = 32f;
+	/// <summary> Minimum sky-drop lift even under low ceilings. </summary>
+	[Property] public float SkyDropMinHeight { get; set; } = 48f;
+	/// <summary> Stay this far below overhead geometry when capping <see cref="SkyDropHeight"/>. </summary>
+	[Property] public float SkyDropCeilingMargin { get; set; } = 16f;
 	[Property] public SoundEvent WhistleSound { get; set; }
 	[Property] public bool EnableOobDebugLogs { get; set; }
 
@@ -187,7 +196,7 @@ public sealed class BallOutOfBoundsHost : Component
 
 	void ExecuteSkyDropOnHost( Vector3 dropAnchor )
 	{
-		GameObject.WorldPosition = dropAnchor + Vector3.Up * SkyDropHeight;
+		GameObject.WorldPosition = ResolveSkyDropWorldPosition( dropAnchor );
 		GameObject.WorldRotation = Rotation.Identity;
 
 		foreach ( var body in GameObject.Components.GetAll<Rigidbody>( FindMode.EverythingInSelfAndDescendants ) )
@@ -330,22 +339,72 @@ public sealed class BallOutOfBoundsHost : Component
 
 	Vector3 ResolveDropAnchorOnGround( Vector3 anchor )
 	{
-		var start = new Vector3( anchor.x, anchor.y, anchor.z + 512f );
-		var end = new Vector3( anchor.x, anchor.y, anchor.z - 512f );
-		var trace = BuildDropAnchorGroundTrace( start, end );
-		var tr = trace.Run();
+		var feetZ = anchor.z;
+		var start = new Vector3( anchor.x, anchor.y, feetZ + DropAnchorTraceAboveFeet );
+		var end = new Vector3( anchor.x, anchor.y, feetZ - DropAnchorTraceDownDistance );
+		var traceStart = start;
 
-		if ( tr.Hit )
-			return tr.HitPosition;
+		for ( var i = 0; i < 12; i++ )
+		{
+			var tr = BuildDropAnchorGroundTrace( traceStart, end ).Run();
+			if ( !tr.Hit )
+				break;
+
+			if ( IsValidDropGroundHit( tr.HitPosition, tr.Normal, feetZ ) )
+				return tr.HitPosition;
+
+			traceStart = tr.HitPosition + Vector3.Down * 2f;
+			if ( traceStart.z <= end.z )
+				break;
+		}
 
 		var fallback = GameNetworkManager.SnapPositionToGround( Scene, start, GameObject );
-		return new Vector3( anchor.x, anchor.y, fallback.z );
+		var fallbackPos = new Vector3( anchor.x, anchor.y, fallback.z );
+		if ( IsValidDropGroundHit( fallbackPos, Vector3.Up, feetZ ) )
+			return fallbackPos;
+
+		var spawn = ResolveFallbackSpawnPosition();
+		return GameNetworkManager.SnapPositionToGround( Scene, spawn + Vector3.Up * DropAnchorTraceAboveFeet, GameObject );
+	}
+
+	bool IsValidDropGroundHit( Vector3 hitPosition, Vector3 hitNormal, float feetZ )
+	{
+		if ( OutOfBoundsZone.IsPointInsideAnyZone( Scene, hitPosition ) )
+			return false;
+
+		if ( hitNormal.Dot( Vector3.Up ) < 0.5f )
+			return false;
+
+		if ( hitPosition.z > feetZ + DropAnchorMaxAboveFeet )
+			return false;
+
+		return true;
+	}
+
+	Vector3 ResolveSkyDropWorldPosition( Vector3 groundAnchor )
+	{
+		var height = ResolveSkyDropHeightAboveGround( groundAnchor );
+		return groundAnchor + Vector3.Up * height;
+	}
+
+	float ResolveSkyDropHeightAboveGround( Vector3 groundAnchor )
+	{
+		var upStart = groundAnchor + Vector3.Up * 1f;
+		var upEnd = groundAnchor + Vector3.Up * (SkyDropHeight + 256f);
+		var tr = BuildDropAnchorGroundTrace( upStart, upEnd ).Run();
+
+		if ( !tr.Hit )
+			return SkyDropHeight;
+
+		var clearance = tr.HitPosition.z - groundAnchor.z - SkyDropCeilingMargin;
+		var capped = MathF.Min( SkyDropHeight, clearance );
+		return MathF.Max( SkyDropMinHeight, capped );
 	}
 
 	SceneTrace BuildDropAnchorGroundTrace( Vector3 start, Vector3 end )
 	{
 		var trace = Scene.Trace.Ray( start, end )
-			.WithoutTags( "ragdoll" )
+			.WithoutTags( "ragdoll", "playerclip" )
 			.IgnoreGameObjectHierarchy( GameObject );
 
 		foreach ( var playerTeam in Scene.GetAllComponents<PlayerTeam>() )

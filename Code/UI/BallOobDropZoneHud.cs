@@ -49,6 +49,9 @@ public sealed class BallOobDropZoneHud : Component
 	[Property, Group( "World stack" )] public float StackRowGap { get; set; } = 20f;
 	[Property, Group( "World stack" )] public string StackFontFamily { get; set; } = "Les Flos Sage";
 	[Property, Group( "World stack" )] public Color StackTextColor { get; set; } = Color.White;
+	/// <summary> Black duplicate layer offset — matches tackle comic <c>ShadowOffsetPixels</c> default. </summary>
+	[Property, Group( "World stack" )] public Vector2 StackShadowOffsetPixels { get; set; } = new( 10f, 12f );
+	[Property, Group( "World stack" )] public Color StackShadowColor { get; set; } = new Color( 0.04f, 0.04f, 0.04f );
 	[Property, Group( "World stack" )] public int CountdownFontSize { get; set; } = 96;
 	[Property, Group( "World stack" )] public int CountdownFontWeight { get; set; } = 800;
 	[Property, Group( "World stack" )] public int ArrowFontSize { get; set; } = 72;

@@ -173,6 +173,14 @@ public sealed class BallCompassHud : Component
 		targetWorld = default;
 		state = BallCompassState.Loose;
 
+		// OOB countdown — ball is hidden at the foul spot; aim at the synced drop anchor instead.
+		if ( MatchHudDraw.TryGetHudState( scene, out var hudTeam, out _ )
+			&& hudTeam.NetBallOobActive )
+		{
+			targetWorld = hudTeam.NetBallOobDropAnchor;
+			return true;
+		}
+
 		var ball = FindMainBall( scene );
 		if ( !ball.IsValid() )
 			return false;

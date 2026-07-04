@@ -46,7 +46,7 @@
 - **Traffic knockdown** — no pre-launch pause; **`HazardKnockdownComicPower`** default **1.55** (Chaos/red); **`TriggerAsHazardVictim()`** + **`IsHazardImpact`** car camera path (defer ragdoll cam, orbit shake baseline, enter blend). **Player tackles** use simpler path — hitstop during freeze, ragdoll cam when `isRagdolled`
 - **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** + **`ComicLetterExitMotion`**: entrance polish + **14 exit styles** (5 CSS + 7 letter C#); timing via `LifetimeSeconds` / `ExitFadeStartFraction` / `ExitFadeDurationFraction` / `ExitTailSeconds` — **good enough for v1**; MP verify + Les Flos optional
 - **Ult charge (slice 1 + 3 + 4 ✅ playtest OK 2026-07-02)** — **`PlayerUltCharge`** + **`UltChargeHud`** on **player prefab** (manual — **not** auto-spawned). Passive regen **`Playing` only**; goal (scorer) **40** + assist (throw passer) **25** + tackle (attacker, **enemy only**) **10**; **`IPlayerUlt.MaxChargePoints`** per ult (Speed Blitz default **100** on **`SpeedsterSpeedBlitzUlt`**); FF tackle **no** charge; **`BallPassAssistState`** on **`main_ball`** (host); ult swap = raw points carry over (**no penalty**); % **persists** across rounds; **rematch → 0%**. HUD: floored **%**, white → blue at 100%. **`Ultimate`** → **X**.
-- **Ball OOB (map slice 1 — Turf Wars solo ✅ 2026-07-04 polish)** — dwell → whistle (`match_whistle.sound` **UI** flag) → **`OUT OF BOUNDS!`** banner → **10s** drop marker (**custom disc** `.vmdl` + **`oob_drop_ring.vmat`** + black underlay outline) + world stack (**DROP ZONE** / countdown / ▼, yaw-only upright). Sky-drop at **credited player feet** (ground trace ignores players). **`BallOutOfBoundsHost`** + **`BallLastTouchLedger`** on **`main_ball`**; HUDs on Main Camera — tune **`BallOobDropZoneHud`** in **edit mode** (`StackPanelSize`, fonts, ring diameter/outline). **Off in `PracticeArenaMode`**. **MP not tested yet.**
+- **Ball OOB (map slice 1 — Turf Wars solo ✅ 2026-07-04)** — dwell → whistle → **`OUT OF BOUNDS!`** banner → **10s** drop marker (disc + **`oob_drop_ring.vmat`** + black outline) + world stack (**DROP ZONE** / countdown / ▼, **Les Flos Sage** + black shadow only). Sky-drop at **player feet** ground (feet-level trace, skip OOB roofs, ceiling-capped height). **`BallCompassHud`** → drop anchor during countdown. Throw preview ignores **`playerclip`**. **`BallOutOfBoundsHost`** + **`BallLastTouchLedger`** on **`main_ball`**. **Off in `PracticeArenaMode`**. **MP not tested yet.**
 - **Speed Blitz (slice 2a–2d ✅)** — **`SpeedsterSpeedBlitzUlt`** + owner **`SpeedBlitzAimPreview`** (segmented **`plane.vmdl`** strips, `speed_blitz_preview.vmat`, ult blue `#24b0ff`; tune **`PlaneWidthBaseSize`** for hit-width read, **`PlaneLengthBaseSize`** **100** for segment length); hold X → preview → release commit; dash hits = **contact + LOS** + **`TryValidateContactCylinder`** (jump-over = tackle); wind-up 2d shipped; spark sprites deferred (editor/publish).
 - **Speed Blitz wind-up feel (slice 2d — solo ✅ 2026-06-18)** — **`SpeedBlitzWindUpFeel`**: **`speedblitzwindupvfx`** **wind-up only** (off dash / connect hang); **`speedblitzdischargevfx`** on **dasher chest** at ragdoll launch (hit only). **`SpeedBlitzBodyGlow`** + render system: tint + point light (`GetWindUpLerp()` ramp → peak → discharge); **point light destroyed on end** (remote host-dasher fix **2026-06-22**). **`PlayerSpeedBlitzWindUpAnim`**: masked **`speedblitz_windup`** via `blitz_windup` / `blitz_windup_weight` while **`IsWindUp`** (synced). **SFX:** electric hard stop at connect, windup rise, dash woosh — **`PlayFeelSoundAt`**; **client dasher connect crunch on predict** (host broadcast dedupes — **2026-06-22**). **Connect hang timing:** pre-launch pause runs **parallel** with ragdoll body init — launch aligns with pose unfreeze (**2026-06-22**). **MP:** owner/host wind-up looks OK; **joining client spark sprites = blue squares** (engine limitation — publish only)
 - **Owner cameras (2026-06-15)** — **`PostCameraSetup`** for all owner FOV (PC resets preference FOV every frame). **`ThrowChargeCamera`** `[Order(10002)]`: charge offset + release blend after ball leaves hand (transition-frame hold — no pop). **`SpeedBlitzDashCamera`** `[Order(10012)]`: idle must **not** stomp **`CameraOffset`** (throw owns offset). **`TackleImpactFeel`**: blitz attacker uses overrides — hitstop freezes **world pose only**; dash cam eases during freeze; no blitz attacker offset/FOV punch (recovery blend owns it). Player tackles unchanged.
@@ -55,7 +55,22 @@
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
-**Still later:** Tackle tuning, map vote (30s, all players, `Slot1`–`N`).
+**Still later:** Tackle tuning, map vote (30s, all players, `Slot1`–`N`). **UI font pass** → [UI typography](#ui-typography-deferred-pass) (Barlow Condensed on HUD/menus — not started).
+
+### UI typography (deferred pass)
+
+**Decided (2026-07-04):** two-font split — **not wired in HUD yet** (still Poppins in code defaults).
+
+| Role | Font | Where |
+|------|------|--------|
+| **Display / comic** | **Les Flos** Sage (± Sans/Chaos on tackle tiers) | Comic bursts, OOB world stack, future menu **titles** |
+| **HUD / UI body** | **Barlow Condensed** (SIL OFL) | Score, clock, ult %, menus, loadout body — **migration later** |
+
+**Assets:** `Assets/fonts/BarlowCondensed-*.ttf` — **keep** Regular / Medium / SemiBold / Bold for v1; rest optional. **CSS family name:** `Barlow Condensed`. Copy **OFL.txt** into `Assets/fonts/` when convenient.
+
+**Style rules:** Comic bursts = shadow + highlight extrusion. **Lingering UI** (OOB stack, menus) = **shadow only** on Sage; no highlight extrusion. HUD numbers = **flat** Barlow.
+
+**When we do the pass (order):** (1) `PracticeLaunchReadout.ScoreFontFamily` smoke test → (2) match HUD → (3) owner HUDs → (4) menus/loadout. **Do not** put Barlow on OOB stack or comic bursts.
 
 **Avatar (WIP):** On branch **`feature/human-avatar`**, Player **Body** uses **`citizen_human_*`** (`models/citizen/citizen_human/`) + human locomotion graph — **not** `citizen.vmdl` / **`citizen_holdball_test`**. Male/female from account via **`PlayerCosmeticsSync`** / `ClothingContainer`; no dual-body v1. Solo + 2-window MP: cosmetics, tackle ragdoll, launch distance OK vs old citizen. **Leaning human for release** (goofy tone from gameplay, not silhouette); merge TBD.
 
@@ -474,7 +489,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 #### Map slice 1b — MP + polish
 
-- [x] **Solo polish (2026-07-04):** whistle global; custom ground disc + outline; world stack layout; player-feet anchor + ground trace; cylindrical ball pickup (**`MaxPickupVerticalSeparation`**)
+- [x] **Solo polish (2026-07-04):** whistle global; custom ground disc + outline; world stack layout; player-feet anchor + ground trace; cylindrical ball pickup; **playerclip** throw preview; compass → drop anchor; roof/ceiling drop fix; stack **shadow-only** (no highlight extrusion)
 - [ ] **2-window MP** — whistle + banner + drop marker on all clients; sky-drop; ball hidden during countdown; rematch cancel
 - [ ] Confirm invisible ball blockers removed where replaced by OOB + `playerclip`
 
@@ -595,7 +610,7 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
-- **2026-07-04 (map slice 1 polish ✅ solo):** OOB whistle UI flag; custom disc + black outline + `oob_drop_ring.vmat`; drop stack **DROP ZONE**/countdown/▼, yaw-only billboard; anchor = **player feet** + sky ground trace; **`BallGrab`** cylinder pickup (`MaxPickupVerticalSeparation` **80**). **Next: 2-window MP.**
+- **2026-07-04 (map slice 1 solo ✅):** OOB polish — playerclip throw preview; compass → **`NetBallOobDropAnchor`**; feet-level ground trace + OOB-surface skip + ceiling-capped sky-drop; drop stack **Sage + shadow only**; **Barlow Condensed** added (`Assets/fonts/`, OFL) — **HUD wire-up deferred**. **Next: 2-window MP.**
 - **2026-07-03 (map slice 1a ✅ + editor):** Turf Wars **`OutOfBoundsZone`** + **`playerclip`**; core OOB loop shipped.
 - **2026-07-02 (slice 4 ✅ playtest + OOB spec):** Per-ult **`MaxChargePoints`** shipped. **Map slice 1** specced — OOB zones, stop dwell, last-touch sky-drop, **`BallSpawn`** fallback only; ship **before prefab split**.
 - **2026-06-30 (aim preview v3 ✅):** Segmented `plane.vmdl` + `speed_blitz_preview.vmat`; **`PlaneWidthBaseSize`** / **`PlaneLengthBaseSize`** (width ~175 playtest, length 100); wall/comic/grid clip **won't do**. **Blitz jump-over** = `TryValidateContactCylinder`. Spot-light shadow lines deferred (#10960).
