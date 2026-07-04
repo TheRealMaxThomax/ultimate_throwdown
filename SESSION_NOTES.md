@@ -29,7 +29,8 @@
 **Pre–prefab split (ball throw ✅ 2026-07-04):** planted charge (`IsThrowPlantLocked` — no move/jump/air steer); **RMB** (`CancelChargeAction` / `attack2`) cancels charge; **`NotifyThrowChargeCancelled`** smooth blend back to idle hold (`ChargeCancelBlendOutSeconds`); **`BallGrab`** host-authoritative auto-grab (OOB sky-drop MP).
 
 **Works today:**
-- Ball grab/throw — held ball on **`hold_R`** (`BallGrab` + `BallClientFeel`); **throw trajectory preview** + **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **`BallThrow`** — planted charge (**`IsThrowPlantLocked`**: no WASD/jump/air steer; release-delay plant too), **RMB cancel** (`CancelChargeAction`), **`CancelActiveThrowCharge()`**; **`PlayerBallHoldAnim`** — `holditem` RH + masked **`throw_charge`** wind-up + **`NotifyThrowChargeCancelled`** ease to idle hold; **`ThrowReleaseDelaySeconds`** — anim on release, ball detaches after delay; **`BallGrab`** host-authoritative pickup; **ball carrier glow** (`BallCarrierOutline`); **`BallCompassHud`**; tackles/ragdolls; dodge; **crouch disabled**
+- Ball grab/throw — held ball on **`hold_R`** (`BallGrab` + `BallClientFeel`); **throw trajectory preview** + **`ThrowChargeCamera`** / **`ThrowChargeBar`**; **`BallThrow`** — planted charge (**`IsThrowPlantLocked`**: no WASD/jump/air steer; release-delay plant too), **RMB cancel** (`CancelChargeAction`), **`CancelActiveThrowCharge()`**; **`PlayerBallHoldAnim`** — `holditem` RH + masked **`throw_charge`** wind-up + **`NotifyThrowChargeCancelled`** ease to idle hold; **`ThrowReleaseDelaySeconds`** — anim on release, ball detaches after delay; **`BallGrab`** host-authoritative pickup; **ball carrier glow** (`BallCarrierOutline`); **`BallCompassHud`**; tackles/ragdolls; **crouch disabled**
+- **Dodge (channel ✅ 2026-07-04)** — **`PlayerDodge`** capped lateral slide; class **`DodgeDistance`** = literal travel; **`DodgeChannelDurationSeconds`** on prefab (lower = snappier); **air dodge OK**; **hard horizontal stop** at channel end (no dodge+jump cannonball). Tier penalty + iframe + cooldown unchanged. **Solo playtest OK**
 - **Teams + spawns** (balance on join, ground-snapped spawns)
 - **`MatchDirector`** — phases, 10:00 match clock (`M.SS`), goal celebration / intermission, **OVERTIME**, **match over**
 - **`GoalZone`** dwell scoring
@@ -149,7 +150,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Online: the host is the referee** — clients request; host decides.
 - **Tackles:** Only at full charge speed (`NetAtChargeSpeed`). Host ragdoll + client **request** RPC. **Attacker on connect → walk ramp reset** (all classes). **`PreLaunchPauseSeconds` > 0:** **`NetAwaitingRagdollLaunch`** — victim **visible + frozen**, then impulse + ragdoll. **Client victim/attacker feel predict** (Tier A) — host still owns knockdown. **`CombatFeelPredictDedupe`** dedupes host feel RPCs.
 - **Charge run overlay:** **`PlayerChargeRunAnim`** drives graph params when **`IsAtChargeSpeed`** (synced) — not owner-only ramp HUD.
-- **Dodge:** Double-tap A or D. Tackle iframe only.
+- **Dodge:** Double-tap A or D. Tackle iframe only. **Capped lateral slide** (`DodgeChannelDurationSeconds`) — class `DodgeDistance` = literal travel; **air dodge OK**; **hard horizontal stop** at channel end (blitz-style — no dodge+jump cannonball).
 - **Ragdoll / knockdown:** **Walk** ramp resets **on knockdown** (`TriggerForceWalkRampOnHost` + local snap of `smoothedMoveSpeedCap` in `CatchUpSpeedBoost`); ramp timers frozen while down. **✅ Working.**
 - **Charge tier + W+S:** **✅ Fixed** — `ApplyMutuallyExclusiveForwardBackwardInput` patches `AnalogMove.x` (not `.y`); `[Order(-100)]` + `OnFixedUpdate` so `PlayerController` sees mutex before movement.
 - **Crouch:** Disabled — do not rebind `Duck` without re-enabling intentionally.
@@ -183,6 +184,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 14. **Speed Blitz 2d (MP):** Olympic pose + body glow + discharge + SFX on remotes; electric cut + dash woosh; no sparks on dash/connect/miss. **Dash hits:** wall/roof blocks — no teleport hit. **Client dasher:** connect crunch on predict. **Joining client wind-up spark sprites = blue squares** (editor limitation — publish only).
 15. **Ball OOB (map 1):** roll into zone → whistle + banner → drop disc at **thrower feet** + stack → sky-drop; stand on marker → ball grabs at head height; rematch/round reset cancels marker; client ball hidden during countdown.
 16. **Practice arena NPCs (MP) ✅ (2026-06-23):** idle + patrol runner — knockdown visuals (`PracticeNpcClient*Rpc`), patrol pose sync (`PracticeNpcPatrolPoseRelay`), tackle + Speed Blitz contact (no freeze snap-back / invisible hits). Host solo must **not** self-launch on static dummies.
+17. **Dodge channel (2026-07-04):** dodge→jump / jump→dodge — no long glide; dodge off ledge completes slide then horizontal stop; wall early stop; iframe + tier penalty still apply. **2-window MP** when convenient.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
 
@@ -258,6 +260,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); **`Interact Distance`** (horizontal, default **45**); **`Max Pickup Vertical Separation`** (default **80** — head-height pickup without widening ground reach); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
 - **`PlayerBallHoldAnim`** — auto-added on network spawn. Tune `IdleHoldPoseHand` (~0.1), `ThrowAttackStrong`, `ThrowPoseHoldSeconds` (~0.9), `ThrowPlaybackRate` (~0.7). **Throw charge:** `UseAnimGraphChargePose` on — `throw_charge`/`throw_charge_weight` on **`utd_citizen_human_m.vanmgrph`**; tune **`ChargeWindupCycleEnd`** if wind-up finishes before bar is full; **`ChargeCancelBlendOutSeconds`** (~0.1) for RMB cancel ease. Graph re-applied after cosmetics.
 - **`PlayerTackle`** — **`PreLaunchPauseSeconds`** (default **0.05**; **0** = legacy launch); tune with **`TackleImpactFeel.HitstopDurationSeconds`**
+- **`PlayerDodge`** — class **`DodgeDistance`** (literal slide units); **`DodgeChannelDurationSeconds`** on prefab (lower = snappier — try **~0.14–0.16** vs code default **0.2**). **Removed:** `ShoveVelocityMultiplier` (ignore if still in scene JSON).
 - **`PlayerChargeRunAnim`** — auto-added on network spawn. **`UseAnimGraphChargeRunPose`** on; **`IsAtChargeSpeed`** (not local HUD tier). **`SpeedBlitzChargeRunBlendInSeconds`** (default **0.03** — charge_run builds faster during dash). Graph → [`CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md)
 - **`TackleImpactFeel`** — auto-added on network spawn. Tune **Hitstop** / **Shake** / **Attacker punch**; **`ShakeForAttacker`** + **`ShakeForVictim`**
 - **`CombatFeelPredictDedupe`** — auto-added on network spawn (with **`TackleImpactFeel`**). No inspector tuning.
@@ -610,6 +613,7 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
+- **2026-07-04 (dodge channel ✅):** Capped displacement + horizontal stop at end; air dodge (ledge-friendly). **`ShoveVelocityMultiplier` → `DodgeChannelDurationSeconds`** on prefab. **Solo playtest OK** (tune duration for snap).
 - **2026-07-04 (ball throw + map slice 1 ✅):** **Throw charge** — planted wind-up (`IsThrowPlantLocked`, no jump/air steer); **RMB** cancel (`CancelActiveThrowCharge`); cancel pose ease (`NotifyThrowChargeCancelled` / `ChargeCancelBlendOutSeconds`). **OOB** — 2-window MP OK; stack pulse; host-authoritative `BallGrab`; invisible walls removed. **Next: prefab split.**
 - **2026-07-03 (map slice 1a ✅ + editor):** Turf Wars **`OutOfBoundsZone`** + **`playerclip`**; core OOB loop shipped.
 - **2026-07-02 (slice 4 ✅ playtest + OOB spec):** Per-ult **`MaxChargePoints`** shipped. **Map slice 1** specced — OOB zones, stop dwell, last-touch sky-drop, **`BallSpawn`** fallback only; ship **before prefab split**.

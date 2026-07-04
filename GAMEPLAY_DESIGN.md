@@ -55,6 +55,8 @@ Think of three gears:
 
 **Input:** Double-tap strafe left (A) or right (D). Not a separate dodge button.
 
+**Movement (shipped 2026-07-04):** Owner slides laterally up to class **`DodgeDistance`** (literal units) over **`DodgeChannelDurationSeconds`** on the prefab. Works on ground **or** in air (ledge-friendly). **Hard horizontal stop** when the channel ends — Speed Blitz-style; no post-dodge glide. Fixes dodge+jump velocity exploit.
+
 **After dodge you get:**
 - A sideways shove
 - A very short “can’t be tackled” window (~0.14 s) — not full invincibility
@@ -71,7 +73,7 @@ Think of three gears:
 
 **Design goal:** Dodge should reward good timing, not let carriers jog to the goal by spamming dodge. Throwing/passing should stay the main way to advance.
 
-**Tuning knobs (change one at a time in playtests):** shove strength, cooldown, iframe length, how long until charge returns.
+**Tuning knobs (change one at a time in playtests):** class `DodgeDistance` (literal slide units), `DodgeChannelDurationSeconds` on `PlayerDodge`, cooldown, iframe length, how long until charge returns.
 
 ---
 

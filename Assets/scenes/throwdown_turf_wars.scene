@@ -861,6 +861,7 @@
               "__enabled": true,
               "Flags": 0,
               "CarrierDodgeCooldownFactor": 0.88,
+              "DodgeChannelDurationSeconds": 0.12,
               "DoubleTapMaxInterval": 0.28,
               "EnableDodgeDebugLogs": false,
               "LeftStrafeAction": "left",
@@ -871,8 +872,7 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "RechargeBlockedAfterChargeDodge": 2,
-              "RightStrafeAction": "right",
-              "ShoveVelocityMultiplier": 6.5
+              "RightStrafeAction": "right"
             },
             {
               "__type": "DodgeCooldownHud",

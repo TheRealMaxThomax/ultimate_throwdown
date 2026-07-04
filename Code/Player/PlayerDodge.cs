@@ -15,8 +15,8 @@ public sealed class PlayerDodge : Component
 	[Property] public float DoubleTapMaxInterval { get; set; } = 0.28f;
 	[Property] public float CarrierDodgeCooldownFactor { get; set; } = 0.88f;
 	[Property] public float RechargeBlockedAfterChargeDodge { get; set; } = 2f;
-	/// <summary> Horizontal impulse = ClassData DodgeDistance × this (applied to Rigidbody Velocity). </summary>
-	[Property] public float ShoveVelocityMultiplier { get; set; } = 6.5f;
+	/// <summary> Max time to spend the lateral slide (class <c>DodgeDistance</c> is literal travel units). </summary>
+	[Property] public float DodgeChannelDurationSeconds { get; set; } = 0.2f;
 	[Property] public bool EnableDodgeDebugLogs { get; set; }
 
 	private float lastLeftStrafeTapTime = -999f;
@@ -27,8 +27,15 @@ public sealed class PlayerDodge : Component
 	private BallThrow ballThrow;
 	private PlayerClass playerClass;
 	private PlayerTackle playerTackle;
+	private PlayerController playerController;
 	private Rigidbody playerBody;
 	private CatchUpSpeedBoost speedBoostRef;
+
+	private bool ownerDodgeChannelActive;
+	private Vector3 ownerDodgeLateralDir;
+	private float ownerDodgeDistanceRemaining;
+	private float ownerDodgeSlideSpeed;
+	private float ownerDodgeChannelEndsAt;
 
 	private float netTackleIframeUntil;
 	[Sync( SyncFlags.FromHost )]
@@ -67,7 +74,7 @@ public sealed class PlayerDodge : Component
 	private float NetLastDodgeDistanceStat { get => netLastDodgeDistanceStat; set => netLastDodgeDistanceStat = value; }
 
 	public bool IsImmuneToTackle => Time.Now < netTackleIframeUntil;
-	public bool IsDodging => Time.Now < netDodgeMovementUntil;
+	public bool IsDodging => (Network.IsOwner && ownerDodgeChannelActive) || Time.Now < netDodgeMovementUntil;
 	/// <summary> Seconds until host-synced dodge cooldown ends (0 = ready). </summary>
 	public float DodgeCooldownRemaining => MathF.Max( 0f, netNextDodgeAllowedAfter - Time.Now );
 
@@ -81,6 +88,7 @@ public sealed class PlayerDodge : Component
 		ballThrow = Components.Get<BallThrow>();
 		playerClass = Components.Get<PlayerClass>();
 		playerTackle = Components.Get<PlayerTackle>();
+		playerController = Components.Get<PlayerController>( FindMode.EverythingInSelfAndDescendants );
 		playerBody = Components.Get<Rigidbody>();
 		speedBoostRef = Components.Get<CatchUpSpeedBoost>();
 
@@ -109,8 +117,20 @@ public sealed class PlayerDodge : Component
 		TryDetectDoubleTapDodge();
 	}
 
+	protected override void OnFixedUpdate()
+	{
+		if ( !Network.IsOwner )
+			return;
+
+		if ( ownerDodgeChannelActive )
+			OwnerDriveDodgeChannel();
+	}
+
 	private void TryDetectDoubleTapDodge()
 	{
+		if ( ownerDodgeChannelActive )
+			return;
+
 		if ( Time.Now < NetNextDodgeAllowedAfter )
 			return;
 
@@ -148,6 +168,8 @@ public sealed class PlayerDodge : Component
 	{
 		playerTackle ??= Components.Get<PlayerTackle>();
 		if ( playerTackle is { IsRagdolled: true } )
+			return;
+		if ( ownerDodgeChannelActive )
 			return;
 		if ( Time.Now < NetNextDodgeAllowedAfter )
 			return;
@@ -216,6 +238,7 @@ public sealed class PlayerDodge : Component
 
 		var holdingBall = ballGrab?.IsHolding ?? false;
 		var cdMul = holdingBall ? CarrierDodgeCooldownFactor : 1f;
+		var channelDuration = DodgeChannelDurationSeconds.Clamp( 0.05f, 1f );
 
 		NetDodgeClearsThrowCharge = clearsThrow;
 		NetTackleIframeUntil = now + iframe;
@@ -229,11 +252,11 @@ public sealed class PlayerDodge : Component
 		NetLastDodgeDirectionSign = directionSign;
 		NetLastDodgeDistanceStat = dist;
 		NetDodgeApplyId = NetDodgeApplyId + 1;
-		NetDodgeMovementUntil = now + 0.2f;
+		NetDodgeMovementUntil = now + channelDuration;
 
 		if ( EnableDodgeDebugLogs )
 		{
-			Log.Info( $"[Dodge] OK dir={directionSign} penalty={penaltyKind} iframe={iframe:F2}s cd={baseCd * cdMul:F2}s chargeStrip={wasAtChargeSpeed}" );
+			Log.Info( $"[Dodge] OK dir={directionSign} penalty={penaltyKind} iframe={iframe:F2}s cd={baseCd * cdMul:F2}s dist={dist:F0} chargeStrip={wasAtChargeSpeed}" );
 		}
 	}
 
@@ -247,22 +270,138 @@ public sealed class PlayerDodge : Component
 		if ( NetDodgeClearsThrowCharge )
 			ballThrow?.CancelActiveThrowCharge();
 
-		ApplyShoveVelocity( NetLastDodgeDirectionSign, NetLastDodgeDistanceStat );
+		BeginOwnerDodgeChannel( NetLastDodgeDirectionSign, NetLastDodgeDistanceStat );
 	}
 
-	private void ApplyShoveVelocity( int directionSign, float dodgeDistanceStat )
+	private void BeginOwnerDodgeChannel( int directionSign, float dodgeDistanceStat )
 	{
-		playerBody ??= Components.Get<Rigidbody>();
-		if ( !playerBody.IsValid() )
+		var lateral = ResolveLateralDirection( directionSign );
+		if ( lateral.Length < 0.001f )
 			return;
+
+		var channelDuration = DodgeChannelDurationSeconds.Clamp( 0.05f, 1f );
+		var travelDistance = MathF.Max( 0f, dodgeDistanceStat );
+
+		ownerDodgeLateralDir = lateral;
+		ownerDodgeDistanceRemaining = travelDistance;
+		ownerDodgeSlideSpeed = travelDistance > 0f
+			? travelDistance / channelDuration
+			: 0f;
+		ownerDodgeChannelEndsAt = Time.Now + channelDuration;
+		ownerDodgeChannelActive = true;
+
+		if ( EnableDodgeDebugLogs )
+			Log.Info( $"[Dodge] Owner channel start dist={travelDistance:F0} speed={ownerDodgeSlideSpeed:F0} dur={channelDuration:F2}s" );
+	}
+
+	/// <summary> Owner: capped lateral slide (ground or air); hard horizontal stop when the channel ends — same idea as Speed Blitz dash end. </summary>
+	private void OwnerDriveDodgeChannel()
+	{
+		playerTackle ??= Components.Get<PlayerTackle>();
+		if ( playerTackle is { IsRagdolled: true } )
+		{
+			EndOwnerDodgeChannel( "ragdoll" );
+			return;
+		}
+
+		if ( Time.Now >= ownerDodgeChannelEndsAt || ownerDodgeDistanceRemaining <= 0f || ownerDodgeSlideSpeed <= 0f )
+		{
+			EndOwnerDodgeChannel( "done" );
+			return;
+		}
+
+		var dt = Time.Delta;
+		var stepDistance = MathF.Min( ownerDodgeSlideSpeed * dt, ownerDodgeDistanceRemaining );
+		if ( stepDistance <= 0f )
+		{
+			EndOwnerDodgeChannel( "done" );
+			return;
+		}
+
+		if ( TryGetWallBlockedStepDistance( stepDistance, out var allowedStep ) )
+		{
+			stepDistance = allowedStep;
+			if ( stepDistance <= 0.5f )
+			{
+				EndOwnerDodgeChannel( "wall" );
+				return;
+			}
+		}
+
+		ownerDodgeDistanceRemaining = MathF.Max( 0f, ownerDodgeDistanceRemaining - stepDistance );
+
+		playerController ??= Components.Get<PlayerController>( FindMode.EverythingInSelfAndDescendants );
+		playerBody ??= Components.Get<Rigidbody>();
+
+		var horizontal = ownerDodgeLateralDir * ownerDodgeSlideSpeed;
+
+		if ( playerController.IsValid() )
+			playerController.WishVelocity = horizontal;
+
+		if ( playerBody.IsValid() )
+			playerBody.Velocity = horizontal.WithZ( playerBody.Velocity.z );
+
+		if ( ownerDodgeDistanceRemaining <= 0f || Time.Now >= ownerDodgeChannelEndsAt )
+			EndOwnerDodgeChannel( "done" );
+	}
+
+	private bool TryGetWallBlockedStepDistance( float stepDistance, out float allowedStep )
+	{
+		allowedStep = stepDistance;
+		if ( stepDistance <= 0f )
+			return false;
+
+		var from = GameObject.WorldPosition;
+		var to = from + ownerDodgeLateralDir * stepDistance;
+		var trace = Scene.Trace.Ray( from, to )
+			.IgnoreGameObjectHierarchy( GameObject )
+			.Run();
+
+		if ( !trace.Hit )
+			return false;
+
+		const float wallBackoff = 4f;
+		allowedStep = MathF.Max( 0f, trace.HitPosition.Distance( from ) - wallBackoff );
+		return true;
+	}
+
+	private void EndOwnerDodgeChannel( string reason )
+	{
+		if ( !ownerDodgeChannelActive )
+			return;
+
+		ownerDodgeChannelActive = false;
+		ownerDodgeDistanceRemaining = 0f;
+		ownerDodgeSlideSpeed = 0f;
+		OwnerZeroHorizontalVelocity();
+
+		if ( EnableDodgeDebugLogs )
+			Log.Info( $"[Dodge] Owner channel end ({reason})" );
+	}
+
+	private void OwnerZeroHorizontalVelocity()
+	{
+		playerController ??= Components.Get<PlayerController>( FindMode.EverythingInSelfAndDescendants );
+		playerBody ??= Components.Get<Rigidbody>();
+
+		if ( playerController.IsValid() )
+			playerController.WishVelocity = Vector3.Zero;
+
+		if ( playerBody.IsValid() )
+			playerBody.Velocity = new Vector3( 0f, 0f, playerBody.Velocity.z );
+	}
+
+	private Vector3 ResolveLateralDirection( int directionSign )
+	{
+		directionSign = directionSign < 0 ? -1 : 1;
+
+		playerController ??= Components.Get<PlayerController>( FindMode.EverythingInSelfAndDescendants );
 
 		// EyeAngles drive third-person steering; WorldRotation can lag on spawn. Use same ToRotation() as ragdoll camera / view.
 		// Strafe axis = Right (not Cross(Up, Forward)) so it matches input even if yaw/pitch convention differs from FromYaw.
-		var pc = Components.Get<PlayerController>( FindMode.EverythingInSelfAndDescendants );
-		Vector3 lateral;
-		if ( pc.IsValid() )
+		if ( playerController.IsValid() )
 		{
-			var lateralFlat = pc.EyeAngles.ToRotation().Right.WithZ( 0 );
+			var lateralFlat = playerController.EyeAngles.ToRotation().Right.WithZ( 0 );
 			if ( lateralFlat.Length < 0.001f )
 			{
 				var ff = WorldRotation.Forward.WithZ( 0 );
@@ -273,19 +412,14 @@ public sealed class PlayerDodge : Component
 			else
 				lateralFlat = lateralFlat.Normal;
 
-			lateral = lateralFlat * directionSign;
+			return lateralFlat * directionSign;
 		}
-		else
-		{
-			var flatForward = WorldRotation.Forward.WithZ( 0 );
-			if ( flatForward.Length < 0.001f )
-				flatForward = Vector3.Forward;
-			var flatForwardN = flatForward.Normal;
-			lateral = Vector3.Cross( Vector3.Up, flatForwardN ).Normal * directionSign;
-		}
-		var add = lateral * (dodgeDistanceStat * ShoveVelocityMultiplier).Clamp( 0f, 6000f );
-		var v = playerBody.Velocity;
-		playerBody.Velocity = v + add;
+
+		var flatForward = WorldRotation.Forward.WithZ( 0 );
+		if ( flatForward.Length < 0.001f )
+			flatForward = Vector3.Forward;
+		var flatForwardN = flatForward.Normal;
+		return Vector3.Cross( Vector3.Up, flatForwardN ).Normal * directionSign;
 	}
 
 	private bool IsSniper()

@@ -57,7 +57,7 @@
 |------|-----|
 | `PlayerTeam` | Synced match team id (`0` / `1`) |
 | `CatchUpSpeedBoost` | Walk / sprint / charge speed ramps |
-| `PlayerDodge` | Double-tap dodge, iframe, cooldown, ramp penalties (`Code/Player/PlayerDodge.cs`) |
+| `PlayerDodge` | Double-tap dodge — capped lateral channel, iframe, cooldown, ramp penalties (`Code/Player/PlayerDodge.cs`) |
 | `PlayerClass` | Which class is equipped |
 | `ClassData` | Class stats asset type (lives in **`PlayerClass.cs`**, not its own file) |
 
@@ -104,7 +104,7 @@
 **Custom citizen animation assets:** `Assets/Animation/utd_citizen_human_throw.vmdl` (sequences + optional custom weight lists e.g. `UTD_Charge_Overlay`) and `Assets/Animation/utd_citizen_human_m.vanmgrph` (forked graph: independent masked layers for `throw_windup`, `charge_run`, and `speedblitz_windup`). Workflow: [`Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md)
 
 **Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `MaxTackleVerticalSeparation` (default `56` — jumpers within band still connect), **`TryValidateContactCylinder`** (internal — horizontal radius + vertical band; shared with Speed Blitz dash contact), `NetIsRagdolled`, **`IsAwaitingRagdollLaunch`**, **`IsAwaitingSpeedBlitzRagdollLaunch`**, **`IsKnockedDown`**, **`NetLastKnockdownWasHazard`** (host — hazard vs player knockdown for client victim predict), `IsTackleImmune`, `SetHostTackleImmune(bool)`, `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay`, **`PreLaunchPauseSeconds`**, `ApplyKnockdownFromHost()`; RPC `RequestTackleApplyOnHost`; owner RPCs `TriggerTackleImpactFeelAsAttackerRpc(combatFeelApplyId)` / `TriggerTackleImpactFeelAsVictimRpc(combatFeelApplyId, hazardKnockdown)` → `TackleImpactFeel` + **`CombatFeelPredictDedupe`**; blitz SFX **`BroadcastSpeedBlitzConnectImpactSound`** / **`PlaySpeedBlitzConnectImpactSoundRpc`**, **`PlaySpeedBlitzLaunchSoundRpc`**
-**Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `ShoveVelocityMultiplier`, `DodgeCooldownRemaining`  
+**Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `DodgeChannelDurationSeconds`, `DodgeCooldownRemaining`, `IsDodging`  
 **Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`, `TriggerForceWalkRampOnHost()` (host — force owner ramp back to walk: tackle connect, knockdown, Speed Blitz end)  
 **Tag for test dummies only:** `practice_npc`
 
@@ -269,7 +269,7 @@ Shade examples: `eggshell_30lighter`, `grey_20lighter` (footpaths) — see `game
 
 **PlayerTackle:** `TackleDirectionThreshold`, `NetStandUpPosition`, `NetPracticeNpcStandEyeAngles`, `StandUpCameraBlendDuration`, …
 
-**PlayerDodge:** `LeftStrafeAction`, `RightStrafeAction`, `DoubleTapMaxInterval`, `IsDodging`, …
+**PlayerDodge:** `LeftStrafeAction`, `RightStrafeAction`, `DoubleTapMaxInterval`, `DodgeChannelDurationSeconds`, `IsDodging`, …
 
 **Editor:** `PlayerController` camera `CameraOffset` X = **185**
 
