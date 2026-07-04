@@ -20,11 +20,11 @@
 
 ## Right now
 
-**Goal:** **Map slice 1 — ball OOB** — Turf Wars editor pass ✅ solo flow OK (**2026-07-03**). **Next:** OOB polish (whistle global, drop-zone HUD/UI, …) → 2-window MP → then prefab split.
+**Goal:** **Map slice 1 — ball OOB** — solo polish **good enough for MP pass** (**2026-07-04**). **Next:** **2-window MP** → more OOB feel tune if needed → prefab split.
 
 **Next session (priority order):**
-1. **Map slice 1 polish** — fix whistle not global; fix drop-zone world HUD/UI (ring + Sage stack); other OOB feel bugs from solo playtest
-2. **Map slice 1b MP** — 2-window verify after polish
+1. **Map slice 1b MP** — 2-window verify (whistle, banner, drop disc + stack, sky-drop anchor, ball hide, rematch cancel)
+2. **Map slice 1** — optional feel tune (`BallOobDropZoneHud` stack size/fonts; invisible wall cleanup on Turf Wars)
 3. **Prefab split** — read [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6
 4. **Ult slice 5** — Juggernaut stomp
 
@@ -46,7 +46,7 @@
 - **Traffic knockdown** — no pre-launch pause; **`HazardKnockdownComicPower`** default **1.55** (Chaos/red); **`TriggerAsHazardVictim()`** + **`IsHazardImpact`** car camera path (defer ragdoll cam, orbit shake baseline, enter blend). **Player tackles** use simpler path — hitstop during freeze, ragdoll cam when `isRagdolled`
 - **Tackle comic text** — **`TackleComicTextHud`** + **`TackleComicBurst`** + **`ComicLetterExitMotion`**: entrance polish + **14 exit styles** (5 CSS + 7 letter C#); timing via `LifetimeSeconds` / `ExitFadeStartFraction` / `ExitFadeDurationFraction` / `ExitTailSeconds` — **good enough for v1**; MP verify + Les Flos optional
 - **Ult charge (slice 1 + 3 + 4 ✅ playtest OK 2026-07-02)** — **`PlayerUltCharge`** + **`UltChargeHud`** on **player prefab** (manual — **not** auto-spawned). Passive regen **`Playing` only**; goal (scorer) **40** + assist (throw passer) **25** + tackle (attacker, **enemy only**) **10**; **`IPlayerUlt.MaxChargePoints`** per ult (Speed Blitz default **100** on **`SpeedsterSpeedBlitzUlt`**); FF tackle **no** charge; **`BallPassAssistState`** on **`main_ball`** (host); ult swap = raw points carry over (**no penalty**); % **persists** across rounds; **rematch → 0%**. HUD: floored **%**, white → blue at 100%. **`Ultimate`** → **X**.
-- **Ball OOB (map slice 1 — Turf Wars solo ✅ 2026-07-03, polish pending)** — **`OutOfBoundsZone`** + **`playerclip`** walls placed; core loop OK (dwell → hide ball → countdown → sky-drop at last-touch). **`BallOutOfBoundsHost`** + **`BallLastTouchLedger`** on **`main_ball`**; **`OutOfBoundsBannerHud`** + **`BallOobDropZoneHud`** on Main Camera (add in edit mode to tune — auto-add fallback). Known broken: **whistle not global**; **drop-zone HUD/UI wrong** — see **Known issues**. **Off in `PracticeArenaMode`**. **`ball` + `playerclip` → Ignore** in `Collision.config` (GameObject **Tags** = physics collision).
+- **Ball OOB (map slice 1 — Turf Wars solo ✅ 2026-07-04 polish)** — dwell → whistle (`match_whistle.sound` **UI** flag) → **`OUT OF BOUNDS!`** banner → **10s** drop marker (**custom disc** `.vmdl` + **`oob_drop_ring.vmat`** + black underlay outline) + world stack (**DROP ZONE** / countdown / ▼, yaw-only upright). Sky-drop at **credited player feet** (ground trace ignores players). **`BallOutOfBoundsHost`** + **`BallLastTouchLedger`** on **`main_ball`**; HUDs on Main Camera — tune **`BallOobDropZoneHud`** in **edit mode** (`StackPanelSize`, fonts, ring diameter/outline). **Off in `PracticeArenaMode`**. **MP not tested yet.**
 - **Speed Blitz (slice 2a–2d ✅)** — **`SpeedsterSpeedBlitzUlt`** + owner **`SpeedBlitzAimPreview`** (segmented **`plane.vmdl`** strips, `speed_blitz_preview.vmat`, ult blue `#24b0ff`; tune **`PlaneWidthBaseSize`** for hit-width read, **`PlaneLengthBaseSize`** **100** for segment length); hold X → preview → release commit; dash hits = **contact + LOS** + **`TryValidateContactCylinder`** (jump-over = tackle); wind-up 2d shipped; spark sprites deferred (editor/publish).
 - **Speed Blitz wind-up feel (slice 2d — solo ✅ 2026-06-18)** — **`SpeedBlitzWindUpFeel`**: **`speedblitzwindupvfx`** **wind-up only** (off dash / connect hang); **`speedblitzdischargevfx`** on **dasher chest** at ragdoll launch (hit only). **`SpeedBlitzBodyGlow`** + render system: tint + point light (`GetWindUpLerp()` ramp → peak → discharge); **point light destroyed on end** (remote host-dasher fix **2026-06-22**). **`PlayerSpeedBlitzWindUpAnim`**: masked **`speedblitz_windup`** via `blitz_windup` / `blitz_windup_weight` while **`IsWindUp`** (synced). **SFX:** electric hard stop at connect, windup rise, dash woosh — **`PlayFeelSoundAt`**; **client dasher connect crunch on predict** (host broadcast dedupes — **2026-06-22**). **Connect hang timing:** pre-launch pause runs **parallel** with ragdoll body init — launch aligns with pose unfreeze (**2026-06-22**). **MP:** owner/host wind-up looks OK; **joining client spark sprites = blue squares** (engine limitation — publish only)
 - **Owner cameras (2026-06-15)** — **`PostCameraSetup`** for all owner FOV (PC resets preference FOV every frame). **`ThrowChargeCamera`** `[Order(10002)]`: charge offset + release blend after ball leaves hand (transition-frame hold — no pop). **`SpeedBlitzDashCamera`** `[Order(10012)]`: idle must **not** stomp **`CameraOffset`** (throw owns offset). **`TackleImpactFeel`**: blitz attacker uses overrides — hitstop freezes **world pose only**; dash cam eases during freeze; no blitz attacker offset/FOV punch (recovery blend owns it). Player tackles unchanged.
@@ -129,7 +129,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 - **Speed Blitz dash hits:** Host + owner predict — **touch** only (`TryFindDashHitAlongSegment`): corridor width/range filter, then **3D contact radius**, **`MaxHitVerticalSeparation`**, **LOS trace** (walls block); **no snap-through**. Dash stops at **actual** position. Preview corridor ≠ guaranteed hit (walls/height).
 - **Speed Blitz body freeze:** **`BlitzConnectPoseFreeze`** — attacker + victim **`PlaybackRate = 0`** during blitz hang only (`IsConnectPoseFrozen` / `IsAwaitingSpeedBlitzRagdollLaunch`). Optional **`ConnectImpactChargeRunCycle`** snap on dasher.
 - **Owner camera FOV rule:** Never set **`CameraComponent.FieldOfView`** only in `OnUpdate` — use **`PlayerController.IEvents.PostCameraSetup`**. **`CameraOffset`**: set in `OnUpdate` before PC setup; respect **`[Order]`** — idle ult cam must not stomp throw offset.
-- **Walk into the ball = pick it up.** No kick button. While held, ball follows **`hold_R`** on **Body** `SkinnedModelRenderer` (`BallGrab.HoldBoneName`; falls back to `HoldAnchor`). Old `HandHoldPoint` + `citizen_holdball_test` IK was for classic citizen — human uses bone attach.
+- **Walk into the ball = pick it up.** No kick button. Pickup = cylinder: **`InteractDistance`** horizontal + **`MaxPickupVerticalSeparation`** vertical from player root (default **80** — head height without widening ground reach). While held, ball follows **`hold_R`** on **Body** `SkinnedModelRenderer` (`BallGrab.HoldBoneName`; falls back to `HoldAnchor`). Old `HandHoldPoint` + `citizen_holdball_test` IK was for classic citizen — human uses bone attach.
 - **Ball carrier hold/throw anim (v1):** **`PlayerBallHoldAnim`** — **`holditem`** + **RH** while holding; on release **`b_attack`** (built-in medium throw). **`ThrowPoseHoldSeconds`** / **`ThrowPlaybackRate`**; **`BallThrow.ThrowReleaseDelaySeconds`** delays ball velocity. Charge = masked **`throw_windup`** layer on forked **`utd_citizen_human_m.vanmgrph`** (`throw_charge` / `throw_charge_weight`; body alive). Sequences on **`utd_citizen_human_throw.vmdl`**. Auto-added on network spawn.
 - **Online: the host is the referee** — clients request; host decides.
 - **Tackles:** Only at full charge speed (`NetAtChargeSpeed`). Host ragdoll + client **request** RPC. **Attacker on connect → walk ramp reset** (all classes). **`PreLaunchPauseSeconds` > 0:** **`NetAwaitingRagdollLaunch`** — victim **visible + frozen**, then impulse + ragdoll. **Client victim/attacker feel predict** (Tier A) — host still owns knockdown. **`CombatFeelPredictDedupe`** dedupes host feel RPCs.
@@ -166,7 +166,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 12. **Ult charge:** % creeps in **Playing** only; frozen in celebration/intermission; goal/tackle bumps; **assist +25 on throw→teammate goal** (window / void rules); FF tackle no bump; persists across rounds; rematch clears; HUD floored % + blue flash at 100%. **Assist playtest OK (2026-06-30)**.
 13. **Combat feel predict:** client tackler / dasher / victim / car-hit — juice on contact frame, no double feel; idle targets OK (2026-06-14).
 14. **Speed Blitz 2d (MP):** Olympic pose + body glow + discharge + SFX on remotes; electric cut + dash woosh; no sparks on dash/connect/miss. **Dash hits:** wall/roof blocks — no teleport hit. **Client dasher:** connect crunch on predict. **Joining client wind-up spark sprites = blue squares** (editor limitation — publish only).
-15. **Ball OOB (map 1):** roll into test zone → dwell → whistle + white banner + drop marker 10s → sky-drop at last throw XY; rematch/round reset cancels marker; client ball hidden during countdown.
+15. **Ball OOB (map 1):** roll into zone → whistle + banner → drop disc at **thrower feet** + stack → sky-drop; stand on marker → ball grabs at head height; rematch/round reset cancels marker; client ball hidden during countdown.
 16. **Practice arena NPCs (MP) ✅ (2026-06-23):** idle + patrol runner — knockdown visuals (`PracticeNpcClient*Rpc`), patrol pose sync (`PracticeNpcPatrolPoseRelay`), tackle + Speed Blitz contact (no freeze snap-back / invisible hits). Host solo must **not** self-launch on static dummies.
 
 **Ball jittery on client only?** → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) → “Client free-ball jitter”.
@@ -215,7 +215,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 **`MatchHud` empty (scene UI root):**
 - `MatchScoreHud`, `MatchClockHud`, `GoalBannerHud`, `IntermissionHud`, **`MatchOverHud`**
-- **`OutOfBoundsBannerHud`** + **`BallOobDropZoneHud`** auto-add on **Main Camera** via **`GameNetworkManager`** — or add manually on Main Camera if you prefer (same as comic HUD either way)
+- **`OutOfBoundsBannerHud`** + **`BallOobDropZoneHud`** auto-add on **Main Camera** via **`GameNetworkManager`** — tune in **edit mode** (save scene): **`Ring Model Path`** (your disc `.vmdl`), **`Ring Material Path`** (`oob_drop_ring.vmat`), **`Ring Outline Extra Diameter`**, **`Stack Panel Size`** / font sizes / **`Stack Row Gap`**
 - **`BallOutOfBoundsHost`** on **`main_ball`** — auto via **`GameNetworkManager`**, or add manually on **`main_ball`**
 
 **Map:**
@@ -240,7 +240,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **`SpeedsterSpeedBlitzUlt`** — **Speedster only** (class gate). **Add on Speedster prefab** (not auto-spawned). Tune **`MaxChargePoints`** (default **100**), `WindUpDurationSeconds` (default **2**), `DashRange`, `DashSpeed`, `HitHalfWidth`, **`MaxHitVerticalSeparation`** (default **56**), `DefaultTargetBodyRadius`, `KnockdownLaunchSpeed`, `KnockdownLaunchArc`. **Knockdown feel:** `KnockdownPreLaunchPauseSeconds` (**0.65**), **`ConnectImpactChargeRunCycle`**, **`LaunchSound`**, **`ConnectImpactSoundA/B`**, volumes, impact feel fields; **`DischargeVfxPrefab`** → `speedblitzdischargevfx.prefab`, **`DischargeVfxLocalOffset`**, **`DischargeVfxCleanupSeconds`**. **Wind-up feel (2d):** **`WindUpVfxPrefab`** → `speedblitzwindupvfx.prefab`; electric/rise/dash **`SoundEvent`**s; offsets, volumes, **`MissVfxFadeSeconds`**. Auto-adds **`SpeedBlitzDashCamera`**, **`SpeedBlitzWindUpFeel`**, **`SpeedBlitzBodyGlow`**. Optional **`Enable Speed Blitz Debug Logs`**.
 - **`SpeedBlitzAimPreview`** — **Speedster only**, same prefab as ult (manual). Segmented ground corridor while holding X; `models/dev/plane.vmdl`, `materials/turfwarspoly/speed_blitz_preview.vmat`; **`PlaneWidthBaseSize`** (playtest **~175** for hit-width read) + **`PlaneLengthBaseSize`** **100** (segment length — do not merge into one knob); `SegmentSpacing`, `CorridorAlpha` / `CorridorLift`, `MarkerAlpha`.
 - **`UltChargeHud`** — floored **%** centered (left of `MovementRampHud`); **`ReadyHighlightDelaySeconds`** (~0.4s white at 100% then blue). **Add on prefab** with `PlayerUltCharge`.
-- **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
+- **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); **`Interact Distance`** (horizontal, default **45**); **`Max Pickup Vertical Separation`** (default **80** — head-height pickup without widening ground reach); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
 - **`PlayerBallHoldAnim`** — auto-added on network spawn. Tune `IdleHoldPoseHand` (~0.1), `ThrowAttackStrong`, `ThrowPoseHoldSeconds` (~0.9), `ThrowPlaybackRate` (~0.7). **Throw charge:** `UseAnimGraphChargePose` on — `throw_charge`/`throw_charge_weight` on **`utd_citizen_human_m.vanmgrph`**; tune **`ChargeWindupCycleEnd`** if wind-up finishes before bar is full (or spread keys in Blender ~3 s). Graph re-applied after cosmetics.
 - **`PlayerTackle`** — **`PreLaunchPauseSeconds`** (default **0.05**; **0** = legacy launch); tune with **`TackleImpactFeel.HitstopDurationSeconds`**
 - **`PlayerChargeRunAnim`** — auto-added on network spawn. **`UseAnimGraphChargeRunPose`** on; **`IsAtChargeSpeed`** (not local HUD tier). **`SpeedBlitzChargeRunBlendInSeconds`** (default **0.03** — charge_run builds faster during dash). Graph → [`CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md)
@@ -464,9 +464,9 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [x] **`OutOfBoundsZone`** — oriented box overlap test (like **`GoalZone`**)
 - [x] Host **`main_ball`** OOB watcher — **`MatchPhase.Playing`** only; **loose ball only** (not held)
 - [x] **Confirm rules:** overlapping OOB + **supported by any solid** (trace down) + speed below threshold for **~1.0s** continuous
-- [x] **Last-touch ledger** (host, on ball): throw **release** → credit + anchor; drop → credit + anchor; tackle knock-off → credit **tackled carrier** + anchor. **Fallback:** no ledger → **`BallSpawn`**
-- [x] On confirm: **`BallPassAssistState.ResetOnHost()`**; hide ball; **`match_whistle`** (2D broadcast); white **`OUT OF BOUNDS!`** screen ~**3s**; white world drop marker **10s** (ring + countdown / ▼ / DROP ZONE)
-- [x] Sky-drop: enable ball at **anchor XY**, **Z + DropHeight** (~**200**); no ground snap
+- [x] **Last-touch ledger** (host, on ball): throw / drop / tackle knock-off → credit + **credited player feet** anchor. **Fallback:** no ledger → **`BallSpawn`**
+- [x] On confirm: **`BallPassAssistState.ResetOnHost()`**; hide ball; **`match_whistle`** (2D broadcast; asset **UI** flag); white **`OUT OF BOUNDS!`** screen ~**3s**; world drop marker **10s** (ground disc + **DROP ZONE** / countdown / ▼)
+- [x] Sky-drop: enable ball at **anchor XY** (player feet at last touch), ground Z + **Z + DropHeight** (~**200**)
 - [x] One OOB sequence at a time; **cancel on round reset / rematch**
 - [x] **`ball` + `playerclip` → Ignore** in **`Collision.config`**
 - [x] **Editor (Turf Wars):** **`OutOfBoundsZone`** + **`playerclip`** walls — **Max 2026-07-03**
@@ -474,9 +474,8 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 #### Map slice 1b — MP + polish
 
-- [ ] **Polish (before MP):** whistle truly global; drop-zone ring + world stack layout/fonts/position; screen banner if needed — see **Known issues**
-- [ ] Host authority; whistle + banner + drop marker on all clients
-- [ ] 2-window verify; tune dwell / speed thresholds
+- [x] **Solo polish (2026-07-04):** whistle global; custom ground disc + outline; world stack layout; player-feet anchor + ground trace; cylindrical ball pickup (**`MaxPickupVerticalSeparation`**)
+- [ ] **2-window MP** — whistle + banner + drop marker on all clients; sky-drop; ball hidden during countdown; rematch cancel
 - [ ] Confirm invisible ball blockers removed where replaced by OOB + `playerclip`
 
 **Prefab split (ship order #2):** **→ Read [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6 first** (spawn policy, tackle/ult splits, prefab checklist). Split shared player into **per-class prefab variants** (Option A). Duplicate shared components on each; class-only ult + preview on that prefab. **`GameNetworkManager`** spawns template by **`PlayerClass`**. Remove Speedster-only **`BlitzConnectPoseFreeze`** from global auto-add. **Before ult slices 5–6**, after map slice 1.
@@ -561,7 +560,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 ## Known issues
 
-- [ ] **Ball OOB — polish (map slice 1, next session):** Solo Turf Wars flow **works** (zones + `playerclip` + sky-drop). **Fix:** **`match_whistle`** not playing globally (`SpacialBlend = 0` + broadcast — verify asset falloff / `ListenLocal` / UI flag on `.sound`); **drop-zone world HUD/UI wrong** (ring scale/position, Sage stack layout, countdown read — `BallOobDropZoneHud` / `BallOobDropZoneMarker`); audit screen **`OUT OF BOUNDS!`** banner. Then **2-window MP**.
+- [ ] **Ball OOB — map slice 1b MP** — solo polish **✅ (2026-07-04)**; **2-window not tested yet**. Optional: further **`BallOobDropZoneHud`** tune; confirm invisible ball walls removed on Turf Wars.
 - [ ] **Invisible ball walls (Turf Wars)** — **partially replaced** — confirm all old `invisible.vmat` ball blockers removed where OOB + `playerclip` cover bounds
 - [ ] **Ragdoll arms z-fight (LEFT AS-IS 2026-06-23)** — ragdoll **body skin now matches** standing (fixed via `primaryRenderer.CopyFrom(baseVictimRenderer)` in `PlayerTackle.SpawnRagdollObject`, replacing `Model = …` which left the model's default skin → whole-black ragdoll). **Remaining:** the **arms flicker/z-fight** (black vs white) on the ragdoll. **Not caused by the last 15 commits** — ragdoll body-skin code dates to May 6–7 (`fa93cf2` / `8c2a2b04`); avatar LOD/cosmetics from May 13 (`1c97a9c`). **Leading untested theory:** citizen arms are a **separate bone-merged `SkinnedModelRenderer`** ("body extras merge to torso" per `CitizenAvatarLod`); `AddVictimClothingToRagdoll` clones that arms mesh on top of the body's own arm geometry → two overlapping arm meshes fight. Possible fix to try **only if revisited:** skip cloning the arms/body-part renderer (clone clothing only), or hide the body's arm body-group on the ragdoll — **do not** add a second full body mesh (that was the earlier z-fight cause). Max chose to **leave it** — current state is acceptable.
 - [ ] **Tackle comic text** — Les Flos import + **2-window MP verify** (optional; exits good enough for v1)
@@ -586,7 +585,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → Map 1 Turf Wars solo OK, polish pending (whistle global, drop-zone HUD/UI). Next: fix OOB polish → 2-window MP → prefab split → ult 5–6.
+Read SESSION_NOTES.md → Map 1 solo polish OK (2026-07-04); next 2-window MP → prefab split → ult 5–6.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 ```
 
@@ -596,8 +595,8 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
-- **2026-07-03 (map slice 1 editor + solo ✅):** Turf Wars **`OutOfBoundsZone`** + **`playerclip`** walls placed; OOB core loop OK. **Polish backlog:** whistle not global; drop-zone HUD/UI wrong; MP not tested. Tune OOB components on Main Camera + **`main_ball`** in **edit mode** (save scene — play-mode inspector changes don't stick).
-- **2026-07-03 (map slice 1a ✅ code):** Ball OOB code shipped — see **`BallOutOfBoundsHost`**, **`BallLastTouchLedger`**, banner + drop marker HUDs.
+- **2026-07-04 (map slice 1 polish ✅ solo):** OOB whistle UI flag; custom disc + black outline + `oob_drop_ring.vmat`; drop stack **DROP ZONE**/countdown/▼, yaw-only billboard; anchor = **player feet** + sky ground trace; **`BallGrab`** cylinder pickup (`MaxPickupVerticalSeparation` **80**). **Next: 2-window MP.**
+- **2026-07-03 (map slice 1a ✅ + editor):** Turf Wars **`OutOfBoundsZone`** + **`playerclip`**; core OOB loop shipped.
 - **2026-07-02 (slice 4 ✅ playtest + OOB spec):** Per-ult **`MaxChargePoints`** shipped. **Map slice 1** specced — OOB zones, stop dwell, last-touch sky-drop, **`BallSpawn`** fallback only; ship **before prefab split**.
 - **2026-06-30 (aim preview v3 ✅):** Segmented `plane.vmdl` + `speed_blitz_preview.vmat`; **`PlaneWidthBaseSize`** / **`PlaneLengthBaseSize`** (width ~175 playtest, length 100); wall/comic/grid clip **won't do**. **Blitz jump-over** = `TryValidateContactCylinder`. Spot-light shadow lines deferred (#10960).
 - **2026-06-23 (practice patrol solo):** Run legs (`move_x` + `move_groundspeed`); `IsInTackleCooldown` clean launch; **`PracticeNpcPatrol`** A↔B host patrol + NPC counter-tackle.

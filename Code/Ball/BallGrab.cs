@@ -7,6 +7,8 @@ public sealed class BallGrab : Component
 	[Property] public GameObject MainBall { get; set; }
 	[Property] public string MainBallName { get; set; } = "main_ball";
 	[Property] public float InteractDistance { get; set; } = 45f;
+	/// <summary> Max |Z| from player root to ball — horizontal reach stays <see cref="InteractDistance"/>. </summary>
+	[Property] public float MaxPickupVerticalSeparation { get; set; } = 80f;
 	[Property] public string InteractAction { get; set; } = "use";
 	[Property] public float PickupDelayAfterDrop { get; set; } = 0.75f;
 	[Property] public float DropperNoPushWindow { get; set; } = 0.75f;
@@ -104,7 +106,7 @@ public sealed class BallGrab : Component
 			UpdateSyncedBallState();
 		}
 
-		var inRange = Vector3.DistanceBetween( WorldPosition, ballObject.WorldPosition ) <= InteractDistance;
+		var inRange = IsBallInPickupRange( ballObject.WorldPosition );
 
 		if ( !Network.IsOwner )
 			return;
@@ -229,12 +231,12 @@ public sealed class BallGrab : Component
 			return;
 
 		var hostDistanceToBall = ballObject.IsValid()
-			? Vector3.DistanceBetween( WorldPosition, ballObject.WorldPosition )
+			? GetPickupHorizontalDistanceToBall( ballObject.WorldPosition )
 			: -1f;
 
 		if ( EnableNetDebugLogs )
 		{
-			Log.Info( $"[NetDebug] Host pickup request received. Caller={Rpc.Caller.DisplayName} HolderObject={GameObject.Name} BallValid={ballObject.IsValid()} IsHolding={isHolding} HostDistanceToBall={hostDistanceToBall}" );
+			Log.Info( $"[NetDebug] Host pickup request received. Caller={Rpc.Caller.DisplayName} HolderObject={GameObject.Name} BallValid={ballObject.IsValid()} IsHolding={isHolding} HostHorizontalToBall={hostDistanceToBall}" );
 		}
 
 		if ( !ballObject.IsValid() || isHolding )
@@ -247,6 +249,9 @@ public sealed class BallGrab : Component
 			return;
 
 		if ( NetPickupBlockedRemain > 0f )
+			return;
+
+		if ( !IsBallInPickupRange( ballObject.WorldPosition ) )
 			return;
 
 		PickUpBall();
@@ -275,7 +280,7 @@ public sealed class BallGrab : Component
 		AssignBallOwner( Connection.Host );
 		var releasedBall = ReleaseHeldBall( playerVelocity );
 		if ( releasedBall.IsValid() )
-			BallLastTouchLedger.GetOrCreate( releasedBall )?.NotifyTouchOnHost( GameObject, releasedBall.WorldPosition );
+			BallLastTouchLedger.GetOrCreate( releasedBall )?.NotifyTouchOnHost( GameObject, GameObject.WorldPosition );
 
 		BlockPickupForSeconds( PickupDelayAfterDrop );
 		nextAutoGrabAttemptAt = Time.Now + PickupDelayAfterDrop;
@@ -501,6 +506,22 @@ public sealed class BallGrab : Component
 			return;
 
 		NetPickupBlockedRemain = MathF.Max( NetPickupBlockedRemain, seconds );
+	}
+
+	bool IsBallInPickupRange( Vector3 ballWorldPosition )
+	{
+		return GetPickupHorizontalDistanceToBall( ballWorldPosition ) <= InteractDistance
+			&& GetPickupVerticalSeparationToBall( ballWorldPosition ) <= MaxPickupVerticalSeparation;
+	}
+
+	float GetPickupHorizontalDistanceToBall( Vector3 ballWorldPosition )
+	{
+		return (ballWorldPosition - WorldPosition).WithZ( 0f ).Length;
+	}
+
+	float GetPickupVerticalSeparationToBall( Vector3 ballWorldPosition )
+	{
+		return MathF.Abs( ballWorldPosition.z - WorldPosition.z );
 	}
 
 	private bool IsMatchGameplayInputAllowed()

@@ -330,12 +330,37 @@ public sealed class BallOutOfBoundsHost : Component
 
 	Vector3 ResolveDropAnchorOnGround( Vector3 anchor )
 	{
-		var probe = anchor + Vector3.Up * 64f;
-		if ( TryTraceSupport( probe, out var hit ) )
-			return new Vector3( anchor.x, anchor.y, hit.z );
+		var start = new Vector3( anchor.x, anchor.y, anchor.z + 512f );
+		var end = new Vector3( anchor.x, anchor.y, anchor.z - 512f );
+		var trace = BuildDropAnchorGroundTrace( start, end );
+		var tr = trace.Run();
 
-		var snapped = GameNetworkManager.SnapPositionToGround( Scene, probe, GameObject );
-		return new Vector3( anchor.x, anchor.y, snapped.z );
+		if ( tr.Hit )
+			return tr.HitPosition;
+
+		var fallback = GameNetworkManager.SnapPositionToGround( Scene, start, GameObject );
+		return new Vector3( anchor.x, anchor.y, fallback.z );
+	}
+
+	SceneTrace BuildDropAnchorGroundTrace( Vector3 start, Vector3 end )
+	{
+		var trace = Scene.Trace.Ray( start, end )
+			.WithoutTags( "ragdoll" )
+			.IgnoreGameObjectHierarchy( GameObject );
+
+		foreach ( var playerTeam in Scene.GetAllComponents<PlayerTeam>() )
+		{
+			if ( playerTeam.GameObject.IsValid() )
+				trace = trace.IgnoreGameObjectHierarchy( playerTeam.GameObject );
+		}
+
+		foreach ( var go in Scene.GetAllObjects( true ) )
+		{
+			if ( go.IsValid() && go.Tags.Has( CitizenAvatarLod.PracticeNpcTag ) )
+				trace = trace.IgnoreGameObjectHierarchy( go );
+		}
+
+		return trace;
 	}
 
 	Vector3 ResolveFallbackSpawnPosition()

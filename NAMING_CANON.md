@@ -22,7 +22,7 @@
 | `BallOutOfBoundsHost` | Host OOB watcher + sequence on `main_ball` (dwell confirm, hide ball, whistle, sky-drop); auto on `GameNetworkManager` start |
 | `ThrowReleaseMath` | Shared throw release + first-arc sim (`ComputeRelease`, `TryGetBallFlightParameters`, `TrySimulateFirstImpact`) |
 
-**Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `HoldBoneName`, `BodyRenderer`, `HoldBoneLocalOffset`, `TryGetHoldAnchorWorldTransform()`, `GetPredictedThrowReleasePivotPosition()`  
+**Often-used on `BallGrab`:** `IsHolding`, `MainBall`, `InteractDistance`, `MaxPickupVerticalSeparation`, `HoldBoneName`, `BodyRenderer`, `HoldBoneLocalOffset`, `TryGetHoldAnchorWorldTransform()`, `GetPredictedThrowReleasePivotPosition()`  
 **Often-used on `BallThrow`:** `ThrowForce`, `ThrowUpForce`, `ThrowReleaseDelaySeconds` (default `0.35` — ball velocity after anim wind-up), `IsChargingThrow`, `IsPendingThrowRelease`, `NetIsChargingThrow`, `NetThrowChargeLerp` (synced charge scrub for remotes), `ThrowDirectionSource` (optional; if unset, throw uses `PlayerController.EyeAngles`), `GetThrowChargeLerp()`, `TryGetThrowPreviewSnapshot()`, `CancelThrowAimingState()` (knockdown — clears charge + pending release)
 **Often-used on `ThrowTrajectoryPreview`:** `ArcDashScrollSpeed`, `LandingMarkerAlpha`, `TranslucentBallMaterialPath`, `LandingMarkerLift`  
 **Often-used on `BallCarrierOutline`:** `PulseWhiteColor`, `FriendlyAccentColor`, `EnemyAccentColor`, `PulseSeconds`, `OutlineWidth`, `EnableEmissivePulse`, `EmissiveBrightnessMax`  
@@ -148,7 +148,7 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 | `GoalBannerHud` | "TEAM A SCORED!" during celebration |
 | `OutOfBoundsBannerHud` | White screen `OUT OF BOUNDS!` during ball OOB (~3s; auto on main camera) |
 | `BallOobDropZoneHud` | Spawns white world drop marker from synced `PlayerTeam` OOB fields (auto on main camera) |
-| `BallOobDropZoneMarker` | Ephemeral ground ring + Sage billboard stack (countdown / ▼ / DROP ZONE) |
+| `BallOobDropZoneMarker` | Ephemeral ground disc mesh + world billboard stack (DROP ZONE / countdown / ▼) |
 | `IntermissionHud` | "Resuming in N…" during intermission |
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
 | `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |

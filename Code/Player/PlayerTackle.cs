@@ -807,7 +807,7 @@ public sealed class PlayerTackle : Component
 
 				if ( Networking.IsHost )
 				{
-					BallLastTouchLedger.GetOrCreate( droppedBall )?.NotifyTouchOnHost( victim.GameObject, droppedBall.WorldPosition );
+					BallLastTouchLedger.GetOrCreate( droppedBall )?.NotifyTouchOnHost( victim.GameObject, victim.GameObject.WorldPosition );
 
 					if ( attacker.IsValid() && TryIsEnemyPlayerTackle( attacker, victim ) )
 						BallPassAssistState.GetOrCreate( droppedBall )?.VoidOnEnemyTackleCarrierOnHost();

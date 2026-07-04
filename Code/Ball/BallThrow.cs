@@ -249,7 +249,7 @@ public sealed class BallThrow : Component
 		}
 
 		BallPassAssistState.GetOrCreate( releasedBall )?.NotifyThrowOnHost( GameObject );
-		BallLastTouchLedger.GetOrCreate( releasedBall )?.NotifyTouchOnHost( GameObject, throwStartPosition );
+		BallLastTouchLedger.GetOrCreate( releasedBall )?.NotifyTouchOnHost( GameObject, GameObject.WorldPosition );
 	}
 
 	/// <summary> Owning client: cancel windup without throwing (e.g. approved dodge). </summary>

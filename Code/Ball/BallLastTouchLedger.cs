@@ -1,7 +1,7 @@
 using Sandbox;
 
 /// <summary>
-/// Host-only last-touch credit + XY anchor for OOB sky-drop. Lives on <c>main_ball</c>.
+/// Host-only last-touch credit + XY anchor for OOB sky-drop (credited player&apos;s feet at touch). Lives on <c>main_ball</c>.
 /// </summary>
 public sealed class BallLastTouchLedger : Component
 {

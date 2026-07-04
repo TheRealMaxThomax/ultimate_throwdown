@@ -1,5 +1,5 @@
 {
-  "UI": false,
+  "UI": true,
   "Volume": "1",
   "Pitch": "1",
   "Decibels": 70,
@@ -7,8 +7,8 @@
   "Sounds": [
     "sounds/whistle/817398__chaos-kid__coach-whistle.vsnd"
   ],
-  "OcclusionEnabled": true,
-  "Occlusion": true,
+  "OcclusionEnabled": false,
+  "Occlusion": false,
   "ReverbEnabled": true,
   "Reflections": true,
   "AirAbsorption": true,
@@ -47,8 +47,8 @@
     }
   ],
   "DefaultMixer": {
-    "Name": "unknown",
-    "Id": "00000000-0000-0000-0000-000000000000"
+    "Name": "ui",
+    "Id": "be64c4f1-ceeb-4c1c-998d-0db6e4181feb"
   },
   "__references": [],
   "__version": 1

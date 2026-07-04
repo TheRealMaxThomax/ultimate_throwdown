@@ -1,11 +1,11 @@
 using Sandbox.UI;
 
-/// <summary> Vertical world stack for <see cref="BallOobDropZoneMarker"/> — countdown, arrow, label. </summary>
+/// <summary> Vertical world stack for <see cref="BallOobDropZoneMarker"/> — DROP ZONE, countdown, ▼. </summary>
 public sealed class BallOobDropZoneStackPanel : Panel
 {
+	private readonly Label dropZoneLabel;
 	private readonly Label countdownLabel;
 	private readonly Label arrowLabel;
-	private readonly Label dropZoneLabel;
 
 	public BallOobDropZoneStackPanel( BallOobDropZoneHud settings )
 	{
@@ -14,10 +14,11 @@ public sealed class BallOobDropZoneStackPanel : Panel
 		Style.FlexDirection = FlexDirection.Column;
 		Style.JustifyContent = Justify.Center;
 		Style.AlignItems = Align.Center;
+		Style.BackgroundColor = Color.Transparent;
 
+		dropZoneLabel = AddChild<Label>();
 		countdownLabel = AddChild<Label>();
 		arrowLabel = AddChild<Label>();
-		dropZoneLabel = AddChild<Label>();
 
 		arrowLabel.Text = "▼";
 		dropZoneLabel.Text = "DROP ZONE";
@@ -32,21 +33,28 @@ public sealed class BallOobDropZoneStackPanel : Panel
 
 		var font = string.IsNullOrWhiteSpace( settings.StackFontFamily ) ? "Les Flos Sage" : settings.StackFontFamily;
 		var color = settings.StackTextColor;
+		var padding = MathF.Max( 0f, settings.StackPanelPadding );
+		var rowGap = MathF.Max( 0f, settings.StackRowGap );
 
-		countdownLabel.Style.FontFamily = font;
-		countdownLabel.Style.FontSize = settings.CountdownFontSize;
-		countdownLabel.Style.FontWeight = settings.CountdownFontWeight;
-		countdownLabel.Style.FontColor = color;
+		Style.PaddingLeft = Length.Pixels( padding );
+		Style.PaddingRight = Length.Pixels( padding );
+		Style.PaddingTop = Length.Pixels( padding );
+		Style.PaddingBottom = Length.Pixels( padding );
 
-		arrowLabel.Style.FontFamily = font;
-		arrowLabel.Style.FontSize = settings.ArrowFontSize;
-		arrowLabel.Style.FontWeight = settings.ArrowFontWeight;
-		arrowLabel.Style.FontColor = color;
+		ApplyLabelStyle( dropZoneLabel, font, color, settings.DropZoneFontSize, settings.DropZoneFontWeight, 0f );
+		ApplyLabelStyle( countdownLabel, font, color, settings.CountdownFontSize, settings.CountdownFontWeight, rowGap );
+		ApplyLabelStyle( arrowLabel, font, color, settings.ArrowFontSize, settings.ArrowFontWeight, rowGap );
+		dropZoneLabel.Style.Width = Length.Percent( 100 );
+		dropZoneLabel.Style.TextAlign = TextAlign.Center;
+	}
 
-		dropZoneLabel.Style.FontFamily = font;
-		dropZoneLabel.Style.FontSize = settings.DropZoneFontSize;
-		dropZoneLabel.Style.FontWeight = settings.DropZoneFontWeight;
-		dropZoneLabel.Style.FontColor = color;
+	static void ApplyLabelStyle( Label label, string font, Color color, int fontSize, int fontWeight, float marginTop )
+	{
+		label.Style.FontFamily = font;
+		label.Style.FontSize = fontSize;
+		label.Style.FontWeight = fontWeight;
+		label.Style.FontColor = color;
+		label.Style.MarginTop = Length.Pixels( marginTop );
 	}
 
 	public void SetCountdownSeconds( int seconds )
