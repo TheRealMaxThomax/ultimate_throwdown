@@ -90,16 +90,16 @@ public sealed class TackleComicTextHud : Component
 	/// <summary>Stronger tilt than Sans — heavy / juggernaut hits (red).</summary>
 	[Property] public string FontChaos { get; set; } = "Les Flos Chaos";
 
-	[Property] public Vector2 BurstPanelSize { get; set; } = new( 1920f, 640f );
-	[Property] public float BurstPanelWidthPerCharacter { get; set; } = 140f;
-	[Property] public float BurstPanelMinWidth { get; set; } = 1280f;
+	[Property] public Vector2 BurstPanelSize { get; set; } = new( 640f, 280f );
+	[Property] public float BurstPanelWidthPerCharacter { get; set; } = 120f;
+	[Property] public float BurstPanelMinWidth { get; set; } = 960f;
 	/// <summary>Extra pad on each side of measured letter bounds — WorldPanel clips hard; jitter + pop/shake need headroom.</summary>
 	[Property] public float BurstPanelPadding { get; set; } = 128f;
 	/// <summary>Extra pad per side for exit translate (drift / launch) — bump if fade-out still clips.</summary>
 	[Property] public float ExitAnimationPaddingPixels { get; set; } = 180f;
 	/// <summary>Worst-case exit scale overshoot (ink puff ~1.65) — extra margin = (peak − 1) × half word size.</summary>
 	[Property] public float ExitAnimationPeakScale { get; set; } = 1.7f;
-	[Property] public float WorldHeightOffset { get; set; } = 52f;
+	[Property] public float WorldHeightOffset { get; set; } = 62f;
 	[Property] public float FloatUpSpeed { get; set; } = 42f;
 	[Property] public float LifetimeSeconds { get; set; } = 1.25f;
 
@@ -141,7 +141,7 @@ public sealed class TackleComicTextHud : Component
 
 	/// <summary>Per-letter wobble after impact — off = whole-word shake on <c>.word-stack</c> only.</summary>
 	[Property] public bool EnableLetterImpactShake { get; set; } = true;
-	[Property] public float LetterImpactShakeDurationSeconds { get; set; } = 0.55f;
+	[Property] public float LetterImpactShakeDurationSeconds { get; set; } = 1f;
 
 	/// <summary>White/pale duplicate behind fill, offset opposite the black shadow — thick ink edge.</summary>
 	[Property] public bool EnableHighlightExtrusion { get; set; } = true;
@@ -152,7 +152,7 @@ public sealed class TackleComicTextHud : Component
 	/// <summary><see cref="ComicExitStylePick.Random"/> = host rolls each knockdown; pick a style to preview it every tackle.</summary>
 	[Property] public ComicExitStylePick ExitStylePick { get; set; } = ComicExitStylePick.Random;
 	/// <summary>Fraction of <see cref="LifetimeSeconds"/> before exit starts — higher = word holds longer at full strength.</summary>
-	[Property] public float ExitFadeStartFraction { get; set; } = 0.48f;
+	[Property] public float ExitFadeStartFraction { get; set; } = 0.9f;
 	/// <summary>Fraction of <see cref="LifetimeSeconds"/> for exit timeline (letter stagger + CSS exit length).</summary>
 	[Property] public float ExitFadeDurationFraction { get; set; } = 0.52f;
 	/// <summary>Extra exit seconds for C# letter exits — last stagger slots (e.g. vortex center) need more runway.</summary>

@@ -21,7 +21,7 @@ public sealed class PlayerBallHoldAnim : Component
 	/// <summary> <c>holdtype_pose</c> while holding normally (not charging). </summary>
 	[Property] public float IdleHoldTypePose { get; set; } = 0f;
 	/// <summary> <c>holdtype_attack</c> blend — 0 = medium throw, 1 = strong/far throw. </summary>
-	[Property] public float ThrowAttackStrong { get; set; } = 0f;
+	[Property] public float ThrowAttackStrong { get; set; } = 1f;
 	/// <summary> Keep <c>holditem</c> pose active after release so the throw clip is not cut off. </summary>
 	[Property] public float ThrowPoseHoldSeconds { get; set; } = 0.9f;
 	/// <summary> Anim graph playback rate during <see cref="ThrowPoseHoldSeconds"/> (1 = default speed). </summary>
@@ -39,7 +39,7 @@ public sealed class PlayerBallHoldAnim : Component
 	/// <summary> Cycle position when charge bar is empty. Usually 0. </summary>
 	[Property, Group( "Anim graph charge pose" )] public float ChargeWindupCycleStart { get; set; } = 0f;
 	/// <summary> Cycle position when charge bar is full. Lower if wind-up motion only uses the start of the clip (e.g. 0.25). </summary>
-	[Property, Group( "Anim graph charge pose" )] public float ChargeWindupCycleEnd { get; set; } = 1f;
+	[Property, Group( "Anim graph charge pose" )] public float ChargeWindupCycleEnd { get; set; } = 0.3f;
 	[Property, Group( "Anim graph charge pose" )] public float ChargeWeightBlendInSeconds { get; set; } = 0.12f;
 	[Property, Group( "Anim graph charge pose" )] public float ChargeWeightBlendOutSeconds { get; set; } = 0.15f;
 	/// <summary> RMB / dodge cancel — quick ease off the masked wind-up back to idle hold. </summary>

@@ -39,7 +39,7 @@ public sealed class PlayerTackle : Component
 	/// <summary>Extra multiplier on tackle radius when validating owner snapshots (latency compensation).</summary>
 	[Property] public float TackleRpcRadiusFudge { get; set; } = 1.12f;
 	/// <summary>Host: max seconds to poll for ragdoll physics bodies before launch + <c>NetworkSpawn</c>. Impulse runs as soon as bodies exist (often &lt; 1 frame). Too low can miss launch; too high delays replication.</summary>
-	[Property] public float RagdollPhysicsInitDelay { get; set; } = 0.08f;
+	[Property] public float RagdollPhysicsInitDelay { get; set; } = 0.05f;
 	/// <summary>Host: seconds to hold the ragdoll frozen after <c>NetworkSpawn</c> before <c>ApplyImpulse</c>. Everyone sees a brief hang; <b>0</b> = legacy impulse-then-spawn. Try ~0.05 with <see cref="TackleImpactFeel.HitstopDurationSeconds"/>.</summary>
 	[Property] public float PreLaunchPauseSeconds { get; set; } = 0.05f;
 	/// <summary>Comic text + ball knock-off power for hazard knockdowns (traffic, etc.). Default above <see cref="TackleComicTextHud.ChaosImpactThreshold"/> — tune down for Sans.</summary>

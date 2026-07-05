@@ -11,11 +11,11 @@ public sealed class ThrowChargeBar : Component
 	[Property] public float MarginBottom { get; set; } = 24f;
 	[Property] public float GapFromDodgePanel { get; set; } = 12f;
 	[Property] public float DodgePanelHeight { get; set; } = 56f;
-	[Property] public float PanelWidth { get; set; } = 52f;
+	[Property] public float PanelWidth { get; set; } = 64f;
 	[Property] public float PanelPaddingTop { get; set; } = 8f;
 	[Property] public float PanelPaddingBottom { get; set; } = 10f;
 	[Property] public int BarBlockCount { get; set; } = 14;
-	[Property] public float BarRowHeight { get; set; } = 18f;
+	[Property] public float BarRowHeight { get; set; } = 12f;
 	[Property] public float BarRowGap { get; set; } = 3f;
 	[Property] public int LabelFontSize { get; set; } = 18;
 	[Property] public Color BarFillColor { get; set; } = new( 1f, 0.85f, 0.45f );

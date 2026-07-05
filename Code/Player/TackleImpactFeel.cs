@@ -14,7 +14,7 @@ public sealed class TackleImpactFeel : Component, PlayerController.IEvents
 
 	[Property] public bool ShakeForAttacker { get; set; } = true;
 	[Property] public bool ShakeForVictim { get; set; } = true;
-	[Property] public float ShakeDurationSeconds { get; set; } = 0.14f;
+	[Property] public float ShakeDurationSeconds { get; set; } = 0.2f;
 	[Property] public float ShakePositionAmplitude { get; set; } = 7f;
 	[Property] public float ShakeRotationAmplitudeDegrees { get; set; } = 1.2f;
 

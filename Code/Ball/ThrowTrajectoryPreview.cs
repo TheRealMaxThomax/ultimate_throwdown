@@ -17,7 +17,7 @@ public sealed class ThrowTrajectoryPreview : Component
 	[Property] public float ArcGapLength { get; set; } = 10f;
 	[Property] public float ArcDashScrollSpeed { get; set; } = 120f;
 	[Property] public float LandingMarkerLift { get; set; } = 1.5f;
-	[Property] public float SimulationStepSeconds { get; set; } = 0.02f;
+	[Property] public float SimulationStepSeconds { get; set; } = 0.05f;
 	[Property] public float MaxSimulationSeconds { get; set; } = 6f;
 
 	private static Material translucentBallMaterialBase;

@@ -29,7 +29,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 	[Property] public MapMatchConfig MatchConfig { get; set; }
 
 	/// <summary> A spawn point is considered occupied if a same-team player is within this many units. </summary>
-	[Property] public float SpawnPointOccupiedRadius { get; set; } = 60f;
+	[Property] public float SpawnPointOccupiedRadius { get; set; } = 30f;
 
 	/// <summary> Legacy line spacing — only used when falling back to a single <see cref="Team0Spawn"/> / <see cref="Team1Spawn"/> / <see cref="SpawnPoint"/>. </summary>
 	[Property] public float JoinSpawnSpacing { get; set; } = 64f;

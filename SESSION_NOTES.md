@@ -263,13 +263,13 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - **`BallGrab`** — **`Hold Bone Name`** = `hold_R` (default); **`Interact Distance`** (horizontal, default **45**); **`Max Pickup Vertical Separation`** (default **80** — head-height pickup without widening ground reach); optional **`Body Renderer`** → Body `SkinnedModelRenderer`; tune **`Hold Bone Local Offset`** if grip looks off; **`HoldAnchor`** / `HandHoldPoint` = legacy fallback only
 - **`PlayerBallHoldAnim`** — auto-added on network spawn. Tune `IdleHoldPoseHand` (~0.1), `ThrowAttackStrong`, `ThrowPoseHoldSeconds` (~0.9), `ThrowPlaybackRate` (~0.7). **Throw charge:** `UseAnimGraphChargePose` on — `throw_charge`/`throw_charge_weight` on **`utd_citizen_human_m.vanmgrph`**; tune **`ChargeWindupCycleEnd`** if wind-up finishes before bar is full; **`ChargeCancelBlendOutSeconds`** (~0.1) for RMB cancel ease. Graph re-applied after cosmetics.
 - **`PlayerTackle`** — **`PreLaunchPauseSeconds`** (default **0.05**; **0** = legacy launch); **Impact SFX:** **`TackleConnectImpactSoundA/B`** (defaults = blitz crunch paths); tune with **`TackleImpactFeel.HitstopDurationSeconds`**
-- **`PlayerDodge`** — class **`DodgeDistance`** (literal slide units); **`DodgeChannelDurationSeconds`** on prefab (lower = snappier — try **~0.14–0.16** vs code default **0.2**). **Removed:** `ShoveVelocityMultiplier` (ignore if still in scene JSON).
+- **`PlayerDodge`** — class **`DodgeDistance`** (literal slide units); **`DodgeChannelDurationSeconds`** on prefab (lower = snappier — code default **0.12**). **Removed:** `ShoveVelocityMultiplier` (ignore if still in scene JSON).
 - **`PlayerChargeRunAnim`** — auto-added on network spawn. **`UseAnimGraphChargeRunPose`** on; **`IsAtChargeSpeed`** (not local HUD tier). **`SpeedBlitzChargeRunBlendInSeconds`** (default **0.03** — charge_run builds faster during dash). Graph → [`CITIZEN_ANIMATION_WORKFLOW.md`](Assets/Animation/CITIZEN_ANIMATION_WORKFLOW.md)
 - **`TackleImpactFeel`** — auto-added on network spawn. Tune **Hitstop** / **Shake** / **Attacker punch**; **`ShakeForAttacker`** + **`ShakeForVictim`**
 - **`CombatFeelPredictDedupe`** — auto-added on network spawn (with **`TackleImpactFeel`**). No inspector tuning.
 - **`BlitzConnectPoseFreeze`** — auto-added on network spawn. No inspector tuning (optional **`ConnectImpactChargeRunCycle`** on **`SpeedsterSpeedBlitzUlt`**).
 - `PlayerController` camera **X = 185**; **no** `ModelPhysics` on player
-- **`BallThrow`** — tune **`ThrowReleaseDelaySeconds`** (~0.35) to match anim release frame; **`Throw Direction Source`** optional (else **`PlayerController.EyeAngles`**)
+- **`BallThrow`** — tune **`ThrowReleaseDelaySeconds`** (**0.25** Turf Wars default) to match anim release frame; **`Throw Direction Source`** optional (else **`PlayerController.EyeAngles`**)
 
 **`main_ball`:**
 - `ModelRenderer` — e.g. **`ball_v2.vmat`** (emissive gold + pattern scroll; team read from glow/compass not ball albedo)
@@ -489,7 +489,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 - [x] **Confirm rules:** overlapping OOB + **supported by any solid** (trace down) + speed below threshold for **~1.0s** continuous
 - [x] **Last-touch ledger** (host, on ball): throw / drop / tackle knock-off → credit + **credited player feet** anchor. **Fallback:** no ledger → **`BallSpawn`**
 - [x] On confirm: **`BallPassAssistState.ResetOnHost()`**; hide ball; **`match_whistle`** (2D broadcast; asset **UI** flag); white **`OUT OF BOUNDS!`** screen ~**3s**; world drop marker **10s** (ground disc + **DROP ZONE** / countdown / ▼)
-- [x] Sky-drop: enable ball at **anchor XY** (player feet at last touch), ground Z + **Z + DropHeight** (~**200**)
+- [x] Sky-drop: enable ball at **anchor XY** (player feet at last touch), ground Z + **Z + DropHeight** (**450** code default)
 - [x] One OOB sequence at a time; **cancel on round reset / rematch**
 - [x] **`ball` + `playerclip` → Ignore** in **`Collision.config`**
 - [x] **Editor (Turf Wars):** **`OutOfBoundsZone`** + **`playerclip`** walls — **Max 2026-07-03**
@@ -618,6 +618,7 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
+- **2026-07-05 (defaults sync ✅):** Code `[Property]` defaults synced from **`throwdown_turf_wars.scene`** (player template, `main_ball`, Main Camera HUDs, `MatchHud`, traffic template/spawner) — new maps / auto-added components pick up Turf Wars tuning without re-inspector.
 - **2026-07-05 (audio + tackle SFX + hold pose ✅):** **Global dry audio** — **`MatchAudioBootstrap`** + **`PlayerFootstepAudio`**; room sim off for outdoor Turf Wars. **Player tackle connect crunch** — **`TackleConnectImpactSoundA/B`** (host random, MP dedupe). **Ball carrier tackled** — **`ClearHoldPoseAfterKnockdown`** (no stuck `holditem` after stand-up). **2-window MP OK.**
 - **2026-07-04 (dodge channel ✅):** Capped displacement + horizontal stop at end; air dodge (ledge-friendly). **`ShoveVelocityMultiplier` → `DodgeChannelDurationSeconds`** on prefab. **Solo playtest OK** (tune duration for snap).
 - **2026-07-04 (ball throw + map slice 1 ✅):** **Throw charge** — planted wind-up (`IsThrowPlantLocked`, no jump/air steer); **RMB** cancel (`CancelActiveThrowCharge`); cancel pose ease (`NotifyThrowChargeCancelled` / `ChargeCancelBlendOutSeconds`). **OOB** — 2-window MP OK; stack pulse; host-authoritative `BallGrab`; invisible walls removed. **Next: prefab split.**

@@ -8,11 +8,11 @@ using Sandbox;
 /// </summary>
 public sealed class PlayerEnemyOutline : Component
 {
-	[Property] public Color EnemyColor { get; set; } = new Color( 1f, 0.15f, 0.15f );
-	[Property] public Color EnemyObscuredColor { get; set; } = new Color( 0.85f, 0.1f, 0.1f, 0.65f );
-	[Property] public Color EnemyInsideColor { get; set; } = new Color( 1f, 0.2f, 0.2f, 0.35f );
-	[Property] public Color EnemyInsideObscuredColor { get; set; } = new Color( 0.7f, 0.1f, 0.1f, 0.25f );
-	[Property] public float OutlineWidth { get; set; } = 2f;
+	[Property] public Color EnemyColor { get; set; } = new Color( 1f, 0f, 0f, 0.53f );
+	[Property] public Color EnemyObscuredColor { get; set; } = new Color( 0.85f, 0.1f, 0.1f, 0f );
+	[Property] public Color EnemyInsideColor { get; set; } = new Color( 1f, 0.2f, 0.2f, 0f );
+	[Property] public Color EnemyInsideObscuredColor { get; set; } = new Color( 0.7f, 0.1f, 0.1f, 0f );
+	[Property] public float OutlineWidth { get; set; } = 0.15f;
 
 	private HighlightOutline outline;
 	private PlayerTeam playerTeam;

@@ -44,42 +44,42 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 
 	[Property, Group( "Wind-up feel" )] public GameObject WindUpVfxPrefab { get; set; }
 
-	[Property, Group( "Wind-up feel" )] public Vector3 WindUpVfxLocalOffset { get; set; } = new( 0f, 0f, 48f );
+	[Property, Group( "Wind-up feel" )] public Vector3 WindUpVfxLocalOffset { get; set; } = new( 0f, 0f, 10f );
 
 	[Property, Group( "Wind-up feel" )] public Vector3 WindUpFeelSoundLocalOffset { get; set; } = new( 0f, 0f, 48f );
 
 	/// <summary> Electric bed from wind-up through dash + connect hang. Drag <c>speedblitz_electric.sound</c>. </summary>
 	[Property, Group( "Wind-up feel" )] public SoundEvent WindUpElectricSound { get; set; }
 
-	[Property, Group( "Wind-up feel" )] public float WindUpElectricVolume { get; set; } = 0.85f;
+	[Property, Group( "Wind-up feel" )] public float WindUpElectricVolume { get; set; } = 0.5f;
 
 	/// <summary> Rising sting for the wind-up channel only — stops at dash start. Drag <c>speedblitz_windup.sound</c>. </summary>
 	[Property, Group( "Wind-up feel" )] public SoundEvent WindUpRiseSound { get; set; }
 
-	[Property, Group( "Wind-up feel" )] public float WindUpRiseVolume { get; set; } = 1f;
+	[Property, Group( "Wind-up feel" )] public float WindUpRiseVolume { get; set; } = 0.5f;
 
 	/// <summary> One-shot at dash start. Drag <c>speedblitz_dash.sound</c> (not ragdoll <see cref="LaunchSound"/>). </summary>
 	[Property, Group( "Wind-up feel" )] public SoundEvent DashStartSound { get; set; }
 
-	[Property, Group( "Wind-up feel" )] public float DashStartVolume { get; set; } = 1f;
+	[Property, Group( "Wind-up feel" )] public float DashStartVolume { get; set; } = 0.5f;
 
 	/// <summary> Legacy — electric bed hard-stops at connect; kept so old prefab values do not break. </summary>
-	[Property, Group( "Wind-up feel" )] public float ConnectElectricDuckSeconds { get; set; } = 0.12f;
+	[Property, Group( "Wind-up feel" )] public float ConnectElectricDuckSeconds { get; set; } = 0.5f;
 
 	/// <summary> Legacy — electric bed hard-stops at connect; kept so old prefab values do not break. </summary>
-	[Property, Group( "Wind-up feel" )] public float ConnectElectricDuckVolumeFraction { get; set; } = 0.4f;
+	[Property, Group( "Wind-up feel" )] public float ConnectElectricDuckVolumeFraction { get; set; } = 0.01f;
 
 	/// <summary> Multiplier on prefab <see cref="ParticleAttractor"/> force during dash so world-space sparks keep up. </summary>
-	[Property, Group( "Wind-up feel" )] public float DashAttractorForceMultiplier { get; set; } = 16f;
+	[Property, Group( "Wind-up feel" )] public float DashAttractorForceMultiplier { get; set; } = 32f;
 
 	/// <summary> Multiplier on prefab attractor radius during dash. </summary>
-	[Property, Group( "Wind-up feel" )] public float DashAttractorRadiusMultiplier { get; set; } = 2.5f;
+	[Property, Group( "Wind-up feel" )] public float DashAttractorRadiusMultiplier { get; set; } = 1.2f;
 
 	/// <summary> Extra wind-up spark pull when simulating on a networked proxy (observer view). </summary>
-	[Property, Group( "Wind-up feel" )] public float WindUpRemoteAttractorForceMultiplier { get; set; } = 2.5f;
+	[Property, Group( "Wind-up feel" )] public float WindUpRemoteAttractorForceMultiplier { get; set; } = 1f;
 
 	/// <summary> Wider absorb radius on proxies so sparks finish the pull before lifetime ends. </summary>
-	[Property, Group( "Wind-up feel" )] public float WindUpRemoteAttractorRadiusMultiplier { get; set; } = 3f;
+	[Property, Group( "Wind-up feel" )] public float WindUpRemoteAttractorRadiusMultiplier { get; set; } = 1f;
 
 	/// <summary> Longer spark lifetime on proxies — pairs with remote attractor tuning. </summary>
 	[Property, Group( "Wind-up feel" )] public float WindUpRemoteLifetimeMultiplier { get; set; } = 1.35f;

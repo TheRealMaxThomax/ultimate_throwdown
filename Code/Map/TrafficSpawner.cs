@@ -13,33 +13,33 @@ public sealed class TrafficSpawner : Component
 	/// <summary> Lane empties in drive order — first = spawn pose, last = despawn near end. </summary>
 	[Property] public List<GameObject> Waypoints { get; set; } = new();
 
-	[Property, Group( "Spawn" )] public float MinSpawnIntervalSeconds { get; set; } = 8f;
-	[Property, Group( "Spawn" )] public float MaxSpawnIntervalSeconds { get; set; } = 18f;
+	[Property, Group( "Spawn" )] public float MinSpawnIntervalSeconds { get; set; } = 3f;
+	[Property, Group( "Spawn" )] public float MaxSpawnIntervalSeconds { get; set; } = 7f;
 	/// <summary>Wait this long after playing starts before the first spawn (per round). Road1 uses ~5s for side fairness.</summary>
 	[Property, Group( "Spawn" )] public float SpawnDelaySeconds { get; set; } = 0f;
-	[Property, Group( "Spawn" )] public int MaxAliveCars { get; set; } = 2;
+	[Property, Group( "Spawn" )] public int MaxAliveCars { get; set; } = 4;
 	[Property, Group( "Spawn" )] public bool DisableTemplateOnStart { get; set; } = true;
 	[Property, Group( "Spawn" )] public bool OnlySpawnWhileMatchPlaying { get; set; } = true;
 	/// <summary>Random Body mesh per spawn — sets Body <see cref="ModelRenderer"/> + <see cref="ModelCollider"/>; empty keeps template models.</summary>
 	[Property, Group( "Spawn" )] public List<Model> CarModelVariants { get; set; } = new();
 
-	[Property, Group( "Car" )] public float CarSpeed { get; set; } = 420f;
-	[Property, Group( "Car" )] public float CarAcceleration { get; set; } = 140f;
-	[Property, Group( "Car" )] public float CarDeceleration { get; set; } = 260f;
+	[Property, Group( "Car" )] public float CarSpeed { get; set; } = 700f;
+	[Property, Group( "Car" )] public float CarAcceleration { get; set; } = 150f;
+	[Property, Group( "Car" )] public float CarDeceleration { get; set; } = 800f;
 	/// <summary>Added to every waypoint Y when spawning/moving — raise if the car sinks (model pivot above wheels).</summary>
 	[Property, Group( "Car" )] public float CarHeightOffset { get; set; } = 0f;
-	[Property, Group( "Car" )] public float KnockdownLaunchSpeed { get; set; } = 520f;
+	[Property, Group( "Car" )] public float KnockdownLaunchSpeed { get; set; } = 1000f;
 	[Property, Group( "Car" )] public float KnockdownLaunchArc { get; set; } = 0.85f;
-	[Property, Group( "Car" )] public Vector3 HitHalfExtents { get; set; } = new( 90f, 45f, 55f );
+	[Property, Group( "Car" )] public Vector3 HitHalfExtents { get; set; } = new( 140f, 70f, 60f );
 	/// <summary>Local offset (car forward/left/up) for knockdown box center — raise Z if model pivot is low (wheels).</summary>
-	[Property, Group( "Car" )] public Vector3 HitBoxCenterOffset { get; set; }
+	[Property, Group( "Car" )] public Vector3 HitBoxCenterOffset { get; set; } = new( 0f, 0f, 60f );
 	/// <summary>Radius of rounded corners between straight segments (units).</summary>
 	[Property, Group( "Car" )] public float CornerFilletRadius { get; set; } = 90f;
 	[Property, Group( "Car" )] public int CornerArcSamples { get; set; } = 10;
 	[Property, Group( "Car" )] public int StraightSegmentSamples { get; set; } = 4;
 	/// <summary>Path distance ahead — car starts slowing this far before a bend.</summary>
-	[Property, Group( "Car" )] public float CurveSlowLookAhead { get; set; } = 180f;
-	[Property, Group( "Car" )] public float CurveMinSpeedFraction { get; set; } = 0.35f;
+	[Property, Group( "Car" )] public float CurveSlowLookAhead { get; set; } = 400f;
+	[Property, Group( "Car" )] public float CurveMinSpeedFraction { get; set; } = 0.01f;
 	/// <summary>Extra yaw on the car root after path facing — use 180 if the model nose points backward.</summary>
 	[Property, Group( "Car" )] public float FacingYawOffsetDegrees { get; set; } = 0f;
 	[Property, Group( "Car" )] public float PlayerHitCooldownSeconds { get; set; } = 0.75f;

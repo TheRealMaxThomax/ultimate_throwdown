@@ -9,6 +9,10 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 {
 	[Property] public Color HitBoxGizmoColor { get; set; } = new( 1f, 0.35f, 0.1f, 0.35f );
 
+	/// <summary>Asset file names are swapped vs sonic role — cruise uses <c>traffic_engine_drive</c>, accel uses <c>traffic_engine_idle</c>.</summary>
+	internal const string DefaultEngineIdleSoundPath = "sounds/traffic/traffic_engine_drive.sound";
+	internal const string DefaultEngineDriveSoundPath = "sounds/traffic/traffic_engine_idle.sound";
+
 	/// <summary>Uniform scale on the Body child (match template Body transform). Used for host sync + client fallback.</summary>
 	[Property, Group( "Car visual" )] public float MeshUniformScale { get; set; } = 0.6f;
 
@@ -17,8 +21,8 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 
 	[Property, Group( "Engine sound" )] public SoundEvent EngineIdleSound { get; set; }
 	[Property, Group( "Engine sound" )] public SoundEvent EngineDriveSound { get; set; }
-	[Property, Group( "Engine sound" )] public float EngineSoundVolume { get; set; } = 0.55f;
-	[Property, Group( "Engine sound" )] public float EngineSoundMaxDistance { get; set; } = 2800f;
+	[Property, Group( "Engine sound" )] public float EngineSoundVolume { get; set; } = 2f;
+	[Property, Group( "Engine sound" )] public float EngineSoundMaxDistance { get; set; } = 1000f;
 	[Property, Group( "Engine sound" )] public Vector3 EngineSoundLocalOffset { get; set; } = new( 0f, 0f, 24f );
 	[Property, Group( "Engine sound" )] public float EngineSoundBlendSharpness { get; set; } = 6f;
 
@@ -338,10 +342,21 @@ public sealed class TrafficCar : Component, Component.ExecuteInEditor
 	private static bool IsEngineSoundAssigned( SoundEvent soundEvent ) =>
 		soundEvent is not null && soundEvent.IsValid();
 
+	private void EnsureDefaultEngineSounds()
+	{
+		if ( !IsEngineSoundAssigned( EngineIdleSound ) )
+			EngineIdleSound = ResourceLibrary.Get<SoundEvent>( DefaultEngineIdleSoundPath );
+
+		if ( !IsEngineSoundAssigned( EngineDriveSound ) )
+			EngineDriveSound = ResourceLibrary.Get<SoundEvent>( DefaultEngineDriveSoundPath );
+	}
+
 	private void StartEngineSounds()
 	{
 		if ( !Game.IsPlaying || !GameObject.IsValid() || IsSpawnerCarTemplate() || engineSoundsActive )
 			return;
+
+		EnsureDefaultEngineSounds();
 
 		if ( !IsEngineSoundAssigned( EngineIdleSound ) && !IsEngineSoundAssigned( EngineDriveSound ) )
 			return;

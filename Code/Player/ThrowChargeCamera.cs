@@ -12,7 +12,7 @@ using Sandbox;
 public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 {
 	[Property] public float ExtraCameraDistanceAtFullCharge { get; set; } = 50f;
-	[Property] public float ExtraCameraHeightAtFullCharge { get; set; } = 20f;
+	[Property] public float ExtraCameraHeightAtFullCharge { get; set; } = 50f;
 	[Property] public float ExtraFieldOfViewAtFullCharge { get; set; } = 7f;
 	[Property] public float ReleaseCameraBlendDuration { get; set; } = 0.35f;
 

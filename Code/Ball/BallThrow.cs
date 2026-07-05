@@ -13,7 +13,7 @@ public sealed class BallThrow : Component
 	[Property] public float ThrowStartOffset { get; set; } = 40f;
 	[Property] public float PickupDelayAfterThrow { get; set; } = 0.25f;
 	/// <summary> Seconds after button release before the host applies throw velocity — tune to the anim release frame. </summary>
-	[Property] public float ThrowReleaseDelaySeconds { get; set; } = 0.35f;
+	[Property] public float ThrowReleaseDelaySeconds { get; set; } = 0.25f;
 	[Property] public GameObject ThrowDirectionSource { get; set; }
 	[Property] public float MinThrowChargeTime { get; set; } = 0.05f;
 	[Property] public float MaxThrowChargeTime { get; set; } = 3f;

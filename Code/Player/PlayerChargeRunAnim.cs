@@ -13,7 +13,7 @@ public sealed class PlayerChargeRunAnim : Component
 	[Property] public string ChargeRunWeightParamName { get; set; } = "charge_run_weight";
 	[Property] public string ChargeRunCycleParamName { get; set; } = "charge_run_cycle";
 	[Property] public float ChargeRunCycle { get; set; } = 0f;
-	[Property] public float ChargeRunWeightBlendInSeconds { get; set; } = 0.12f;
+	[Property] public float ChargeRunWeightBlendInSeconds { get; set; } = 0.8f;
 	[Property] public float ChargeRunWeightBlendOutSeconds { get; set; } = 0.15f;
 	/// <summary> Faster blend-in while <see cref="SpeedsterSpeedBlitzUlt.IsDashing"/> — dash is often short (especially on connect).</summary>
 	[Property] public float SpeedBlitzChargeRunBlendInSeconds { get; set; } = 0.03f;

@@ -8,14 +8,14 @@ public sealed class BallOutOfBoundsHost : Component
 {
 	const string DefaultWhistleSoundPath = "sounds/whistle/match_whistle.sound";
 
-	[Property] public float ConfirmDwellSeconds { get; set; } = 1f;
+	[Property] public float ConfirmDwellSeconds { get; set; } = 1.5f;
 	[Property] public float MaxHorizontalSpeed { get; set; } = 120f;
 	[Property] public float MaxVerticalSpeed { get; set; } = 80f;
 	[Property] public float MaxSupportTraceDistance { get; set; } = 96f;
 	[Property] public float DropCountdownSeconds { get; set; } = 10f;
-	[Property] public float SkyDropHeight { get; set; } = 200f;
+	[Property] public float SkyDropHeight { get; set; } = 450f;
 	/// <summary> Trace begins this far above credited player feet — avoids hitting overhead roofs from a sky-high start. </summary>
-	[Property] public float DropAnchorTraceAboveFeet { get; set; } = 8f;
+	[Property] public float DropAnchorTraceAboveFeet { get; set; } = 2f;
 	[Property] public float DropAnchorTraceDownDistance { get; set; } = 512f;
 	/// <summary> Reject downward hits more than this far above credited feet (elevated decks / mis-snapped roofs). </summary>
 	[Property] public float DropAnchorMaxAboveFeet { get; set; } = 32f;

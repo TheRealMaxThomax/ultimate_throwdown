@@ -16,7 +16,7 @@ public sealed class PlayerDodge : Component
 	[Property] public float CarrierDodgeCooldownFactor { get; set; } = 0.88f;
 	[Property] public float RechargeBlockedAfterChargeDodge { get; set; } = 2f;
 	/// <summary> Max time to spend the lateral slide (class <c>DodgeDistance</c> is literal travel units). </summary>
-	[Property] public float DodgeChannelDurationSeconds { get; set; } = 0.2f;
+	[Property] public float DodgeChannelDurationSeconds { get; set; } = 0.12f;
 	[Property] public bool EnableDodgeDebugLogs { get; set; }
 
 	private float lastLeftStrafeTapTime = -999f;

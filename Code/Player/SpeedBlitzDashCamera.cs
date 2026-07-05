@@ -12,15 +12,15 @@ using Sandbox;
 [Order( 10012 )]
 public sealed class SpeedBlitzDashCamera : Component, PlayerController.IEvents
 {
-	[Property, Group( "Wind-up" )] public float ExtraFieldOfViewAtFullWindUp { get; set; } = 10f;
-	[Property, Group( "Wind-up" )] public float ExtraCameraDistanceAtFullWindUp { get; set; } = 22f;
+	[Property, Group( "Wind-up" )] public float ExtraFieldOfViewAtFullWindUp { get; set; } = 20f;
+	[Property, Group( "Wind-up" )] public float ExtraCameraDistanceAtFullWindUp { get; set; } = 0f;
 	[Property, Group( "Wind-up" )] public float ExtraCameraHeightAtFullWindUp { get; set; } = 8f;
 
-	[Property, Group( "Dash" )] public float ExtraFieldOfViewDuringDash { get; set; } = 24f;
+	[Property, Group( "Dash" )] public float ExtraFieldOfViewDuringDash { get; set; } = 20f;
 	[Property, Group( "Dash" )] public float ExtraCameraDistanceDuringDash { get; set; } = 48f;
 	[Property, Group( "Dash" )] public float ExtraCameraHeightDuringDash { get; set; } = 16f;
 	[Property, Group( "Dash" )] public float WindUpToDashBlendDurationSeconds { get; set; } = 0.15f;
-	[Property, Group( "Dash" )] public float DashEndBlendDurationSeconds { get; set; } = 0.18f;
+	[Property, Group( "Dash" )] public float DashEndBlendDurationSeconds { get; set; } = 0.05f;
 
 	private SpeedsterSpeedBlitzUlt speedBlitzUlt;
 	private PlayerTackle playerTackle;

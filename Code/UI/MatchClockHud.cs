@@ -5,7 +5,7 @@ using Sandbox.Rendering;
 public sealed class MatchClockHud : Component
 {
 	[Property] public float MarginTop { get; set; } = 72f;
-	[Property] public float PanelWidth { get; set; } = 200f;
+	[Property] public float PanelWidth { get; set; } = 120f;
 	[Property] public float PanelHeight { get; set; } = 40f;
 	[Property] public int FontSize { get; set; } = 28;
 

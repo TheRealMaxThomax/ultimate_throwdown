@@ -14,7 +14,7 @@ public sealed class PlayerSpeedBlitzWindUpAnim : Component
 	[Property] public string WindUpWeightParamName { get; set; } = "blitz_windup_weight";
 	[Property] public float WindUpCycleStart { get; set; } = 0f;
 	[Property] public float WindUpCycleEnd { get; set; } = 1f;
-	[Property] public float WindUpWeightBlendInSeconds { get; set; } = 0.3f;
+	[Property] public float WindUpWeightBlendInSeconds { get; set; } = 1.9f;
 	[Property] public float WindUpWeightBlendOutSeconds { get; set; } = 0.15f;
 
 	private PlayerTackle playerTackle;

@@ -13,8 +13,8 @@ public sealed class SpeedBlitzBodyGlow : Component
 	static readonly Color UltBlue = new( 36f / 255f, 176f / 255f, 1f, 1f );
 
 	[Property] public Color GlowColor { get; set; } = UltBlue;
-	[Property, Range( 0f, 1f )] public float BodyTintStrength { get; set; } = 0.72f;
-	[Property, Range( 0f, 1f )] public float ClothingTintStrength { get; set; } = 0.42f;
+	[Property, Range( 0f, 1f )] public float BodyTintStrength { get; set; } = 1f;
+	[Property, Range( 0f, 1f )] public float ClothingTintStrength { get; set; } = 1f;
 	[Property] public float DischargeFadeSeconds { get; set; } = 0.22f;
 	[Property] public bool EnablePointLight { get; set; } = true;
 	[Property] public float PointLightRadius { get; set; } = 64f;

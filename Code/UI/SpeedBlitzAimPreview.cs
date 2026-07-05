@@ -31,9 +31,9 @@ public sealed class SpeedBlitzAimPreview : Component
 	private static Model planeModel;
 
 	[Property, Group( "Meshes" )] public string CorridorModelPath { get; set; } = DefaultPlaneModelPath;
-	[Property, Group( "Meshes" )] public string MarkerModelPath { get; set; } = DefaultPlaneModelPath;
+	[Property, Group( "Meshes" )] public string MarkerModelPath { get; set; } = "models/dev/box.vmdl";
 	/// <summary>Native mesh width (local Y) used to scale corridor half-width × 2 — tune hit-width read without shrinking segment length.</summary>
-	[Property, Group( "Meshes" )] public float PlaneWidthBaseSize { get; set; } = 100f;
+	[Property, Group( "Meshes" )] public float PlaneWidthBaseSize { get; set; } = 175f;
 	/// <summary>Native mesh length (local X) used to scale each segment along the dash.</summary>
 	[Property, Group( "Meshes" )] public float PlaneLengthBaseSize { get; set; } = 100f;
 
@@ -41,15 +41,15 @@ public sealed class SpeedBlitzAimPreview : Component
 	[Property, Group( "Materials" )] public string MarkerMaterialPath { get; set; } = DefaultMarkerMaterialPath;
 
 	[Property, Group( "Corridor" )] public Color CorridorTint { get; set; } = UltPreviewBlue;
-	[Property, Group( "Corridor" )] public float CorridorAlpha { get; set; } = 0.38f;
-	[Property, Group( "Corridor" )] public float CorridorLift { get; set; } = 0.75f;
+	[Property, Group( "Corridor" )] public float CorridorAlpha { get; set; } = 0.8f;
+	[Property, Group( "Corridor" )] public float CorridorLift { get; set; } = 3f;
 	[Property, Group( "Corridor" )] public float SegmentSpacing { get; set; } = 48f;
 	[Property, Group( "Corridor" )] public float MinSegmentLength { get; set; } = 4f;
 	[Property, Group( "Corridor" )] public int MaxSegments { get; set; } = 48;
 
-	[Property, Group( "End marker" )] public Color MarkerTint { get; set; } = UltPreviewBlue;
-	[Property, Group( "End marker" )] public float MarkerAlpha { get; set; } = 0.55f;
-	[Property, Group( "End marker" )] public float MarkerLift { get; set; } = 0.75f;
+	[Property, Group( "End marker" )] public Color MarkerTint { get; set; } = new Color( 1f, 0.14118f, 0.14118f, 1f );
+	[Property, Group( "End marker" )] public float MarkerAlpha { get; set; } = 0.8f;
+	[Property, Group( "End marker" )] public float MarkerLift { get; set; } = 0.5f;
 
 	/// <summary> Used when <see cref="MoveModeWalk"/> is missing. Otherwise reads prefab <c>Step Up Height</c>. </summary>
 	[Property, Group( "Corridor" )] public float StepUpHeightFallback { get; set; } = 20f;

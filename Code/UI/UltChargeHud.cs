@@ -10,8 +10,8 @@ public sealed class UltChargeHud : Component
 	[Property] public float DodgePanelWidth { get; set; } = 120f;
 	[Property] public float MovementPanelWidth { get; set; } = 220f;
 	[Property] public float GapBetweenPanels { get; set; } = 12f;
-	[Property] public float PanelWidth { get; set; } = 72f;
-	[Property] public float PanelHeight { get; set; } = 40f;
+	[Property] public float PanelWidth { get; set; } = 148f;
+	[Property] public float PanelHeight { get; set; } = 56f;
 	[Property] public int PercentFontSize { get; set; } = 22;
 
 	/// <summary> At 100%, stay white this long before switching to ready (blue) highlight. </summary>

@@ -3,8 +3,8 @@ using Sandbox;
 /// <summary> Per-map team display names and optional match overrides. Wire on map root or GameNetworkManager. </summary>
 public sealed class MapMatchConfig : Component
 {
-	[Property] public string Team0DisplayName { get; set; } = "Team A";
-	[Property] public string Team1DisplayName { get; set; } = "Team B";
+	[Property] public string Team0DisplayName { get; set; } = "Gassy Moe's";
+	[Property] public string Team1DisplayName { get; set; } = "MorgsFuel";
 
 	/// <summary>
 	/// Training / practice maps only — enable on that scene&apos;s <see cref="MapMatchConfig"/>; leave off on Turf Wars and other competitive maps.
