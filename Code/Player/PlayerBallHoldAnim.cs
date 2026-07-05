@@ -110,12 +110,20 @@ public sealed class PlayerBallHoldAnim : Component
 		loggedMissingAnimGraph = false;
 	}
 
+	private bool wasKnockedDown;
+
 	protected override void OnUpdate()
 	{
 		if ( !TryGetBodyRenderer( out var renderer ) )
 			return;
 
 		RestorePlaybackRateIfNeeded( renderer );
+
+		var knockedDown = playerTackle?.IsKnockedDown == true;
+		if ( wasKnockedDown && !knockedDown )
+			ClearHoldPoseAfterKnockdown();
+
+		wasKnockedDown = knockedDown;
 
 		if ( ShouldSkipHoldAnim() )
 		{
@@ -159,6 +167,19 @@ public sealed class PlayerBallHoldAnim : Component
 		wasShowingHoldPose = showHoldPose;
 	}
 
+	public void ClearHoldPoseAfterKnockdown()
+	{
+		if ( !TryGetBodyRenderer( out var renderer ) )
+			return;
+
+		ClearHoldAndThrowPose( renderer );
+		wasShowingHoldPose = false;
+		wasChargingThrow = false;
+		isChargePoseBlendingOut = false;
+		throwPoseUntil = 0f;
+		playbackRateRestoreUntil = 0f;
+	}
+
 	/// <summary> Owner calls on throw button release; broadcasts so all clients play the throw additive. </summary>
 	public void NotifyThrowReleased()
 	{
@@ -194,7 +215,7 @@ public sealed class PlayerBallHoldAnim : Component
 		if ( !TryGetBodyRenderer( out var renderer ) )
 			return;
 
-		if ( playerTackle?.IsRagdolled == true )
+		if ( playerTackle?.IsKnockedDown == true )
 			return;
 
 		if ( chargePoseWeight <= 0.001f )
@@ -234,7 +255,7 @@ public sealed class PlayerBallHoldAnim : Component
 		if ( !TryGetBodyRenderer( out var renderer ) )
 			return;
 
-		if ( playerTackle?.IsRagdolled == true )
+		if ( playerTackle?.IsKnockedDown == true )
 			return;
 
 		ResetGraphChargePose( renderer );
@@ -307,7 +328,7 @@ public sealed class PlayerBallHoldAnim : Component
 
 	private bool ShouldSkipHoldAnim()
 	{
-		if ( playerTackle?.IsRagdolled == true )
+		if ( playerTackle?.IsKnockedDown == true )
 			return true;
 
 		if ( Components.Get<BlitzConnectPoseFreeze>() is { IsBodyPoseFrozen: true } )

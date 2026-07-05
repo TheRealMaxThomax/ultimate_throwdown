@@ -336,14 +336,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 	/// <summary> All machines: 3D connect crunch at dash stop / victim contact. </summary>
 	public static void PlayConnectImpactSoundAt( Vector3 worldPosition, SoundEvent soundEvent, float volume )
 	{
-		if ( !soundEvent.IsValid() )
-			return;
-
-		var handle = Sound.Play( soundEvent, worldPosition );
-		if ( !handle.IsPlaying || Math.Abs( volume - 1f ) < 0.001f )
-			return;
-
-		handle.Volume = volume.Clamp( 0f, 2f );
+		MatchAudioBootstrap.PlayWorldSoundDry( soundEvent, worldPosition, volume );
 	}
 
 	internal GameObject ResolveWindUpVfxPrefabRoot()

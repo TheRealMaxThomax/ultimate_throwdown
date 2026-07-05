@@ -377,8 +377,8 @@
               "EnablePressing": true,
               "EyeDistanceFromTop": 8,
               "FootstepMixer": {
-                "Name": "unknown",
-                "Id": "00000000-0000-0000-0000-000000000000"
+                "Name": "master",
+                "Id": "f65f7892-bade-410d-adec-77fa959e5ffb"
               },
               "FootstepVolume": 1,
               "HideBodyInFirstPerson": true,
@@ -810,6 +810,9 @@
               "RagdollCameraHeight": 80,
               "RagdollPhysicsInitDelay": 0.05,
               "StandUpCameraBlendDuration": 0.6,
+              "TackleConnectImpactSoundA": "sounds/crunch/speed_blitz_connect_crunch_a.sound",
+              "TackleConnectImpactSoundB": "sounds/crunch/speed_blitz_connect_crunch_b.sound",
+              "TackleConnectImpactSoundVolume": 1,
               "TackleCooldown": 1,
               "TackleDirectionThreshold": 0.95,
               "TackleLaunchArc": 1,
@@ -936,7 +939,7 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "PassivePointsPerSecond": 0.2,
-              "TackleChargePoints": 15
+              "TackleChargePoints": 10
             },
             {
               "__type": "UltChargeHud",
@@ -3193,7 +3196,7 @@
                   ]
                 },
                 {
-                  "__guid": "7307401d-d2ce-41d4-ad7a-8fdd4047b23d",
+                  "__guid": "ee2d35d0-cf2c-48fd-aeed-989fd5b2f05c",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3210,7 +3213,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "b9eb4cae-5ee7-487d-9ec3-b5306e47abb7",
+                      "__guid": "9f8e919d-9c50-40c1-8ab1-9ab2ad3ee111",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -15990,7 +15993,7 @@
           "Position": "-1783.59875,21.2554932,-46.4429321",
           "Rotation": "0,0,0,1",
           "Scale": "1,1.19230771,0.25",
-          "Tags": "world",
+          "Tags": "world,passaudio",
           "Enabled": true,
           "NetworkMode": 2,
           "NetworkFlags": 0,
@@ -16343,7 +16346,7 @@
           "Position": "8.40151978,2253.25513,-46.4429321",
           "Rotation": "0,0,0.99999994,1.49011612E-07",
           "Scale": "1,1.19230771,0.25",
-          "Tags": "world",
+          "Tags": "world,passaudio",
           "Enabled": true,
           "NetworkMode": 2,
           "NetworkFlags": 0,

@@ -61,6 +61,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		}
 
 		EnsurePlayersForActiveConnections();
+		MatchAudioBootstrap.EnsureOnMainCamera( Scene );
 		TackleComicTextHud.EnsureOnMainCamera( Scene );
 		OutOfBoundsBannerHud.EnsureOnMainCamera( Scene );
 		BallOobDropZoneHud.EnsureOnMainCamera( Scene );
@@ -259,6 +260,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		player.Components.GetOrCreate<BlitzConnectPoseFreeze>();
 		player.Components.GetOrCreate<TackleImpactFeel>();
 		player.Components.GetOrCreate<CombatFeelPredictDedupe>();
+		player.Components.GetOrCreate<PlayerFootstepAudio>();
 		player.Components.GetOrCreate<PracticeNpcPatrolPoseRelay>();
 
 		player.NetworkSpawn( connection );

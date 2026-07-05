@@ -1,6 +1,6 @@
 {
   "UI": true,
-  "Volume": "1",
+  "Volume": "0.400000006",
   "Pitch": "1",
   "Decibels": 70,
   "SelectionMode": "Random",
@@ -9,8 +9,8 @@
   ],
   "OcclusionEnabled": false,
   "Occlusion": false,
-  "ReverbEnabled": true,
-  "Reflections": true,
+  "ReverbEnabled": false,
+  "Reflections": false,
   "AirAbsorption": true,
   "Transmission": true,
   "OcclusionRadius": 64,
