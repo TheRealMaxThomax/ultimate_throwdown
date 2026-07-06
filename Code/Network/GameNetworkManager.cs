@@ -10,6 +10,11 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 	/// <summary> If set, used as the player prefab to clone — avoids grabbing the wrong <see cref="GameObject"/> when multiple exist. Wire it in the inspector. </summary>
 	[Property] public GameObject PlayerTemplateRoot { get; set; }
 
+	/// <summary> Per-class clone sources (disabled scene roots). Falls back to <see cref="PlayerTemplateRoot"/> / name lookup until editor split. </summary>
+	[Property, Group( "Class templates" )] public GameObject SpeedsterPlayerTemplate { get; set; }
+	[Property, Group( "Class templates" )] public GameObject JuggernautPlayerTemplate { get; set; }
+	[Property, Group( "Class templates" )] public GameObject SniperPlayerTemplate { get; set; }
+
 	/// <summary> If set, this object&apos;s <see cref="GameObject.WorldTransform"/> is the spawn pose; otherwise the template&apos;s transform at startup is snapped. </summary>
 	[Property] public GameObject SpawnPoint { get; set; }
 
@@ -122,12 +127,24 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		if ( playerTemplate.IsValid() )
 			return;
 
+		playerTemplate = ResolveFallbackPlayerTemplate();
+		if ( !playerTemplate.IsValid() )
+		{
+			Log.Warning( $"GameNetworkManager could not find player template '{PlayerTemplateName}'." );
+		}
+		else if ( EnableNetDebugLogs )
+		{
+			Log.Info( $"[NetDebug] Found fallback player template '{playerTemplate.Name}'." );
+		}
+	}
+
+	private GameObject ResolveFallbackPlayerTemplate()
+	{
 		if ( PlayerTemplateRoot.IsValid() )
 		{
-			playerTemplate = PlayerTemplateRoot;
 			if ( EnableNetDebugLogs )
 				Log.Info( "[NetDebug] Using PlayerTemplateRoot reference." );
-			return;
+			return PlayerTemplateRoot;
 		}
 
 		foreach ( var go in Scene.GetAllObjects( true ) )
@@ -135,18 +152,33 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 			if ( go.Name != PlayerTemplateName )
 				continue;
 
-			playerTemplate = go;
-			break;
+			return go;
 		}
 
-		if ( !playerTemplate.IsValid() )
+		return null;
+	}
+
+	private GameObject ResolvePlayerTemplateForClass( string classId )
+	{
+		EnsureTemplateFound();
+		var fallback = playerTemplate.IsValid() ? playerTemplate : ResolveFallbackPlayerTemplate();
+
+		if ( string.Equals( classId, LoadoutCatalog.ClassJuggernaut, StringComparison.OrdinalIgnoreCase ) )
 		{
-			Log.Warning( $"GameNetworkManager could not find player template '{PlayerTemplateName}'." );
+			if ( JuggernautPlayerTemplate.IsValid() )
+				return JuggernautPlayerTemplate;
 		}
-		else if ( EnableNetDebugLogs )
+		else if ( string.Equals( classId, LoadoutCatalog.ClassSniper, StringComparison.OrdinalIgnoreCase ) )
 		{
-			Log.Info( $"[NetDebug] Found player template '{playerTemplate.Name}' by name." );
+			if ( SniperPlayerTemplate.IsValid() )
+				return SniperPlayerTemplate;
 		}
+		else if ( SpeedsterPlayerTemplate.IsValid() )
+		{
+			return SpeedsterPlayerTemplate;
+		}
+
+		return fallback;
 	}
 
 	private void CaptureDesignSpawnTransform()
@@ -244,24 +276,36 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		var teamSlotIndex = CountPlayersOnTeam( teamId );
 		var t = GetSpawnTransformForTeam( teamId, teamSlotIndex );
 
-		var player = playerTemplate.Clone( t );
+		var committedLoadout = LoadoutPersistence.GetOrCreateCommitted( steamId );
+		var spawnTemplate = ResolvePlayerTemplateForClass( committedLoadout.ClassId );
+		if ( !spawnTemplate.IsValid() )
+		{
+			Log.Warning( $"[GameNetworkManager] No player template for class '{committedLoadout.ClassId}'." );
+			return;
+		}
+
+		var player = spawnTemplate.Clone( t );
 		player.Name = $"Player_{connection.DisplayName}";
 		PlayerClass.PrepareDresserBeforeSpawn( player );
 		player.Enabled = true;
 
 		var playerTeam = player.Components.GetOrCreate<PlayerTeam>();
 		playerTeam.TeamId = teamId;
+
+		var playerLoadout = player.Components.GetOrCreate<PlayerLoadout>();
+		playerLoadout.ApplyCommittedLoadoutOnHost( committedLoadout );
+
 		player.Components.GetOrCreate<PlayerDisableCrouch>();
 		player.Components.GetOrCreate<PlayerEnemyOutline>();
 		player.Components.GetOrCreate<BallCompassHud>();
 		player.Components.GetOrCreate<PlayerBallHoldAnim>();
 		player.Components.GetOrCreate<PlayerChargeRunAnim>();
-		player.Components.GetOrCreate<PlayerSpeedBlitzWindUpAnim>();
-		player.Components.GetOrCreate<BlitzConnectPoseFreeze>();
 		player.Components.GetOrCreate<TackleImpactFeel>();
 		player.Components.GetOrCreate<CombatFeelPredictDedupe>();
 		player.Components.GetOrCreate<PlayerFootstepAudio>();
 		player.Components.GetOrCreate<PracticeNpcPatrolPoseRelay>();
+
+		playerLoadout.ConfigureSpeedsterOnlyComponentsOnHost();
 
 		player.NetworkSpawn( connection );
 

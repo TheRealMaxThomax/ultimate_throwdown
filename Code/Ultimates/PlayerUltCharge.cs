@@ -205,12 +205,17 @@ public sealed class PlayerUltCharge : Component
 		return max > 0f ? max : DefaultMaxChargePoints;
 	}
 
-	/// <summary>
-	/// v1: first enabled <see cref="IPlayerUlt"/> on the player.
-	/// Loadout UI should replace this with an explicit equipped-ult reference and call <see cref="ResyncFromEquippedUltOnHost"/>.
-	/// </summary>
+	/// <summary> Equipped ult from <see cref="PlayerLoadout"/>; scene NPCs without loadout fall back to first enabled <see cref="IPlayerUlt"/>. </summary>
 	private IPlayerUlt ResolveEquippedUlt()
 	{
+		var loadout = Components.Get<PlayerLoadout>();
+		if ( loadout.IsValid() )
+		{
+			var equipped = loadout.ResolveEquippedUlt();
+			if ( equipped is not null )
+				return equipped;
+		}
+
 		foreach ( var component in Components.GetAll<Component>( FindMode.EverythingInSelf ) )
 		{
 			if ( component is not IPlayerUlt ult )

@@ -20,10 +20,10 @@
 
 ## Right now
 
-**Goal:** **Map slice 1 — ball OOB ✅ SHIPPED (2026-07-04)** — solo + **2-window MP OK**. **Next:** **prefab split + basic loadout** (spec ✅ **2026-07-06**, refined same day — [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06)) → ult slice 5. **Code steps 1–3 not started** — Max does editor prefab split **after** those land.
+**Goal:** **Prefab split + loadout v1 — editor + spawn ✅ SHIPPED (2026-07-06)** — per-class templates, spawn from save, solo playtest OK. **Next:** **code 4+** (loadout UI + intermission swaps) → ult slice 5.
 
 **Next session (priority order):**
-1. **Prefab split + loadout v1** — spec below + [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6
+1. **Loadout code 4+** — host swap paths + class/ult UI + intermission force-commit → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06)
 2. **Ult slice 5** — Juggernaut stomp
 
 **Pre–prefab split (ball throw ✅ 2026-07-04):** planted charge (`IsThrowPlantLocked` — no move/jump/air steer); **RMB** (`CancelChargeAction` / `attack2`) cancels charge; **`NotifyThrowChargeCancelled`** smooth blend back to idle hold (`ChargeCancelBlendOutSeconds`); **`BallGrab`** host-authoritative auto-grab (OOB sky-drop MP).
@@ -54,6 +54,7 @@
 - **MP combat feel predict** — **`CombatFeelPredictDedupe`** (auto on join): client-owner early **`TackleImpactFeel`** for blitz dash, tackle connect, victim freeze (tackle/blitz), traffic ragdoll; host **`NetCombatFeelApplyId`** dedupe. Details → [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md). **2–3 window idle-target soak OK (2026-06-14)**; **practice patrol runner MP ✅ (2026-06-23)** — Tier C1 only if normal-ping misses still feel wrong.
 - **Practice arena (`practice_arena.scene`) ✅ (2026-06-22)** — **`MapMatchConfig.PracticeArenaMode`**: unlimited clock/goals, all joiners team **0** + team-0 spawns only, **no top score/clock HUD**. **`PracticeLaunchMeasure`** on **`PracticeLaunchLane`** (origin = first line at NPC feet; local **Y** down lane; **`BandPitch` 128** → score **1, 2, 3…** from max pelvis **`along`**). **`PracticeLaunchReadout`** on **`LaunchReadoutSign`** TV. Three static **`practice_npc`** dummies + ruler art (editor). **`PracticeNpcPatrol` + `PracticeNpcPatrolHostState` ✅ (2026-06-23):** host ping-pong **Point A ↔ Point B** at charge speed, instant 180°, knockdown pause + pre-hit snap-back resume; **can tackle player** (`TryGetHostTackleMove`) and **be tackled**; **`PlayerBallHoldAnim`** required for forked graph + **`charge_run`** overlay. **Run legs ✅ (2026-06-23):** animgraph needs **`move_x`** (local forward, positive) + **`move_groundspeed`**. **Practice NPC MP ✅ (2026-06-23):** scene dummies stay **`NetworkMode.Snapshot`** — **do not `NetworkSpawn` player-prefab NPCs**; knockdown hide/show = host **`PracticeNpcClient*Rpc`**; patrol runner pose = host **`PracticeNpcPatrolPoseRelay`** fixed-tick **`PracticeNpcPatrolPoseRpc`** (auto on network spawn); client blitz contact freeze pins at visual contact (no host rewind); **`CatchUpSpeedBoost`** ignores global Input on tag; host tackle detect patrol-only; **`PlayerCosmeticsSync`** off on tag. PC **disabled** on runner.
 - **Global dry audio ✅ (2026-07-05)** — **`MatchAudioBootstrap`** (auto Main Camera): **`DisableRoomSimulation`** default **on** — Master **`Reverb = 0`** + **`BlockingTags`** whitelist `audio_room_sim` (no map geo uses it → no room echo). **`PlayerFootstepAudio`** auto on network spawn (owner → Master footsteps). Gameplay **`.sound`** assets + **`PlayWorldSoundDry`** for code one-shots. **Indoor/tunnel map later:** uncheck **`DisableRoomSimulation`** on bootstrap. Optional editor: **`passaudio`** on canopy/tree props if reverb re-enabled.
+- **Prefab split + per-class spawn ✅ (2026-07-06)** — **`Player_Speedster`** / **`Player_Juggernaut`** / **`Player_Sniper`** (disabled scene roots) in **Turf Wars + practice**; GNM class template refs wired; spawn from **`LoadoutPersistence`** + **`PlayerLoadout`**; Jugg/Sniper no blitz stack; ult HUD always on. **Solo playtest OK.**
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -227,7 +228,7 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 ## Editor checklist
 
 **Main Camera (manager):**
-- `GameNetworkManager` — `PlayerTemplateRoot`, `Team0Spawns` / `Team1Spawns` (6 each)
+- `GameNetworkManager` — `PlayerTemplateRoot`, **`SpeedsterPlayerTemplate`** / **`JuggernautPlayerTemplate`** / **`SniperPlayerTemplate`** (optional until prefab split — fall back to `PlayerTemplateRoot`), `Team0Spawns` / `Team1Spawns` (6 each)
 - `MatchDirector` — `BallSpawn` wired; `Enable Match Debug Logs` optional; `Enable Debug Force Goal` off for ship
 - `MapMatchConfig` — team display names
 - **`EnemyOutlineCameraSetup`** on Main Camera (adds `Highlight` post-process) — **or** add **`Highlight`** (Post Processing) yourself; keep **Enable Post Processing** on the camera
@@ -306,13 +307,13 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 ## Prefab split + loadout — decided (2026-07-06)
 
-**Status:** Spec locked — **not started** (Max will say **go** on code). **Refined 2026-07-06** (architecture, always-equipped, force-commit, Speedster preset).
+**Status:** **Code 1–3 + editor prefab split ✅ shipped (2026-07-06)** — solo playtest OK. **Code 4+** (UI + intermission swaps) not started.
 
 ### Build order (this sequence)
 
-1. **Code 1–3** — spawn contract + **`LoadoutPersistence`** + **`PlayerLoadout`** + **`GameNetworkManager`** template map (may point all three refs at single `Player` until editor split).
-2. **Editor (Max)** — duplicate prefabs + wire `.cdata` + strip Speedster-only (after code 1–3).
-3. **Code 4+** — host swap paths + basic **class + ult** UI + intermission force-commit.
+1. **Code 1–3** ✅ — spawn contract + **`LoadoutPersistence`** + **`PlayerLoadout`** + **`GameNetworkManager`** template map (`SpeedsterPlayerTemplate` / `JuggernautPlayerTemplate` / `SniperPlayerTemplate` — fall back to **`PlayerTemplateRoot`** until editor split).
+2. **Editor (Max)** ✅ — duplicate prefabs + wire `.cdata` + strip Speedster-only (Turf Wars + practice).
+3. **Code 4+** — **client sends committed loadout on connect** (host validates + apply; fixes join-new-host → Speedster gap); host swap paths + basic **class + ult** UI + intermission force-commit.
 4. **Intermission** loadout swaps (frozen intermission OK v1 — menu overlay).
 5. **Ult slice 5** — Juggernaut stomp (+ register in ult catalog).
 6. **Intermission movement** — walkable spawn room (gate change; team spawns OK until room art).
@@ -388,15 +389,31 @@ Every player **always** has a committed loadout for gameplay (class + passive + 
 
 ### Persistence
 
-- **v1:** **local save** keyed by **SteamId** (e.g. `FileSystem.Data`).
+**Three tiers (decided):**
+
+| Tier | What | When | Fixes |
+|------|------|------|--------|
+| **Session memory** | RAM only | — | **Not used** for loadout — lost on quit. |
+| **Local save (v1)** | `loadouts/{steamId}.json` on `FileSystem.Data` | **Now** | Last class/ult on **this PC**; practice ↔ Turf Wars on same machine. **Editable** — OK for casual prefs while all catalog options unlocked. |
+| **Join sync (code 4+)** | Client **`[Rpc.Host]`** sends committed loadout on connect; host validates catalog → spawn/swap; optional cache to host disk | **Code 4+** | Your loadout follows you to **any host** (not Speedster default). Still not anti-cheat for progression. |
+| **Account / cloud (later)** | **Server-trusted** unlocks + XP + skill points; loadout **prefs** may cloud-sync | **Progression slice** | **Skill-point / unlock cheating** — host checks ledger, not client JSON. Can also sync prefs across PCs. |
+
+**v1 today (gap):** host spawn reads **`LoadoutPersistence` on the host machine only** — join a host who has never seen your Steam ID → **Speedster preset** until **join sync (code 4+)** ships.
+
+- **Virtual path (code):** `loadouts/{steamId}.json` under `FileSystem.Data`.
+- **On disk (Windows):** `C:\Program Files (x86)\Steam\steamapps\common\sbox\data\local\{org}\{ident}\loadouts\{steamId}.json`
+  - **Editor play:** ident is often **`ultimate_throwdown#local`** → `...\data\local\ultimate_throwdown#local\loadouts\76561198….json` (not `ultimate_throwdown\` without `#local`).
+  - **Published build:** likely `...\data\local\ultimate_throwdown\loadouts\` (no `#local` — verify on first publish smoke test).
+- **Works in editor Play** — same `FileSystem.Data` API as release; not server-only.
 - **Default (no file):** Speedster + Speed Blitz + class default passive.
-- **Last loadout** = last **committed** write (Turf Wars **or** practice — whichever saved most recently).
-- **Mid-round join:** spawn with last saved committed loadout; change at next **intermission** (no picker mid-`Playing`). Optional quick-pick if join during intermission — later.
+- **Last loadout** = last **committed** write on **that machine** (Turf Wars **or** practice — whichever saved most recently). **Target:** same committed loadout when joining any host after join sync.
+- **Mid-round join:** spawn with last committed loadout; change at next **intermission** (no picker mid-`Playing`). Optional quick-pick if join during intermission — later.
 - **v1 unlocks:** all class/ult/passive options in catalog (no grind gate).
-- **Later slice:** unlocks + XP + skill points → **server-trusted** storage; migrate local → cloud when that ships.
+- **Progression slice:** unlocks + XP + skill points → **server-trusted** storage only (never client-editable JSON); optional cloud sync for prefs. Cloud **alone** does not stop cheating unless **writes** are validated server-side.
 
 ### MP (host authority)
 
+- **On connect (code 4+):** owning client sends **committed** loadout → host **`LoadoutCatalog.Normalize`** + catalog validation → **`ApplyCommittedLoadoutOnHost`** at spawn (and cache locally on host optional).
 - Client requests loadout change → host validates **`MatchSetup` / `Intermission`** (or practice free-swap) → apply committed loadout.
 - Sync equipped ids on **`PlayerLoadout`** (`[Sync]`).
 - No combat predict needed — non-combat phase only.
@@ -413,7 +430,7 @@ Every player **always** has a committed loadout for gameplay (class + passive + 
 
 - **Competitive vs casual FF (later):** v1 = friendly fire **on** for tackles + melee; **ults enemies-only** (no FF). Future competitive mode may enable FF on everything; casual may disable FF — single host flag when that mode ships.
 - **Competitive loadout rules (later):** casual v1 = intermission + pre-match swaps OK; ranked may lock class for full match or cap swaps — tie to competitive `MapMatchConfig` flag when mode ships.
-- **Loadout unlocks / XP persistence (later):** v1 = all options in catalog (first-run **Speedster preset**, not random). When leveling/skill-point unlocks ship → filter picks to **unlocked only**; dedicated slice (local loadout prefs may stay local; unlocks on server-trusted storage).
+- **Loadout unlocks / XP persistence (later):** v1 = all options in catalog (first-run **Speedster preset**, not random). When leveling/skill-point unlocks ship → filter picks to **unlocked only**; **server-trusted ledger** (cloud/backend) — not client JSON. Local loadout prefs may stay local; **join sync (code 4+)** carries prefs to any host before cloud ships.
 - **Sumo / shrinking-ring gamemode (later):** separate **mode slice** — FFA, loadout pick at **match start** (same **`LoadoutPersistence`** + **`PlayerLoadout`** + force-commit when round begins); reuses combat slice 1 melee; not a separate melee ruleset.
 - **Player body for v1:** **`citizen_human_*`** (branch tested) vs classic **`citizen.vmdl`** — leaning **human** (audience + looks good); citizen fits chaotic meme tone. No custom rig (account cosmetics).
 - Closed roof on arena vs open roof + sun for lighting
@@ -726,6 +743,8 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
+- **2026-07-06 (editor prefab split ✅):** **`Player_Speedster`** / **`Player_Juggernaut`** / **`Player_Sniper`** in Turf Wars + practice; templates disabled; GNM class refs wired; Jugg/Sniper stripped of blitz stack; **solo playtest OK.** → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).
+- **2026-07-06 (loadout code 1–3 ✅):** **`LoadoutCatalog`** + **`LoadoutPersistence`** + **`PlayerLoadout`**; GNM class template refs + spawn from save; trimmed universal auto-add; Speedster-only anims via loadout; **`PlayerUltCharge`** reads equipped ult from loadout. → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).
 - **2026-07-06 (loadout spec refined ✅):** **`LoadoutPersistence`** + **`PlayerLoadout`** `[Sync]` (not `PlayerTeam`); always-equipped; **Speedster preset** (not random); pending/committed + **force-commit** when round starts; class switch auto first ult/passive; string slug IDs; **`UltChargeHud` always on**; Jugg/Sniper pre-ult **approach A**; sumo match-start pick = same model later; code **1–3** then editor prefab split. → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).
 - **2026-07-06 (prefab split + loadout spec ✅):** Locked hybrid spawn policy, per-class prefabs, Overwatch-style intermission/pre-match swaps (casual v1), practice free-swap, local save by SteamId, class change = host respawn, `MatchSetup` on rematch when that phase ships, build order (prefab+loadout before walkable room). → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).
 - **2026-07-05 (defaults sync ✅):** Code `[Property]` defaults synced from **`throwdown_turf_wars.scene`** (player template, `main_ball`, Main Camera HUDs, `MatchHud`, traffic template/spawner) — new maps / auto-added components pick up Turf Wars tuning without re-inspector.

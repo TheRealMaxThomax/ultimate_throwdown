@@ -61,6 +61,10 @@
 | `PlayerDodge` | Double-tap dodge — capped lateral channel, iframe, cooldown, ramp penalties (`Code/Player/PlayerDodge.cs`) |
 | `PlayerClass` | Which class is equipped |
 | `ClassData` | Class stats asset type (lives in **`PlayerClass.cs`**, not its own file) |
+| `LoadoutCatalog` | Static class / ult / passive string ids + `.cdata` paths + normalize / auto-fill helpers |
+| `SavedLoadoutData` | Serializable committed loadout (JSON save) |
+| `LoadoutPersistence` | Local save per **SteamId** under `FileSystem.Data` (`loadouts/{steamId}.json`) |
+| `PlayerLoadout` | Host-equipped loadout on pawn — synced ids, applies `ClassData` + ult enable |
 
 **Often-used on `PlayerClass`:** `CurrentClass`, `NeutralMenuHeight`, `ApplyClassAppearance()`, `PrepareDresserBeforeSpawn()` (disable menu height before spawn; class `ModelScale` + neutral `scale_height`)
 | `PlayerTackle` | Tackle and ragdoll |
@@ -72,11 +76,11 @@
 | `TackleImpactFeel` | Owner-only tackle connect juice — local camera hitstop, screen shake, attacker FOV/offset punch (`PlayerTackle` owner RPCs); optional per-impact overrides via `TackleImpactFeelOverrides` (Speed Blitz connect) |
 | `TackleImpactFeelOverrides` | Per-impact tuning struct for `TackleImpactFeel.TriggerAsAttacker` / `TriggerAsVictim` |
 | `SpeedBlitzDashCamera` | Owner-only FOV widen + third-person pullback during Speed Blitz dash; auto-added by `SpeedsterSpeedBlitzUlt` |
-| `BlitzConnectPoseFreeze` | Blitz connect hang — freeze attacker + victim body pose (`SkinnedModelRenderer.PlaybackRate = 0`); auto-spawned on network join |
+| `BlitzConnectPoseFreeze` | Blitz connect hang — freeze attacker + victim body pose (`SkinnedModelRenderer.PlaybackRate = 0`); **Speedster** via **`PlayerLoadout.ConfigureSpeedsterOnlyComponentsOnHost`** |
 | `CombatFeelPredictDedupe` | Host `NetCombatFeelApplyId` + owner predict dedupe for combat feel RPCs (Tier A3 — model after `NetDodgeApplyId`); auto-spawned on network join |
 | `PlayerBallHoldAnim` | Built-in citizen `holditem` RH hold + throw on release (`holdtype`, `holdtype_pose_hand`, `holdtype_attack`, `b_attack`); throw wind-up via forked animgraph (`throw_charge` / `throw_charge_weight`); `NotifyThrowChargeCancelled()` on charge cancel; pairs with `BallThrow.ThrowReleaseDelaySeconds` for ball detach timing |
 | `PlayerChargeRunAnim` | Movement **Charge**-tier overlay (`charge_run` masked layer via `charge_run_weight` / `charge_run_cycle`); when `CatchUpSpeedBoost.IsAtChargeSpeed` and **not** holding/charging throw — uses synced `NetAtChargeSpeed` so remotes see the pose |
-| `PlayerSpeedBlitzWindUpAnim` | Speed Blitz wind-up overlay (`speedblitz_windup` via `blitz_windup` / `blitz_windup_weight`); while `SpeedsterSpeedBlitzUlt.IsWindUp` — cycle from `GetWindUpLerp()`; auto-spawned on network join |
+| `PlayerSpeedBlitzWindUpAnim` | Speed Blitz wind-up overlay (`speedblitz_windup` via `blitz_windup` / `blitz_windup_weight`); while `SpeedsterSpeedBlitzUlt.IsWindUp` — cycle from `GetWindUpLerp()`; **Speedster** via **`PlayerLoadout.ConfigureSpeedsterOnlyComponentsOnHost`** |
 | `PlayerEnemyOutline` | Enables red `HighlightOutline` for enemies (local viewer); off while ragdolled |
 | `RagdollEnemyOutline` | Outline on host-spawned tackle ragdoll; copies victim `HighlightOutline` |
 | `EnemyOutlineCameraSetup` | Ensures main camera has `Highlight` post-process |
@@ -205,7 +209,11 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 
 **Often-used on `StreetLightFlicker`:** `Spot`, `LampModel`, `BulbOffMaterial`, `BulbMaterialIndex` (`-1` = auto-detect `light.vmat` / emissive slot), `SyncBulbEmissive`
 
-**Often-used on `GameNetworkManager`:** `Team0Spawns`, `Team1Spawns`, `SpawnPointOccupiedRadius`, `MatchConfig`, `SnapPositionToGround()`, `SnapBallToGround()`, `ApplyRoundResetToAllPlayers()`, `ApplyRoundResetToPlayer()` (legacy: `Team0Spawn`, `Team1Spawn`, `JoinSpawnSpacing`); auto-adds on join: **`PlayerDisableCrouch`**, **`PlayerEnemyOutline`**, **`BallCompassHud`**, **`PlayerBallHoldAnim`**, **`PlayerChargeRunAnim`**, **`TackleImpactFeel`**, **`CombatFeelPredictDedupe`**
+**Often-used on `GameNetworkManager`:** `Team0Spawns`, `Team1Spawns`, `SpawnPointOccupiedRadius`, `MatchConfig`, `SpeedsterPlayerTemplate`, `JuggernautPlayerTemplate`, `SniperPlayerTemplate`, `PlayerTemplateRoot`, `SnapPositionToGround()`, `SnapBallToGround()`, `ApplyRoundResetToAllPlayers()`, `ApplyRoundResetToPlayer()` (legacy: `Team0Spawn`, `Team1Spawn`, `JoinSpawnSpacing`); spawn: **`LoadoutPersistence.GetOrCreateCommitted`**, **`PlayerLoadout.ApplyCommittedLoadoutOnHost`**; universal auto-add: **`PlayerDisableCrouch`**, **`PlayerEnemyOutline`**, **`BallCompassHud`**, **`PlayerBallHoldAnim`**, **`PlayerChargeRunAnim`**, **`TackleImpactFeel`**, **`CombatFeelPredictDedupe`**, **`PlayerFootstepAudio`**; Speedster-only via **`PlayerLoadout.ConfigureSpeedsterOnlyComponentsOnHost`**: **`PlayerSpeedBlitzWindUpAnim`**, **`BlitzConnectPoseFreeze`**
+
+**Often-used on `PlayerLoadout`:** `NetEquippedClassId`, `NetEquippedUltId`, `NetEquippedPassiveId`, `ApplyCommittedLoadoutOnHost()`, `ResolveEquippedUlt()`, `ConfigureSpeedsterOnlyComponentsOnHost()`, `IsSpeedsterClass()`
+
+**Loadout catalog ids:** class `speedster` / `juggernaut` / `sniper`; ult `speed_blitz`; passive `default` / `tackle_ramp`
 
 **Often-used on `PracticeLaunchMeasure`:** `BandPitch` (128), `LocalLaneDirection` (local Y `(0,1,0)`), **`ReadoutSign`** (GameObject with `PracticeLaunchReadout`), wire on `PracticeLaunchLane` empty
 
