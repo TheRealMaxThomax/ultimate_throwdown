@@ -17,36 +17,63 @@
 
 ## Before slice 5/6 — read this first
 
-Slice 5/6 is **per-class prefab variants** (`Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`) plus **Juggernaut** and **Sniper** first ults. That work touches spawn wiring, component duplication, and combat size — exactly where the architecture is weakest today.
+**Prefab split + loadout v1 ✅ (2026-07-06).** Slice 5/6 is **Juggernaut stomp** + **Sniper path zones** on the existing per-class prefabs.
 
-**Do these before or alongside the prefab split:**
+**Hybrid spawn policy (locked):**
 
-1. **Standardize spawn wiring** — Pick one policy and stick to it:
-   - **Option A:** `GameNetworkManager` auto-adds all gameplay components; prefab = visuals + `PlayerController` only.
-   - **Option B:** Prefab owns everything; `GameNetworkManager` only adds `PlayerTeam` (+ documented exceptions).
-   - Today you **mix both** — manual prefab for core gameplay, auto-add for feel/anim/HUD. Easy to forget a component on a new class prefab.
+- **Class prefabs** own full gameplay stack (ball, tackle, dodge, ult, HUDs, cameras) — editor WYSIWYG.
+- **`GameNetworkManager`** auto-adds **universal only:** `PlayerTeam`, `PlayerDisableCrouch`, `PlayerEnemyOutline`, `BallCompassHud`, `PlayerBallHoldAnim`, `PlayerChargeRunAnim`, `TackleImpactFeel`, `CombatFeelPredictDedupe`, `PlayerFootstepAudio`, `PracticeNpcPatrolPoseRelay`, `LoadoutClientState`, `LoadoutPickerHud`.
+- **Speedster prefab only:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzAimPreview`, blitz feel/cam/glow, `BlitzConnectPoseFreeze`, `PlayerSpeedBlitzWindUpAnim` — **not** global auto-add.
+- **Juggernaut / Sniper:** add stomp / path-zone ult + preview when built (slice 5/6).
 
-2. **Split `PlayerTackle`** — ~1,150 lines; Juggernaut/Sniper will add tackle-adjacent rules. Split along seams already noted in its file header (host detection, ragdoll lifecycle, hazard path, camera/stand-up).
+**Still recommended before/during slice 5/6:**
 
-3. **Split `SpeedsterSpeedBlitzUlt`** — ~1,089 lines; Juggernaut stomp and Sniper ball-zones will copy this pattern. Keep a thin orchestrator; host hit logic and feel stay in sibling files (wind-up feel is already extracted).
+1. **Split `PlayerTackle`** — ~1,150 lines; Juggernaut/Sniper touch tackle-adjacent rules.
+2. **Split `SpeedsterSpeedBlitzUlt`** — template for new ults; keep thin orchestrator.
+3. **Per-class prefab checklist** — see **§ Loadout & spawn** below when duplicating components.
 
-4. **Per-class prefab checklist** — When duplicating prefabs, use one checklist (from `NAMING_CANON.md` + this doc):
-   - Shared: `BallGrab`, `BallThrow`, `CatchUpSpeedBoost`, `PlayerDodge`, `PlayerTackle`, `PlayerUltCharge`, `PlayerClass`, `PlayerTeam`, movement HUDs, etc.
-   - Speedster-only: `SpeedsterSpeedBlitzUlt`, `SpeedBlitzAimPreview`, `BlitzConnectPoseFreeze` — **remove `BlitzConnectPoseFreeze` from global auto-add** in `GameNetworkManager`; keep on Speedster prefab only.
-   - Juggernaut-only: (new stomp ult + preview when built)
-   - Sniper-only: (new ball-path ult when built)
-
-5. **Wire map root references** — Prefer inspector refs on a map root (`BallSpawn`, `main_ball`, `MatchDirector`, `GameNetworkManager`) over scene scans when setting up new scenes for class testing.
-
-**Can wait until after slice 5/6 if needed:**
-
-- Match HUD replication refactor (`MatchDirector` → `PlayerTeam` mirror)
-- `Code/Weapons/` folder (slice 7)
-- C# namespaces (see **§ Namespaces** — not urgent at current scale)
+**Can wait:** Match HUD replication refactor; `Code/Weapons/` (slice 7); C# namespaces.
 
 ---
 
-## Current health (2026-06)
+## Loadout & spawn
+
+Three layers — **do not** put loadout on `PlayerTeam`:
+
+| Layer | Role |
+|-------|------|
+| **`LoadoutPersistence`** | Local save by SteamId (`FileSystem.Data`) — `loadouts/{steamId}.json` |
+| **`PlayerLoadout`** | On spawned pawn — host apply, swap RPCs, `[Sync(FromHost)]` equipped ids, explicit ult for `PlayerUltCharge` |
+| **`PlayerTeam`** | Match flow only — phase, OOB mirror, round reset |
+
+**Spawn flow (`GameNetworkManager`):**
+
+1. Read `LoadoutPersistence.GetOrCreateCommitted(steamId)` (host disk; joiner's file if they've connected before).
+2. `ResolvePlayerTemplateForClass(classId)` → clone `SpeedsterPlayerTemplate` / `JuggernautPlayerTemplate` / `SniperPlayerTemplate` (fallback `PlayerTemplateRoot`).
+3. `PlayerLoadout.ApplyCommittedLoadoutOnHost` at spawn.
+4. Auto-add universal components; `NetworkSpawn(connection)`.
+5. **Join sync:** owning client's `LoadoutClientState.OnStart` → `SubmitCommittedLoadoutFromOwnerRpc` → host re-applies (second apply on connect).
+
+**Class change:** host destroys pawn → respawn with new class template. Ult/passive-only change → in-place apply + `ResyncFromEquippedUltOnHost()`.
+
+**Validation:** `LoadoutAuthority.TryValidateCommittedLoadout` (catalog + `IsLoadoutAllowedForPlayer` stub — returns true until progression slice).
+
+Design rules (pending/committed, when swaps allowed) → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) § Loadout.
+
+---
+
+## Before slice 5/6 — historical note
+
+<details>
+<summary>Original pre-split checklist (2026-06 — prefab split now shipped)</summary>
+
+Previously: standardize spawn wiring, split tackle/ult monoliths, per-class checklist before duplicating prefabs. Prefab split completed 2026-07-06; monolith splits still recommended.
+
+</details>
+
+---
+
+## Current health (2026-07)
 
 ~60 gameplay `.cs` files under `Code/`, organized by system. s&box **component model**, **host-authoritative** multiplayer, strong docs triangle (`NAMING_CANON` + `MULTIPLAYER_NETCODE` + `SESSION_NOTES`).
 
@@ -56,9 +83,9 @@ Slice 5/6 is **per-class prefab variants** (`Player_Speedster` / `Player_Juggern
 |--------|-----------------|--------|
 | `Code/Ball/` | 8 | **Model subsystem** — authority, throw, feel, math, UI split cleanly |
 | `Code/Match/` | 5 | **Clean** — small phase FSM, goals, team IDs |
-| `Code/Network/` | 1 | Single spawn entry point |
+| `Code/Network/` | 1 | Spawn + loadout apply entry point |
 | `Code/Ultimates/` | 5 | Partially extracted (VFX/glow/wind-up feel); core ult still monolithic |
-| `Code/Player/` | 24 | **Largest + most coupled** — movement hub, combat, camera, anim overlays |
+| `Code/Player/` | 24+ | **Largest** — movement hub, combat, loadout client state |
 | `Code/UI/` | 16 | Well split (match HUD panels, owner HUDs, comic burst) |
 | `Code/Map/` | 5 | Traffic, lights, bootstrap — reasonable |
 
@@ -271,4 +298,4 @@ Elsewhere you refer to it as `UltimateThrowdown.Ball.BallGrab`, or add `using Ul
 
 ---
 
-*Last architecture review: 2026-06-18. Update this file when you complete a structural refactor or before the next major slice milestone.*
+*Last architecture review: 2026-07-06 (loadout + prefab split shipped). Update when completing a structural refactor or before the next major slice.*

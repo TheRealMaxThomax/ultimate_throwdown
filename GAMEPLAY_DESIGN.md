@@ -33,7 +33,12 @@
 | Crouch / duck | **Disabled** — `PlayerDisableCrouch`; `Duck` unbound in `Input.config` |
 | Weapons | **Not built** |
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
-| Ultimates (charge + Speed Blitz) | **Partial** — charge + assist ✅ + **Speed Blitz 2a–2d ✅** + aim preview v3 ✅; slice 4 per-class max points not built |
+| Per-class prefabs + spawn | **Built** — `Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; GNM clones from committed class |
+| Loadout v1 (picker, save, join sync) | **Built** — intermission + practice swaps; force-commit; class change = host respawn; join RPC shipped (cross-machine verify at publish) |
+| `MatchSetup` + walkable intermission | **Not built** — v1 intermission = frozen + Q menu (slice 2b, after Jugg stomp) |
+| Ultimates (charge + Speed Blitz) | **Partial** — charge + assist ✅ + **Speed Blitz 2a–2d ✅** + per-ult max ✅; Jugg/Sniper ults planned (slices 5–6) |
+| Unarmed melee + parry | **Not built** — combat slices 1–2 (after ults 5–6) |
+| Ball OOB (map slice 1) | **Built** — dwell, whistle, sky-drop, 2-window MP OK |
 
 ---
 
@@ -108,6 +113,69 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 **Juggernaut passive (built):** Stay at charge speed → tackle bonus stacks up to a cap. Drop below charge → bonus resets.
 
 **Class ultimates (partial):** Shared charge + assist + per-ult max (slice 4 ✅). **Speedster Speed Blitz** 2a–2d + aim preview v3 ✅. **Juggernaut** ground stomp and **Sniper** path zones planned (slices 5–6).
+
+**Pre–ult gap (Jugg/Sniper before slice 5/6) — approach A:** Classes pickable in loadout now; ult catalog empty → charge HUD runs, **X inactive**. When stomp/path zones ship → add to catalog; class switch auto-picks first ult.
+
+---
+
+## Loadout (Overwatch-style, casual v1)
+
+**Status:** **Shipped 2026-07-06** (picker, persistence, prefab split, join sync RPC).
+
+### Always equipped
+
+Every player has a committed loadout (class + passive + ult when catalog has entries).
+
+- **First session (no save):** preset **Speedster** + **`speed_blitz`** + default passive — **not** random.
+- **After any save write:** last committed loadout persists across Turf Wars, practice, relaunch.
+- **Class switch in picker:** auto-select **first passive** and **first ult** for that class.
+- **`UltChargeHud`:** always on for all classes.
+
+### Pending vs committed
+
+- **Pending** — highlighted while loadout screen is open (Q).
+- **Committed** — what spawn/combat use.
+- **Force-commit:** when round begins (`Intermission` → `Playing`, future **`MatchSetup`** timer → 0, …) — close UI; pending → committed even if player never pressed Confirm.
+- **Save writes:** first preset, picker Confirm, force-commit, host apply after class change — **not** every highlight while browsing.
+
+### When loadout can change
+
+| Phase | Turf Wars / match maps | Practice (`PracticeArenaMode`) |
+|-------|------------------------|--------------------------------|
+| **`MatchSetup`** (future) | Yes — pre-round timer + pick | — |
+| **`Intermission`** | Yes (v1: frozen + menu; walkable room later) | — |
+| **`Playing`** | Locked | Anytime |
+| **`GoalCelebration`** | No | Anytime |
+| **`MatchOver`** | No | Anytime |
+
+- **Casual v1:** swap every intermission + pre-match (when `MatchSetup` ships) — not lock-for-full-match.
+- **Class change** in allowed window → **host respawn** (destroy → clone class prefab → cosmetics → `NetworkSpawn`).
+- **Ult/passive only** → in-place enable + `ResyncFromEquippedUltOnHost()`.
+
+### Slots (v1 UI)
+
+- **Class + ult** picker; passive auto on class switch (no passive picker until a class has 2+ passives).
+- Ult rule: when class has ≥1 ult in catalog, one must be selected (auto if only one).
+
+### Persistence tiers
+
+| Tier | What | Status |
+|------|------|--------|
+| **Local save** | `loadouts/{steamId}.json` on `FileSystem.Data` | **Now** — last class/ult on this PC |
+| **Join sync** | Client RPC sends committed loadout on connect; host validates + caches | **Shipped** — cross-machine verify at publish |
+| **Cloud / progression** | Server-trusted unlocks + XP; optional prefs sync | **Later** (progression slice) |
+
+- **Default (no file):** Speedster + Speed Blitz + default passive.
+- **Mid-round join:** spawn with last committed; change at next intermission.
+- **v1 unlocks:** all catalog options (no grind gate). Progression slice filters to unlocked only later.
+
+### MP authority
+
+- On connect: owner sends committed loadout → host `LoadoutAuthority.TryValidateCommittedLoadout` → apply at spawn.
+- Swap requests: host validates phase (`Intermission`, future `MatchSetup`, or practice) → apply.
+- Equipped ids synced on **`PlayerLoadout`** `[Sync(FromHost)]` — **not** on `PlayerTeam`.
+
+Wiring detail → [`ARCHITECTURE.md`](ARCHITECTURE.md) § Loadout & spawn.
 
 ---
 
@@ -278,6 +346,31 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 - Touch ball while armed → drop weapon, then grab ball (host order)
 - Holding weapon slows non-Juggernaut classes to Juggernaut’s armed speed
 - Swinging weapon drops speed one tier (same idea as dodge)
+
+---
+
+## Combat slice 1 — unarmed melee (planned)
+
+**Why:** Scrappy knockdown when there’s no room to charge-tackle (sumo endgame, tight spaces). Weaker than tackle; **2 hits** to knockdown. **Weapons slice 7** reuses this pipeline.
+
+**Input:** **LMB** tap without ball → melee. Hold LMB with ball = throw charge (unchanged).
+
+**Tiers:** Melee allowed at **walk + sprint only** — blocked at charge tier (`IsAtChargeSpeed`). Tackle stays charge-only.
+
+**Core rules:**
+- Host validates; owner predict feel (`CombatFeelPredictDedupe`)
+- **2 hits** on same victim within combo window → knockdown via `ApplyKnockdownFromHost` (weak universal impulse)
+- Hit 1: hitmarker + micro-hitstop; no ball drop; no victim tier drop
+- Hit 1 on target in ult wind-up: chip only — no interrupt until knockdown
+- Knockdown: ball drops; enemy-only ult charge +10; interrupts committed ult wind-up
+- Can hit ball carriers; **carriers cannot** melee or parry
+- Blocked while: holding ball, ragdolled, active ult, dodging, ~1s post-dodge, charging throw, charge tier
+- FF: can hit teammates; no ult charge on FF knockdown
+- No tackle comic on hit 1
+
+**Combat slice 2 (later):** parry melee swings only → next confirm = 1-hit knockdown.
+
+Full spec + checklist → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) § Combat slice spec.
 
 ---
 
