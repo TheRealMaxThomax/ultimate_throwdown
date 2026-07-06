@@ -20,7 +20,7 @@
 
 ## Right now
 
-**Goal:** **Map slice 1 — ball OOB ✅ SHIPPED (2026-07-04)** — solo + **2-window MP OK**. **Next:** **prefab split + basic loadout** (spec ✅ **2026-07-06** — [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06)) → ult slice 5.
+**Goal:** **Map slice 1 — ball OOB ✅ SHIPPED (2026-07-04)** — solo + **2-window MP OK**. **Next:** **prefab split + basic loadout** (spec ✅ **2026-07-06**, refined same day — [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06)) → ult slice 5. **Code steps 1–3 not started** — Max does editor prefab split **after** those land.
 
 **Next session (priority order):**
 1. **Prefab split + loadout v1** — spec below + [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6
@@ -306,69 +306,105 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 ## Prefab split + loadout — decided (2026-07-06)
 
-**Status:** Spec locked — **not started** (Max will say when to implement).
+**Status:** Spec locked — **not started** (Max will say **go** on code). **Refined 2026-07-06** (architecture, always-equipped, force-commit, Speedster preset).
 
 ### Build order (this sequence)
 
-1. **Prefab split** + **`PlayerLoadout`** + **local save** + basic **class + ult** UI
-2. **Intermission** loadout swaps (frozen intermission OK v1 — menu overlay)
-3. **Ult slice 5** — Juggernaut stomp
-4. **Intermission movement** — walkable spawn room (gate change; team spawns OK until room art)
-5. **`MatchSetup` phase** + pre-match timer (round 1 **and** rematch — see below)
-6. **Starter room** art/layout (cosmetic)
+1. **Code 1–3** — spawn contract + **`LoadoutPersistence`** + **`PlayerLoadout`** + **`GameNetworkManager`** template map (may point all three refs at single `Player` until editor split).
+2. **Editor (Max)** — duplicate prefabs + wire `.cdata` + strip Speedster-only (after code 1–3).
+3. **Code 4+** — host swap paths + basic **class + ult** UI + intermission force-commit.
+4. **Intermission** loadout swaps (frozen intermission OK v1 — menu overlay).
+5. **Ult slice 5** — Juggernaut stomp (+ register in ult catalog).
+6. **Intermission movement** — walkable spawn room (gate change; team spawns OK until room art).
+7. **`MatchSetup` phase** + pre-match timer (round 1 **and** rematch — see below).
+8. **Starter room** art/layout (cosmetic).
 
 **Do not** block prefab split on walkable starter room or pre-match timer.
+
+### Code architecture (three layers — **not** `PlayerTeam`)
+
+| Layer | What | Notes |
+|-------|------|--------|
+| **`LoadoutPersistence`** | Local save by **SteamId** (`FileSystem.Data`) | Account prefs — not on pawn. **String slug IDs** (`speed_blitz`, `tackle_ramp`, …). |
+| **`PlayerLoadout`** | Component on spawned pawn — apply logic, host swap RPCs, explicit equipped ult ref for **`PlayerUltCharge`** | **`[Sync(FromHost)]`** equipped class/ult/passive ids for remote read. |
+| **`PlayerTeam`** | Match flow only | **Do not** put loadout fields here (phase, OOB, round reset mirror). |
+
+**Future sumo / FFA shrink-ring:** same three layers — **`MapMatchConfig`** only changes **when** picker is allowed (match-start pick + force-commit). Not a separate storage model.
+
+### Always-equipped loadout
+
+Every player **always** has a committed loadout for gameplay (class + passive + ult when catalog has entries).
+
+- **First ever session (no save):** preset **Speedster** + **`speed_blitz`** + Speedster default passive — **not** random.
+- **After any save write:** last committed loadout persists across Turf Wars, practice, and relaunch.
+- **Class switch in picker:** auto-select **first passive** and **first ult** for that class in catalog (no separate ult confirm when only one option).
+- **`UltChargeHud`:** **always on** for all classes — no hide-when-no-ult. Pre–slice 5/6 Jugg/Sniper: meter fills, **X inactive** until ult component exists.
+
+**Pending vs committed (picker UI):**
+
+- **Pending** — highlighted while loadout screen is open.
+- **Committed** — what spawn/combat use.
+- **Force-commit:** when round begins (`Intermission` → `Playing`, **`MatchSetup`** timer → 0, sumo match start, …) — close loadout UI; **pending → committed**; that is the loadout for the round even if player never pressed Confirm.
+- **Save writes:** first preset commit, picker Confirm, force-commit at round start, host apply after class change — **not** every highlight change while browsing.
+
+### Pre–ult gap (Juggernaut / Sniper before slice 5/6) — **approach A**
+
+- Classes **pickable now** in loadout; passive auto-fills (e.g. Jugg **`tackle_ramp`** via `.cdata`).
+- Ult **catalog empty** for that class → no ult id / no `IPlayerUlt` on pawn; charge % HUD still runs; **X does nothing**.
+- When stomp / path zones ship → add to catalog; class switch auto-picks first ult. **Not shipping publicly until ults exist** — gap is dev-only.
 
 ### Prefab split
 
 - **Three class templates** (disabled scene roots): `Player_Speedster`, `Player_Juggernaut`, `Player_Sniper` — each `PlayerClass.CurrentClass` → matching `.cdata`.
-- **`GameNetworkManager`** clones template from loadout **class** (not one shared `Player` for everyone).
+- **`GameNetworkManager`** clones template from committed loadout **class** (not one shared `Player` for everyone).
 - **Hybrid spawn policy** (not pure A or B):
   - **Class prefabs** own the full gameplay stack (ball, tackle, dodge, `PlayerUltCharge`, class ult + preview, HUDs, cameras) — editor WYSIWYG.
-  - **`GameNetworkManager`** auto-adds **universal only**: `PlayerTeam`, `CombatFeelPredictDedupe`, `TackleImpactFeel`, `PlayerFootstepAudio`, shared anim/HUD pieces every class needs.
+  - **`GameNetworkManager`** auto-adds **universal only**: `PlayerTeam`, `PlayerDisableCrouch`, `PlayerEnemyOutline`, `BallCompassHud`, `PlayerBallHoldAnim`, `PlayerChargeRunAnim`, `TackleImpactFeel`, `CombatFeelPredictDedupe`, `PlayerFootstepAudio`, `PracticeNpcPatrolPoseRelay`.
   - **Remove from global auto-add** → **Speedster prefab only:** `BlitzConnectPoseFreeze`, `PlayerSpeedBlitzWindUpAnim`.
-- **Shared on all three** (duplicate per prefab): `BallGrab`, `BallThrow`, `CatchUpSpeedBoost`, `PlayerDodge`, `PlayerTackle`, `PlayerUltCharge`, `PlayerClass`, movement HUDs, etc. **Speedster-only:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzAimPreview`, blitz feel/cam/glow. **Juggernaut / Sniper:** first ult + preview when built (slice 5/6).
+- **Shared on all three** (duplicate per prefab): `BallGrab`, `BallThrow`, `CatchUpSpeedBoost`, `PlayerDodge`, `PlayerTackle`, `PlayerUltCharge`, `PlayerClass`, movement HUDs, **`UltChargeHud`**, etc. **Speedster-only:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzAimPreview`, blitz feel/cam/glow. **Juggernaut / Sniper:** first ult + preview when built (slice 5/6) — **no ult on prefab until then**.
 - Full checklist → [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6.
 
 ### Loadout model (Overwatch-style, casual v1)
 
-- **Slots:** class + ult + **passive** (in data + save **now**; **no passive picker** until a class has **2+** passive options).
-- **v1 UI:** class + ult picker only; passive = default per class (e.g. Juggernaut tackle ramp).
+- **Slots:** class + ult + **passive** (all in save; **no passive picker** until a class has **2+** passive options).
+- **v1 UI:** class + ult picker; passive auto on class switch.
+- **Ult rule:** when class catalog has **≥1 ult**, one must be selected (auto if only one). Empty ult slot only when catalog is empty (approach A above).
 - **More ults / passives per class:** after **each class has first ult**, and **after weapons slice** — not before.
-- Replace `PlayerUltCharge` “first enabled `IPlayerUlt`” with explicit equipped ult → **`ResyncFromEquippedUltOnHost()`** on swap. Raw ult points carry; `%` resyncs; **rematch → 0%** unchanged.
+- Replace `PlayerUltCharge` “first enabled `IPlayerUlt`” with **`PlayerLoadout`** explicit equipped ult → **`ResyncFromEquippedUltOnHost()`** on ult swap. Raw ult points carry; `%` resyncs; **rematch → 0%** unchanged.
 
 ### When loadout can change
 
 | Phase | Turf Wars / match maps | Practice (`PracticeArenaMode`) |
 |-------|------------------------|--------------------------------|
-| **`MatchSetup`** (future) | **Yes** — pre-round timer + pick | — |
-| **`Intermission`** | **Yes** (v1: frozen + menu OK; walkable later) | — |
+| **`MatchSetup`** (future) | **Yes** — pre-round timer + pick; force-commit when timer ends | — |
+| **`Intermission`** | **Yes** (v1: frozen + menu OK; walkable later); force-commit when intermission ends | — |
 | **`Playing`** | **Locked** | **Anytime** |
 | **`GoalCelebration`** | **No** | Anytime |
 | **`MatchOver`** | **No** | Anytime |
 
-- **Casual v1:** change class/ult/passive every **intermission** + **pre-match** (when `MatchSetup` ships) — **not** lock-for-full-match. **Competitive (later):** stricter rules (e.g. lock class at match start) via `MapMatchConfig` when that mode ships.
+- **Casual v1:** change every **intermission** + **pre-match** (when `MatchSetup` ships) — **not** lock-for-full-match. **Competitive (later):** stricter rules via `MapMatchConfig`.
 - **Rematch (when `MatchSetup` exists):** `MatchOver` → **`MatchSetup`** (swap window) → `Playing` — **not** straight to `Playing` like today.
 - **Class change** in allowed window → **host respawn** (destroy pawn → clone class prefab at team spawn → cosmetics → `NetworkSpawn`). **Ult/passive only** → in-place enable + `ResyncFromEquippedUltOnHost()`.
 
 ### Persistence
 
 - **v1:** **local save** keyed by **SteamId** (e.g. `FileSystem.Data`).
-- **Last loadout** = whatever was equipped in the **last session that saved** (Turf Wars **or** practice — whichever wrote most recently).
-- **Mid-round join:** spawn with last saved loadout; change at next **intermission** (no picker mid-`Playing`). Optional quick-pick if join during intermission — later.
-- **Never played before:** random from pool — **v1: all options unlocked** (see Open decisions for unlock slice).
-- **Later slice:** unlocks + XP + skill points → **server-trusted** storage (e.g. Network Storage v3 / endpoints). Facepunch does **not** auto-host arbitrary game save data; migrate local → cloud when that slice ships.
+- **Default (no file):** Speedster + Speed Blitz + class default passive.
+- **Last loadout** = last **committed** write (Turf Wars **or** practice — whichever saved most recently).
+- **Mid-round join:** spawn with last saved committed loadout; change at next **intermission** (no picker mid-`Playing`). Optional quick-pick if join during intermission — later.
+- **v1 unlocks:** all class/ult/passive options in catalog (no grind gate).
+- **Later slice:** unlocks + XP + skill points → **server-trusted** storage; migrate local → cloud when that ships.
 
 ### MP (host authority)
 
-- Client requests loadout change → host validates **`MatchSetup` / `Intermission`** (or practice free-swap) → apply.
-- Sync equipped class/ult (and passive when relevant) for remote read — e.g. on `PlayerTeam` or `PlayerLoadout`.
+- Client requests loadout change → host validates **`MatchSetup` / `Intermission`** (or practice free-swap) → apply committed loadout.
+- Sync equipped ids on **`PlayerLoadout`** (`[Sync]`).
 - No combat predict needed — non-combat phase only.
 
-### Editor (Max — when implementing)
+### Editor (Max — after code steps 1–3)
 
 - Duplicate current `Player` → three disabled templates; wire `.cdata` per class; strip Speedster-only components from Juggernaut/Sniper.
-- `GameNetworkManager`: class template map (or three inspector refs).
+- `GameNetworkManager`: three template inspector refs (class → prefab).
 - Practice arena: same loadout system; `PracticeArenaMode` = change anytime.
 
 ---
@@ -377,8 +413,8 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 - **Competitive vs casual FF (later):** v1 = friendly fire **on** for tackles + melee; **ults enemies-only** (no FF). Future competitive mode may enable FF on everything; casual may disable FF — single host flag when that mode ships.
 - **Competitive loadout rules (later):** casual v1 = intermission + pre-match swaps OK; ranked may lock class for full match or cap swaps — tie to competitive `MapMatchConfig` flag when mode ships.
-- **Loadout unlocks / XP persistence (later):** v1 random + picker use **all** class/ult/passive options. When leveling/skill-point unlocks ship → filter picks to **unlocked only**; dedicated slice (local loadout prefs may stay local; unlocks on server-trusted storage).
-- **Sumo / shrinking-ring gamemode (later):** separate **mode slice** — reuses combat slice 1 melee; not a separate melee ruleset.
+- **Loadout unlocks / XP persistence (later):** v1 = all options in catalog (first-run **Speedster preset**, not random). When leveling/skill-point unlocks ship → filter picks to **unlocked only**; dedicated slice (local loadout prefs may stay local; unlocks on server-trusted storage).
+- **Sumo / shrinking-ring gamemode (later):** separate **mode slice** — FFA, loadout pick at **match start** (same **`LoadoutPersistence`** + **`PlayerLoadout`** + force-commit when round begins); reuses combat slice 1 melee; not a separate melee ruleset.
 - **Player body for v1:** **`citizen_human_*`** (branch tested) vs classic **`citizen.vmdl`** — leaning **human** (audience + looks good); citizen fits chaotic meme tone. No custom rig (account cosmetics).
 - Closed roof on arena vs open roof + sun for lighting
 - **Tackle oof/grunt** — layered on built-in ragdoll collision audio (not shipped)
@@ -678,7 +714,9 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → prefab split + loadout spec (2026-07-06) → ult 5–6. Not started until Max says go.
+Read SESSION_NOTES.md → prefab split + loadout spec (2026-07-06, refined) → ult 5–6.
+Loadout: LoadoutPersistence + PlayerLoadout [Sync]; always-equipped; Speedster preset; force-commit on round start; UltChargeHud always on.
+Code 1–3 before editor prefab split. Not started until Max says go.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 ```
 
@@ -688,6 +726,7 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
+- **2026-07-06 (loadout spec refined ✅):** **`LoadoutPersistence`** + **`PlayerLoadout`** `[Sync]` (not `PlayerTeam`); always-equipped; **Speedster preset** (not random); pending/committed + **force-commit** when round starts; class switch auto first ult/passive; string slug IDs; **`UltChargeHud` always on**; Jugg/Sniper pre-ult **approach A**; sumo match-start pick = same model later; code **1–3** then editor prefab split. → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).
 - **2026-07-06 (prefab split + loadout spec ✅):** Locked hybrid spawn policy, per-class prefabs, Overwatch-style intermission/pre-match swaps (casual v1), practice free-swap, local save by SteamId, class change = host respawn, `MatchSetup` on rematch when that phase ships, build order (prefab+loadout before walkable room). → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).
 - **2026-07-05 (defaults sync ✅):** Code `[Property]` defaults synced from **`throwdown_turf_wars.scene`** (player template, `main_ball`, Main Camera HUDs, `MatchHud`, traffic template/spawner) — new maps / auto-added components pick up Turf Wars tuning without re-inspector.
 - **2026-07-05 (audio + tackle SFX + hold pose ✅):** **Global dry audio** — **`MatchAudioBootstrap`** + **`PlayerFootstepAudio`**; room sim off for outdoor Turf Wars. **Player tackle connect crunch** — **`TackleConnectImpactSoundA/B`** (host random, MP dedupe). **Ball carrier tackled** — **`ClearHoldPoseAfterKnockdown`** (no stuck `holditem` after stand-up). **2-window MP OK.**
