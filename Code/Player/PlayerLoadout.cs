@@ -24,7 +24,15 @@ public sealed class PlayerLoadout : Component
 		if ( !Networking.IsHost || data is null )
 			return;
 
-		data = LoadoutCatalog.Normalize( data );
+		var steamId = Network.Owner is not null ? (long)Network.Owner.SteamId : 0;
+		if ( !LoadoutAuthority.TryValidateCommittedLoadout( steamId, data, out var normalized ) )
+		{
+			if ( EnableLoadoutDebugLogs )
+				Log.Warning( $"[PlayerLoadout] Rejected loadout for {GameObject.Name}." );
+			return;
+		}
+
+		data = normalized;
 
 		NetEquippedClassId = data.ClassId;
 		NetEquippedUltId = data.UltId ?? "";
@@ -42,6 +50,23 @@ public sealed class PlayerLoadout : Component
 		{
 			Log.Info( $"[PlayerLoadout] {GameObject.Name}: class={NetEquippedClassId} ult={NetEquippedUltId} passive={NetEquippedPassiveId}" );
 		}
+	}
+
+	/// <summary> Owner: push local committed loadout to host (join sync + confirm). </summary>
+	[Rpc.Host]
+	public void SubmitCommittedLoadoutFromOwnerRpc( string classId, string ultId, string passiveId, bool bypassPhaseGate )
+	{
+		if ( Network.Owner is null || Rpc.Caller.SteamId != Network.Owner.SteamId )
+			return;
+
+		var data = new SavedLoadoutData
+		{
+			ClassId = classId,
+			UltId = ultId,
+			PassiveId = passiveId
+		};
+
+		GameNetworkManager.FindInScene( Scene )?.TryApplyCommittedLoadoutOnHost( Network.Owner, data, bypassPhaseGate );
 	}
 
 	/// <summary> Resolves the equipped ult component for <see cref="PlayerUltCharge"/> and ult input. </summary>

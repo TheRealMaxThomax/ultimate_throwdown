@@ -304,6 +304,8 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		player.Components.GetOrCreate<CombatFeelPredictDedupe>();
 		player.Components.GetOrCreate<PlayerFootstepAudio>();
 		player.Components.GetOrCreate<PracticeNpcPatrolPoseRelay>();
+		player.Components.GetOrCreate<LoadoutClientState>();
+		player.Components.GetOrCreate<LoadoutPickerHud>();
 
 		playerLoadout.ConfigureSpeedsterOnlyComponentsOnHost();
 
@@ -571,6 +573,72 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		}
 
 		return false;
+	}
+
+	public static GameNetworkManager FindInScene( Scene scene )
+	{
+		if ( scene is null )
+			return null;
+
+		foreach ( var go in scene.GetAllObjects( true ) )
+		{
+			var manager = go.Components.Get<GameNetworkManager>();
+			if ( manager.IsValid() )
+				return manager;
+		}
+
+		return null;
+	}
+
+	/// <summary> Host: validate, persist, apply in-place or respawn when class prefab changes. </summary>
+	public bool TryApplyCommittedLoadoutOnHost( Connection connection, SavedLoadoutData data, bool bypassPhaseGate = false )
+	{
+		if ( !Networking.IsHost || connection is null || data is null )
+			return false;
+
+		var steamId = (long)connection.SteamId;
+		if ( !LoadoutAuthority.TryValidateCommittedLoadout( steamId, data, out var normalized ) )
+			return false;
+
+		LoadoutPersistence.SaveCommitted( steamId, normalized );
+
+		if ( !spawnedPlayersBySteamId.TryGetValue( steamId, out var player ) || !player.IsValid() )
+			return false;
+
+		if ( !bypassPhaseGate )
+		{
+			var team = player.Components.Get<PlayerTeam>();
+			if ( !LoadoutAuthority.IsLoadoutSwapAllowed( Scene, team ) )
+				return false;
+		}
+
+		var loadout = player.Components.Get<PlayerLoadout>();
+		if ( !loadout.IsValid() )
+			return false;
+
+		var classChanged = !string.Equals( loadout.NetEquippedClassId, normalized.ClassId, StringComparison.OrdinalIgnoreCase );
+		if ( classChanged )
+			return RespawnPlayerWithLoadout( connection, normalized );
+
+		loadout.ApplyCommittedLoadoutOnHost( normalized );
+		return true;
+	}
+
+	private bool RespawnPlayerWithLoadout( Connection connection, SavedLoadoutData data )
+	{
+		var steamId = (long)connection.SteamId;
+		if ( !spawnedPlayersBySteamId.TryGetValue( steamId, out var existing ) || !existing.IsValid() )
+			return false;
+
+		var teamId = existing.Components.Get<PlayerTeam>()?.TeamId ?? AssignTeamForConnection( connection );
+		preferredTeamBySteamId[steamId] = teamId;
+
+		existing.Destroy();
+		spawnedPlayersBySteamId.Remove( steamId );
+
+		LoadoutPersistence.SaveCommitted( steamId, data );
+		SpawnPlayerForConnectionIfMissing( connection );
+		return true;
 	}
 
 }

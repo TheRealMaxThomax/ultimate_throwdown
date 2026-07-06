@@ -20,11 +20,10 @@
 
 ## Right now
 
-**Goal:** **Prefab split + loadout v1 — editor + spawn ✅ SHIPPED (2026-07-06)** — per-class templates, spawn from save, solo playtest OK. **Next:** **code 4+** (loadout UI + intermission swaps) → ult slice 5.
+**Goal:** **Loadout v1 + join sync ✅ (2026-07-06)** — intermission picker, class respawn, join RPC. **Next:** **ult slice 5** (Juggernaut stomp).
 
 **Next session (priority order):**
-1. **Loadout code 4+** — host swap paths + class/ult UI + intermission force-commit → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06)
-2. **Ult slice 5** — Juggernaut stomp
+1. **Ult slice 5** — Juggernaut stomp
 
 **Pre–prefab split (ball throw ✅ 2026-07-04):** planted charge (`IsThrowPlantLocked` — no move/jump/air steer); **RMB** (`CancelChargeAction` / `attack2`) cancels charge; **`NotifyThrowChargeCancelled`** smooth blend back to idle hold (`ChargeCancelBlendOutSeconds`); **`BallGrab`** host-authoritative auto-grab (OOB sky-drop MP).
 
@@ -55,6 +54,7 @@
 - **Practice arena (`practice_arena.scene`) ✅ (2026-06-22)** — **`MapMatchConfig.PracticeArenaMode`**: unlimited clock/goals, all joiners team **0** + team-0 spawns only, **no top score/clock HUD**. **`PracticeLaunchMeasure`** on **`PracticeLaunchLane`** (origin = first line at NPC feet; local **Y** down lane; **`BandPitch` 128** → score **1, 2, 3…** from max pelvis **`along`**). **`PracticeLaunchReadout`** on **`LaunchReadoutSign`** TV. Three static **`practice_npc`** dummies + ruler art (editor). **`PracticeNpcPatrol` + `PracticeNpcPatrolHostState` ✅ (2026-06-23):** host ping-pong **Point A ↔ Point B** at charge speed, instant 180°, knockdown pause + pre-hit snap-back resume; **can tackle player** (`TryGetHostTackleMove`) and **be tackled**; **`PlayerBallHoldAnim`** required for forked graph + **`charge_run`** overlay. **Run legs ✅ (2026-06-23):** animgraph needs **`move_x`** (local forward, positive) + **`move_groundspeed`**. **Practice NPC MP ✅ (2026-06-23):** scene dummies stay **`NetworkMode.Snapshot`** — **do not `NetworkSpawn` player-prefab NPCs**; knockdown hide/show = host **`PracticeNpcClient*Rpc`**; patrol runner pose = host **`PracticeNpcPatrolPoseRelay`** fixed-tick **`PracticeNpcPatrolPoseRpc`** (auto on network spawn); client blitz contact freeze pins at visual contact (no host rewind); **`CatchUpSpeedBoost`** ignores global Input on tag; host tackle detect patrol-only; **`PlayerCosmeticsSync`** off on tag. PC **disabled** on runner.
 - **Global dry audio ✅ (2026-07-05)** — **`MatchAudioBootstrap`** (auto Main Camera): **`DisableRoomSimulation`** default **on** — Master **`Reverb = 0`** + **`BlockingTags`** whitelist `audio_room_sim` (no map geo uses it → no room echo). **`PlayerFootstepAudio`** auto on network spawn (owner → Master footsteps). Gameplay **`.sound`** assets + **`PlayWorldSoundDry`** for code one-shots. **Indoor/tunnel map later:** uncheck **`DisableRoomSimulation`** on bootstrap. Optional editor: **`passaudio`** on canopy/tree props if reverb re-enabled.
 - **Prefab split + per-class spawn ✅ (2026-07-06)** — **`Player_Speedster`** / **`Player_Juggernaut`** / **`Player_Sniper`** (disabled scene roots) in **Turf Wars + practice**; GNM class template refs wired; spawn from **`LoadoutPersistence`** + **`PlayerLoadout`**; Jugg/Sniper no blitz stack; ult HUD always on. **Solo playtest OK.**
+- **Loadout v1 ✅ (2026-07-06)** — **`LoadoutAuthority`** stub; **`LoadoutClientState`** + **`LoadoutPickerHud`** (Q; **`Mouse.Visibility`** + PC look/move off while open); intermission + practice swaps; force-commit; class change = host respawn; join sync RPC shipped. **Intermission playtest OK.** **Join sync:** **code shipped — cross-machine verify at publish** (editor 2-window: host double `[PlayerLoadout]` apply OK; client console quiet / same SteamId — not real proof).
 
 **Before ship (optional):** Uncheck **`Enable Debug Force Goal`** on `MatchDirector` in scene if you don’t want `,` testing in builds (already **off** by default in code).
 
@@ -108,7 +108,7 @@ If join breaks after a change, put `Resources` back to `null` and test again wit
 | `Code/Network/` | Spawning players when people join |
 | `Code/Match/` | `MatchDirector`, `GoalZone`, **`OutOfBoundsZone`**, **`MapMatchConfig`**, **`MatchAudioBootstrap`** |
 | `Code/Ultimates/` | **`PlayerUltCharge`** (slice 1); **`SpeedsterSpeedBlitzUlt`** (2a–2c); **`SpeedBlitzWindUpFeel`**, **`SpeedBlitzBodyGlow`** (2d) |
-| `Code/UI/` | Match HUD + owner HUDs + **`UltChargeHud`** + **`BallCompassHud`** + **`OutOfBoundsBannerHud`** + **`BallOobDropZoneHud`** / **`BallOobDropZoneMarker`** + **`TackleComicTextHud`** / **`TackleComicBurst`** + **`PracticeLaunchReadoutRoot`** / **`PracticeLaunchScorePanel`** |
+| `Code/UI/` | Match HUD + owner HUDs + **`UltChargeHud`** + **`LoadoutPickerHud`** + **`BallCompassHud`** + **`OutOfBoundsBannerHud`** + **`BallOobDropZoneHud`** / **`BallOobDropZoneMarker`** + **`TackleComicTextHud`** / **`TackleComicBurst`** + **`PracticeLaunchReadoutRoot`** / **`PracticeLaunchScorePanel`** |
 | `Code/Map/` | `StartupMapBootstrap` (practice NPC locks); **`PracticeLaunchMeasure`** / **`PracticeLaunchReadout`**; **`PracticeNpcPatrol`** / **`PracticeNpcPatrolPoseRelay`**; **`StreetLightFlicker`**; **`StationLightFlicker`**; **`TrafficSpawner`** / **`TrafficCar`** |
 
 **Scenes:** `scenes/throwdown_turf_wars.scene` (Turf Wars WIP) · **`scenes/practice_arena.scene`** (training — enable **`PracticeArenaMode`**) · `throwdown_prototype.scene` = greybox fallback.
@@ -307,14 +307,20 @@ See also [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) → **Testing** afte
 
 ## Prefab split + loadout — decided (2026-07-06)
 
-**Status:** **Code 1–3 + editor prefab split ✅ shipped (2026-07-06)** — solo playtest OK. **Code 4+** (UI + intermission swaps) not started.
+**Status:** **Loadout v1 ✅ shipped + intermission playtest OK (2026-07-06).** **Join sync ✅ code shipped (2026-07-06)** — editor 2-window smoke OK (host double apply, no errors); **cross-machine verify at publish** (second PC / Steam account).
+
+### Join sync — shipped (2026-07-06)
+
+**Editor smoke (done):** host sees two `[PlayerLoadout]` applies on joiner spawn (spawn + RPC); no errors. Client console had no loadout logs (join RPC bypasses `CommitPending` log path). Same SteamId + one save file on one PC — **not** cross-host proof.
+
+**Publish smoke (later):** friend on another PC (or second Steam account) — host with **no** file for joiner's SteamId should get joiner's class from RPC (not Speedster default).
 
 ### Build order (this sequence)
 
 1. **Code 1–3** ✅ — spawn contract + **`LoadoutPersistence`** + **`PlayerLoadout`** + **`GameNetworkManager`** template map (`SpeedsterPlayerTemplate` / `JuggernautPlayerTemplate` / `SniperPlayerTemplate` — fall back to **`PlayerTemplateRoot`** until editor split).
 2. **Editor (Max)** ✅ — duplicate prefabs + wire `.cdata` + strip Speedster-only (Turf Wars + practice).
-3. **Code 4+** — **client sends committed loadout on connect** (host validates + apply; fixes join-new-host → Speedster gap); host swap paths + basic **class + ult** UI + intermission force-commit.
-4. **Intermission** loadout swaps (frozen intermission OK v1 — menu overlay).
+3. **Code 4+** ✅ — **`LoadoutAuthority.IsLoadoutAllowedForPlayer`** stub; client committed loadout on connect; **`LoadoutClientState`** + **`LoadoutPickerHud`**; host swap + intermission force-commit.
+4. **Intermission** loadout swaps ✅ — frozen intermission + Q menu overlay (v1).
 5. **Ult slice 5** — Juggernaut stomp (+ register in ult catalog).
 6. **Intermission movement** — walkable spawn room (gate change; team spawns OK until room art).
 7. **`MatchSetup` phase** + pre-match timer (round 1 **and** rematch — see below).
@@ -395,10 +401,10 @@ Every player **always** has a committed loadout for gameplay (class + passive + 
 |------|------|------|--------|
 | **Session memory** | RAM only | — | **Not used** for loadout — lost on quit. |
 | **Local save (v1)** | `loadouts/{steamId}.json` on `FileSystem.Data` | **Now** | Last class/ult on **this PC**; practice ↔ Turf Wars on same machine. **Editable** — OK for casual prefs while all catalog options unlocked. |
-| **Join sync (code 4+)** | Client **`[Rpc.Host]`** sends committed loadout on connect; host validates catalog → spawn/swap; optional cache to host disk | **Code 4+** | Your loadout follows you to **any host** (not Speedster default). Still not anti-cheat for progression. |
+| **Join sync ✅** | Client **`[Rpc.Host]`** sends committed loadout on connect; host validates catalog → spawn/swap; caches to host disk | **Shipped** | Your loadout follows you to **any host** (not Speedster default). **Cross-machine verify at publish.** Still not anti-cheat for progression. |
 | **Account / cloud (later)** | **Server-trusted** unlocks + XP + skill points; loadout **prefs** may cloud-sync | **Progression slice** | **Skill-point / unlock cheating** — host checks ledger, not client JSON. Can also sync prefs across PCs. |
 
-**v1 today (gap):** host spawn reads **`LoadoutPersistence` on the host machine only** — join a host who has never seen your Steam ID → **Speedster preset** until **join sync (code 4+)** ships.
+**v1 today:** join sync RPC ships committed loadout on connect; host caches to disk. **Publish smoke:** verify joiner's class reaches a host who has never seen that SteamId (not Speedster default).
 
 - **Virtual path (code):** `loadouts/{steamId}.json` under `FileSystem.Data`.
 - **On disk (Windows):** `C:\Program Files (x86)\Steam\steamapps\common\sbox\data\local\{org}\{ident}\loadouts\{steamId}.json`
@@ -413,7 +419,7 @@ Every player **always** has a committed loadout for gameplay (class + passive + 
 
 ### MP (host authority)
 
-- **On connect (code 4+):** owning client sends **committed** loadout → host **`LoadoutCatalog.Normalize`** + catalog validation → **`ApplyCommittedLoadoutOnHost`** at spawn (and cache locally on host optional).
+- **On connect (code 4+):** owning client sends **committed** loadout → host **`LoadoutAuthority.TryValidateCommittedLoadout`** (`LoadoutCatalog.Normalize` + catalog + **`IsLoadoutAllowedForPlayer`**) → **`ApplyCommittedLoadoutOnHost`** at spawn (optional cache on host disk).
 - Client requests loadout change → host validates **`MatchSetup` / `Intermission`** (or practice free-swap) → apply committed loadout.
 - Sync equipped ids on **`PlayerLoadout`** (`[Sync]`).
 - No combat predict needed — non-combat phase only.
@@ -589,15 +595,26 @@ Every player **always** has a committed loadout for gameplay (class + passive + 
 | Order | Slice | Notes |
 |-------|-------|--------|
 | **1** ✅ | **Map slice 1** — out of bounds | **Shipped 2026-07-04** (solo + 2-window MP) |
-| **2** | **Prefab split + loadout v1** | [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06) + [`ARCHITECTURE.md`](ARCHITECTURE.md) § Before slice 5/6 |
+| **2** ✅ | **Prefab split + loadout v1** | Editor + code 1–4 |
 | **2b** (later) | **MatchSetup + walkable spawn room** | After slice 5; not before prefab split |
 | **3** | **Ult slice 5** — Juggernaut stomp | |
 | **4** | **Ult slice 6** — Sniper path zones | |
 | **5** | **Combat slice 1** — unarmed melee | Before weapons; foundation for sumo endgame + slice 7 |
 | **6** | **Combat slice 2** — parry | Melee only — not tackles |
 | **7** | **Ult slice 7** — Weapons | Armed swings reuse melee hit pipeline |
+| **8** | **Progression slice** — XP, skill points, unlocks | After weapons; **server-trusted** ledger + host **`IsLoadoutAllowedForPlayer`**; optional cloud prefs sync. Local JSON stays prefs-only — not progression. |
 
 ---
+
+#### Progression slice (after weapons slice 7)
+
+**Why:** Grind gates (more ults/passives per class, skill-point spend) must not live in client-editable JSON.
+
+- [ ] **Server-trusted** unlock + XP + skill-point storage (dedicated server / backend — not `FileSystem.Data` alone)
+- [ ] **`LoadoutAuthority.IsLoadoutAllowedForPlayer`** — host rejects class/ult/passive not unlocked (stub ships **true** in code 4+)
+- [ ] Picker filters to **unlocked only**; earn flow + UI for skill points
+- [ ] Optional **cloud** sync for loadout **prefs** across PCs (progression writes still server-side)
+
 
 ### Map slice 1 — out of bounds (ball) ✅ **SHIPPED (2026-07-04)**
 
@@ -731,9 +748,9 @@ Every player **always** has a committed loadout for gameplay (class + passive + 
 Paste at the start of a new chat:
 
 ```
-Read SESSION_NOTES.md → prefab split + loadout spec (2026-07-06, refined) → ult 5–6.
-Loadout: LoadoutPersistence + PlayerLoadout [Sync]; always-equipped; Speedster preset; force-commit on round start; UltChargeHud always on.
-Code 1–3 before editor prefab split. Not started until Max says go.
+Read SESSION_NOTES.md → loadout v1 + join sync done → ult slice 5.
+Loadout: intermission Q picker ✅; class respawn ✅; join sync ✅ code shipped — cross-machine verify at publish.
+Progression slice (#8 after weapons) = server-trusted unlocks later; LoadoutAuthority stub returns true for now.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 ```
 
@@ -743,6 +760,9 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
+- **2026-07-06 (join sync editor smoke ✅):** 2-window MP — host double `[PlayerLoadout]` apply on joiner spawn, no errors; client console quiet (expected). Same SteamId / one save — **code shipped — cross-machine verify at publish**. → [§ Join sync — shipped](#join-sync--shipped-2026-07-06).
+- **2026-07-06 (loadout v1 playtest ✅):** Intermission Q picker + cursor; class change → host respawn **OK**. → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).
+- **2026-07-06 (loadout code 4+ ✅):** **`LoadoutAuthority`** stub; **`LoadoutClientState`** + **`LoadoutPickerHud`**; join sync RPC; intermission/practice swaps; force-commit; **`TryApplyCommittedLoadoutOnHost`** + class respawn; **`Mouse.Visibility`** while picker open. → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).
 - **2026-07-06 (editor prefab split ✅):** **`Player_Speedster`** / **`Player_Juggernaut`** / **`Player_Sniper`** in Turf Wars + practice; templates disabled; GNM class refs wired; Jugg/Sniper stripped of blitz stack; **solo playtest OK.** → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).
 - **2026-07-06 (loadout code 1–3 ✅):** **`LoadoutCatalog`** + **`LoadoutPersistence`** + **`PlayerLoadout`**; GNM class template refs + spawn from save; trimmed universal auto-add; Speedster-only anims via loadout; **`PlayerUltCharge`** reads equipped ult from loadout. → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).
 - **2026-07-06 (loadout spec refined ✅):** **`LoadoutPersistence`** + **`PlayerLoadout`** `[Sync]` (not `PlayerTeam`); always-equipped; **Speedster preset** (not random); pending/committed + **force-commit** when round starts; class switch auto first ult/passive; string slug IDs; **`UltChargeHud` always on**; Jugg/Sniper pre-ult **approach A**; sumo match-start pick = same model later; code **1–3** then editor prefab split. → [§ Prefab split + loadout](#prefab-split--loadout--decided-2026-07-06).

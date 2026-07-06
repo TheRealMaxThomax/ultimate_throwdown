@@ -141,6 +141,30 @@ public static class LoadoutCatalog
 	}
 
 	public static IReadOnlyList<string> GetAllClassIds() => AllClassIds;
+
+	public static bool TryGetUltIdsForClass( string classId, out string[] ultIds )
+	{
+		return UltIdsByClass.TryGetValue( classId ?? "", out ultIds ) && ultIds is not null;
+	}
+
+	public static string GetClassDisplayName( string classId )
+	{
+		var data = GetClassData( classId );
+		return data is not null && !string.IsNullOrWhiteSpace( data.ClassName )
+			? data.ClassName
+			: classId ?? "";
+	}
+
+	public static string GetUltDisplayName( string ultId )
+	{
+		if ( string.Equals( ultId, UltSpeedBlitz, StringComparison.OrdinalIgnoreCase ) )
+			return "Speed Blitz";
+
+		if ( string.IsNullOrWhiteSpace( ultId ) )
+			return "(none)";
+
+		return ultId.Replace( '_', ' ' );
+	}
 }
 
 /// <summary> Serializable committed loadout (local save + spawn apply). Properties only — <see cref="FileSystem.Data"/> JSON. </summary>

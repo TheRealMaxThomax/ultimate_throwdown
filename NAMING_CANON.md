@@ -64,6 +64,8 @@
 | `LoadoutCatalog` | Static class / ult / passive string ids + `.cdata` paths + normalize / auto-fill helpers |
 | `SavedLoadoutData` | Serializable committed loadout (JSON save) |
 | `LoadoutPersistence` | Local save per **SteamId** under `FileSystem.Data` (`loadouts/{steamId}.json`) |
+| `LoadoutAuthority` | Host validation — **`TryValidateCommittedLoadout`**, **`IsLoadoutAllowedForPlayer`** (v1: allow all), **`IsLoadoutSwapAllowed`** |
+| `LoadoutClientState` | Owner pending loadout + picker open state + force-commit |
 | `PlayerLoadout` | Host-equipped loadout on pawn — synced ids, applies `ClassData` + ult enable |
 
 **Often-used on `PlayerClass`:** `CurrentClass`, `NeutralMenuHeight`, `ApplyClassAppearance()`, `PrepareDresserBeforeSpawn()` (disable menu height before spawn; class `ModelScale` + neutral `scale_height`)
@@ -147,6 +149,7 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 | `DodgeCooldownHud` | Placeholder dodge cooldown timer (owner HUD) |
 | `UltChargeHud` | Owner ult charge % only (placeholder; circular ring UI later) |
 | `MovementRampHud` | Placeholder walk / sprint / charge ramp bar (owner HUD) |
+| `LoadoutPickerHud` | Owner class + ult picker — intermission or practice; toggle `Menu` (Q) |
 | `SpeedBlitzAimPreview` | Speed Blitz owner-only segmented ground corridor + end cap while holding `Ultimate` (slice 2b / v3) |
 | `MatchHudDraw` | Shared HUD read/draw helpers (`FormatMatchClock`, `TryGetHudState`, `IsMatchOverCelebrating`) |
 | `MatchScoreHud` | Top bar: team names + round wins |
@@ -211,7 +214,13 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 
 **Often-used on `GameNetworkManager`:** `Team0Spawns`, `Team1Spawns`, `SpawnPointOccupiedRadius`, `MatchConfig`, `SpeedsterPlayerTemplate`, `JuggernautPlayerTemplate`, `SniperPlayerTemplate`, `PlayerTemplateRoot`, `SnapPositionToGround()`, `SnapBallToGround()`, `ApplyRoundResetToAllPlayers()`, `ApplyRoundResetToPlayer()` (legacy: `Team0Spawn`, `Team1Spawn`, `JoinSpawnSpacing`); spawn: **`LoadoutPersistence.GetOrCreateCommitted`**, **`PlayerLoadout.ApplyCommittedLoadoutOnHost`**; universal auto-add: **`PlayerDisableCrouch`**, **`PlayerEnemyOutline`**, **`BallCompassHud`**, **`PlayerBallHoldAnim`**, **`PlayerChargeRunAnim`**, **`TackleImpactFeel`**, **`CombatFeelPredictDedupe`**, **`PlayerFootstepAudio`**; Speedster-only via **`PlayerLoadout.ConfigureSpeedsterOnlyComponentsOnHost`**: **`PlayerSpeedBlitzWindUpAnim`**, **`BlitzConnectPoseFreeze`**
 
-**Often-used on `PlayerLoadout`:** `NetEquippedClassId`, `NetEquippedUltId`, `NetEquippedPassiveId`, `ApplyCommittedLoadoutOnHost()`, `ResolveEquippedUlt()`, `ConfigureSpeedsterOnlyComponentsOnHost()`, `IsSpeedsterClass()`
+**Often-used on `PlayerLoadout`:** `NetEquippedClassId`, `NetEquippedUltId`, `NetEquippedPassiveId`, `ApplyCommittedLoadoutOnHost()`, `SubmitCommittedLoadoutFromOwnerRpc()`, `ResolveEquippedUlt()`, `ConfigureSpeedsterOnlyComponentsOnHost()`, `IsSpeedsterClass()`
+
+**Often-used on `LoadoutAuthority`:** `TryValidateCommittedLoadout()`, `IsLoadoutAllowedForPlayer()` (v1: always true), `IsLoadoutSwapAllowed()`
+
+**Often-used on `LoadoutClientState`:** `PendingLoadout`, `IsPickerOpen`, `SetPendingClass()`, `SetPendingUlt()`, `ConfirmPending()`, `ForceCommitPending()`
+
+**Often-used on `GameNetworkManager`:** `FindInScene()`, `TryApplyCommittedLoadoutOnHost()`
 
 **Loadout catalog ids:** class `speedster` / `juggernaut` / `sniper`; ult `speed_blitz`; passive `default` / `tackle_ramp`
 
