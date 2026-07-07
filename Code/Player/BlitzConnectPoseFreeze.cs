@@ -3,7 +3,7 @@ using Sandbox;
 /// <summary>
 /// Blitz-only connect hang: freeze attacker + victim <see cref="SkinnedModelRenderer"/> pose during
 /// <see cref="SpeedsterSpeedBlitzUlt.KnockdownPreLaunchPauseSeconds"/> via <c>PlaybackRate = 0</c>.
-/// Auto-added on network spawn (<see cref="GameNetworkManager"/>).
+/// On Speedster player prefab; enabled via <see cref="PlayerLoadout.ConfigureSpeedsterOnlyComponentsOnHost"/>.
 /// </summary>
 [Order( 10004 )]
 public sealed class BlitzConnectPoseFreeze : Component

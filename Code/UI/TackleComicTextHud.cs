@@ -184,7 +184,7 @@ public sealed class TackleComicTextHud : Component
 			if ( !camera.IsMainCamera )
 				continue;
 
-			camera.GameObject.Components.GetOrCreate<TackleComicTextHud>();
+			ComponentRequire.WarnIfMissing<TackleComicTextHud>( camera.GameObject, "TackleComicTextHud.EnsureOnMainCamera" );
 			return;
 		}
 	}

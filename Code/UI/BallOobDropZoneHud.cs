@@ -35,7 +35,7 @@ public sealed class BallOobDropZoneHud : Component
 			if ( !camera.IsMainCamera )
 				continue;
 
-			camera.GameObject.Components.GetOrCreate<BallOobDropZoneHud>();
+			ComponentRequire.WarnIfMissing<BallOobDropZoneHud>( camera.GameObject, "BallOobDropZoneHud.EnsureOnMainCamera" );
 			return;
 		}
 	}

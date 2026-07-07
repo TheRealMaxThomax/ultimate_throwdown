@@ -117,7 +117,7 @@ public sealed class BallGrab : Component
 		if ( MainBall.IsValid() )
 		{
 			ballObject = MainBall;
-			ballObject.Components.GetOrCreate<BallCarrierOutline>();
+			ComponentRequire.On<BallCarrierOutline>( ballObject, "BallGrab" );
 			return;
 		}
 
@@ -145,7 +145,7 @@ public sealed class BallGrab : Component
 		ballObject = firstMatch;
 
 		if ( ballObject.IsValid() )
-			ballObject.Components.GetOrCreate<BallCarrierOutline>();
+			ComponentRequire.On<BallCarrierOutline>( ballObject, "BallGrab" );
 	}
 
 	/// <summary>Returns true when any player's BallGrab is holding our main ball (synced/host state).</summary>
@@ -255,7 +255,7 @@ public sealed class BallGrab : Component
 
 		PickUpBall();
 		AssignBallOwner( Connection.Host );
-		BallPassAssistState.GetOrCreate( ballObject )?.NotifyPickupOnHost( GameObject );
+		BallPassAssistState.Get( ballObject )?.NotifyPickupOnHost( GameObject );
 
 		if ( EnableNetDebugLogs )
 			Log.Info( $"[NetDebug] Host approved pickup. HolderObject={GameObject.Name}" );
@@ -278,7 +278,7 @@ public sealed class BallGrab : Component
 		AssignBallOwner( Connection.Host );
 		var releasedBall = ReleaseHeldBall( playerVelocity );
 		if ( releasedBall.IsValid() )
-			BallLastTouchLedger.GetOrCreate( releasedBall )?.NotifyTouchOnHost( GameObject, GameObject.WorldPosition );
+			BallLastTouchLedger.Get( releasedBall )?.NotifyTouchOnHost( GameObject, GameObject.WorldPosition );
 
 		BlockPickupForSeconds( PickupDelayAfterDrop );
 		nextAutoGrabAttemptAt = Time.Now + PickupDelayAfterDrop;

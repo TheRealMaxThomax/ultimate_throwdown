@@ -5,7 +5,7 @@ using Sandbox;
 /// Speed Blitz dasher glow — ult blue tint on avatar skinned meshes (no <see cref="HighlightOutline"/>).
 /// Uses <see cref="SceneObject.ColorTint"/> right before draw (citizen clothing covers most bare skin).
 /// Wind-up ramps with <see cref="SpeedsterSpeedBlitzUlt.GetWindUpLerp"/>; dash + connect hang hold peak; discharge fades at ragdoll launch.
-/// Auto-added by <see cref="SpeedsterSpeedBlitzUlt"/>.
+/// On Speedster player prefab; enabled with <see cref="SpeedsterSpeedBlitzUlt"/>.
 /// </summary>
 public sealed class SpeedBlitzBodyGlow : Component
 {

@@ -21,9 +21,9 @@
 
 **Hybrid spawn policy (locked):**
 
-- **Class prefabs** own full gameplay stack (ball, tackle, dodge, ult, HUDs, cameras) — editor WYSIWYG.
-- **`GameNetworkManager`** auto-adds **universal only:** `PlayerTeam`, `PlayerDisableCrouch`, `PlayerEnemyOutline`, `BallCompassHud`, `PlayerBallHoldAnim`, `PlayerChargeRunAnim`, `TackleImpactFeel`, `CombatFeelPredictDedupe`, `PlayerFootstepAudio`, `PracticeNpcPatrolPoseRelay`, `LoadoutClientState`, `LoadoutPickerHud`.
-- **Speedster prefab only:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzAimPreview`, blitz feel/cam/glow, `BlitzConnectPoseFreeze`, `PlayerSpeedBlitzWindUpAnim` — **not** global auto-add.
+- **Class prefabs** own the **full** gameplay stack — ball, tackle, dodge, ult, HUDs, cameras, feel relays, loadout — editor WYSIWYG. **No runtime auto-add** on spawned pawns (see `.cursor/rules/no-auto-add-components.mdc`).
+- **`GameNetworkManager`** clones the class template, sets `PlayerTeam` / applies `PlayerLoadout`, validates expected components (`WarnMissingPlayerPrefabComponents`), then `NetworkSpawn`s.
+- **Speedster prefab only:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzAimPreview`, blitz feel/cam/glow, `BlitzConnectPoseFreeze`, `PlayerSpeedBlitzWindUpAnim`.
 - **Juggernaut / Sniper:** add stomp / path-zone ult + preview when built (slice 5/6).
 
 **Still recommended before/during slice 5/6:**
@@ -51,7 +51,7 @@ Three layers — **do not** put loadout on `PlayerTeam`:
 1. Read `LoadoutPersistence.GetOrCreateCommitted(steamId)` (host disk; joiner's file if they've connected before).
 2. `ResolvePlayerTemplateForClass(classId)` → clone `SpeedsterPlayerTemplate` / `JuggernautPlayerTemplate` / `SniperPlayerTemplate` (fallback `PlayerTemplateRoot`).
 3. `PlayerLoadout.ApplyCommittedLoadoutOnHost` at spawn.
-4. Auto-add universal components; `NetworkSpawn(connection)`.
+4. Validate prefab components; `NetworkSpawn(connection)`.
 5. **Join sync:** owning client's `LoadoutClientState.OnStart` → `SubmitCommittedLoadoutFromOwnerRpc` → host re-applies (second apply on connect).
 
 **Class change:** host destroys pawn → respawn with new class template. Ult/passive-only change → in-place apply + `ResyncFromEquippedUltOnHost()`.
@@ -170,13 +170,23 @@ Almost everything checks `PlayerTeam.IsMatchGameplayInputAllowed` — one gate, 
 
 Works today; hurts when map vote, spectators, or more HUD fields arrive. Future options: networked match-state object on a scene root, or a tiny dedicated replicator component.
 
-### Inconsistent component spawn policy
+### Inconsistent component spawn policy — resolved (2026-07-07)
 
-`GameNetworkManager` auto-adds feel/anim/HUD pieces (`PlayerBallHoldAnim`, `TackleImpactFeel`, `CombatFeelPredictDedupe`, …).
+Previously `GameNetworkManager` auto-added feel/anim/HUD pieces at spawn. **Policy now:** everything lives on prefabs/scene objects; code uses `ComponentRequire` and logs when missing. Runtime auto-add is limited to ragdoll outline, engine `HighlightOutline` helpers, `Highlight` via `EnemyOutlineCameraSetup`, and programmatic child GOs — see `no-auto-add-components.mdc`.
 
-Core gameplay must be on the **prefab manually** (`BallGrab`, `BallThrow`, `CatchUpSpeedBoost`, `PlayerTackle`, `PlayerUltCharge`, `SpeedsterSpeedBlitzUlt`).
+### Component wiring (editor checklist)
 
-Documented in `NAMING_CANON.md`, but a footgun when duplicating three class prefabs.
+**Every player class prefab:** `PlayerTeam`, `PlayerLoadout`, `PlayerDisableCrouch`, `PlayerEnemyOutline`, `BallCompassHud`, `PlayerBallHoldAnim`, `PlayerChargeRunAnim`, `TackleImpactFeel`, `CombatFeelPredictDedupe`, `PlayerFootstepAudio`, `PracticeNpcPatrolPoseRelay`, `LoadoutClientState`, `LoadoutPickerHud`, `TackleRagdollLifecycle`, `TackleImpactRelay`, plus core gameplay (`BallGrab`, `BallThrow`, `CatchUpSpeedBoost`, `PlayerDodge`, `PlayerTackle`, `PlayerUltCharge`, `PlayerClass`, throw/charge HUDs, `RagdollClientFeel`, …).
+
+**Speedster prefab additionally:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzAimPreview`, `SpeedBlitzDashCamera`, `SpeedBlitzWindUpFeel`, `SpeedBlitzBodyGlow`, `PlayerSpeedBlitzWindUpAnim`, `BlitzConnectPoseFreeze`.
+
+**Main Camera (per gameplay scene):** `EnemyOutlineCameraSetup`, `TackleComicTextHud`, `MatchAudioBootstrap`, `OutOfBoundsBannerHud`, `BallOobDropZoneHud`.
+
+**Ball (`main_ball`):** `BallCarrierOutline`, `BallLastTouchLedger`, `BallPassAssistState`, `BallOutOfBoundsHost`.
+
+**Practice static dummies (`practice_npc`):** at minimum `PlayerTackle`, `TackleRagdollLifecycle`, `TackleImpactRelay`, `CombatFeelPredictDedupe`; add `TackleImpactFeel` if victim knockdown feel should fire on the dummy.
+
+**Practice patrol runner:** above + `PracticeNpcPatrol`, `PracticeNpcPatrolPoseRelay`.
 
 ### Scene-wide lookups
 

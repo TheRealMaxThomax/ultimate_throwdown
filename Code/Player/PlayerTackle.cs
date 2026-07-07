@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 //   OnStart / OnUpdate .......... camera ref, ragdoll transitions, owner camera + free look
 //   Host detection .............. TryDetectAndApplyHostTackle, ApplyTackleCooldownOnHost
 //   Client → host ............... TryOwnerRequestTackleOnHost, RequestTackleApplyOnHost, owner predict feel (Tier A1)
+//   Impact SFX + feel RPCs ...... TackleImpactRelay (connect crunch, blitz launch/connect, owner impact feel)
 //   Victim pick ................. TryFindTackleVictim (cone vs horizontal view forward, not velocity)
 //   Hit + ball .................. ExecuteTackle, ApplyKnockdownFromHost
 //   Ragdoll (host only) ......... TackleRagdollLifecycle (spawn, launch, recovery, destroy)
@@ -18,9 +19,6 @@ using System.Threading.Tasks;
 public sealed class PlayerTackle : Component
 {
 	private const string PracticeNpcTag = "practice_npc";
-
-	internal const string DefaultTackleConnectImpactSoundAPath = "sounds/crunch/speed_blitz_connect_crunch_a.sound";
-	internal const string DefaultTackleConnectImpactSoundBPath = "sounds/crunch/speed_blitz_connect_crunch_b.sound";
 
 	/// <summary>Min dot product between horizontal <see cref="PlayerController.EyeAngles"/> forward and direction to victim (1 = straight at them).</summary>
 	[Property] public float TackleDirectionThreshold { get; set; } = 0.95f;
@@ -50,10 +48,6 @@ public sealed class PlayerTackle : Component
 	[Property] public float PostRagdollCatchUpRampDuration { get; set; } = 5f;
 	/// <summary>Host: after this pawn <b>lands</b> a tackle, for this many seconds use <see cref="ClassData.TimeToCatchUpSpeedAfterAttack"/> for charge ramp when that value &gt; 0.</summary>
 	[Property] public float PostAttackCatchUpRampDuration { get; set; } = 5f;
-	/// <summary>Body-crunch SFX on player tackle connect — host picks one at random per hit (not Speed Blitz).</summary>
-	[Property, Group( "Impact SFX" )] public SoundEvent TackleConnectImpactSoundA { get; set; }
-	[Property, Group( "Impact SFX" )] public SoundEvent TackleConnectImpactSoundB { get; set; }
-	[Property, Group( "Impact SFX" )] public float TackleConnectImpactSoundVolume { get; set; } = 1f;
 
 	// Host writes, all machines read
 	private bool isRagdolled;
@@ -83,9 +77,6 @@ public sealed class PlayerTackle : Component
 	private bool practiceNpcPreTackleCaptured;
 	private Vector3 practiceNpcPreTackleWorldPosition;
 	private Angles practiceNpcPreTackleEyeAngles;
-
-	/// <summary>Client-owner tackler already played connect crunch on predict — skip host broadcast duplicate.</summary>
-	private bool ownerPredictedTackleConnectSound;
 
 	/// <summary>Client: scene <see cref="PracticeNpcTag"/> dummies stay at contact position — snapshot lag must not rewind to host freeze pos.</summary>
 	private bool practiceNpcClientContactFreezePinned;
@@ -132,6 +123,7 @@ public sealed class PlayerTackle : Component
 	private TackleImpactFeel tackleImpactFeel;
 	private CombatFeelPredictDedupe combatFeelDedupe;
 	private TackleRagdollLifecycle tackleRagdollLifecycle;
+	private TackleImpactRelay tackleImpactRelay;
 	private PracticeNpcPatrolHostState practiceNpcPatrol;
 	private CameraComponent activeCamera;
 
@@ -182,7 +174,9 @@ public sealed class PlayerTackle : Component
 		if ( !Networking.IsHost || !IsKnockedDown )
 			return;
 
-		tackleRagdollLifecycle ??= Components.GetOrCreate<TackleRagdollLifecycle>();
+		tackleRagdollLifecycle ??= ComponentRequire.On<TackleRagdollLifecycle>( this, "PlayerTackle" );
+		if ( !tackleRagdollLifecycle.IsValid() )
+			return;
 
 		if ( isRagdolled )
 			NetStandUpPosition = tackleRagdollLifecycle.ComputeStandUpPositionFromRagdoll();
@@ -220,7 +214,8 @@ public sealed class PlayerTackle : Component
 		playerController = Components.Get<PlayerController>();
 		tackleImpactFeel = Components.Get<TackleImpactFeel>();
 		combatFeelDedupe = Components.Get<CombatFeelPredictDedupe>();
-		tackleRagdollLifecycle = Components.GetOrCreate<TackleRagdollLifecycle>();
+		tackleRagdollLifecycle = ComponentRequire.On<TackleRagdollLifecycle>( this, "PlayerTackle" );
+		tackleImpactRelay = ComponentRequire.On<TackleImpactRelay>( this, "PlayerTackle" );
 		practiceNpcPatrol = Components.Get<PracticeNpcPatrolHostState>();
 
 		foreach ( var cam in Scene.GetAllComponents<CameraComponent>() )
@@ -242,8 +237,8 @@ public sealed class PlayerTackle : Component
 	protected override void OnUpdate()
 	{
 		// Host keeps NetRagdollPosition current from the spawned physics ragdoll
-		tackleRagdollLifecycle ??= Components.GetOrCreate<TackleRagdollLifecycle>();
-		var ragdoll = tackleRagdollLifecycle.RagdollObject;
+		tackleRagdollLifecycle ??= ComponentRequire.On<TackleRagdollLifecycle>( this, "PlayerTackle" );
+		var ragdoll = tackleRagdollLifecycle.IsValid() ? tackleRagdollLifecycle.RagdollObject : null;
 		if ( isRagdolled && Networking.IsHost && ragdoll.IsValid() )
 			NetRagdollPosition = ragdoll.WorldPosition;
 
@@ -474,129 +469,22 @@ public sealed class PlayerTackle : Component
 	/// <summary>Client owner only: early attacker feel when local victim find matches the RPC we are about to send.</summary>
 	private void OwnerApplyPredictedTackleAttackerFeel( PlayerTackle victim )
 	{
-		combatFeelDedupe ??= Components.GetOrCreate<CombatFeelPredictDedupe>();
+		combatFeelDedupe ??= ComponentRequire.On<CombatFeelPredictDedupe>( this, "PlayerTackle" );
 		combatFeelDedupe.MarkOwnerPredictedAttackerFeel();
 		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
 		tackleImpactFeel?.TriggerAsAttacker();
 
-		OwnerPlayPredictedTackleConnectImpactSound( victim );
+		tackleImpactRelay ??= ComponentRequire.On<TackleImpactRelay>( this, "PlayerTackle" );
+		tackleImpactRelay.OwnerPlayPredictedTackleConnectImpactSound( victim );
 
 		if ( EnableTackleDebugLogs )
 			Log.Info( $"[Tackle] {GameObject.Name}: owner predict attacker feel" );
 	}
 
-	/// <summary>Host: random connect crunch from attacker tackle slots, then code defaults.</summary>
-	private string PickTackleConnectImpactSoundResourcePath()
-	{
-		var options = new List<string>( 2 );
-
-		if ( TackleConnectImpactSoundA.IsValid() )
-			options.Add( TackleConnectImpactSoundA.ResourcePath );
-
-		if ( TackleConnectImpactSoundB.IsValid() )
-			options.Add( TackleConnectImpactSoundB.ResourcePath );
-
-		if ( options.Count == 0 )
-		{
-			options.Add( DefaultTackleConnectImpactSoundAPath );
-			options.Add( DefaultTackleConnectImpactSoundBPath );
-		}
-
-		if ( options.Count == 1 )
-			return options[0];
-
-		return options[Game.Random.Int( 0, options.Count - 1 )];
-	}
-
-	private static Vector3 GetTackleConnectImpactSoundPosition( PlayerTackle attacker, PlayerTackle victim )
-	{
-		if ( !attacker.IsValid() || !victim.IsValid() )
-			return Vector3.Zero;
-
-		var attackerPos = attacker.WorldPosition;
-		var victimPos = victim.WorldPosition;
-		return new Vector3(
-			(attackerPos.x + victimPos.x) * 0.5f,
-			(attackerPos.y + victimPos.y) * 0.5f,
-			(attackerPos.z + victimPos.z) * 0.5f );
-	}
-
-	private void OwnerPlayPredictedTackleConnectImpactSound( PlayerTackle victim )
-	{
-		if ( !victim.IsValid() || Networking.IsHost || ownerPredictedTackleConnectSound )
-			return;
-
-		var sound = ResourceLibrary.Get<SoundEvent>( PickTackleConnectImpactSoundResourcePath() );
-		PlayTackleConnectImpactSoundAt(
-			GetTackleConnectImpactSoundPosition( this, victim ),
-			sound,
-			TackleConnectImpactSoundVolume.Clamp( 0f, 2f ) );
-		ownerPredictedTackleConnectSound = true;
-	}
-
-	private static void BroadcastTackleConnectImpactSoundOnHost( PlayerTackle attacker, PlayerTackle victim )
-	{
-		if ( !Networking.IsHost || !attacker.IsValid() || !victim.IsValid() )
-			return;
-
-		victim.BroadcastTackleConnectImpactSound(
-			GetTackleConnectImpactSoundPosition( attacker, victim ),
-			attacker.PickTackleConnectImpactSoundResourcePath(),
-			attacker.TackleConnectImpactSoundVolume.Clamp( 0f, 2f ),
-			attacker.GameObject.Id );
-	}
-
-	/// <summary>All machines: 3D connect crunch at tackle contact.</summary>
-	private static void PlayTackleConnectImpactSoundAt( Vector3 worldPosition, SoundEvent soundEvent, float volume )
-	{
-		MatchAudioBootstrap.PlayWorldSoundDry( soundEvent, worldPosition, volume );
-	}
-
-	internal void BroadcastTackleConnectImpactSound( Vector3 worldPosition, string soundResourcePath, float volume, Guid attackerRootId )
-	{
-		PlayTackleConnectImpactSoundRpc( worldPosition, soundResourcePath, volume, attackerRootId );
-	}
-
-	[Rpc.Broadcast]
-	private void PlayTackleConnectImpactSoundRpc( Vector3 worldPosition, string soundResourcePath, float volume, Guid attackerRootId )
-	{
-		if ( attackerRootId != Guid.Empty
-			&& TryConsumeHostTackleConnectSoundDedupeForAttacker( Scene, attackerRootId ) )
-			return;
-
-		var sound = ResourceLibrary.Get<SoundEvent>( soundResourcePath );
-		PlayTackleConnectImpactSoundAt( worldPosition, sound, volume );
-	}
-
-	internal static bool TryConsumeHostTackleConnectSoundDedupeForAttacker( Scene scene, Guid attackerRootId )
-	{
-		if ( scene is null || attackerRootId == Guid.Empty )
-			return false;
-
-		foreach ( var tackle in scene.GetAllComponents<PlayerTackle>() )
-		{
-			if ( !tackle.IsValid() || tackle.GameObject.Id != attackerRootId || !tackle.Network.IsOwner )
-				continue;
-
-			return tackle.TryConsumeHostTackleConnectSoundDedupe();
-		}
-
-		return false;
-	}
-
-	private bool TryConsumeHostTackleConnectSoundDedupe()
-	{
-		if ( !ownerPredictedTackleConnectSound )
-			return false;
-
-		ownerPredictedTackleConnectSound = false;
-		return true;
-	}
-
 	/// <summary>Client owner: early victim feel aligned with pre-launch freeze (tackle / blitz — Tier A2).</summary>
 	private void OwnerApplyPredictedVictimFeel( bool hazardKnockdown )
 	{
-		combatFeelDedupe ??= Components.GetOrCreate<CombatFeelPredictDedupe>();
+		combatFeelDedupe ??= ComponentRequire.On<CombatFeelPredictDedupe>( this, "PlayerTackle" );
 		if ( !combatFeelDedupe.TryBeginOwnerPredictedVictimFeel() )
 			return;
 
@@ -930,10 +818,10 @@ public sealed class PlayerTackle : Component
 
 				if ( Networking.IsHost )
 				{
-					BallLastTouchLedger.GetOrCreate( droppedBall )?.NotifyTouchOnHost( victim.GameObject, victim.GameObject.WorldPosition );
+					BallLastTouchLedger.Get( droppedBall )?.NotifyTouchOnHost( victim.GameObject, victim.GameObject.WorldPosition );
 
 					if ( attacker.IsValid() && TryIsEnemyPlayerTackle( attacker, victim ) )
-						BallPassAssistState.GetOrCreate( droppedBall )?.VoidOnEnemyTackleCarrierOnHost();
+						BallPassAssistState.Get( droppedBall )?.VoidOnEnemyTackleCarrierOnHost();
 				}
 			}
 
@@ -958,9 +846,9 @@ public sealed class PlayerTackle : Component
 			victim.Components.Get<CatchUpSpeedBoost>()?.TriggerForceWalkRampOnHost();
 		}
 
-		NotifyTackleImpactFeel( attacker, victim, speedBlitzKnockdown );
+		TackleImpactRelay.NotifyTackleImpactFeel( attacker, victim, speedBlitzKnockdown );
 		if ( !speedBlitzKnockdown && attacker.IsValid() )
-			BroadcastTackleConnectImpactSoundOnHost( attacker, victim );
+			TackleImpactRelay.BroadcastTackleConnectImpactSoundOnHost( attacker, victim );
 
 		if ( !speedBlitzKnockdown )
 		{
@@ -989,7 +877,9 @@ public sealed class PlayerTackle : Component
 			BroadcastPracticeNpcRagdollForClient( attacker, victim );
 		}
 
-		var victimRagdollLifecycle = victim.Components.GetOrCreate<TackleRagdollLifecycle>();
+		var victimRagdollLifecycle = ComponentRequire.On<TackleRagdollLifecycle>( victim, "PlayerTackle.Knockdown" );
+		if ( !victimRagdollLifecycle.IsValid() )
+			return;
 		victimRagdollLifecycle.SpawnRagdollObject(
 			launchDir,
 			effectiveLaunchSpeed,
@@ -1001,92 +891,6 @@ public sealed class PlayerTackle : Component
 			tacklePowerForBall,
 			preLaunchPauseStartedAt );
 		victimRagdollLifecycle.BeginRagdollRecovery();
-	}
-
-	[Rpc.Broadcast]
-	private void PlaySpeedBlitzLaunchSoundRpc( Vector3 worldPosition, string soundResourcePath, float volume )
-	{
-		var sound = ResourceLibrary.Get<SoundEvent>( soundResourcePath );
-		SpeedsterSpeedBlitzUlt.PlayLaunchSoundAt( worldPosition, sound, volume );
-	}
-
-	internal void BroadcastSpeedBlitzConnectImpactSound( Vector3 worldPosition, string soundResourcePath, float volume, Guid dasherRootId )
-	{
-		PlaySpeedBlitzConnectImpactSoundRpc( worldPosition, soundResourcePath, volume, dasherRootId );
-	}
-
-	[Rpc.Broadcast]
-	private void PlaySpeedBlitzConnectImpactSoundRpc( Vector3 worldPosition, string soundResourcePath, float volume, Guid dasherRootId )
-	{
-		if ( dasherRootId != Guid.Empty
-			&& SpeedsterSpeedBlitzUlt.TryConsumeHostConnectSoundDedupeForDasher( Scene, dasherRootId ) )
-			return;
-
-		var sound = ResourceLibrary.Get<SoundEvent>( soundResourcePath );
-		SpeedsterSpeedBlitzUlt.PlayConnectImpactSoundAt( worldPosition, sound, volume );
-	}
-
-	/// <summary>Host: owner-only hitstop / shake / punch on attacker and victim clients.</summary>
-	private static void NotifyTackleImpactFeel( PlayerTackle attacker, PlayerTackle victim, bool speedBlitzKnockdown = false )
-	{
-		if ( !Networking.IsHost )
-			return;
-
-		if ( attacker.IsValid() && attacker != victim )
-		{
-			var attackerDedupe = attacker.Components.GetOrCreate<CombatFeelPredictDedupe>();
-			var applyId = attackerDedupe.AllocateCombatFeelApplyIdOnHost();
-			attacker.TriggerTackleImpactFeelAsAttackerRpc( applyId, speedBlitzKnockdown );
-		}
-
-		if ( victim.IsValid() )
-		{
-			var victimDedupe = victim.Components.GetOrCreate<CombatFeelPredictDedupe>();
-			var applyId = victimDedupe.AllocateCombatFeelApplyIdOnHost();
-			victim.TriggerTackleImpactFeelAsVictimRpc( applyId, hazardKnockdown: !attacker.IsValid(), speedBlitzKnockdown );
-		}
-	}
-
-	[Rpc.Owner]
-	private void TriggerTackleImpactFeelAsAttackerRpc( int combatFeelApplyId, bool speedBlitzKnockdown = false )
-	{
-		combatFeelDedupe ??= Components.Get<CombatFeelPredictDedupe>();
-		if ( combatFeelDedupe.IsValid() && combatFeelDedupe.TryConsumeHostAttackerFeelDedupe( combatFeelApplyId ) )
-			return;
-
-		var feel = Components.Get<TackleImpactFeel>();
-		if ( !feel.IsValid() )
-			return;
-
-		if ( speedBlitzKnockdown )
-			feel.TriggerAsAttacker( ResolveSpeedBlitzImpactFeelOverrides() );
-		else
-			feel.TriggerAsAttacker();
-	}
-
-	[Rpc.Owner]
-	private void TriggerTackleImpactFeelAsVictimRpc( int combatFeelApplyId, bool hazardKnockdown, bool speedBlitzKnockdown = false )
-	{
-		combatFeelDedupe ??= Components.Get<CombatFeelPredictDedupe>();
-		if ( combatFeelDedupe.IsValid() && combatFeelDedupe.TryConsumeHostVictimFeelDedupe( combatFeelApplyId ) )
-			return;
-
-		var feel = Components.Get<TackleImpactFeel>();
-		if ( !feel.IsValid() )
-			return;
-
-		if ( hazardKnockdown )
-			feel.TriggerAsHazardVictim();
-		else if ( speedBlitzKnockdown )
-			feel.TriggerAsVictim( SpeedsterSpeedBlitzUlt.DefaultKnockdownImpactFeelOverrides );
-		else
-			feel.TriggerAsVictim();
-	}
-
-	private TackleImpactFeelOverrides ResolveSpeedBlitzImpactFeelOverrides()
-	{
-		var ult = Components.Get<SpeedsterSpeedBlitzUlt>();
-		return ult.IsValid() ? ult.GetKnockdownImpactFeelOverrides() : SpeedsterSpeedBlitzUlt.DefaultKnockdownImpactFeelOverrides;
 	}
 
 	private static void CapturePracticeNpcPreTacklePoseIfTagged( PlayerTackle victim )
@@ -1499,7 +1303,4 @@ public sealed class PlayerTackle : Component
 
 		NetIsTackleImmune = false;
 	}
-
-	internal void RagdollLifecycle_PlaySpeedBlitzLaunchSound( Vector3 worldPosition, string soundResourcePath, float volume )
-		=> PlaySpeedBlitzLaunchSoundRpc( worldPosition, soundResourcePath, volume );
 }

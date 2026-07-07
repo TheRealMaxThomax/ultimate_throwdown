@@ -463,7 +463,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 			return;
 
 		var contactPos = GetBlitzConnectImpactSoundPosition( dasherStopPosition, victim );
-		victim.BroadcastSpeedBlitzConnectImpactSound(
+		victim.Components.Get<TackleImpactRelay>()?.BroadcastSpeedBlitzConnectImpactSound(
 			contactPos,
 			PickConnectImpactSoundResourcePath(),
 			ConnectImpactSoundVolume.Clamp( 0f, 2f ),
@@ -520,9 +520,9 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 		playerBody = Components.Get<Rigidbody>();
 		catchUpSpeedBoost = Components.Get<CatchUpSpeedBoost>();
 		tackleImpactFeel = Components.Get<TackleImpactFeel>();
-		Components.GetOrCreate<SpeedBlitzDashCamera>();
-		Components.GetOrCreate<SpeedBlitzWindUpFeel>();
-		Components.GetOrCreate<SpeedBlitzBodyGlow>();
+		ComponentRequire.WarnIfMissing<SpeedBlitzDashCamera>( this, "SpeedsterSpeedBlitzUlt" );
+		ComponentRequire.WarnIfMissing<SpeedBlitzWindUpFeel>( this, "SpeedsterSpeedBlitzUlt" );
+		ComponentRequire.WarnIfMissing<SpeedBlitzBodyGlow>( this, "SpeedsterSpeedBlitzUlt" );
 	}
 
 	protected override void OnUpdate()
@@ -1330,7 +1330,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 
 		Components.Get<SpeedBlitzDashCamera>()?.BeginHitRecoveryBlend();
 
-		Components.GetOrCreate<CombatFeelPredictDedupe>().MarkOwnerPredictedAttackerFeel();
+		ComponentRequire.On<CombatFeelPredictDedupe>( this, "SpeedsterSpeedBlitzUlt" )?.MarkOwnerPredictedAttackerFeel();
 		tackleImpactFeel ??= Components.Get<TackleImpactFeel>();
 		tackleImpactFeel?.TriggerAsAttacker( GetKnockdownImpactFeelOverrides() );
 

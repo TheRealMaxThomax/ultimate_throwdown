@@ -22,7 +22,7 @@ public sealed class OutOfBoundsBannerHud : Component
 			if ( !camera.IsMainCamera )
 				continue;
 
-			camera.GameObject.Components.GetOrCreate<OutOfBoundsBannerHud>();
+			ComponentRequire.WarnIfMissing<OutOfBoundsBannerHud>( camera.GameObject, "OutOfBoundsBannerHud.EnsureOnMainCamera" );
 			return;
 		}
 	}

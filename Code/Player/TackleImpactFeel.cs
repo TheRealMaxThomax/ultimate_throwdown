@@ -3,7 +3,7 @@ using Sandbox;
 
 /// <summary>
 /// Owner-only tackle connect juice: brief camera hitstop, optional screen shake, attacker FOV/offset punch.
-/// Host triggers via <see cref="PlayerTackle"/> owner RPCs when a tackle or knockdown lands.
+/// Host triggers via <see cref="TackleImpactRelay"/> owner RPCs when a tackle or knockdown lands.
 /// Does not slow simulation — freezes the local view only.
 /// </summary>
 [Order( 10050 )]

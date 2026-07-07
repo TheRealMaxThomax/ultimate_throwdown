@@ -289,23 +289,19 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		PlayerClass.PrepareDresserBeforeSpawn( player );
 		player.Enabled = true;
 
-		var playerTeam = player.Components.GetOrCreate<PlayerTeam>();
+		var playerTeam = ComponentRequire.On<PlayerTeam>( player, "GameNetworkManager.Spawn" );
+		if ( !playerTeam.IsValid() )
+			return;
+
 		playerTeam.TeamId = teamId;
 
-		var playerLoadout = player.Components.GetOrCreate<PlayerLoadout>();
+		var playerLoadout = ComponentRequire.On<PlayerLoadout>( player, "GameNetworkManager.Spawn" );
+		if ( !playerLoadout.IsValid() )
+			return;
+
 		playerLoadout.ApplyCommittedLoadoutOnHost( committedLoadout );
 
-		player.Components.GetOrCreate<PlayerDisableCrouch>();
-		player.Components.GetOrCreate<PlayerEnemyOutline>();
-		player.Components.GetOrCreate<BallCompassHud>();
-		player.Components.GetOrCreate<PlayerBallHoldAnim>();
-		player.Components.GetOrCreate<PlayerChargeRunAnim>();
-		player.Components.GetOrCreate<TackleImpactFeel>();
-		player.Components.GetOrCreate<CombatFeelPredictDedupe>();
-		player.Components.GetOrCreate<PlayerFootstepAudio>();
-		player.Components.GetOrCreate<PracticeNpcPatrolPoseRelay>();
-		player.Components.GetOrCreate<LoadoutClientState>();
-		player.Components.GetOrCreate<LoadoutPickerHud>();
+		WarnMissingPlayerPrefabComponents( player );
 
 		playerLoadout.ConfigureSpeedsterOnlyComponentsOnHost();
 
@@ -639,6 +635,24 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		LoadoutPersistence.SaveCommitted( steamId, data );
 		SpawnPlayerForConnectionIfMissing( connection );
 		return true;
+	}
+
+	private static void WarnMissingPlayerPrefabComponents( GameObject player )
+	{
+		const string context = "GameNetworkManager.Spawn";
+		ComponentRequire.WarnIfMissing<PlayerDisableCrouch>( player, context );
+		ComponentRequire.WarnIfMissing<PlayerEnemyOutline>( player, context );
+		ComponentRequire.WarnIfMissing<BallCompassHud>( player, context );
+		ComponentRequire.WarnIfMissing<PlayerBallHoldAnim>( player, context );
+		ComponentRequire.WarnIfMissing<PlayerChargeRunAnim>( player, context );
+		ComponentRequire.WarnIfMissing<TackleImpactFeel>( player, context );
+		ComponentRequire.WarnIfMissing<CombatFeelPredictDedupe>( player, context );
+		ComponentRequire.WarnIfMissing<PlayerFootstepAudio>( player, context );
+		ComponentRequire.WarnIfMissing<PracticeNpcPatrolPoseRelay>( player, context );
+		ComponentRequire.WarnIfMissing<LoadoutClientState>( player, context );
+		ComponentRequire.WarnIfMissing<LoadoutPickerHud>( player, context );
+		ComponentRequire.WarnIfMissing<TackleRagdollLifecycle>( player, context );
+		ComponentRequire.WarnIfMissing<TackleImpactRelay>( player, context );
 	}
 
 }

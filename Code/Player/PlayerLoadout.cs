@@ -143,17 +143,20 @@ public sealed class PlayerLoadout : Component
 
 		var isSpeedster = IsSpeedsterClass();
 
-		SetComponentEnabled<PlayerSpeedBlitzWindUpAnim>( isSpeedster, createIfSpeedster: true );
-		SetComponentEnabled<BlitzConnectPoseFreeze>( isSpeedster, createIfSpeedster: true );
+		SetComponentEnabled<PlayerSpeedBlitzWindUpAnim>( isSpeedster );
+		SetComponentEnabled<BlitzConnectPoseFreeze>( isSpeedster );
 	}
 
-	private void SetComponentEnabled<T>( bool enabled, bool createIfSpeedster ) where T : Component, new()
+	private void SetComponentEnabled<T>( bool enabled ) where T : Component
 	{
 		var component = Components.Get<T>();
-		if ( !component.IsValid() && enabled && createIfSpeedster )
-			component = Components.Create<T>();
+		if ( !component.IsValid() )
+		{
+			if ( enabled )
+				Log.Warning( $"[PlayerLoadout] Missing {typeof( T ).Name} on '{GameObject.Name}' — add it on the Speedster prefab." );
+			return;
+		}
 
-		if ( component.IsValid() )
-			component.Enabled = enabled;
+		component.Enabled = enabled;
 	}
 }

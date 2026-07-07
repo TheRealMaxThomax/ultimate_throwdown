@@ -9,17 +9,8 @@ public sealed class BallLastTouchLedger : Component
 	private Vector3 anchorPosition;
 	private bool hasCredit;
 
-	public static BallLastTouchLedger GetOrCreate( GameObject ball )
-	{
-		if ( !ball.IsValid() )
-			return null;
-
-		var ledger = ball.Components.Get<BallLastTouchLedger>();
-		if ( ledger.IsValid() )
-			return ledger;
-
-		return ball.Components.Create<BallLastTouchLedger>();
-	}
+	public static BallLastTouchLedger Get( GameObject ball )
+		=> ComponentRequire.On<BallLastTouchLedger>( ball, "BallLastTouchLedger" );
 
 	/// <summary> Host: throw release, voluntary drop, or tackle knock-off carrier. </summary>
 	public void NotifyTouchOnHost( GameObject player, Vector3 anchorWorldPosition )

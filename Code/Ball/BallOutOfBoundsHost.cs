@@ -41,7 +41,7 @@ public sealed class BallOutOfBoundsHost : Component
 			if ( !go.IsValid() || go.Name != "main_ball" )
 				continue;
 
-			return go.Components.GetOrCreate<BallOutOfBoundsHost>();
+			return ComponentRequire.On<BallOutOfBoundsHost>( go, "BallOutOfBoundsHost.EnsureOnMainBall" );
 		}
 
 		return null;
@@ -51,7 +51,7 @@ public sealed class BallOutOfBoundsHost : Component
 
 	protected override void OnStart()
 	{
-		ledger = BallLastTouchLedger.GetOrCreate( GameObject );
+		ledger = BallLastTouchLedger.Get( GameObject );
 	}
 
 	protected override void OnUpdate()
@@ -174,7 +174,7 @@ public sealed class BallOutOfBoundsHost : Component
 
 		anchor = ResolveDropAnchorOnGround( anchor );
 
-		BallPassAssistState.GetOrCreate( GameObject )?.ResetOnHost();
+		BallPassAssistState.Get( GameObject )?.ResetOnHost();
 		SetBallSimulationVisible( false );
 
 		var team = GetAnyNetworkedPlayerTeam();

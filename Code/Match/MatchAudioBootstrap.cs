@@ -28,7 +28,7 @@ public sealed class MatchAudioBootstrap : Component
 			if ( !camera.IsMainCamera )
 				continue;
 
-			camera.GameObject.Components.GetOrCreate<MatchAudioBootstrap>();
+			ComponentRequire.WarnIfMissing<MatchAudioBootstrap>( camera.GameObject, "MatchAudioBootstrap.EnsureOnMainCamera" );
 			return;
 		}
 	}

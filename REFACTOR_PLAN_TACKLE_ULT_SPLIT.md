@@ -12,7 +12,7 @@
 
 ## Ground rules for every step (read once, apply throughout)
 
-1. **Sibling components, not partial classes.** Every split creates a new `Component` on the *same GameObject*, auto-added via `Components.GetOrCreate<T>()` in `OnStart()` — exactly the existing pattern for `CombatFeelPredictDedupe`, `SpeedBlitzDashCamera`, `SpeedBlitzWindUpFeel`. **No manual prefab wiring is required** for any step below unless explicitly stated.
+1. **Sibling components, not partial classes.** Every split creates a new `Component` on the *same GameObject* — **add it manually on the player prefab** (see `.cursor/rules/no-auto-add-components.mdc`). Code uses `Components.Get<T>()` + `ComponentRequire` warnings when missing; no `GetOrCreate` on prefab-owned components.
 2. **Preserve the public/internal API of the original class wherever another file calls it.** If method `Foo()` on `PlayerTackle` is called from `SpeedsterSpeedBlitzUlt.cs` (or vice versa), either keep a one-line forwarding method on the original class, or update that single external call site directly — whichever is simpler for that step (stated per-step below). Call sites **within the same file** being edited just get updated directly.
 3. **RPCs must live on a component attached to the networked GameObject.** Since siblings are added to the same GameObject, `[Rpc.Broadcast]` / `[Rpc.Host]` / `[Rpc.Owner]` methods work identically after moving — this is already proven by `TackleImpactFeel` and `CombatFeelPredictDedupe`.
 4. **Inspector (`[Property]`) values that move to a new sibling component need re-wiring in the editor.** Serialized values live per-component-instance; moving a `[Property]` to a different class means the field appears blank on the new component until re-assigned. This plan minimizes how often that happens and calls it out explicitly wherever it's unavoidable.
@@ -29,7 +29,7 @@
 
 **Stays on `PlayerTackle`:** `SyncedRagdollPelvisPosition` (reads `NetRagdollPosition`, not `ragdollObject` — no change needed), `TryGetRagdollOrbitCamera` (uses `playerController`/`WorldPosition`, not `ragdollObject`).
 
-**New cross-reference:** `PlayerTackle.OnUpdate()` reads `ragdollObject.WorldPosition` to update `NetRagdollPosition` — this needs a reference to the new sibling (`Components.GetOrCreate<TackleRagdollLifecycle>()` in `OnStart`, expose `RagdollObject` as a public property on the sibling). `ForceStandUpFromHost()` and `ApplyVictimKnockdownFromHost()` call into ragdoll spawn/destroy — update those calls to go through the sibling.
+**New cross-reference:** `PlayerTackle.OnUpdate()` reads `ragdollObject.WorldPosition` to update `NetRagdollPosition` — this needs a reference to the new sibling (`ComponentRequire.On<TackleRagdollLifecycle>()` in `OnStart`, expose `RagdollObject` as a public property on the sibling). `ForceStandUpFromHost()` and `ApplyVictimKnockdownFromHost()` call into ragdoll spawn/destroy — update those calls to go through the sibling.
 
 **Cross-file touch:** None outside `PlayerTackle.cs` — `ragdollObject` was never referenced from other files.
 
@@ -49,7 +49,7 @@
 
 **Moves:** `PickTackleConnectImpactSoundResourcePath`, `GetTackleConnectImpactSoundPosition`, `OwnerPlayPredictedTackleConnectImpactSound`, `BroadcastTackleConnectImpactSoundOnHost`, `PlayTackleConnectImpactSoundAt`, `BroadcastTackleConnectImpactSound`, `PlayTackleConnectImpactSoundRpc`, `TryConsumeHostTackleConnectSoundDedupeForAttacker`, `TryConsumeHostTackleConnectSoundDedupe`, `PlaySpeedBlitzLaunchSoundRpc`, `BroadcastSpeedBlitzConnectImpactSound`, `PlaySpeedBlitzConnectImpactSoundRpc`, `NotifyTackleImpactFeel`, `TriggerTackleImpactFeelAsAttackerRpc`, `TriggerTackleImpactFeelAsVictimRpc`, `ResolveSpeedBlitzImpactFeelOverrides`, plus the `TackleConnectImpactSoundA` / `TackleConnectImpactSoundB` / `TackleConnectImpactSoundVolume` properties and `ownerPredictedTackleConnectSound` field.
 
-**⚠️ Editor rewiring needed:** `TackleConnectImpactSoundA`/`B` are drag-dropped `SoundEvent` assets on the player prefabs today. After this step, add `TackleImpactRelay` to each player prefab (or let auto-add handle it) and **re-drag the two crunch sound assets** onto the new component — they'll be blank on `PlayerTackle` after the properties move.
+**⚠️ Editor rewiring needed:** `TackleConnectImpactSoundA`/`B` are drag-dropped `SoundEvent` assets on the player prefabs today. After this step, **add `TackleImpactRelay` to each player prefab** and **re-drag the two crunch sound assets** onto the new component — they'll be blank on `PlayerTackle` after the properties move.
 
 **Cross-file touch:** `SpeedsterSpeedBlitzUlt.HostApplyDashKnockdown()` calls `victim.BroadcastSpeedBlitzConnectImpactSound(...)`. Update this **one line** in `SpeedsterSpeedBlitzUlt.cs` to `victim.Components.Get<TackleImpactRelay>()?.BroadcastSpeedBlitzConnectImpactSound(...)`. Everything else that calls into this group (`ExecuteTackle`, `ApplyVictimKnockdownFromHost`, and — after A1 — `TackleRagdollLifecycle`'s knockdown-launch call to `PlaySpeedBlitzLaunchSoundRpc`) lives inside files you're already editing this step.
 

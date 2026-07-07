@@ -260,8 +260,8 @@ public sealed class BallThrow : Component
 			Log.Info( $"[NetDebug] Host applied throw. Speed={releasedBallBody.Velocity.Length}" );
 		}
 
-		BallPassAssistState.GetOrCreate( releasedBall )?.NotifyThrowOnHost( GameObject );
-		BallLastTouchLedger.GetOrCreate( releasedBall )?.NotifyTouchOnHost( GameObject, GameObject.WorldPosition );
+		BallPassAssistState.Get( releasedBall )?.NotifyThrowOnHost( GameObject );
+		BallLastTouchLedger.Get( releasedBall )?.NotifyTouchOnHost( GameObject, GameObject.WorldPosition );
 	}
 
 	/// <summary> Owning client: cancel windup without throwing (charge bar, sync, movement plant). </summary>

@@ -309,7 +309,7 @@ public sealed class MatchDirector : Component
 			body.AngularVelocity = Vector3.Zero;
 		}
 
-		BallPassAssistState.GetOrCreate( ball )?.ResetOnHost();
+		BallPassAssistState.Get( ball )?.ResetOnHost();
 	}
 
 	private GameObject FindMainBallObject()

@@ -158,7 +158,7 @@ public sealed class TackleRagdollLifecycle : Component
 			{
 				attacker?.Components.Get<SpeedsterSpeedBlitzUlt>()?.EndConnectHangOnHostAtLaunch();
 
-				tackle.RagdollLifecycle_PlaySpeedBlitzLaunchSound(
+				tackle.Components.Get<TackleImpactRelay>()?.BroadcastSpeedBlitzLaunchSound(
 					spawnPos,
 					SpeedsterSpeedBlitzUlt.ResolveLaunchSoundResourcePath( attacker ),
 					SpeedsterSpeedBlitzUlt.ResolveLaunchSoundVolume( attacker ) );

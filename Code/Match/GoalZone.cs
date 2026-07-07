@@ -92,7 +92,7 @@ public sealed class GoalZone : Component, Component.ExecuteInEditor
 
 		var heldBall = carrier.Components.Get<BallGrab>()?.HeldBall;
 		if ( heldBall.IsValid() )
-			BallPassAssistState.GetOrCreate( heldBall )?.TryGrantAssistChargeOnHost( carrier );
+			BallPassAssistState.Get( heldBall )?.TryGrantAssistChargeOnHost( carrier );
 
 		matchDirector.RegisterGoal( scoringTeamId );
 		ResetDwell();

@@ -17,17 +17,8 @@ public sealed class BallPassAssistState : Component
 	private bool isVoided;
 	private bool trackingActive;
 
-	public static BallPassAssistState GetOrCreate( GameObject ball )
-	{
-		if ( !ball.IsValid() )
-			return null;
-
-		var state = ball.Components.Get<BallPassAssistState>();
-		if ( state.IsValid() )
-			return state;
-
-		return ball.Components.Create<BallPassAssistState>();
-	}
+	public static BallPassAssistState Get( GameObject ball )
+		=> ComponentRequire.On<BallPassAssistState>( ball, "BallPassAssistState" );
 
 	protected override void OnStart()
 	{

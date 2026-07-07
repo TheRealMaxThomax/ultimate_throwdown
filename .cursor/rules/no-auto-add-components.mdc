@@ -1,0 +1,37 @@
+---
+description: No runtime component auto-add on prefab/scene objects — Max wires in editor
+alwaysApply: true
+---
+
+# No Auto-Add Components
+
+Max owns prefab and scene component setup. **Do not** silently add gameplay components at runtime on objects that exist in the editor.
+
+## Rule
+
+- **Do not** use `Components.GetOrCreate<T>()`, `Components.Create<T>()`, or equivalent to add **prefab-owned** or **scene-owned** gameplay components.
+- **Do** use `Components.Get<T>()` and log a clear warning when a required component is missing — tell Max which object and component to add in the editor.
+- **Do** describe manual editor steps when introducing a new component (where to add it, which prefab/scene object, what to wire).
+
+Use `ComponentRequire.On<T>( gameObject, context )` or `ComponentRequire.WarnIfMissing<T>( ... )` in `Code/ComponentRequire.cs` for consistent warnings.
+
+## Allowed runtime auto-add (exceptions)
+
+| Case | Why |
+|------|-----|
+| `RagdollEnemyOutline` (+ `HighlightOutline`) on host-spawned ragdoll GO | No prefab — created during knockdown |
+| `HighlightOutline` inside outline scripts on the same GO | Engine helper; parent script owns tuning |
+| `Highlight` on Main Camera via `EnemyOutlineCameraSetup` | Post-process helper; Max approved keeping this |
+| `BallPassAssistCollisionRelay` on arbitrary hit bodies | Created on whatever body the ball touches |
+| Child GOs spawned in code (comic bursts, trajectory markers, OOB markers, VFX children) | Programmatic spawn — not editor prefab components |
+
+## Player / ball / camera checklist lives in `ARCHITECTURE.md` § Component wiring
+
+When adding a new `[Property]` component that must be tuned in the inspector, add one line to that section and `NAMING_CANON.md`.
+
+## Good vs bad
+
+- **Good:** `var relay = ComponentRequire.On<TackleImpactRelay>( victim, "PlayerTackle.Knockdown" );` then null-check before use.
+- **Bad:** `victim.Components.GetOrCreate<TackleImpactRelay>()` — hides the component from Max until play.
+- **Good:** "Add `TackleImpactRelay` to each player class prefab; drag crunch sounds onto Impact SFX."
+- **Bad:** Patching the scene file to inject the component.

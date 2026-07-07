@@ -44,7 +44,7 @@ public sealed class PracticeLaunchReadout : Component
 			worldPanel.LookAtCamera = LookAtCamera;
 		}
 
-		panelRoot = Components.GetOrCreate<PracticeLaunchReadoutRoot>();
+		panelRoot = ComponentRequire.On<PracticeLaunchReadoutRoot>( this, "PracticeLaunchReadout" );
 		panelRoot.RefreshAppearance();
 	}
 

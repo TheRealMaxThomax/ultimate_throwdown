@@ -3,7 +3,7 @@ using Sandbox;
 /// <summary>
 /// Host broadcasts authoritative <see cref="PracticeNpcPatrol"/> poses to clients each fixed tick.
 /// Scene <c>practice_npc</c> dummies are not network-spawned — pose RPCs must originate from a real player pawn.
-/// Auto-added on network spawn (<see cref="GameNetworkManager"/>).
+/// On player prefab + practice patrol runner; host fixed-tick pose broadcast to clients.
 /// </summary>
 [Order( 100 )]
 public sealed class PracticeNpcPatrolPoseRelay : Component
