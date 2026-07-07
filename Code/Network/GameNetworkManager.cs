@@ -653,6 +653,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		ComponentRequire.WarnIfMissing<LoadoutPickerHud>( player, context );
 		ComponentRequire.WarnIfMissing<TackleRagdollLifecycle>( player, context );
 		ComponentRequire.WarnIfMissing<TackleImpactRelay>( player, context );
+		ComponentRequire.WarnIfMissing<PracticeNpcTackleClientRelay>( player, context );
 	}
 
 }

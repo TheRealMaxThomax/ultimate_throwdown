@@ -45,7 +45,8 @@ public sealed class PracticeLaunchReadout : Component
 		}
 
 		panelRoot = ComponentRequire.On<PracticeLaunchReadoutRoot>( this, "PracticeLaunchReadout" );
-		panelRoot.RefreshAppearance();
+		if ( panelRoot.IsValid() )
+			panelRoot.RefreshAppearance();
 	}
 
 	protected override void OnUpdate()

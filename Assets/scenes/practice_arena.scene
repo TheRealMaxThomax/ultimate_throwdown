@@ -1287,6 +1287,18 @@
               "TackleConnectImpactSoundA": "sounds/crunch/speed_blitz_connect_crunch_a.sound",
               "TackleConnectImpactSoundB": "sounds/crunch/speed_blitz_connect_crunch_b.sound",
               "TackleConnectImpactSoundVolume": 1
+            },
+            {
+              "__type": "PracticeNpcTackleClientRelay",
+              "__guid": "2b0c5cbb-3f4a-4143-a1f6-bc4a8c95e221",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
             }
           ],
           "Children": [
@@ -3370,7 +3382,7 @@
                   ]
                 },
                 {
-                  "__guid": "cadc8daa-a5a5-47dc-afef-ca4e56fa24ad",
+                  "__guid": "be8437ca-d3dd-4748-8099-6057caf4d11a",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3387,7 +3399,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "89ea4b29-3ba0-4989-89b1-a4d995d64b0c",
+                      "__guid": "a5af8fa3-e221-4481-9922-2caf354c5b22",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -4296,6 +4308,18 @@
               "TackleConnectImpactSoundA": "sounds/crunch/speed_blitz_connect_crunch_a.sound",
               "TackleConnectImpactSoundB": "sounds/crunch/speed_blitz_connect_crunch_b.sound",
               "TackleConnectImpactSoundVolume": 1
+            },
+            {
+              "__type": "PracticeNpcTackleClientRelay",
+              "__guid": "1a4646e4-1c9a-497b-8bf7-26f031838af9",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
             }
           ],
           "Children": [
@@ -6379,7 +6403,7 @@
                   ]
                 },
                 {
-                  "__guid": "25828773-fe49-4720-ab29-9ee81c7eb803",
+                  "__guid": "171ab671-25a7-402d-b1c6-84b9be5e7101",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6396,7 +6420,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "cf989f5d-3791-482a-9dea-c12d618d7e3e",
+                      "__guid": "ec366926-910c-4291-bdf8-cc45ad3a1cf4",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -7305,6 +7329,18 @@
               "TackleConnectImpactSoundA": "sounds/crunch/speed_blitz_connect_crunch_a.sound",
               "TackleConnectImpactSoundB": "sounds/crunch/speed_blitz_connect_crunch_b.sound",
               "TackleConnectImpactSoundVolume": 1
+            },
+            {
+              "__type": "PracticeNpcTackleClientRelay",
+              "__guid": "144353f4-85a4-489e-b038-8e6af50db0d9",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
             }
           ],
           "Children": [
@@ -9388,7 +9424,7 @@
                   ]
                 },
                 {
-                  "__guid": "7a191190-bf24-4088-b00f-f71dee0ceb20",
+                  "__guid": "fa433bf6-e048-4a50-a276-2abdaf82f639",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -9405,7 +9441,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "6657dc6b-ca1e-40a1-9248-29e2b52203ab",
+                      "__guid": "77a405e7-764d-44f5-a19d-669739614b25",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -10527,6 +10563,18 @@
               "ShakeForVictim": true,
               "ShakePositionAmplitude": 7,
               "ShakeRotationAmplitudeDegrees": 1.2
+            },
+            {
+              "__type": "PracticeNpcTackleClientRelay",
+              "__guid": "5eb5b601-6e25-49e7-af42-048602b2a839",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
             }
           ],
           "Children": [
@@ -12610,7 +12658,7 @@
                   ]
                 },
                 {
-                  "__guid": "649f0315-8aca-4b7d-9d06-cf716503305b",
+                  "__guid": "6989aac2-71a0-4f1d-9144-e39f1f92e318",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -12627,7 +12675,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "d90935aa-28e5-44ec-ad29-644428d9c076",
+                      "__guid": "7fca6b30-9e79-46b9-a25b-a6a6f290c8e0",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -12640,7 +12688,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": null,
+                      "LodOverride": 0,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -13317,6 +13365,18 @@
             {
               "__type": "CombatFeelPredictDedupe",
               "__guid": "fd9b15c9-dad6-4362-becc-8fd0fe0dc164",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            },
+            {
+              "__type": "PracticeNpcTackleClientRelay",
+              "__guid": "5eeebb71-e2cc-428b-b868-0131950431f8",
               "__enabled": true,
               "Flags": 0,
               "OnComponentDestroy": null,
@@ -15408,7 +15468,7 @@
                   ]
                 },
                 {
-                  "__guid": "6a949203-f7b0-4c5a-8032-6d3395eb46c9",
+                  "__guid": "27f0afab-ab91-49c0-8c27-b7afda53f4ea",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -15425,7 +15485,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "8d320ff6-9de9-433c-902b-96a867209016",
+                      "__guid": "61bda552-cf39-4596-a698-389c829e0778",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -15438,7 +15498,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": null,
+                      "LodOverride": 0,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -16026,6 +16086,18 @@
               "ShakeForVictim": true,
               "ShakePositionAmplitude": 7,
               "ShakeRotationAmplitudeDegrees": 1.2
+            },
+            {
+              "__type": "PracticeNpcTackleClientRelay",
+              "__guid": "eb7dd105-74c0-47b8-85f1-f6952420564f",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
             }
           ],
           "Children": [
@@ -18109,7 +18181,7 @@
                   ]
                 },
                 {
-                  "__guid": "0a83bd96-a566-475c-ad82-0afc81ce85fa",
+                  "__guid": "dda8636e-9bdb-4fd5-a4f4-37091baa9f6f",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -18126,7 +18198,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "ea44eab4-7610-471d-933d-1e06939fdb79",
+                      "__guid": "b0c52fcd-a10e-4f9c-b60f-a4617db56f3a",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -18139,7 +18211,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": null,
+                      "LodOverride": 0,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -18727,6 +18799,18 @@
               "ShakeForVictim": true,
               "ShakePositionAmplitude": 7,
               "ShakeRotationAmplitudeDegrees": 1.2
+            },
+            {
+              "__type": "PracticeNpcTackleClientRelay",
+              "__guid": "32f389b2-42c5-4bfe-9795-7a67b0221dbf",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
             }
           ],
           "Children": [
@@ -20810,7 +20894,7 @@
                   ]
                 },
                 {
-                  "__guid": "cf2e89e9-5f7e-4761-bf06-5916c5454c69",
+                  "__guid": "19cb328c-2cec-494e-97cf-46148e58b352",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -20827,7 +20911,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "b27f6538-b383-4cd0-878b-bb8bd2def7b2",
+                      "__guid": "397437f7-fa18-43c3-aecd-80462a237265",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -20840,7 +20924,7 @@
                       },
                       "CreateAttachments": false,
                       "CreateBoneObjects": false,
-                      "LodOverride": null,
+                      "LodOverride": 0,
                       "MaterialGroup": null,
                       "MaterialOverride": null,
                       "Materials": null,
@@ -27981,6 +28065,18 @@
               },
               "RenderScale": 1,
               "VerticalAlign": "Center"
+            },
+            {
+              "__type": "PracticeLaunchReadoutRoot",
+              "__guid": "0366125e-2f7e-4c5d-a08e-6e30fbc10ace",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
             }
           ],
           "Children": []

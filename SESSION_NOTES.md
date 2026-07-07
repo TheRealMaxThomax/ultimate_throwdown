@@ -173,6 +173,7 @@ Settled items removed 2026-07-06 cleanup → archive decision log.
 
 ```
 Read SESSION_NOTES.md → loadout v1 + join sync done → ult slice 5 (Juggernaut stomp).
+PlayerTackle split Track A done (A1–A3 ✅; A4 deferred). Speed Blitz split Track B when starting B1.
 Design: GAMEPLAY_DESIGN.md. Wiring: ARCHITECTURE.md. Names: NAMING_CANON.md.
 Networking / new combat: MULTIPLAYER_NETCODE.md (host authority + predict checklist).
 LoadoutAuthority stub returns true; join sync cross-machine verify at publish.
@@ -185,6 +186,7 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
+- **2026-07-07 (PlayerTackle Track A ✅):** A1 `TackleRagdollLifecycle`, A2 `TackleImpactRelay`, A3 `PracticeNpcTackleClientRelay` — 2-window MP practice dummy mirroring signed off. Orchestrator ~1,175 lines. **A4** (ragdoll orbit camera extract) **deferred**. **Track B** (`SpeedsterSpeedBlitzUlt` split) when ready.
 - **2026-07-06 (join sync editor smoke ✅):** Host double `[PlayerLoadout]` on joiner spawn, no errors. Same SteamId = not cross-host proof. **Code shipped — verify at publish.**
 - **2026-07-06 (loadout v1 ✅):** Intermission Q picker, class respawn, join sync RPC, force-commit. Prefab split + per-class spawn.
 - **2026-07-06 (SESSION_NOTES cleanup):** Trimmed to ~250 lines; loadout design → GAMEPLAY_DESIGN; wiring → ARCHITECTURE; shipped slices → archive.

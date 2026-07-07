@@ -72,6 +72,7 @@
 | `PlayerTackle` | Tackle and ragdoll |
 | `TackleRagdollLifecycle` | Host ragdoll spawn, launch impulse, grounded recovery polling, destroy — sibling of `PlayerTackle` (prefab) |
 | `TackleImpactRelay` | Tackle + Speed Blitz connect SFX broadcast and owner impact-feel RPC relay — sibling of `PlayerTackle` (prefab) |
+| `PracticeNpcTackleClientRelay` | Practice dummy client-visual mirroring (freeze/ragdoll/stand-up RPCs for snapshot `practice_npc` dummies) — sibling of `PlayerTackle` (prefab) |
 | `ComponentRequire` | `On<T>(go, context)` / `WarnIfMissing<T>` — logs when editor-wired component missing (no auto-add) |
 | `RagdollClientFeel` | Smoother ragdoll camera for the owning player |
 | `PlayerCosmeticsSync` | Outfits / avatar look only |
@@ -116,6 +117,7 @@
 
 **Often-used on `PlayerTackle`:** `TackleLaunchSpeed`, `TackleLaunchArc`, `MaxTackleVerticalSeparation` (default `56` — jumpers within band still connect), **`TryValidateContactCylinder`** (internal — horizontal radius + vertical band; shared with Speed Blitz dash contact), `NetIsRagdolled`, **`IsAwaitingRagdollLaunch`**, **`IsAwaitingSpeedBlitzRagdollLaunch`**, **`IsKnockedDown`**, **`NetLastKnockdownWasHazard`** (host — hazard vs player knockdown for client victim predict), `IsTackleImmune`, `SetHostTackleImmune(bool)`, `IsStandUpCameraBlending`, `RagdollPhysicsInitDelay`, **`PreLaunchPauseSeconds`**, `ApplyKnockdownFromHost()`; RPC `RequestTackleApplyOnHost`
 **Often-used on `TackleImpactRelay`:** **`TackleConnectImpactSoundA`** / **`TackleConnectImpactSoundB`** (host random connect crunch on player tackles), **`TackleConnectImpactSoundVolume`**, owner RPCs `TriggerTackleImpactFeelAsAttackerRpc(combatFeelApplyId)` / `TriggerTackleImpactFeelAsVictimRpc(combatFeelApplyId, hazardKnockdown)` → `TackleImpactFeel` + **`CombatFeelPredictDedupe`**; tackle SFX **`BroadcastTackleConnectImpactSound`** / **`PlayTackleConnectImpactSoundRpc`**; blitz SFX **`BroadcastSpeedBlitzConnectImpactSound`** / **`PlaySpeedBlitzConnectImpactSoundRpc`**, **`BroadcastSpeedBlitzLaunchSound`**
+**Often-used on `PracticeNpcTackleClientRelay`:** **`BeginPracticeNpcClientContactFreeze(speedBlitzKnockdown)`** (owner-predict blitz contact freeze pin on snapshot dummies); host **`BroadcastPracticeNpcFreezeForClient`** / **`BroadcastPracticeNpcRagdollForClient`** / **`BroadcastPracticeNpcStandUpForClient`**; client RPCs `PracticeNpcClientFreezeRpc` / `PracticeNpcClientRagdollRpc` / `PracticeNpcClientStandUpRpc`
 **Often-used on `PlayerDodge`:** `IsImmuneToTackle`, `DodgeChannelDurationSeconds`, `DodgeCooldownRemaining`, `IsDodging`  
 **Often-used on `CatchUpSpeedBoost`:** `IsAtChargeSpeed`, `GetMovementRampDisplay`, `MovementRampTier`, `TriggerForceWalkRampOnHost()` (host — force owner ramp back to walk: tackle connect, knockdown, Speed Blitz end)  
 **Tag for test dummies only:** `practice_npc`

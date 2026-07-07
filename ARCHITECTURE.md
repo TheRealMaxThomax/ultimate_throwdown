@@ -28,9 +28,9 @@
 
 **Still recommended before/during slice 5/6:**
 
-1. **Split `PlayerTackle`** — ~1,150 lines; Juggernaut/Sniper touch tackle-adjacent rules.
-2. **Split `SpeedsterSpeedBlitzUlt`** — template for new ults; keep thin orchestrator.
-3. **Per-class prefab checklist** — see **§ Loadout & spawn** below when duplicating components.
+1. ~~**Split `PlayerTackle`**~~ — **✅ A1–A3 shipped (2026-07-07)** → `TackleRagdollLifecycle`, `TackleImpactRelay`, `PracticeNpcTackleClientRelay` (~1,175 lines left on orchestrator). **A4** (ragdoll orbit camera) **deferred** — not needed for stomp/melee/zones.
+2. **Split `SpeedsterSpeedBlitzUlt`** — template for new ults; keep thin orchestrator (**Track B** — start with B1).
+3. **Per-class prefab checklist** — see **§ Loadout & spawn** + **§ Component wiring** below when duplicating components.
 
 **Can wait:** Match HUD replication refactor; `Code/Weapons/` (slice 7); C# namespaces.
 
@@ -157,12 +157,12 @@ Almost everything checks `PlayerTeam.IsMatchGameplayInputAllowed` — one gate, 
 
 | File | ~Lines | Bundled concerns |
 |------|--------|------------------|
-| `PlayerTackle.cs` | 1,150 | Detection, RPC validation, ragdoll lifecycle, hazard path, camera, stand-up, comic notify, ult charge, Juggernaut ramp |
+| `PlayerTackle.cs` | **~1,175** | Detection, RPC validation, host knockdown authority, owner camera blend, Juggernaut ramp — siblings: `TackleRagdollLifecycle`, `TackleImpactRelay`, `PracticeNpcTackleClientRelay` |
 | `SpeedsterSpeedBlitzUlt.cs` | 1,089 | Input, phases, movement, host hit test, knockdown, charge block, VFX hooks |
 | `CatchUpSpeedBoost.cs` | 544 | Movement tiers + every combat input gate |
 | `TrafficCar.cs` | 603 | Path, knockdown, audio, proxy interpolation |
 
-`PlayerTackle` includes an inline “quick map” at the top — intentional navigation for a file that grew past comfortable size.
+`PlayerTackle` includes an inline “quick map” at the top — intentional navigation. **Track A split (A1–A3) shipped 2026-07-07**; optional A4 (camera-only extract) deferred.
 
 ### Match state replication workaround
 
@@ -176,7 +176,7 @@ Previously `GameNetworkManager` auto-added feel/anim/HUD pieces at spawn. **Poli
 
 ### Component wiring (editor checklist)
 
-**Every player class prefab:** `PlayerTeam`, `PlayerLoadout`, `PlayerDisableCrouch`, `PlayerEnemyOutline`, `BallCompassHud`, `PlayerBallHoldAnim`, `PlayerChargeRunAnim`, `TackleImpactFeel`, `CombatFeelPredictDedupe`, `PlayerFootstepAudio`, `PracticeNpcPatrolPoseRelay`, `LoadoutClientState`, `LoadoutPickerHud`, `TackleRagdollLifecycle`, `TackleImpactRelay`, plus core gameplay (`BallGrab`, `BallThrow`, `CatchUpSpeedBoost`, `PlayerDodge`, `PlayerTackle`, `PlayerUltCharge`, `PlayerClass`, throw/charge HUDs, `RagdollClientFeel`, …).
+**Every player class prefab:** `PlayerTeam`, `PlayerLoadout`, `PlayerDisableCrouch`, `PlayerEnemyOutline`, `BallCompassHud`, `PlayerBallHoldAnim`, `PlayerChargeRunAnim`, `TackleImpactFeel`, `CombatFeelPredictDedupe`, `PlayerFootstepAudio`, `PracticeNpcPatrolPoseRelay`, `LoadoutClientState`, `LoadoutPickerHud`, `TackleRagdollLifecycle`, `TackleImpactRelay`, `PracticeNpcTackleClientRelay`, plus core gameplay (`BallGrab`, `BallThrow`, `CatchUpSpeedBoost`, `PlayerDodge`, `PlayerTackle`, `PlayerUltCharge`, `PlayerClass`, throw/charge HUDs, `RagdollClientFeel`, …).
 
 **Speedster prefab additionally:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzAimPreview`, `SpeedBlitzDashCamera`, `SpeedBlitzWindUpFeel`, `SpeedBlitzBodyGlow`, `PlayerSpeedBlitzWindUpAnim`, `BlitzConnectPoseFreeze`.
 
@@ -184,9 +184,11 @@ Previously `GameNetworkManager` auto-added feel/anim/HUD pieces at spawn. **Poli
 
 **Ball (`main_ball`):** `BallCarrierOutline`, `BallLastTouchLedger`, `BallPassAssistState`, `BallOutOfBoundsHost`.
 
-**Practice static dummies (`practice_npc`):** at minimum `PlayerTackle`, `TackleRagdollLifecycle`, `TackleImpactRelay`, `CombatFeelPredictDedupe`; add `TackleImpactFeel` if victim knockdown feel should fire on the dummy.
+**Practice static dummies (`practice_npc`):** at minimum `PlayerTackle`, `TackleRagdollLifecycle`, `TackleImpactRelay`, `PracticeNpcTackleClientRelay`, `CombatFeelPredictDedupe`; add `TackleImpactFeel` if victim knockdown feel should fire on the dummy.
 
 **Practice patrol runner:** above + `PracticeNpcPatrol`, `PracticeNpcPatrolPoseRelay`.
+
+**Practice arena launch lane (`practice_arena` scene):** on **`LaunchReadoutSign`** — `PracticeLaunchReadout`, `WorldPanel`, and **`PracticeLaunchReadoutRoot`** (all three on the same GameObject; root builds the score panel). On **`PracticeLaunchLane`** — `PracticeLaunchMeasure` with **Readout Sign** dragged to `LaunchReadoutSign`.
 
 ### Scene-wide lookups
 
@@ -237,12 +239,12 @@ Code/Weapons/                     ← slice 7
 
 ### Before slice 5/6
 
-| # | Task | Why |
-|---|------|-----|
-| 1 | Split `PlayerTackle` | Juggernaut/Sniper touch tackle rules |
-| 2 | Standardize spawn wiring | Three prefabs = triple the “forgot a component” risk |
-| 3 | Split `SpeedsterSpeedBlitzUlt` | Template for Juggernaut + Sniper ults |
-| 4 | Per-class prefab checklist | Document once; duplicate safely |
+| # | Task | Why | Status |
+|---|------|-----|--------|
+| 1 | Split `PlayerTackle` | Juggernaut/Sniper touch tackle rules | **✅ A1–A3 (2026-07-07)** — A4 deferred |
+| 2 | Standardize spawn wiring | Three prefabs = triple the “forgot a component” risk | **✅ (2026-07-07)** — `ComponentRequire`, no auto-add |
+| 3 | Split `SpeedsterSpeedBlitzUlt` | Template for Juggernaut + Sniper ults | **Next (Track B)** |
+| 4 | Per-class prefab checklist | Document once; duplicate safely | **✅** — § Component wiring |
 
 ### When match UI grows (map vote, spectators)
 
@@ -302,10 +304,10 @@ Elsewhere you refer to it as `UltimateThrowdown.Ball.BallGrab`, or add `using Ul
 
 **Strengths:** Clear system folders, host-authoritative netcode with documented predict tiers, Ball/Match as reference implementations, naming canon aligned with code.
 
-**Main gaps:** Two combat monoliths (`PlayerTackle`, `SpeedsterSpeedBlitzUlt`), match HUD field mirroring on `PlayerTeam`, mixed spawn policy — not missing top-level folders.
+**Main gaps:** `SpeedsterSpeedBlitzUlt` monolith (Track B pending), match HUD field mirroring on `PlayerTeam`. `PlayerTackle` split A1–A3 done (~1,175 lines + siblings).
 
-**Before slice 5/6:** Read **§ Before slice 5/6** at the top of this file, then split tackle/ult and lock spawn wiring before duplicating three class prefabs.
+**Before slice 5/6:** Tackle split sufficient for Juggernaut stomp — proceed with ult slice 5; consider **Track B B1** before/during stomp (blitz/tackle hybrid MP pattern). Full plan → [`REFACTOR_PLAN_TACKLE_ULT_SPLIT.md`](REFACTOR_PLAN_TACKLE_ULT_SPLIT.md).
 
 ---
 
-*Last architecture review: 2026-07-06 (loadout + prefab split shipped). Update when completing a structural refactor or before the next major slice.*
+*Last architecture review: 2026-07-07 (PlayerTackle Track A A1–A3 shipped). Update when completing a structural refactor or before the next major slice.*
