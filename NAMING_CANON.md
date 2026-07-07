@@ -70,6 +70,7 @@
 
 **Often-used on `PlayerClass`:** `CurrentClass`, `NeutralMenuHeight`, `ApplyClassAppearance()`, `PrepareDresserBeforeSpawn()` (disable menu height before spawn; class `ModelScale` + neutral `scale_height`)
 | `PlayerTackle` | Tackle and ragdoll |
+| `TackleRagdollLifecycle` | Host ragdoll spawn, launch impulse, grounded recovery polling, destroy — auto-added sibling of `PlayerTackle` |
 | `RagdollClientFeel` | Smoother ragdoll camera for the owning player |
 | `PlayerCosmeticsSync` | Outfits / avatar look only |
 | `PlayerDisableCrouch` | Blocks duck/crouch on `PlayerController` |

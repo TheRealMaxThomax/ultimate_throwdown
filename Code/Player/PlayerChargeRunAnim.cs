@@ -59,6 +59,9 @@ public sealed class PlayerChargeRunAnim : Component
 			return;
 
 		speedBlitzUlt ??= Components.Get<SpeedsterSpeedBlitzUlt>();
+		if ( speedBlitzUlt?.IsDashing == true && renderer.PlaybackRate < 0.0001f )
+			renderer.PlaybackRate = 1f;
+
 		if ( speedBlitzUlt?.IsWindUp == true && chargeRunPoseWeight > 0.001f )
 		{
 			chargeRunPoseWeight = 0f;

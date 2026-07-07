@@ -197,6 +197,14 @@ public sealed class CatchUpSpeedBoost : Component
 
 	protected override void OnFixedUpdate()
 	{
+		speedBlitzUlt ??= Components.Get<SpeedsterSpeedBlitzUlt>();
+		// Before PlayerController integrates (~order 0): dash needs synthetic forward — ult zeros AnalogMove in OnUpdate.
+		if ( speedBlitzUlt?.IsDashing == true )
+		{
+			ApplySpeedBlitzDashFixedLocomotionInput();
+			return;
+		}
+
 		if ( IsProxy )
 			return;
 
@@ -270,6 +278,13 @@ public sealed class CatchUpSpeedBoost : Component
 			ownerAtChargeSpeed = false;
 			NetAtChargeSpeed = false;
 			ApplyChargeLookDamp( atChargeSpeed: false );
+			return;
+		}
+
+		// Wind-up zeros walk/run caps; dash is short — blend-from-zero never catches up before the timer ends.
+		if ( speedBlitzUlt?.IsDashing == true )
+		{
+			ApplySpeedBlitzDashLocomotionCaps();
 			return;
 		}
 
@@ -544,6 +559,63 @@ public sealed class CatchUpSpeedBoost : Component
 	private bool IsSpeedBlitzPlantedChannel()
 	{
 		return speedBlitzUlt?.IsWindUp == true || speedBlitzUlt?.IsConnectPoseFrozen == true;
+	}
+
+	/// <summary>
+	/// Speed Blitz dash: locomotion must match <see cref="SpeedsterSpeedBlitzUlt.DashSpeed"/> immediately —
+	/// wind-up planted channel leaves caps at 0 and the dash timer ends before ease-from-zero recovers.
+	/// </summary>
+	private void ApplySpeedBlitzDashLocomotionCaps()
+	{
+		speedBlitzUlt ??= Components.Get<SpeedsterSpeedBlitzUlt>();
+		var dashSpeed = speedBlitzUlt?.DashSpeed ?? ClassStat( playerClass?.CurrentClass?.CatchUpMoveSpeed, CatchUpMoveSpeed );
+
+		forwardMoveTime = 0f;
+		nonHoldingSprintTime = 0f;
+		ownerAtChargeSpeed = false;
+		NetAtChargeSpeed = false;
+		ApplyChargeLookDamp( atChargeSpeed: false );
+
+		smoothedMoveSpeedCap = dashSpeed;
+		if ( playerController.IsValid() )
+		{
+			playerController.WalkSpeed = dashSpeed;
+			playerController.RunSpeed = dashSpeed;
+		}
+	}
+
+	/// <summary>
+	/// Runs at <c>[Order(-100)]</c> before <see cref="PlayerController"/> — inject wish + owner forward input for dash leg cycle.
+	/// </summary>
+	private void ApplySpeedBlitzDashFixedLocomotionInput()
+	{
+		speedBlitzUlt ??= Components.Get<SpeedsterSpeedBlitzUlt>();
+		if ( speedBlitzUlt is null || !speedBlitzUlt.IsDashing )
+			return;
+
+		playerController ??= Components.Get<PlayerController>();
+		if ( !playerController.IsValid() )
+			return;
+
+		if ( speedBlitzUlt.IsOwnerDashMovementBlocked )
+		{
+			playerController.WishVelocity = Vector3.Zero;
+			return;
+		}
+
+		var dashSpeed = speedBlitzUlt.DashSpeed;
+		var horizontal = speedBlitzUlt.GetDashHorizontalDirection() * dashSpeed;
+
+		if ( !playerController.Enabled )
+			playerController.Enabled = true;
+
+		playerController.WalkSpeed = dashSpeed;
+		playerController.RunSpeed = dashSpeed;
+		playerController.WishVelocity = horizontal;
+
+		// Eye angles are locked to commit dir — full forward analog drives run anim without holding W.
+		if ( Network.IsOwner )
+			Input.AnalogMove = new Vector3( 1f, 0f, 0f );
 	}
 
 	/// <summary> Throw charge + Speed Blitz wind-up / connect hang — planted on ground, no charge tier. </summary>

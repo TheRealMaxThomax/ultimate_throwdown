@@ -226,6 +226,16 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 	public bool IsWindUp => NetPhase == SpeedBlitzPhase.WindUp;
 	public bool IsDashing => NetPhase == SpeedBlitzPhase.Dash;
 
+	/// <summary>Synced dash commit direction (horizontal). Used for early fixed-update locomotion on all clients.</summary>
+	public Vector3 GetDashHorizontalDirection()
+	{
+		var dir = NetCommittedDirection.WithZ( 0f );
+		return dir.Length < 0.001f ? Vector3.Forward : dir.Normal;
+	}
+
+	/// <summary>Owner predict hit — blocks dash movement until ult ends (see <see cref="ApplyDashLocomotion"/>).</summary>
+	public bool IsOwnerDashMovementBlocked => Network.IsOwner && ownerDashMovementBlocked;
+
 	/// <summary> Synced ult phase — used by <see cref="SpeedBlitzWindUpFeel"/> on all clients. </summary>
 	public SpeedBlitzPhase SyncedPhase => NetPhase;
 
@@ -533,6 +543,8 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 		// locomotion keeps a charge-run decel lean while charge_run overlay is already off.
 		if ( IsWindUp )
 			ApplyPlantedHorizontalFreeze();
+		else if ( IsDashing )
+			ApplyDashLocomotion();
 
 		if ( !Network.IsOwner )
 			return;
@@ -541,7 +553,6 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 			ApplyPlantedHorizontalFreeze();
 		else if ( IsDashing )
 		{
-			OwnerDriveDashMovement();
 			OwnerPredictDashHitCheck();
 			ReportDashSamplePositionToHost();
 		}
@@ -1237,16 +1248,18 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 	}
 
 	/// <summary>
-	/// Owner dash: drive horizontal velocity through the controller so its move mode resolves
-	/// wall slide, step-up and ground stick, and the locomotion keeps the legs running.
+	/// Owner dash: rigidbody velocity (locomotion wish/analog is injected earlier in <see cref="CatchUpSpeedBoost"/>).
 	/// </summary>
-	private void OwnerDriveDashMovement()
+	private void ApplyDashLocomotion()
 	{
-		if ( ownerDashMovementBlocked )
+		if ( Network.IsOwner && ownerDashMovementBlocked )
 		{
 			OwnerZeroHorizontalVelocity();
 			return;
 		}
+
+		if ( !Network.IsOwner )
+			return;
 
 		var dir = NetCommittedDirection.WithZ( 0 );
 		if ( dir.Length < 0.001f )
@@ -1258,14 +1271,15 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 		playerController ??= Components.Get<PlayerController>();
 		playerBody ??= Components.Get<Rigidbody>();
 
-		// WishVelocity drives the run animation and prevents the controller's brake friction.
-		if ( playerController.IsValid() )
-			playerController.WishVelocity = horizontal;
+		if ( playerController.IsValid() && !playerController.Enabled )
+			playerController.Enabled = true;
 
-		// Set the actual velocity (preserve vertical so gravity / stick-to-ground still works).
 		if ( playerBody.IsValid() )
 			playerBody.Velocity = horizontal.WithZ( playerBody.Velocity.z );
 	}
+
+	/// <summary> Owner-only alias kept for call-site clarity in older comments. </summary>
+	private void OwnerDriveDashMovement() => ApplyDashLocomotion();
 
 	private void ReportDashSamplePositionToHost()
 	{
