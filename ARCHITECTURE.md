@@ -29,7 +29,7 @@
 **Still recommended before/during slice 5/6:**
 
 1. ~~**Split `PlayerTackle`**~~ — **✅ A1–A3 shipped (2026-07-07)** → `TackleRagdollLifecycle`, `TackleImpactRelay`, `PracticeNpcTackleClientRelay` (~1,175 lines left on orchestrator). **A4** (ragdoll orbit camera) **deferred** — not needed for stomp/melee/zones.
-2. **Split `SpeedsterSpeedBlitzUlt`** — template for new ults; keep thin orchestrator (**Track B** — B1 shipped, B2 next).
+2. **Split `SpeedsterSpeedBlitzUlt`** — template for new ults; keep thin orchestrator (**Track B** — B1+B2 shipped; B3 optional).
 3. **Per-class prefab checklist** — see **§ Loadout & spawn** + **§ Component wiring** below when duplicating components.
 
 **Can wait:** Match HUD replication refactor; `Code/Weapons/` (slice 7); C# namespaces.
@@ -178,7 +178,7 @@ Previously `GameNetworkManager` auto-added feel/anim/HUD pieces at spawn. **Poli
 
 **Every player class prefab:** `PlayerTeam`, `PlayerLoadout`, `PlayerDisableCrouch`, `PlayerEnemyOutline`, `BallCompassHud`, `PlayerBallHoldAnim`, `PlayerChargeRunAnim`, `TackleImpactFeel`, `CombatFeelPredictDedupe`, `PlayerFootstepAudio`, `PracticeNpcPatrolPoseRelay`, `LoadoutClientState`, `LoadoutPickerHud`, `TackleRagdollLifecycle`, `TackleImpactRelay`, `PracticeNpcTackleClientRelay`, plus core gameplay (`BallGrab`, `BallThrow`, `CatchUpSpeedBoost`, `PlayerDodge`, `PlayerTackle`, `PlayerUltCharge`, `PlayerClass`, throw/charge HUDs, `RagdollClientFeel`, …).
 
-**Speedster prefab additionally:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzDashHitDetector`, `SpeedBlitzAimPreview`, `SpeedBlitzDashCamera`, `SpeedBlitzWindUpFeel`, `SpeedBlitzBodyGlow`, `PlayerSpeedBlitzWindUpAnim`, `BlitzConnectPoseFreeze`.
+**Speedster prefab additionally:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzDashHitDetector`, `SpeedBlitzConnectImpactRelay`, `SpeedBlitzAimPreview`, `SpeedBlitzDashCamera`, `SpeedBlitzWindUpFeel`, `SpeedBlitzBodyGlow`, `PlayerSpeedBlitzWindUpAnim`, `BlitzConnectPoseFreeze`.
 
 **Main Camera (per gameplay scene):** `EnemyOutlineCameraSetup`, `TackleComicTextHud`, `MatchAudioBootstrap`, `OutOfBoundsBannerHud`, `BallOobDropZoneHud`.
 

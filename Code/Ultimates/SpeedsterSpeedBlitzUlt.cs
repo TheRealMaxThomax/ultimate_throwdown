@@ -122,13 +122,6 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 
 	[Property, Group( "Knockdown feel" )] public float LaunchSoundVolume { get; set; } = 1f;
 
-	/// <summary> Body-crunch SFX when the dash stops on an enemy — host picks one at random each hit. </summary>
-	[Property, Group( "Knockdown feel" )] public SoundEvent ConnectImpactSoundA { get; set; }
-
-	[Property, Group( "Knockdown feel" )] public SoundEvent ConnectImpactSoundB { get; set; }
-
-	[Property, Group( "Knockdown feel" )] public float ConnectImpactSoundVolume { get; set; } = 1f;
-
 	/// <summary> One-shot electric burst on dasher chest when connect hang ends (ragdoll launch). Drag <c>speedblitzdischargevfx.prefab</c>. </summary>
 	[Property, Group( "Knockdown feel" )] public GameObject DischargeVfxPrefab { get; set; }
 
@@ -139,9 +132,6 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 
 	/// <summary> Fallback when <see cref="LaunchSound"/> is unset on the Speedster prefab. </summary>
 	internal const string DefaultLaunchSoundPath = "sounds/explosions/speed_blitz_launch.sound";
-
-	internal const string DefaultConnectImpactSoundAPath = "sounds/crunch/speed_blitz_connect_crunch_a.sound";
-	internal const string DefaultConnectImpactSoundBPath = "sounds/crunch/speed_blitz_connect_crunch_b.sound";
 
 	[Property, Group( "Knockdown feel" )] public float ImpactHitstopDurationSeconds { get; set; } = 0.15f;
 	[Property, Group( "Knockdown feel" )] public float ImpactShakeDurationSeconds { get; set; } = 0.2f;
@@ -209,7 +199,6 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 	private Vector3 ownerDashCorridorOrigin;
 	private Vector3 ownerLastLocalDashCheckPos;
 	private bool ownerPredictedHitThisDash;
-	private bool ownerPredictedConnectSoundThisDash;
 	private float ownerConnectPoseFreezeUntil;
 
 	private PlayerUltCharge ultCharge;
@@ -222,6 +211,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 	private CatchUpSpeedBoost catchUpSpeedBoost;
 	private TackleImpactFeel tackleImpactFeel;
 	private SpeedBlitzDashHitDetector dashHitDetector;
+	private SpeedBlitzConnectImpactRelay connectImpactRelay;
 
 	public bool IsActive => NetPhase != SpeedBlitzPhase.None;
 	public bool IsWindUp => NetPhase == SpeedBlitzPhase.WindUp;
@@ -318,39 +308,16 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 		handle.Volume = volume.Clamp( 0f, 2f );
 	}
 
-	/// <summary> Host: random connect crunch from dasher ult (A/B inspector slots, then code defaults). </summary>
-	public string PickConnectImpactSoundResourcePath()
-	{
-		var options = new System.Collections.Generic.List<string>( 2 );
-
-		if ( ConnectImpactSoundA.IsValid() )
-			options.Add( ConnectImpactSoundA.ResourcePath );
-
-		if ( ConnectImpactSoundB.IsValid() )
-			options.Add( ConnectImpactSoundB.ResourcePath );
-
-		if ( options.Count == 0 )
-		{
-			options.Add( DefaultConnectImpactSoundAPath );
-			options.Add( DefaultConnectImpactSoundBPath );
-		}
-
-		if ( options.Count == 1 )
-			return options[0];
-
-		return options[Game.Random.Int( 0, options.Count - 1 )];
-	}
-
-	public static float ResolveConnectImpactSoundVolume( PlayerTackle attacker )
-	{
-		var ult = attacker?.Components.Get<SpeedsterSpeedBlitzUlt>();
-		return ult.IsValid() ? ult.ConnectImpactSoundVolume.Clamp( 0f, 2f ) : 1f;
-	}
-
 	/// <summary> All machines: 3D connect crunch at dash stop / victim contact. </summary>
 	public static void PlayConnectImpactSoundAt( Vector3 worldPosition, SoundEvent soundEvent, float volume )
 	{
 		MatchAudioBootstrap.PlayWorldSoundDry( soundEvent, worldPosition, volume );
+	}
+
+	public static float ResolveConnectImpactSoundVolume( PlayerTackle attacker )
+	{
+		var relay = attacker?.Components.Get<SpeedBlitzConnectImpactRelay>();
+		return relay.IsValid() ? relay.ConnectImpactSoundVolume.Clamp( 0f, 2f ) : 1f;
 	}
 
 	internal GameObject ResolveWindUpVfxPrefabRoot()
@@ -449,66 +416,21 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 		ClearConnectPoseFreezeOnHost();
 	}
 
-	private static Vector3 GetBlitzConnectImpactSoundPosition( Vector3 dasherStopPosition, PlayerTackle victim )
-	{
-		if ( !victim.IsValid() )
-			return dasherStopPosition;
-
-		var victimPos = victim.WorldPosition;
-		return new Vector3(
-			(dasherStopPosition.x + victimPos.x) * 0.5f,
-			(dasherStopPosition.y + victimPos.y) * 0.5f,
-			(dasherStopPosition.z + victimPos.z) * 0.5f );
-	}
-
-	private void BroadcastConnectImpactSoundOnHost( PlayerTackle victim, Vector3 dasherStopPosition )
-	{
-		if ( !Networking.IsHost || !victim.IsValid() )
-			return;
-
-		var contactPos = GetBlitzConnectImpactSoundPosition( dasherStopPosition, victim );
-		victim.Components.Get<TackleImpactRelay>()?.BroadcastSpeedBlitzConnectImpactSound(
-			contactPos,
-			PickConnectImpactSoundResourcePath(),
-			ConnectImpactSoundVolume.Clamp( 0f, 2f ),
-			GameObject.Id );
-	}
-
 	/// <summary> Client-owner dasher already played crunch on predict — skip host broadcast duplicate. </summary>
 	internal static bool TryConsumeHostConnectSoundDedupeForDasher( Scene scene, Guid dasherRootId )
 	{
 		if ( scene is null || dasherRootId == Guid.Empty )
 			return false;
 
-		foreach ( var ult in scene.GetAllComponents<SpeedsterSpeedBlitzUlt>() )
+		foreach ( var relay in scene.GetAllComponents<SpeedBlitzConnectImpactRelay>() )
 		{
-			if ( !ult.IsValid() || ult.GameObject.Id != dasherRootId || !ult.Network.IsOwner )
+			if ( !relay.IsValid() || relay.GameObject.Id != dasherRootId || !relay.Network.IsOwner )
 				continue;
 
-			return ult.TryConsumeHostConnectSoundDedupe();
+			return relay.TryConsumeHostConnectSoundDedupe();
 		}
 
 		return false;
-	}
-
-	private bool TryConsumeHostConnectSoundDedupe()
-	{
-		if ( !ownerPredictedConnectSoundThisDash )
-			return false;
-
-		ownerPredictedConnectSoundThisDash = false;
-		return true;
-	}
-
-	private void OwnerPlayPredictedConnectImpactSound( PlayerTackle victim, Vector3 dasherStopPosition )
-	{
-		if ( Networking.IsHost || ownerPredictedConnectSoundThisDash )
-			return;
-
-		var contactPos = GetBlitzConnectImpactSoundPosition( dasherStopPosition, victim );
-		var sound = ResourceLibrary.Get<SoundEvent>( PickConnectImpactSoundResourcePath() );
-		PlayConnectImpactSoundAt( contactPos, sound, ConnectImpactSoundVolume.Clamp( 0f, 2f ) );
-		ownerPredictedConnectSoundThisDash = true;
 	}
 
 	private float DashDurationSeconds => (DashRange / MathF.Max( DashSpeed, 1f )).Clamp( 0.05f, 6f );
@@ -525,6 +447,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 		catchUpSpeedBoost = Components.Get<CatchUpSpeedBoost>();
 		tackleImpactFeel = Components.Get<TackleImpactFeel>();
 		dashHitDetector = ComponentRequire.On<SpeedBlitzDashHitDetector>( this, "SpeedsterSpeedBlitzUlt" );
+		connectImpactRelay = ComponentRequire.On<SpeedBlitzConnectImpactRelay>( this, "SpeedsterSpeedBlitzUlt" );
 		ComponentRequire.WarnIfMissing<SpeedBlitzDashCamera>( this, "SpeedsterSpeedBlitzUlt" );
 		ComponentRequire.WarnIfMissing<SpeedBlitzWindUpFeel>( this, "SpeedsterSpeedBlitzUlt" );
 		ComponentRequire.WarnIfMissing<SpeedBlitzBodyGlow>( this, "SpeedsterSpeedBlitzUlt" );
@@ -731,7 +654,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 
 		var stopPos = GameObject.WorldPosition;
 
-		BroadcastConnectImpactSoundOnHost( victim, stopPos );
+		connectImpactRelay?.BroadcastConnectImpactSoundOnHost( victim, stopPos );
 		NetConnectVictimId = victim.GameObject.Id;
 
 		playerBody ??= Components.Get<Rigidbody>();
@@ -1138,7 +1061,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 		ownerLastLocalDashCheckPos = dasherStopPosition;
 
 		ownerPredictedHitThisDash = true;
-		OwnerPlayPredictedConnectImpactSound( victim, dasherStopPosition );
+		connectImpactRelay?.OwnerPlayPredictedConnectImpactSound( victim, dasherStopPosition );
 		ownerDashMovementBlocked = true;
 		OwnerZeroHorizontalVelocity();
 		BeginConnectPoseFreezeForOwnerPredict();
@@ -1161,7 +1084,7 @@ public sealed class SpeedsterSpeedBlitzUlt : Component, IPlayerUlt
 		ownerHasLocalDashCheckPos = false;
 		ownerDashCorridorOrigin = default;
 		ownerPredictedHitThisDash = false;
-		ownerPredictedConnectSoundThisDash = false;
+		connectImpactRelay?.ResetOwnerConnectSoundPredict();
 	}
 
 	// ---------------------------------------------------------------------
