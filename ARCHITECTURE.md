@@ -200,6 +200,37 @@ Movement directly references ball, dodge, tackle, and ult. Acceptable at three c
 
 ---
 
+## New mechanic pre-split pattern
+
+**Why:** God components here are not caused by messy code — they're caused by every mechanic being **three programs in one file**: host authority, owner predict, and feel/presentation. Each network role grows independently, so one file grows ~3× per feature (`PlayerTackle`, `SpeedsterSpeedBlitzUlt`). The fix is deciding the split **before writing the mechanic**, not refactoring at 500+ lines.
+
+### The three roles (siblings on the same GameObject)
+
+| Sibling | Owns | Typical contents |
+|---------|------|------------------|
+| **`<Mechanic>` (authority orchestrator)** | Truth + tunables | `[Property]` tuning, `[Sync(FromHost)]` state, host phase machine, `[Rpc.Host]` validation, hit/effect application. **All inspector tunables live here** so feel/predict siblings read them and no editor re-wiring is needed later. |
+| **`<Mechanic>OwnerPredict`** (or `...Movement`) | Owner-side responsiveness | Input handling, local predict of hits/movement, controller suppression, dedupe marks via `CombatFeelPredictDedupe`. |
+| **`<Mechanic>Feel`** | Presentation only | SFX resolve + playback, VFX prefab spawn/fallback, camera blends, anim overlays. Reads the orchestrator's synced surface; **never writes gameplay state**. |
+
+Plus shared **pure math** in a static class when host and predict need identical geometry (`ThrowReleaseMath` is the model — both `BallThrow` and `ThrowTrajectoryPreview` call it, zero drift between host hit test and owner predict).
+
+### When a single file is fine
+
+Skip the split only when the mechanic has **no owner predict** and **no feel plumbing** (e.g. a passive host-side modifier). If it has input + a hit test + a sound, it's three roles — split from line 1.
+
+### Checklist when starting a new mechanic (ult, weapon, combat move)
+
+1. Name the siblings up front (follow `NAMING_CANON.md`; e.g. `JuggernautGroundStompUlt` + `StompOwnerPredict` + `StompImpactFeel`) and place them per the folder layout below (`Code/Ultimates/Juggernaut/`, etc.).
+2. All `[Property]` tunables go on the orchestrator — siblings read them via `Components.Get<>()`. This keeps editor wiring on one component.
+3. RPCs work on any sibling (same networked GameObject) — proven by `TackleImpactRelay`, `TackleImpactFeel`.
+4. Shared hit geometry → static pure-math class, called by both host check and owner predict.
+5. Max adds the siblings to the prefab manually (`no-auto-add-components.mdc`); use `ComponentRequire.WarnIfMissing<>` from the orchestrator.
+6. Follow the `MULTIPLAYER_NETCODE.md` new-combat-feature checklist for the predict/dedupe tier.
+
+**Reference implementations:** `Code/Ball/` (authority/throw/feel/math split), tackle siblings post-Track A, Speed Blitz post-B1 (dash hit detector).
+
+---
+
 ## Folder patterns — primary file + siblings (not partial classes)
 
 **Use:** one **folder per system** + **focused sibling components** on the same GameObject.

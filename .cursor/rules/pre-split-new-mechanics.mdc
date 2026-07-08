@@ -1,0 +1,30 @@
+---
+description: Pre-split new gameplay mechanics into authority / predict / feel siblings — never build a new god component
+alwaysApply: true
+---
+
+# Pre-split new mechanics (no new god components)
+
+When implementing a **new gameplay mechanic** (ult, weapon, combat move, movement ability) under `Code/`:
+
+1. **Read `ARCHITECTURE.md` § New mechanic pre-split pattern first.**
+2. **Propose the sibling split before writing any code** — name the components and state which of the three roles each owns:
+   - `<Mechanic>` orchestrator: `[Property]` tunables, `[Sync(FromHost)]` state, host phase machine + `[Rpc.Host]` validation
+   - `<Mechanic>OwnerPredict` / `...Movement`: owner input, local predict, controller suppression, `CombatFeelPredictDedupe` marks
+   - `<Mechanic>Feel`: SFX/VFX/camera/anim presentation — reads synced state, never writes gameplay truth
+   - Shared hit geometry → static pure-math class used by both host check and owner predict (model: `ThrowReleaseMath`)
+3. **All inspector tunables go on the orchestrator** so siblings need no editor re-wiring.
+4. Wait for Max to confirm the split, then implement.
+
+**Exception:** a mechanic with no owner predict and no feel plumbing (pure host-side passive) may stay one file — say so explicitly when proposing.
+
+## Hard limits on existing files
+
+- Do **not** add a new concern (new phase, new predict path, new SFX/VFX group) to a file already over ~500 lines — put it in a sibling, or flag that a split step is needed first.
+- Line count alone is **not** a violation — a cohesive single-concern file over 500 lines (e.g. `TrafficCar`, `TackleComicTextHud`) is fine. Never split a file just to get under a number; split when it mixes the roles above. If unsure, say which concerns the file holds and let Max decide.
+- `PlayerTackle` and `SpeedsterSpeedBlitzUlt` are frozen at their current scope: additions go in siblings (see `REFACTOR_PLAN_TACKLE_ULT_SPLIT.md` for the pending Track B split).
+
+## Good vs bad
+
+- **Good:** "Juggernaut stomp → `JuggernautGroundStompUlt` (authority) + `StompOwnerPredict` + `StompImpactFeel` + `StompRadiusMath`. Adding all four as siblings on the Juggernaut prefab — here are the editor steps."
+- **Bad:** Writing `JuggernautGroundStompUlt.cs` with host logic, owner predict, and SFX resolution in one file "to split later."
