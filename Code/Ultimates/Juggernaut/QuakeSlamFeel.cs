@@ -9,15 +9,12 @@ public sealed class QuakeSlamFeel : Component
 	[Property, Group( "Wind-up" )] public SoundEvent WindUpRiseSound { get; set; }
 	[Property, Group( "Wind-up" )] public float WindUpRiseVolume { get; set; } = 0.55f;
 
-	[Property, Group( "Slam" )] public SoundEvent SlamImpactSound { get; set; }
-	[Property, Group( "Slam" )] public float SlamImpactVolume { get; set; } = 0.85f;
-
+	/// <summary> Plays at slam origin when each ring phase ticks (inner / mid / outer). </summary>
 	[Property, Group( "Rings" )] public SoundEvent RingPulseSound { get; set; }
-	[Property, Group( "Rings" )] public float RingPulseVolume { get; set; } = 0.65f;
+	[Property, Group( "Rings" )] public float RingPulseVolume { get; set; } = 0.85f;
 
 	internal const string DefaultWindUpRiseSoundPath = "sounds/rising pitch/speedblitz_windup.sound";
-	internal const string DefaultSlamImpactSoundPath = "sounds/explosions/speed_blitz_launch.sound";
-	internal const string DefaultRingPulseSoundPath = "sounds/crunch/speed_blitz_connect_crunch_a.sound";
+	internal const string DefaultRingPulseSoundPath = "sounds/explosions/quake_slam_impact.sound";
 
 	private JuggernautQuakeSlamUlt ult;
 	private JuggernautQuakeSlamUlt.QuakeSlamPhase previousPhase = JuggernautQuakeSlamUlt.QuakeSlamPhase.None;
@@ -38,15 +35,9 @@ public sealed class QuakeSlamFeel : Component
 		if ( phase == JuggernautQuakeSlamUlt.QuakeSlamPhase.WindUp && previousPhase != JuggernautQuakeSlamUlt.QuakeSlamPhase.WindUp )
 			PlayWindUpRiseOneShot();
 
-		if ( phase == JuggernautQuakeSlamUlt.QuakeSlamPhase.Rings && previousPhase == JuggernautQuakeSlamUlt.QuakeSlamPhase.WindUp )
-			PlaySlamImpactSound();
-
 		var pulse = ult.SyncedRingPulseIndex;
-		if ( pulse > previousRingPulseIndex )
-		{
-			if ( pulse > 1 )
-				PlayRingPulseSound();
-		}
+		if ( pulse > previousRingPulseIndex && pulse > 0 )
+			PlayRingPulseSound();
 
 		previousPhase = phase;
 		previousRingPulseIndex = pulse;
@@ -64,14 +55,6 @@ public sealed class QuakeSlamFeel : Component
 			return;
 
 		Sound.Play( sound, GameObject.WorldPosition ).Volume = WindUpRiseVolume.Clamp( 0f, 2f );
-	}
-
-	private void PlaySlamImpactSound()
-	{
-		if ( !TryResolveSound( SlamImpactSound, DefaultSlamImpactSoundPath, out var sound ) )
-			return;
-
-		Sound.Play( sound, ult.GetSlamOriginWorld() ).Volume = SlamImpactVolume.Clamp( 0f, 2f );
 	}
 
 	private void PlayRingPulseSound()

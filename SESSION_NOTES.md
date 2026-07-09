@@ -18,12 +18,12 @@
 
 ## Right now
 
-**Goal:** **Quake Slam slice 5 — code shipped (2026-07-09).** Wire Juggernaut prefab + 2-window MP verify.
+**Goal:** **Quake Slam slice 5 — solo playable ✅ (2026-07-09).** **Next:** verify aim-preview scale + color in play, tune rings/launch, 2-window MP verify.
 
 **Next session:**
-1. Add Quake Slam siblings to `Player_Juggernaut` prefab (editor)
-2. 2-window MP smoke — hold/release X, wind-up, 3 rings, knockdown, tackle interrupt
-3. Tune radii / launch / SFX
+1. **Quake Slam aim preview** — code fix: unparented rings + `LocalScale` + `materials/oob_drop_ring.vmat`. **Playtest:** inner (70) should be ~78% of OOB drop ring (180 dia); re-save Jugg prefab if inspector still shows old `speed_blitz_preview` material path
+2. Tune `JuggernautQuakeSlamUlt` radii/launch after preview matches hit zones; 2-window MP smoke
+3. Polish: wind-up anim, slam SFX, ring pulse VFX (later)
 
 ---
 
@@ -33,7 +33,7 @@
 |-------|-------|--------|
 | **1** | Map slice 1 — ball OOB | ✅ Shipped 2026-07-04 |
 | **2** | Prefab split + loadout v1 | ✅ Shipped 2026-07-06 |
-| **3** | Ult slice 5 — Juggernaut Quake Slam | **Code shipped — prefab wire + MP verify** |
+| **3** | Ult slice 5 — Juggernaut Quake Slam | **Solo OK — tune preview + MP verify** |
 | **4** | Ult slice 6 — Sniper path zones | Planned |
 | **2b** | `MatchSetup` + walkable intermission room | After slice 5 |
 | **5** | Combat slice 1 — unarmed melee | Before weapons |
@@ -47,7 +47,7 @@ Full combat/progression specs → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md). Jo
 
 ## Works today (summary)
 
-Match flow, teams, goals, OT, rematch, Turf Wars map (traffic, lamps, OOB), practice arena, ball grab/throw (planted charge, RMB cancel, trajectory preview), dodge channel, tackles + ragdolls + comic text, ult charge + assist + Speed Blitz 2a–2d + **Quake Slam (code — wire Jugg prefab)**, per-class prefabs + loadout picker (Q, intermission/practice), join sync RPC. **2-window MP OK** on core flows.
+Match flow, teams, goals, OT, rematch, Turf Wars map (traffic, lamps, OOB), practice arena, ball grab/throw (planted charge, RMB cancel, trajectory preview), dodge channel, tackles + ragdolls + comic text, ult charge + assist + Speed Blitz 2a–2d + **Quake Slam (Jugg — hold/release X, wind-up, 3-ring knockdown; aim preview WIP scale/color)**, per-class prefabs + loadout picker (Q, intermission/practice), join sync RPC. **2-window MP OK** on core flows; **Quake Slam MP not verified yet**.
 
 Mechanics detail → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) **Built vs not built**.
 
@@ -150,7 +150,9 @@ Full prefab/scene wiring → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.
 - **Juggernaut post-tackle run recovery (passive):** keep sprint after tackle vs tackle ramp — mutually exclusive
 - **Speed Blitz join-client spark sprites:** deferred to publish smoke test
 - **UI font pass:** Les Flos (comic/OOB) + Barlow Condensed (HUD/menus) — not wired yet
-- **Avatar branch:** `feature/human-avatar` — merge TBD
+- **Quake Slam aim preview color (v1):** warm orange quake (default tints on white `oob_drop_ring.vmat`) vs ult blue — settled orange unless playtest says otherwise
+- **Quake Slam default radii (70/135/200):** playtest may retune after preview scale verify
+- **Quake Slam aim preview annulus bands (later polish):** replace nested filled discs with true donut geometry or shader mask — matches gameplay annuli, no alpha overlap
 
 Settled items removed 2026-07-06 cleanup → archive decision log.
 
@@ -167,18 +169,18 @@ Settled items removed 2026-07-06 cleanup → archive decision log.
 - **Spot-light shadow lines** — engine (#10960); defer or shadows off on non-hero lamps.
 - **Clutter missing after engine reload** — save scene; check volume bounds.
 - **Traffic engine loop seam** — re-export audio if needed.
-- **Join-client wind-up spark sprites** — blue squares in editor MP only; publish to verify.
+- **Quake Slam aim preview scale** — uses `Model.Bounds` for mesh diameter + `WorldScale`; playtest outer (200 r → 400 dia)
+- **Quake Slam 2-window MP** — not verified yet
 
 ---
 
 ## For AI chats
 
 ```
-Read SESSION_NOTES.md → loadout v1 + join sync done → ult slice 5 (Juggernaut stomp).
-PlayerTackle split Track A done (A1–A3 ✅; A4 deferred). Speed Blitz split Track B done (B1–B2 ✅; B3 optional).
-Design: GAMEPLAY_DESIGN.md. Wiring: ARCHITECTURE.md. Names: NAMING_CANON.md.
-Networking / new combat: MULTIPLAYER_NETCODE.md (host authority + predict checklist).
-LoadoutAuthority stub returns true; join sync cross-machine verify at publish.
+Read SESSION_NOTES.md → Quake Slam slice 5 solo OK → next: aim preview scale + material color, tune rings, 2-window MP.
+Quake Slam: Code/Ultimates/Juggernaut/ — JuggernautQuakeSlamUlt + QuakeSlamOwnerPredict + QuakeSlamAimPreview + QuakeSlamFeel + QuakeSlamRadiusMath. Catalog quake_slam. Design: GAMEPLAY_DESIGN.md § Quake Slam.
+PlayerTackle Track A ✅ (A4 deferred). Speed Blitz Track B ✅ (B3 optional).
+Wiring: ARCHITECTURE.md § Juggernaut prefab siblings. Names: NAMING_CANON.md. MP: MULTIPLAYER_NETCODE.md.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 ```
 
@@ -188,7 +190,8 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
-- **2026-07-09 (Quake Slam slice 5 — code ✅):** `JuggernautQuakeSlamUlt` + siblings (`QuakeSlamOwnerPredict`, `QuakeSlamAimPreview`, `QuakeSlamFeel`, `QuakeSlamRadiusMath`); catalog `quake_slam`; loadout enable path. **Max:** wire Juggernaut prefab + MP verify.
+- **2026-07-09 (Quake Slam — solo playable ✅):** Max wired Jugg prefab; hold/release X, wind-up, slam, rings work. **Follow-up:** aim preview switched from dev plane → `oob_drop_ring.vmdl` filled discs; **preview too small** vs tuned radii; **green tint** = bad material fallback + orange tint on blue blitz preview mat — fix to `materials/oob_drop_ring.vmat`. `ThrowChargeCamera` missing `quakeSlamUlt` field fixed (CS0103).
+- **2026-07-09 (Quake Slam slice 5 — code ✅):** `JuggernautQuakeSlamUlt` + siblings; catalog `quake_slam`; loadout enable; `CatchUpSpeedBoost` wind-up plant; design locked in `GAMEPLAY_DESIGN.md`.
 - **2026-07-07 (PlayerTackle Track A ✅):** A1 `TackleRagdollLifecycle`, A2 `TackleImpactRelay`, A3 `PracticeNpcTackleClientRelay` — 2-window MP practice dummy mirroring signed off. Orchestrator ~1,175 lines. **A4** (ragdoll orbit camera extract) **deferred**.
 - **2026-07-06 (join sync editor smoke ✅):** Host double `[PlayerLoadout]` on joiner spawn, no errors. Same SteamId = not cross-host proof. **Code shipped — verify at publish.**
 - **2026-07-06 (loadout v1 ✅):** Intermission Q picker, class respawn, join sync RPC, force-commit. Prefab split + per-class spawn.

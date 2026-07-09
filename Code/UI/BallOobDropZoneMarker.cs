@@ -4,7 +4,7 @@ using Sandbox;
 /// <summary> World ring + billboard stack at the OOB sky-drop anchor. Spawned by <see cref="BallOobDropZoneHud"/>. </summary>
 public sealed class BallOobDropZoneMarker : Component
 {
-	const string DefaultRingMaterialPath = "materials/turfwarspoly/oob_drop_ring.vmat";
+	const string DefaultRingMaterialPath = "materials/oob_drop_ring.vmat";
 	const string FallbackRingMaterialPath = "materials/turfwarspoly/speed_blitz_preview.vmat";
 	const string DefaultRingOutlineMaterialPath = "materials/turfwarspoly/black.vmat";
 

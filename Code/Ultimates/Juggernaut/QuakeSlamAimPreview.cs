@@ -1,35 +1,39 @@
-using System.Collections.Generic;
 using Sandbox;
 
 /// <summary>
 /// Owner-only 3-ring ground preview while <see cref="JuggernautQuakeSlamUlt.IsAiming"/>.
+/// Nested filled discs (v1). Later: true annulus bands — see SESSION_NOTES Open decisions.
 /// </summary>
 [Order( 10014 )]
 public sealed class QuakeSlamAimPreview : Component
 {
-	const string DefaultRingMaterialPath = "materials/turfwarspoly/speed_blitz_preview.vmat";
-	const string DefaultPlaneModelPath = "models/dev/plane.vmdl";
-
-	static readonly Color InnerTint = new( 1f, 0.35f, 0.2f, 0.55f );
-	static readonly Color MidTint = new( 1f, 0.55f, 0.15f, 0.45f );
-	static readonly Color OuterTint = new( 1f, 0.75f, 0.1f, 0.35f );
+	const string DefaultRingModelPath = "models/main/oob_drop_ring.vmdl";
+	const string DefaultRingMaterialPath = "materials/oob_drop_ring.vmat";
+	const string FallbackRingMaterialPath = "materials/turfwarspoly/speed_blitz_preview.vmat";
 
 	private sealed class RingSlot
 	{
 		public GameObject Root;
 		public ModelRenderer Renderer;
+		public Material Material;
+		public string LoadedMaterialPath;
 	}
 
-	private static Material ringMaterialBase;
-	private static Model planeModel;
-
-	[Property, Group( "Meshes" )] public string PlaneModelPath { get; set; } = DefaultPlaneModelPath;
-	[Property, Group( "Meshes" )] public float PlaneBaseDiameter { get; set; } = 100f;
-	[Property, Group( "Materials" )] public string RingMaterialPath { get; set; } = DefaultRingMaterialPath;
-	[Property, Group( "Layout" )] public float RingLift { get; set; } = 2.5f;
+	[Property, Group( "Ring mesh" )] public string RingModelPath { get; set; } = DefaultRingModelPath;
+	/// <summary> Fallback mesh diameter when <see cref="Model.Bounds"/> are unavailable — prefer auto bounds. </summary>
+	[Property, Group( "Ring mesh" )] public float RingModelBaseSize { get; set; } = 7.5f;
+	[Property, Group( "Ring mesh" )] public string RingMaterialPath { get; set; } = DefaultRingMaterialPath;
+	[Property, Group( "Ring mesh" )] public float RingGroundLift { get; set; } = 1.5f;
+	[Property, Group( "Ring mesh" )] public Color InnerRingTint { get; set; } = new( 1f, 0.35f, 0.2f, 1f );
+	[Property, Group( "Ring mesh" )] public Color MidRingTint { get; set; } = new( 1f, 0.55f, 0.15f, 1f );
+	[Property, Group( "Ring mesh" )] public Color OuterRingTint { get; set; } = new( 1f, 0.75f, 0.1f, 1f );
+	[Property, Group( "Ring mesh" )] public float InnerRingAlpha { get; set; } = 0.55f;
+	[Property, Group( "Ring mesh" )] public float MidRingAlpha { get; set; } = 0.45f;
+	[Property, Group( "Ring mesh" )] public float OuterRingAlpha { get; set; } = 0.35f;
 
 	private JuggernautQuakeSlamUlt ult;
-	private Material ringMaterial;
+	private Model ringModel;
+	private string loadedRingModelPath;
 	private readonly RingSlot[] rings = new RingSlot[3];
 
 	protected override void OnStart()
@@ -64,16 +68,16 @@ public sealed class QuakeSlamAimPreview : Component
 			return;
 		}
 
-		if ( !EnsureAssets() )
+		if ( !EnsureRingModel() )
 		{
 			SetVisible( false );
 			return;
 		}
 
 		ult.GetAimPreviewParams( out var origin, out var innerRadius, out var midRadius, out var outerRadius );
-		UpdateRing( 0, origin, innerRadius, InnerTint );
-		UpdateRing( 1, origin, midRadius, MidTint );
-		UpdateRing( 2, origin, outerRadius, OuterTint );
+		UpdateRing( 2, origin, outerRadius, OuterRingTint, OuterRingAlpha );
+		UpdateRing( 1, origin, midRadius, MidRingTint, MidRingAlpha );
+		UpdateRing( 0, origin, innerRadius, InnerRingTint, InnerRingAlpha );
 		SetVisible( true );
 	}
 
@@ -84,60 +88,97 @@ public sealed class QuakeSlamAimPreview : Component
 			if ( rings[i]?.Root.IsValid() == true )
 				continue;
 
-			var root = new GameObject( true, $"QuakeSlamPreviewRing_{i}" );
-			root.Parent = GameObject;
+			var root = Scene.CreateObject();
+			root.Name = $"QuakeSlamPreviewRing_{i}";
+			root.NetworkMode = NetworkMode.Never;
 			root.Tags.Add( "quake_slam_preview" );
+
 			var renderer = root.Components.Create<ModelRenderer>();
+			renderer.RenderOptions.Overlay = false;
+			if ( renderer.SceneObject.IsValid() )
+			{
+				renderer.SceneObject.Flags.CastShadows = false;
+				renderer.SceneObject.Flags.IsTranslucent = true;
+			}
+
 			rings[i] = new RingSlot { Root = root, Renderer = renderer };
 		}
 	}
 
-	private bool EnsureAssets()
+	private bool EnsureRingModel()
 	{
-		if ( planeModel is null || planeModel.ResourcePath != PlaneModelPath )
-			planeModel = Model.Load( PlaneModelPath );
+		var modelPath = string.IsNullOrWhiteSpace( RingModelPath ) ? DefaultRingModelPath : RingModelPath.Trim();
+		if ( !ringModel.IsValid() || loadedRingModelPath != modelPath )
+		{
+			ringModel = Model.Load( modelPath );
+			loadedRingModelPath = modelPath;
+		}
 
-		if ( ringMaterialBase is null || ringMaterialBase.ResourcePath != RingMaterialPath )
-			ringMaterialBase = Material.Load( RingMaterialPath );
-
-		if ( planeModel is null || ringMaterialBase is null )
-			return false;
-
-		ringMaterial ??= ringMaterialBase.CreateCopy( "quake_slam_preview_ring" );
-		return true;
+		return ringModel.IsValid();
 	}
 
-	private void UpdateRing( int index, Vector3 origin, float radius, Color tint )
+	private bool EnsureRingMaterial( RingSlot slot )
+	{
+		var materialPath = string.IsNullOrWhiteSpace( RingMaterialPath ) ? DefaultRingMaterialPath : RingMaterialPath.Trim();
+		if ( slot.Material.IsValid() && slot.LoadedMaterialPath == materialPath )
+			return true;
+
+		slot.Material = Material.Load( materialPath )?.CreateCopy( $"quake_slam_preview_ring_{slot.Root.Name}" );
+		if ( !slot.Material.IsValid() && materialPath != FallbackRingMaterialPath )
+			slot.Material = Material.Load( FallbackRingMaterialPath )?.CreateCopy( $"quake_slam_preview_ring_{slot.Root.Name}_fb" );
+
+		slot.LoadedMaterialPath = materialPath;
+		return slot.Material.IsValid();
+	}
+
+	private float ResolveRingMeshDiameter( Model model )
+	{
+		if ( model.IsValid() )
+		{
+			var size = model.Bounds.Size;
+			var xyDiameter = MathF.Max( size.x, size.y );
+			if ( xyDiameter > 0.01f )
+				return xyDiameter;
+		}
+
+		return MathF.Max( 1f, RingModelBaseSize );
+	}
+
+	private void UpdateRing( int index, Vector3 origin, float radius, Color tint, float alpha )
 	{
 		var slot = rings[index];
-		if ( slot?.Root is null || slot.Renderer is null )
+		if ( slot?.Root is null || slot.Renderer is null || !EnsureRingMaterial( slot ) )
 			return;
 
-		var diameter = MathF.Max( 1f, radius ) * 2f;
-		var scale = diameter / MathF.Max( 1f, PlaneBaseDiameter );
-		slot.Root.WorldPosition = new Vector3( origin.x, origin.y, origin.z + RingLift );
-		slot.Root.WorldRotation = Rotation.From( 0f, 0f, 0f );
+		var targetDiameter = MathF.Max( 1f, radius ) * 2f;
+		var meshDiameter = ResolveRingMeshDiameter( ringModel );
+		var scale = targetDiameter / meshDiameter;
+
+		slot.Root.WorldPosition = new Vector3( origin.x, origin.y, origin.z + RingGroundLift );
+		slot.Root.WorldRotation = Rotation.Identity;
 		slot.Root.WorldScale = new Vector3( scale, scale, 1f );
-		slot.Renderer.Model = planeModel;
-		ApplyMaterial( slot.Renderer, ringMaterial, tint );
+		slot.Renderer.Model = ringModel;
 		slot.Renderer.RenderType = ModelRenderer.ShadowRenderType.Off;
+		ApplyRingMaterial( slot.Renderer, slot.Material, tint, alpha );
 		slot.Root.Enabled = true;
 
 		if ( slot.Renderer.SceneObject.IsValid() )
 		{
 			slot.Renderer.SceneObject.Flags.CastShadows = false;
 			slot.Renderer.SceneObject.Flags.IsTranslucent = true;
+			slot.Renderer.SceneObject.Batchable = false;
 		}
 	}
 
-	private static void ApplyMaterial( ModelRenderer renderer, Material material, Color tint )
+	static void ApplyRingMaterial( ModelRenderer renderer, Material material, Color tint, float alpha )
 	{
-		if ( renderer is null || material is null )
+		if ( !material.IsValid() )
 			return;
 
 		material.Set( "g_vColorTint", tint );
-		renderer.MaterialOverride = material;
+		material.Set( "g_flOpacityScale", alpha.Clamp( 0.05f, 1f ) );
 		renderer.Tint = Color.White;
+		renderer.MaterialOverride = material;
 	}
 
 	private void SetVisible( bool visible )

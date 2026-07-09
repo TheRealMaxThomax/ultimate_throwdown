@@ -361,7 +361,9 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 ### Preview / telegraph
 
 - **Owner only** during hold-X (Blitz-style). No public ground telegraph for v1 — victims react to wind-up SFX / rooted pose.
-- Public ring VFX (smoke per phase) = polish later; placeholder debug draw OK while building.
+- **Mesh:** `models/main/oob_drop_ring.vmdl` filled discs (same as OOB drop marker), three nested circles at inner/mid/outer radii.
+- **Known WIP (2026-07-09):** preview renders **too small** vs gameplay radii — calibrate `QuakeSlamAimPreview` (`RingModelBaseSize`, prefer `LocalScale` like `BallOobDropZoneMarker`). **Color:** use `materials/oob_drop_ring.vmat` (white); avoid fallback to `speed_blitz_preview` (blue × orange tint reads green/muddy). Pick warm orange vs ult blue intentionally.
+- Public ring VFX (smoke per phase) = polish later.
 
 ### MP (day one)
 

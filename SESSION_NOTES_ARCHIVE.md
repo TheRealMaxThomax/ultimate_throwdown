@@ -240,11 +240,14 @@ Dwell → whistle → banner → drop marker → sky-drop at last-touch feet. Ho
 
 Design → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) § Loadout (when swaps allowed).
 
-### Ult slice 5 — Juggernaut ground stomp (next)
+### Ult slice 5 — Juggernaut Quake Slam
 
-- [ ] New component `Code/Ultimates/` — AOE knockdown around self
-- [ ] Reuse `ApplyKnockdownFromHost`; MOBA preview pattern as needed
-- [ ] Same `PlayerUltCharge` gate + commit rules; register in ult catalog
+- [x] `Code/Ultimates/Juggernaut/` — pre-split siblings + `quake_slam` catalog
+- [x] Host path: wind-up → 3 ring phases → `ApplyKnockdownFromHost`
+- [x] Max wired `Player_Juggernaut` prefab — **solo playable**
+- [ ] **Aim preview scale** — match 70/135/200 radii to OOB ring calibration
+- [ ] **Aim preview material** — `materials/oob_drop_ring.vmat` (fix green fallback)
+- [ ] 2-window MP verify + launch/radius tune
 
 ### Ult slice 6 — Sniper path zones
 

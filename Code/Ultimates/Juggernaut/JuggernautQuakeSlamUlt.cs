@@ -60,6 +60,7 @@ public sealed class JuggernautQuakeSlamUlt : Component, IPlayerUlt
 	private bool hostFiredInnerRing;
 	private bool hostFiredMidRing;
 	private bool hostFiredOuterRing;
+	private bool hostPendingEndAfterOuterPulse;
 	private readonly HashSet<Guid> hostHitVictimIds = new();
 
 	private float nextCommitRequestAt;
@@ -178,6 +179,13 @@ public sealed class JuggernautQuakeSlamUlt : Component, IPlayerUlt
 
 	private void HostUpdateRingSchedule()
 	{
+		if ( hostPendingEndAfterOuterPulse )
+		{
+			hostPendingEndAfterOuterPulse = false;
+			EndSlamOnHost( "rings_complete" );
+			return;
+		}
+
 		var delay = RingPhaseDelaySeconds.Clamp( 0.05f, 3f );
 		var elapsed = Time.Now - hostSlamAt;
 
@@ -190,7 +198,8 @@ public sealed class JuggernautQuakeSlamUlt : Component, IPlayerUlt
 		if ( !hostFiredOuterRing && elapsed >= delay * 2f )
 		{
 			FireRingOnHost( QuakeSlamRing.Outer );
-			EndSlamOnHost( "rings_complete" );
+			// Defer end one tick so SyncedRingPulseIndex=3 reaches feel/VFX before reset to 0.
+			hostPendingEndAfterOuterPulse = true;
 		}
 	}
 
@@ -347,6 +356,7 @@ public sealed class JuggernautQuakeSlamUlt : Component, IPlayerUlt
 		hostFiredInnerRing = false;
 		hostFiredMidRing = false;
 		hostFiredOuterRing = false;
+		hostPendingEndAfterOuterPulse = false;
 		hostHitVictimIds.Clear();
 	}
 
