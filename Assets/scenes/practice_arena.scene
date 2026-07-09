@@ -7383,14 +7383,14 @@
               "ImpactShakeDurationSeconds": 0.18,
               "ImpactShakePositionAmplitude": 9,
               "ImpactShakeRotationAmplitudeDegrees": 1.4,
-              "InnerRadius": 70,
+              "InnerRadius": 120,
               "InnerRingPowerMultiplier": 1,
               "KnockdownLaunchArc": 1.35,
               "KnockdownLaunchSpeed": 620,
               "MaxChargePoints": 100,
               "MaxGroundCheckDistance": 12,
               "MaxHitVerticalSeparation": 56,
-              "MidRadius": 135,
+              "MidRadius": 205,
               "MidRingPowerMultiplier": 0.72,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
@@ -7398,12 +7398,12 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "OuterRadius": 200,
+              "OuterRadius": 290,
               "OuterRingPowerMultiplier": 0.48,
-              "OutwardKnockFraction": 0.22,
-              "RingPhaseDelaySeconds": 0.5,
+              "OutwardKnockFraction": 0.8,
+              "RingPhaseDelaySeconds": 0.35,
               "UltimateAction": "Ultimate",
-              "WindUpDurationSeconds": 1
+              "WindUpDurationSeconds": 1.25
             },
             {
               "__type": "QuakeSlamOwnerPredict",
@@ -7438,7 +7438,8 @@
               "RingGroundLift": 2.5,
               "RingMaterialPath": "materials/oob_drop_ring.vmat",
               "RingModelBaseSize": 7.5,
-              "RingModelPath": "models/main/oob_drop_ring.vmdl"
+              "RingModelPath": "models/main/oob_drop_ring.vmdl",
+              "RingSeamOverlap": 2.5
             },
             {
               "__type": "QuakeSlamFeel",
@@ -7453,8 +7454,8 @@
               "OnComponentUpdate": null,
               "RingPulseSound": "sounds/explosions/quake_slam_impact.sound",
               "RingPulseVolume": 1,
-              "WindUpRiseSound": null,
-              "WindUpRiseVolume": 0.55
+              "WindUpRiseSound": "sounds/yells/quake_slam_yell.sound",
+              "WindUpRiseVolume": 1
             }
           ],
           "Children": [
@@ -21366,7 +21367,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3c07cafd-e769-490d-a175-277cbeb705e1"
+                  "$blob": "02e9bac3-b258-463a-9648-588fdcb5d036"
                 },
                 "Materials": [
                   "materials/practicearena/charcoal.vmat",
@@ -21424,7 +21425,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6504242a-d4f3-46e1-b0b2-1d70c7a264f0"
+                  "$blob": "13c9ff9b-e143-44ee-ac9e-ad645fd31699"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -21480,7 +21481,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "467ede7f-7084-4962-bf30-bac897490aca"
+                  "$blob": "ebba51fb-1f89-4581-a5f0-5fa0677cba2a"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21536,7 +21537,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "45c8106d-5e21-4152-a7a3-30371984bc91"
+                  "$blob": "f8b29863-a1c1-4145-9e04-ed1742448039"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21592,7 +21593,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f64c3321-5710-4d1c-aa60-e1bc21a879df"
+                  "$blob": "a9d7872b-5be2-4f56-b1a5-541c7ceb33ab"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21648,7 +21649,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "5d3adc55-9240-4cd1-9b3e-e022e0f482a1"
+                  "$blob": "0b230e59-144e-42c0-88c7-65a97a0b30b2"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21704,7 +21705,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3e4a1aae-5acd-4361-8809-0a763b8fa086"
+                  "$blob": "47965e8e-6e7b-4909-8cd6-94d6c8808f59"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21761,7 +21762,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "60dbbe0c-1d70-4a75-900b-4e461f8b2a85"
+                  "$blob": "c1134a4a-7607-4794-8d90-df2856f39a0f"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21818,7 +21819,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7358c05e-f7cb-484d-bae5-0253043ad39a"
+                  "$blob": "7a6300ca-03b3-4fce-89d2-a42f78163f94"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21875,7 +21876,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "d994074a-dcc1-4cb2-9f45-72c8b5b07489"
+                  "$blob": "a88ee43d-126c-45b2-b134-6da11f72bf2f"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21932,7 +21933,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f0a95241-48a0-4586-9a31-35a394c6940d"
+                  "$blob": "f76a1bba-87e4-4ead-84c5-9492db512c25"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -21988,7 +21989,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "39207fc6-7866-4433-9c6d-8e0203077f78"
+                  "$blob": "7939be1d-1331-40fd-af5e-bad6de894494"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22044,7 +22045,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b9ae3473-89d8-4c18-9593-a4a038477d29"
+                  "$blob": "a722a22a-c7c0-4f7c-a021-c00d7fb4cf60"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22100,7 +22101,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "407fd699-2d47-4268-9316-132b6a1dad2b"
+                  "$blob": "9a3ca503-5c00-4dd5-aac9-2a8664e7c93a"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22156,7 +22157,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9671294d-b50e-4bc0-8181-e278f63ba3ba"
+                  "$blob": "100be22e-3cce-4e7a-8918-04bd4d66d634"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22212,7 +22213,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "78dbd819-b662-4136-9adc-9c35ac89fd3c"
+                  "$blob": "7da195c3-592e-4b4f-95c2-c7053edcd310"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22268,7 +22269,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6bfc5a63-911b-41d9-9ca1-eadc9d5c1a9d"
+                  "$blob": "03a90dfc-1032-4322-baed-961566e537b2"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22324,7 +22325,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4be9ac84-c524-43b4-a550-c13f4775289a"
+                  "$blob": "af75aeff-1b16-40f3-aa7c-5dbea793b06d"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22380,7 +22381,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6d4ca60c-2305-458b-a872-30b3811153a8"
+                  "$blob": "8a63c968-5006-4fd1-ab43-484214f0557f"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22436,7 +22437,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "93eb517a-0506-4206-b77d-eb8a46bc458a"
+                  "$blob": "2cd0b330-794e-448b-887f-11111698b3a9"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22492,7 +22493,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "048b3de8-bf10-4606-b57c-f013ac89cec3"
+                  "$blob": "e6d84643-b68c-4165-ae8f-93728f706b33"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22548,7 +22549,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1ea9986f-29c4-4ce0-9172-5b87683a15e9"
+                  "$blob": "450871b6-cff3-419c-a5ee-8ba9ad0d625b"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22604,7 +22605,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "72ba1310-43f0-49ea-bd4e-7aacc5a2bba6"
+                  "$blob": "679d147b-8597-443d-8102-651ec4398f4d"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22660,7 +22661,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "88b9e8df-6b2c-4739-8860-81ccea718fa3"
+                  "$blob": "b6ae38f6-b137-4d07-b213-013aae0ca208"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22716,7 +22717,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b192a518-4748-4f41-8359-5b5068b3cd12"
+                  "$blob": "894f0c02-63da-48f8-b8d7-f7b457c9ffb6"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22772,7 +22773,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3dc21085-26d1-40f8-8dc4-2756d80b0550"
+                  "$blob": "60d900b4-cd41-49b7-a057-978e84af293d"
                 },
                 "Materials": [
                   "materials/practicearena/charcoal_20lighter.vmat"
@@ -24260,7 +24261,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1b6be791-3474-4e17-ba0d-ec6dc5b6b811"
+                  "$blob": "a877b08d-a461-4cdb-8272-a1532a353601"
                 },
                 "Materials": [
                   "materials/practicearena/charcoal_50darker.vmat"

@@ -138,7 +138,7 @@
 | `SpeedBlitzConnectImpactRelay` | Speed Blitz connect-crunch SFX — owner predict + host broadcast dedupe; `ConnectImpactSoundA`/`B`/`ConnectImpactSoundVolume` on Speedster prefab sibling |
 | `JuggernautQuakeSlamUlt` | *(slice 5)* Juggernaut **Quake Slam** — hold/release `Ultimate` → wind-up → three ring knockdowns; host owns hits + `ApplyKnockdownFromHost`; owner planted wind-up |
 | `QuakeSlamOwnerPredict` | Quake Slam owner slam feel predict + `CombatFeelPredictDedupe` marks (Juggernaut prefab sibling) |
-| `QuakeSlamAimPreview` | Owner-only preview — inner `oob_drop_ring` disc + mid/outer procedural annulus (`QuakeSlamPreviewAnnulusMesh`); `AnnulusSegmentCount` (default **64**) |
+| `QuakeSlamAimPreview` | Owner-only preview — inner `oob_drop_ring` disc + mid/outer procedural annulus (`QuakeSlamPreviewAnnulusMesh`); `AnnulusSegmentCount` (default **64**); `RingSeamOverlap` preview-only seam tuck (default **2.5**) |
 | `QuakeSlamPreviewAnnulusMesh` | Static runtime annulus `Model` cache for aim preview bands |
 | `QuakeSlamFeel` | Quake Slam wind-up + ring pulse SFX — `RingPulseSound` default `sounds/explosions/quake_slam_impact.sound` on each `SyncedRingPulseIndex` tick |
 | `QuakeSlamRadiusMath` | Static ring geometry + launch direction helpers shared by host + preview |

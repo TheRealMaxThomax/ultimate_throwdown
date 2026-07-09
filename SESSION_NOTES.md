@@ -152,6 +152,7 @@ Full prefab/scene wiring → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.
 - **UI font pass:** Les Flos (comic/OOB) + Barlow Condensed (HUD/menus) — not wired yet
 - **Quake Slam aim preview color (v1):** warm orange quake (default tints on white `oob_drop_ring.vmat`) vs ult blue — settled orange unless playtest says otherwise
 - **Quake Slam default radii (70/135/200):** playtest may retune after preview scale verify
+- **Quake Slam ring timing + wind-up:** keep 3 discrete phases (not expanding wave); tune `RingPhaseDelaySeconds` (try **0.35** before **0.25**) + `WindUpDurationSeconds` vs solo NPC / team cluster fairness
 
 Settled items removed 2026-07-06 cleanup → archive decision log.
 

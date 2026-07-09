@@ -24,6 +24,8 @@ public sealed class QuakeSlamAimPreview : Component
 	[Property, Group( "Ring mesh" )] public float RingModelBaseSize { get; set; } = 7.5f;
 	[Property, Group( "Ring mesh" )] public string RingMaterialPath { get; set; } = DefaultRingMaterialPath;
 	[Property, Group( "Ring mesh" )] public float RingGroundLift { get; set; } = 1.5f;
+	/// <summary> Preview-only — tucks band inner edges under neighbors to hide sub-unit seams. </summary>
+	[Property, Group( "Ring mesh" )] public float RingSeamOverlap { get; set; } = 2.5f;
 	[Property, Group( "Ring mesh" )] public int AnnulusSegmentCount { get; set; } = 64;
 	[Property, Group( "Ring mesh" )] public Color InnerRingTint { get; set; } = new( 1f, 0.35f, 0.2f, 1f );
 	[Property, Group( "Ring mesh" )] public Color MidRingTint { get; set; } = new( 1f, 0.55f, 0.15f, 1f );
@@ -71,8 +73,9 @@ public sealed class QuakeSlamAimPreview : Component
 
 		ult.GetAimPreviewParams( out var origin, out var innerRadius, out var midRadius, out var outerRadius );
 
-		UpdateAnnulusBand( 2, origin, midRadius, outerRadius, OuterRingTint, OuterRingAlpha );
-		UpdateAnnulusBand( 1, origin, innerRadius, midRadius, MidRingTint, MidRingAlpha );
+		var seam = MathF.Max( 0f, RingSeamOverlap );
+		UpdateAnnulusBand( 2, origin, midRadius - seam, outerRadius, OuterRingTint, OuterRingAlpha );
+		UpdateAnnulusBand( 1, origin, innerRadius - seam, midRadius, MidRingTint, MidRingAlpha );
 		UpdateInnerDisc( 0, origin, innerRadius, InnerRingTint, InnerRingAlpha );
 		SetVisible( true );
 	}
