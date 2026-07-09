@@ -1,7 +1,7 @@
 ﻿# Session Notes — start here
 
 **What this is:** A cheat sheet for you and for AI chats — current goal, ship order, don't-break rules.  
-**Detail lives elsewhere:** mechanics → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) · wiring → [`ARCHITECTURE.md`](ARCHITECTURE.md) · names → [`NAMING_CANON.md`](NAMING_CANON.md) · MP/netcode → [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) · history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md)
+**Detail lives elsewhere:** mechanics → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) · wiring → [`ARCHITECTURE.md`](ARCHITECTURE.md) · names → [`NAMING_CANON.md`](NAMING_CANON.md) · MP/netcode → [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) · history → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) · visuals → [`game_artstyle.md`](game_artstyle.md)
 
 | File | Open when… |
 |------|------------|
@@ -11,6 +11,7 @@
 | [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) | Full match flow (slices 1–6 complete) |
 | [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) | **MP / netcode** — host authority, client predict, **checklist for new combat features**, Testing |
 | [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) | Shipped slice checklists, editor wiring, deep fixes |
+| [`game_artstyle.md`](game_artstyle.md) | Map palette, materials, lighting, **UI & gameplay colour system** |
 
 **Doc hygiene:** Keep this file under ~250 lines. Trim **Recent session notes** to ~2 weeks; move older bullets to archive.
 
@@ -150,7 +151,6 @@ Full prefab/scene wiring → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.
 - **Juggernaut post-tackle run recovery (passive):** keep sprint after tackle vs tackle ramp — mutually exclusive
 - **Speed Blitz join-client spark sprites:** deferred to publish smoke test
 - **UI font pass:** Les Flos (comic/OOB) + Barlow Condensed (HUD/menus) — not wired yet
-- **Quake Slam aim preview color (v1):** warm orange quake (default tints on white `oob_drop_ring.vmat`) vs ult blue — settled orange unless playtest says otherwise
 - **Quake Slam default radii (70/135/200):** playtest may retune after preview scale verify
 - **Quake Slam ring timing + wind-up:** keep 3 discrete phases (not expanding wave); tune `RingPhaseDelaySeconds` (try **0.35** before **0.25**) + `WindUpDurationSeconds` vs solo NPC / team cluster fairness
 

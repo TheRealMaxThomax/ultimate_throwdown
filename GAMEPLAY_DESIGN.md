@@ -241,9 +241,9 @@ Event point defaults (**40** / **25** / **10**) signed off at playtest; passive 
 
 ### Feedback (v1 vs later)
 
-- v1: **`UltChargeHud`** — floored **%** (e.g. `99.9` → `99%`); panel left of `MovementRampHud`; at 100% stays **white** for **`ReadyHighlightDelaySeconds`** (~0.4 s) then **blue** while still charged.
-- v1: Speed Blitz owner-only **segmented ground** preview (`SpeedBlitzAimPreview` — path + hit width; blue `#24b0ff`; `speed_blitz_preview.vmat`). Tune **`PlaneWidthBaseSize`** / **`PlaneLengthBaseSize`** separately.
-- v1: **`ComicBurstPalette.Ult`** — blue knockdown comic on Speed Blitz launch (not connect hang); future ults reuse palette.
+- v1: **`UltChargeHud`** — floored **%** (e.g. `99.9` → `99%`); panel left of `MovementRampHud`; at 100% stays **white** for **`ReadyHighlightDelaySeconds`** (~0.4 s) then **white** while still charged (pending colour system update — see [`game_artstyle.md`](game_artstyle.md) § UI & gameplay colour system).
+- v1: Speed Blitz owner-only **segmented ground** preview (`SpeedBlitzAimPreview` — path + hit width; **Speedster class blue** `#24b0ff`; `speed_blitz_preview.vmat`). Tune **`PlaneWidthBaseSize`** / **`PlaneLengthBaseSize`** separately.
+- v1: **`ComicBurstPalette.Ult`** — **white** knockdown comic on ult launch; future ults reuse palette. (Was blue — changed to white per colour system; see [`game_artstyle.md`](game_artstyle.md)).
 - Later: **circular** ult meter — % in center, clockwise ring fill, ult icon unfade.
 
 ### Voided / not planned
@@ -300,7 +300,7 @@ Optional later: soft ring/torus core if silhouette needs help at distance.
 - **Owner camera (`SpeedBlitzDashCamera`):** wind-up pullback/FOV build → blended dash spike → on enemy hit **`BeginHitRecoveryBlend()`** eases to baseline at contact freeze (not victim launch); miss/timeout uses same end blend. **`ThrowChargeCamera`** release blend uses same transition-frame pattern.
 - **Connect feel (2c):** **`BlitzConnectPoseFreeze`** — attacker + victim body pose held during **0.65s** pre-launch hang (`PlaybackRate = 0`). Optional **`ConnectImpactChargeRunCycle`** for consistent impact stride.
 - **SFX (2c):** **`ConnectImpactSoundA/B`** — host picks one at random each hit, plays at dash stop (`PlaySpeedBlitzConnectImpactSoundRpc`). **`LaunchSound`** — boom when ragdoll launches after hang. Both **`SoundEvent`** drag-drop on Speedster prefab; **`[Rpc.Broadcast]`** so all clients hear the same pick.
-- **Comic (2c):** **`ComicBurstPalette.Ult`** — host picks word/tier; blue fill; spawns at ragdoll **launch** (with **`LaunchSound`**), not at connect hang.
+- **Comic (2c):** **`ComicBurstPalette.Ult`** — host picks word/tier; **white** fill (was blue — updated per colour system; see [`game_artstyle.md`](game_artstyle.md)); spawns at ragdoll **launch** (with **`LaunchSound`**), not at connect hang.
 - **MP anim (2c):** Wind-up **`ApplyPlantedHorizontalFreeze`** on all clients; throw release RPC shares owner **`throwPoseEndTime`**; full hold-param clear on remotes.
 
 ### Fantasy
@@ -362,7 +362,7 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 
 - **Owner only** during hold-X (Blitz-style). No public ground telegraph for v1 — victims react to wind-up SFX / rooted pose.
 - **Mesh:** `models/main/oob_drop_ring.vmdl` filled discs (same as OOB drop marker), three nested circles at inner/mid/outer radii.
-- **Known WIP (2026-07-09):** preview renders **too small** vs gameplay radii — calibrate `QuakeSlamAimPreview` (`RingModelBaseSize`, prefer `LocalScale` like `BallOobDropZoneMarker`). **Color:** use `materials/oob_drop_ring.vmat` (white); avoid fallback to `speed_blitz_preview` (blue × orange tint reads green/muddy). Pick warm orange vs ult blue intentionally.
+- **Color:** warm orange/red rings (`oob_drop_ring.vmat` + tints) — Juggernaut class color. See [`game_artstyle.md`](game_artstyle.md) § UI & gameplay colour system for full colour rules.
 - Public ring VFX (smoke per phase) = polish later.
 
 ### MP (day one)
