@@ -46,6 +46,7 @@ public sealed class CatchUpSpeedBoost : Component
 	private PlayerTackle playerTackle;
 	private PlayerDodge playerDodge;
 	private SpeedsterSpeedBlitzUlt speedBlitzUlt;
+	private JuggernautQuakeSlamUlt quakeSlamUlt;
 	private PracticeNpcPatrolHostState practiceNpcPatrol;
 	private int dodgeRampApplySeqHandled;
 	private int forceWalkRampSeqHandled;
@@ -212,7 +213,7 @@ public sealed class CatchUpSpeedBoost : Component
 		ApplyMutuallyExclusiveForwardBackwardInput();
 
 		ballThrow ??= Components.Get<BallThrow>();
-		if ( ballThrow?.IsThrowPlantLocked == true || IsSpeedBlitzPlantedChannel() )
+		if ( ballThrow?.IsThrowPlantLocked == true || IsPlantedUltChannel() )
 			ApplyPlantedHorizontalFreeze();
 	}
 
@@ -262,6 +263,8 @@ public sealed class CatchUpSpeedBoost : Component
 			playerDodge = Components.Get<PlayerDodge>();
 		if ( speedBlitzUlt is null )
 			speedBlitzUlt = Components.Get<SpeedsterSpeedBlitzUlt>();
+		if ( quakeSlamUlt is null )
+			quakeSlamUlt = Components.Get<JuggernautQuakeSlamUlt>();
 
 		ApplySyncedDodgeRampPulse();
 		ApplySyncedForceWalkRampPulse();
@@ -292,7 +295,7 @@ public sealed class CatchUpSpeedBoost : Component
 		var isThrowPlantLocked = ballThrow?.IsThrowPlantLocked == true;
 		var isMovingForward = IsForwardIntentForChargeRamp();
 
-		if ( isThrowPlantLocked || IsSpeedBlitzPlantedChannel() )
+		if ( isThrowPlantLocked || IsPlantedUltChannel() )
 		{
 			ApplyPlantedMovementChannelLock();
 			return;
@@ -556,9 +559,11 @@ public sealed class CatchUpSpeedBoost : Component
 		}
 	}
 
-	private bool IsSpeedBlitzPlantedChannel()
+	private bool IsPlantedUltChannel()
 	{
-		return speedBlitzUlt?.IsWindUp == true || speedBlitzUlt?.IsConnectPoseFrozen == true;
+		return speedBlitzUlt?.IsWindUp == true
+			|| speedBlitzUlt?.IsConnectPoseFrozen == true
+			|| quakeSlamUlt?.IsWindUp == true;
 	}
 
 	/// <summary>

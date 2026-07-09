@@ -253,6 +253,7 @@ public sealed class MatchDirector : Component
 		BallOutOfBoundsHost.CancelSequenceInScene( Scene );
 
 		SpeedsterSpeedBlitzUlt.CancelAllInScene( Scene );
+		JuggernautQuakeSlamUlt.CancelAllInScene( Scene );
 
 		foreach ( var tackle in Scene.GetAllComponents<PlayerTackle>() )
 		{

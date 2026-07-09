@@ -3407,7 +3407,7 @@
                   ]
                 },
                 {
-                  "__guid": "4a9cc78f-984b-43e4-b15e-e9854b1b9772",
+                  "__guid": "5b82c7c0-a112-4fdb-a04a-327d8ab7168b",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3424,7 +3424,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "b45874d7-bd3b-4196-8bca-3eb2d7db5b8a",
+                      "__guid": "4a9f14ea-0e75-4ee4-865c-8cc138849577",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6429,7 +6429,7 @@
                   ]
                 },
                 {
-                  "__guid": "2668cc1e-bc44-4280-b3db-8475e89ed2f3",
+                  "__guid": "6fd11d70-590d-4a9a-a4f8-5acb324fb454",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6446,7 +6446,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "af5fae74-6e2a-4624-aaed-be3b17107a66",
+                      "__guid": "f1a1a505-0ba5-4e5a-91f7-2089765f00b6",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -7368,6 +7368,88 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null
+            },
+            {
+              "__type": "JuggernautQuakeSlamUlt",
+              "__guid": "a8a25db7-6fd5-484e-b2d0-a02c074b616b",
+              "__enabled": true,
+              "Flags": 0,
+              "EnableQuakeSlamDebugLogs": false,
+              "ImpactAttackerCameraOffsetPunchX": 22,
+              "ImpactAttackerCameraOffsetPunchZ": 4,
+              "ImpactAttackerFovPunchDegrees": -5,
+              "ImpactAttackerPunchDurationSeconds": 0.12,
+              "ImpactHitstopDurationSeconds": 0.12,
+              "ImpactShakeDurationSeconds": 0.18,
+              "ImpactShakePositionAmplitude": 9,
+              "ImpactShakeRotationAmplitudeDegrees": 1.4,
+              "InnerRadius": 70,
+              "InnerRingPowerMultiplier": 1,
+              "KnockdownLaunchArc": 1.35,
+              "KnockdownLaunchSpeed": 620,
+              "MaxChargePoints": 100,
+              "MaxGroundCheckDistance": 12,
+              "MaxHitVerticalSeparation": 56,
+              "MidRadius": 135,
+              "MidRingPowerMultiplier": 0.72,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "OuterRadius": 200,
+              "OuterRingPowerMultiplier": 0.48,
+              "OutwardKnockFraction": 0.22,
+              "RingPhaseDelaySeconds": 0.5,
+              "UltimateAction": "Ultimate",
+              "WindUpDurationSeconds": 1.5
+            },
+            {
+              "__type": "QuakeSlamOwnerPredict",
+              "__guid": "2f9a465e-c959-4e4b-a7a1-f8d3586274e3",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            },
+            {
+              "__type": "QuakeSlamAimPreview",
+              "__guid": "ebaf44db-d4b4-4b7e-b920-08a57fab9112",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "PlaneBaseDiameter": 100,
+              "PlaneModelPath": "models/dev/plane.vmdl",
+              "RingLift": 2.5,
+              "RingMaterialPath": "materials/turfwarspoly/speed_blitz_preview.vmat"
+            },
+            {
+              "__type": "QuakeSlamFeel",
+              "__guid": "2132e9a6-2083-4d9e-8b51-25bd874c7579",
+              "__enabled": true,
+              "Flags": 0,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null,
+              "RingPulseSound": null,
+              "RingPulseVolume": 0.65,
+              "SlamImpactSound": null,
+              "SlamImpactVolume": 0.85,
+              "WindUpRiseSound": null,
+              "WindUpRiseVolume": 0.55
             }
           ],
           "Children": [
@@ -9451,7 +9533,7 @@
                   ]
                 },
                 {
-                  "__guid": "978a80fe-f6fc-4abe-8e27-f249800fd862",
+                  "__guid": "1180a742-b954-45c5-b06d-3bfd4b2e4fec",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -9468,7 +9550,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "560ae28e-6fe6-4b6d-ad73-13f7e6023b95",
+                      "__guid": "8c082ace-27f1-416b-a846-8536e1ef2926",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -12686,7 +12768,7 @@
                   ]
                 },
                 {
-                  "__guid": "4afea8f9-a622-4869-93c7-9a66f93c1544",
+                  "__guid": "1452e737-7f3b-4ca2-9ea4-639734dd681d",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -12703,7 +12785,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "2411a199-e62d-409a-848f-b5eef40734c9",
+                      "__guid": "eb46000b-5d32-4cb5-8aae-68f02f81b07e",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -15497,7 +15579,7 @@
                   ]
                 },
                 {
-                  "__guid": "9dc39bf6-3311-4449-aa9a-c5278adf0550",
+                  "__guid": "933adce0-76fb-4bf5-a13a-26f6317b622e",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -15514,7 +15596,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "75598d36-a5d3-448f-9493-ecec7c07f120",
+                      "__guid": "68700111-7d97-45a8-b637-d2dfb52fb18f",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -18211,7 +18293,7 @@
                   ]
                 },
                 {
-                  "__guid": "9f807ce5-717c-4b98-b9fc-0d2a48409224",
+                  "__guid": "08e2ed7a-a191-4a21-8788-6b7fe4d3ea06",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -18228,7 +18310,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "36e2e49b-8d16-44ab-89ed-5852a18304c6",
+                      "__guid": "887c43a5-89eb-41ef-aff9-66c79276baaf",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -20925,7 +21007,7 @@
                   ]
                 },
                 {
-                  "__guid": "296235d7-b60d-455b-9c01-6b3f37a33adf",
+                  "__guid": "7ee427b2-4abf-4e42-9340-406ca8a364f2",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -20942,7 +21024,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "fe0d2395-4353-4a53-90c4-cf923b1c961e",
+                      "__guid": "e6790857-f103-4e52-98f8-1aa99a7f137d",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -21279,7 +21361,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1d5497e7-d528-4d02-895e-ed636ed1d5b8"
+                  "$blob": "32b37c5a-81d9-4142-9082-166e0e50e3e7"
                 },
                 "Materials": [
                   "materials/practicearena/charcoal.vmat",
@@ -21337,7 +21419,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7d271292-ceff-49bc-b830-e3481fcf0193"
+                  "$blob": "5ab055f9-256c-4f26-8099-12f50db0c26b"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -21393,7 +21475,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "72ef2ba0-4dd3-4b03-8f8d-85ea52da1f12"
+                  "$blob": "2dbd14e2-3b9e-442a-a621-ee8cd533fa45"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21449,7 +21531,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "13119627-6e36-43b3-9831-1d938f3bf00f"
+                  "$blob": "609c16d9-2ff9-4cc0-b098-15cb597fe2b7"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21505,7 +21587,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3fe75ca8-1d2f-434a-bcd7-f7335d985708"
+                  "$blob": "ff5978bd-1c32-4d35-94f1-dcbfac3b8ff9"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21561,7 +21643,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "db87998d-74ed-4be9-9747-de41d9cd600a"
+                  "$blob": "b3580093-e9a5-4290-8aee-3f1ae00c6e7c"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21617,7 +21699,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0099fd55-bb6b-4bcb-a35e-2dda3f52b98d"
+                  "$blob": "47027ff8-a57b-4db4-b601-cf897f3f9fba"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21674,7 +21756,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "97b24b1d-d093-45fd-89a2-3e1b53a5242e"
+                  "$blob": "c6a5bee7-bc15-432a-b996-1960c23d9bc8"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21731,7 +21813,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "16d649e4-d14b-4b45-a03f-3b7daeb8f7a2"
+                  "$blob": "3195bcda-7de5-4f46-aa4a-c3538cbfe015"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21788,7 +21870,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "2a103497-a244-475b-b71d-08b5ae60cd57"
+                  "$blob": "93bdf61a-68ef-47ef-8429-a566b3db445e"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21845,7 +21927,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1b85f480-7eca-4e9f-bb82-73239771bbad"
+                  "$blob": "93e6c380-c206-4748-a543-d0c3fefc7b48"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -21901,7 +21983,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "00950549-e080-4e9a-8a3c-bd6d2e160faf"
+                  "$blob": "469ce789-5ba2-4673-85a7-8e41ff31b072"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -21957,7 +22039,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8b5b1b96-bf89-437c-9731-19d7e3426dee"
+                  "$blob": "355753a8-07ee-41fc-b30e-18a6ac3161cd"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22013,7 +22095,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b60845b5-8b4b-465e-82ea-06e79bc74e50"
+                  "$blob": "19c09703-1a47-4520-afc2-17e802f976f7"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22069,7 +22151,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b64b4e01-7e2d-4ba6-b316-928ea005dfa2"
+                  "$blob": "22c91ad4-2c83-43a2-9f96-8ceaaa801cdf"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22125,7 +22207,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f80df785-1c3c-430e-8db6-ce1be8ddf815"
+                  "$blob": "dbc534ea-77fd-4da7-b7c6-4b2e69a3bddf"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22181,7 +22263,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "67da6e0c-db70-4c9e-9901-ff687efd5302"
+                  "$blob": "ba0b8d51-7980-4100-a11c-486c769de1e1"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22237,7 +22319,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7e5db0b0-fa20-48a5-a1bf-84fd368a41de"
+                  "$blob": "9b6e34a6-f0b9-42b8-ba3c-4927f5116caf"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22293,7 +22375,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0c9f1e63-b7bd-4b5b-8daf-1a979048297b"
+                  "$blob": "11577027-8852-4b7a-b79b-faa89a0cf043"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22349,7 +22431,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "14b190c4-c84d-4ecb-b034-15acb58b1a69"
+                  "$blob": "395837e9-2416-4191-8437-b3a14be16ecb"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22405,7 +22487,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "555ab753-7a0e-4ed2-8c3e-d6f8e3f5f005"
+                  "$blob": "22968ab5-2cb4-43db-b209-1f79d7694550"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22461,7 +22543,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6f5e2983-81c5-4acf-af27-9f8cd7189002"
+                  "$blob": "3c8659ec-0846-49d6-bf61-ac816e96b2c1"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22517,7 +22599,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "23004bd9-d5c2-4f42-a1fd-32a1dafea773"
+                  "$blob": "426eb83c-d85e-488a-8548-0a371946fb61"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22573,7 +22655,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c6c1b26c-2817-4151-a885-d4bdbe6bca3a"
+                  "$blob": "4dda5c75-b9c5-4eb6-b185-7b976b668e01"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22629,7 +22711,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "112ba9be-2b89-4f60-8fde-353b5c8a9e35"
+                  "$blob": "eac587eb-0e1a-42dd-951e-566509fed55e"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22685,7 +22767,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ff04422c-621d-4703-b611-6cb73dac15b2"
+                  "$blob": "1377e999-780f-4290-bcf1-9949fc5c147d"
                 },
                 "Materials": [
                   "materials/practicearena/charcoal_20lighter.vmat"
@@ -24173,7 +24255,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "32957495-0912-496b-8557-02759d0f2ef7"
+                  "$blob": "673af850-1f77-460d-922f-bf5c943cf5b1"
                 },
                 "Materials": [
                   "materials/practicearena/charcoal_50darker.vmat"

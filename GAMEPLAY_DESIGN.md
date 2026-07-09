@@ -333,7 +333,7 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 
 ## Quake Slam (Juggernaut ult — slice 5)
 
-**Status:** **Designed (2026-07-09)** — not built. **Class:** Juggernaut only. Catalog id (planned): `quake_slam`.
+**Status:** **Code shipped (2026-07-09)** — host path + owner preview/predict/feel stubs; tune + 2-window MP verify. **Class:** Juggernaut only. Catalog id: `quake_slam`.
 
 **Fantasy:** Juggernaut plants and slams the ground. A three-ring quake fires outward from his feet — center, then mid, then outer — launching enemies mostly upward. Weaker per-target than Speed Blitz (AOE multi-hit). Skill is placement + timing the rings; victims learn the wind-up audio and leave the active band.
 
@@ -400,7 +400,7 @@ Pattern → [`ARCHITECTURE.md`](ARCHITECTURE.md) § New mechanic pre-split patte
 
 | Class | Ult | Status |
 |-------|-----|--------|
-| **Juggernaut** | **Quake Slam** | Designed — slice 5 |
+| **Juggernaut** | **Quake Slam** | Code shipped — prefab wire + MP verify |
 | **Sniper** | Path zones (name TBD) | Not designed in detail — ball throw creates ragdoll zones along path; requires ball |
 
 ---

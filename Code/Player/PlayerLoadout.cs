@@ -82,11 +82,21 @@ public sealed class PlayerLoadout : Component
 				return blitz;
 		}
 
+		if ( string.Equals( NetEquippedUltId, LoadoutCatalog.UltQuakeSlam, StringComparison.OrdinalIgnoreCase ) )
+		{
+			var quake = Components.Get<JuggernautQuakeSlamUlt>();
+			if ( quake.IsValid() && quake.Enabled )
+				return quake;
+		}
+
 		return null;
 	}
 
 	public bool IsSpeedsterClass() =>
 		string.Equals( NetEquippedClassId, LoadoutCatalog.ClassSpeedster, StringComparison.OrdinalIgnoreCase );
+
+	public bool IsJuggernautClass() =>
+		string.Equals( NetEquippedClassId, LoadoutCatalog.ClassJuggernaut, StringComparison.OrdinalIgnoreCase );
 
 	private void ApplyClassDataOnHost( string classId )
 	{
@@ -133,6 +143,26 @@ public sealed class PlayerLoadout : Component
 		var bodyGlow = Components.Get<SpeedBlitzBodyGlow>();
 		if ( bodyGlow.IsValid() )
 			bodyGlow.Enabled = blitz.IsValid() && blitz.Enabled;
+
+		var quake = Components.Get<JuggernautQuakeSlamUlt>();
+		if ( quake.IsValid() )
+		{
+			var shouldEnableQuake = string.Equals( NetEquippedUltId, LoadoutCatalog.UltQuakeSlam, StringComparison.OrdinalIgnoreCase )
+				&& IsJuggernautClass();
+			quake.Enabled = shouldEnableQuake;
+		}
+
+		var quakePreview = Components.Get<QuakeSlamAimPreview>();
+		if ( quakePreview.IsValid() )
+			quakePreview.Enabled = quake.IsValid() && quake.Enabled;
+
+		var quakeFeel = Components.Get<QuakeSlamFeel>();
+		if ( quakeFeel.IsValid() )
+			quakeFeel.Enabled = quake.IsValid() && quake.Enabled;
+
+		var quakePredict = Components.Get<QuakeSlamOwnerPredict>();
+		if ( quakePredict.IsValid() )
+			quakePredict.Enabled = quake.IsValid() && quake.Enabled;
 	}
 
 	/// <summary> Until per-class prefabs ship, shared <c>Player</c> may still carry Speedster-only anim helpers. </summary>

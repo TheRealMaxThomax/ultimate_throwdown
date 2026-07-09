@@ -18,10 +18,12 @@
 
 ## Right now
 
-**Goal:** **Loadout v1 + join sync ✅ (2026-07-06).** **Next:** **ult slice 5** — Juggernaut ground stomp.
+**Goal:** **Quake Slam slice 5 — code shipped (2026-07-09).** Wire Juggernaut prefab + 2-window MP verify.
 
 **Next session:**
-1. Ult slice 5 — Juggernaut stomp (+ ult catalog entry)
+1. Add Quake Slam siblings to `Player_Juggernaut` prefab (editor)
+2. 2-window MP smoke — hold/release X, wind-up, 3 rings, knockdown, tackle interrupt
+3. Tune radii / launch / SFX
 
 ---
 
@@ -31,7 +33,7 @@
 |-------|-------|--------|
 | **1** | Map slice 1 — ball OOB | ✅ Shipped 2026-07-04 |
 | **2** | Prefab split + loadout v1 | ✅ Shipped 2026-07-06 |
-| **3** | Ult slice 5 — Juggernaut stomp | **Next** |
+| **3** | Ult slice 5 — Juggernaut Quake Slam | **Code shipped — prefab wire + MP verify** |
 | **4** | Ult slice 6 — Sniper path zones | Planned |
 | **2b** | `MatchSetup` + walkable intermission room | After slice 5 |
 | **5** | Combat slice 1 — unarmed melee | Before weapons |
@@ -45,7 +47,7 @@ Full combat/progression specs → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md). Jo
 
 ## Works today (summary)
 
-Match flow, teams, goals, OT, rematch, Turf Wars map (traffic, lamps, OOB), practice arena, ball grab/throw (planted charge, RMB cancel, trajectory preview), dodge channel, tackles + ragdolls + comic text, ult charge + assist + Speed Blitz 2a–2d, per-class prefabs + loadout picker (Q, intermission/practice), join sync RPC. **2-window MP OK** on core flows.
+Match flow, teams, goals, OT, rematch, Turf Wars map (traffic, lamps, OOB), practice arena, ball grab/throw (planted charge, RMB cancel, trajectory preview), dodge channel, tackles + ragdolls + comic text, ult charge + assist + Speed Blitz 2a–2d + **Quake Slam (code — wire Jugg prefab)**, per-class prefabs + loadout picker (Q, intermission/practice), join sync RPC. **2-window MP OK** on core flows.
 
 Mechanics detail → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) **Built vs not built**.
 
@@ -75,7 +77,7 @@ Mechanics detail → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) **Built vs not b
 | `Code/Player/` | Movement, dodge, tackle, loadout, cosmetics, anim overlays |
 | `Code/Network/` | `GameNetworkManager` — spawn, teams, loadout apply |
 | `Code/Match/` | `MatchDirector`, goals, OOB zones, audio bootstrap |
-| `Code/Ultimates/` | `PlayerUltCharge`, Speed Blitz + feel/glow |
+| `Code/Ultimates/` | `PlayerUltCharge`, Speed Blitz + Quake Slam + feel |
 | `Code/UI/` | Match HUD, owner HUDs, loadout picker, comic bursts |
 | `Code/Map/` | Traffic, practice lane, lights, bootstrap |
 
@@ -186,7 +188,7 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
-- **2026-07-08 (Speed Blitz Track B ✅):** B1 `SpeedBlitzDashHitDetector`, B2 `SpeedBlitzConnectImpactRelay` — hit geometry + connect SFX signed off. Orchestrator ~1,189 lines; optional **B3** (owner movement extract) deferred. Proceed slice 5/6 with pre-split pattern for new ults.
+- **2026-07-09 (Quake Slam slice 5 — code ✅):** `JuggernautQuakeSlamUlt` + siblings (`QuakeSlamOwnerPredict`, `QuakeSlamAimPreview`, `QuakeSlamFeel`, `QuakeSlamRadiusMath`); catalog `quake_slam`; loadout enable path. **Max:** wire Juggernaut prefab + MP verify.
 - **2026-07-07 (PlayerTackle Track A ✅):** A1 `TackleRagdollLifecycle`, A2 `TackleImpactRelay`, A3 `PracticeNpcTackleClientRelay` — 2-window MP practice dummy mirroring signed off. Orchestrator ~1,175 lines. **A4** (ragdoll orbit camera extract) **deferred**.
 - **2026-07-06 (join sync editor smoke ✅):** Host double `[PlayerLoadout]` on joiner spawn, no errors. Same SteamId = not cross-host proof. **Code shipped — verify at publish.**
 - **2026-07-06 (loadout v1 ✅):** Intermission Q picker, class respawn, join sync RPC, force-commit. Prefab split + per-class spawn.

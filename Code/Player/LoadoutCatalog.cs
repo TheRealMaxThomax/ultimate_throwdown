@@ -10,6 +10,7 @@ public static class LoadoutCatalog
 	public const string ClassSniper = "sniper";
 
 	public const string UltSpeedBlitz = "speed_blitz";
+	public const string UltQuakeSlam = "quake_slam";
 
 	public const string PassiveDefault = "default";
 	public const string PassiveTackleRamp = "tackle_ramp";
@@ -30,7 +31,7 @@ public static class LoadoutCatalog
 	private static readonly Dictionary<string, string[]> UltIdsByClass = new( StringComparer.OrdinalIgnoreCase )
 	{
 		[ClassSpeedster] = new[] { UltSpeedBlitz },
-		[ClassJuggernaut] = Array.Empty<string>(),
+		[ClassJuggernaut] = new[] { UltQuakeSlam },
 		[ClassSniper] = Array.Empty<string>(),
 	};
 
@@ -159,6 +160,9 @@ public static class LoadoutCatalog
 	{
 		if ( string.Equals( ultId, UltSpeedBlitz, StringComparison.OrdinalIgnoreCase ) )
 			return "Speed Blitz";
+
+		if ( string.Equals( ultId, UltQuakeSlam, StringComparison.OrdinalIgnoreCase ) )
+			return "Quake Slam";
 
 		if ( string.IsNullOrWhiteSpace( ultId ) )
 			return "(none)";

@@ -179,6 +179,8 @@ Previously `GameNetworkManager` auto-added feel/anim/HUD pieces at spawn. **Poli
 
 **Every player class prefab:** `PlayerTeam`, `PlayerLoadout`, `PlayerDisableCrouch`, `PlayerEnemyOutline`, `BallCompassHud`, `PlayerBallHoldAnim`, `PlayerChargeRunAnim`, `TackleImpactFeel`, `CombatFeelPredictDedupe`, `PlayerFootstepAudio`, `PracticeNpcPatrolPoseRelay`, `LoadoutClientState`, `LoadoutPickerHud`, `TackleRagdollLifecycle`, `TackleImpactRelay`, `PracticeNpcTackleClientRelay`, plus core gameplay (`BallGrab`, `BallThrow`, `CatchUpSpeedBoost`, `PlayerDodge`, `PlayerTackle`, `PlayerUltCharge`, `PlayerClass`, throw/charge HUDs, `RagdollClientFeel`, …).
 
+**Juggernaut prefab additionally:** `JuggernautQuakeSlamUlt`, `QuakeSlamOwnerPredict`, `QuakeSlamAimPreview`, `QuakeSlamFeel`.
+
 **Speedster prefab additionally:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzDashHitDetector`, `SpeedBlitzConnectImpactRelay`, `SpeedBlitzAimPreview`, `SpeedBlitzDashCamera`, `SpeedBlitzWindUpFeel`, `SpeedBlitzBodyGlow`, `PlayerSpeedBlitzWindUpAnim`, `BlitzConnectPoseFreeze`.
 
 **Main Camera (per gameplay scene):** `EnemyOutlineCameraSetup`, `TackleComicTextHud`, `MatchAudioBootstrap`, `OutOfBoundsBannerHud`, `BallOobDropZoneHud`.
@@ -253,7 +255,11 @@ Code/Ultimates/
     SpeedBlitzBodyGlow.cs         ← exists
     SpeedBlitzVfxResources.cs     ← exists
   Juggernaut/
-    JuggernautGroundStompUlt.cs   ← slice 5
+    JuggernautQuakeSlamUlt.cs   ← slice 5 ✅
+    QuakeSlamOwnerPredict.cs
+    QuakeSlamAimPreview.cs
+    QuakeSlamFeel.cs
+    QuakeSlamRadiusMath.cs
   Sniper/
     SniperBallPathUlt.cs          ← slice 6
 ```

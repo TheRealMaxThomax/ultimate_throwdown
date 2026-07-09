@@ -20,6 +20,7 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 	private PlayerTackle playerTackle;
 	private TackleImpactFeel tackleImpactFeel;
 	private SpeedsterSpeedBlitzUlt speedBlitzUlt;
+	private JuggernautQuakeSlamUlt quakeSlamUlt;
 	private PlayerController playerController;
 
 	private Vector3 baselineCameraOffset;
@@ -133,6 +134,10 @@ public sealed class ThrowChargeCamera : Component, PlayerController.IEvents
 			return;
 
 		if ( speedBlitzUlt.IsValid() && speedBlitzUlt.IsActive )
+			return;
+
+		quakeSlamUlt ??= Components.Get<JuggernautQuakeSlamUlt>();
+		if ( quakeSlamUlt.IsValid() && quakeSlamUlt.IsWindUp )
 			return;
 
 		if ( TryGetOverrideFieldOfView( out var fieldOfView ) )
