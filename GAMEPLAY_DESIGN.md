@@ -36,7 +36,7 @@
 | Per-class prefabs + spawn | **Built** — `Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; GNM clones from committed class |
 | Loadout v1 (picker, save, join sync) | **Built** — intermission + practice swaps; force-commit; class change = host respawn; join RPC shipped (cross-machine verify at publish) |
 | `MatchSetup` + walkable intermission | **Not built** — v1 intermission = frozen + Q menu (slice 2b, after Jugg stomp) |
-| Ultimates (charge + Speed Blitz) | **Partial** — charge + assist ✅ + **Speed Blitz 2a–2d ✅** + per-ult max ✅; Jugg/Sniper ults planned (slices 5–6) |
+| Ultimates (charge + Speed Blitz) | **Partial** — charge + assist ✅ + **Speed Blitz 2a–2d ✅** + per-ult max ✅; **Quake Slam** designed (slice 5 next); Sniper path zones planned (slice 6) |
 | Unarmed melee + parry | **Not built** — combat slices 1–2 (after ults 5–6) |
 | Ball OOB (map slice 1) | **Built** — dwell, whistle, sky-drop, 2-window MP OK |
 
@@ -112,9 +112,9 @@ All numbers live in **`.cdata` files** in the editor — not hardcoded in script
 
 **Juggernaut passive (built):** Stay at charge speed → tackle bonus stacks up to a cap. Drop below charge → bonus resets.
 
-**Class ultimates (partial):** Shared charge + assist + per-ult max (slice 4 ✅). **Speedster Speed Blitz** 2a–2d + aim preview v3 ✅. **Juggernaut** ground stomp and **Sniper** path zones planned (slices 5–6).
+**Class ultimates (partial):** Shared charge + assist + per-ult max (slice 4 ✅). **Speedster Speed Blitz** 2a–2d + aim preview v3 ✅. **Juggernaut Quake Slam** designed (slice 5 next). **Sniper** path zones planned (slice 6).
 
-**Pre–ult gap (Jugg/Sniper before slice 5/6) — approach A:** Classes pickable in loadout now; ult catalog empty → charge HUD runs, **X inactive**. When stomp/path zones ship → add to catalog; class switch auto-picks first ult.
+**Pre–ult gap (Jugg/Sniper before slice 5/6) — approach A:** Classes pickable in loadout now; ult catalog empty for Jugg/Sniper → charge HUD runs, **X inactive**. When Quake Slam / path zones ship → add to catalog; class switch auto-picks first ult.
 
 ---
 
@@ -257,7 +257,7 @@ Event point defaults (**40** / **25** / **10**) signed off at playtest; passive 
 2. Speedster **Speed Blitz** — core dash → hold/release preview → **2c polish ✅** → **2d wind-up ✅** → **aim preview v3 ✅ (2026-06-30)**
 3. Assist charge ✅  
 4. Per-ult `MaxChargePoints` balance ✅  
-5. **Juggernaut** stomp → **Sniper** path zones  
+5. **Juggernaut Quake Slam** → **Sniper** path zones  
 6. **Weapons** (after all three first ults)
 
 ---
@@ -331,12 +331,77 @@ Lightning-fast dash over a long distance. Hit an enemy → launch them **much fa
 
 ---
 
-## Other class ults (planned — not designed in detail)
+## Quake Slam (Juggernaut ult — slice 5)
 
-| Class | Ult (working name) | One-line |
-|-------|-------------------|----------|
-| **Juggernaut** | Ground stomp | AOE knockdown around self |
-| **Sniper** | Path zones (name TBD) | Ball throw creates ragdoll zones along path; requires ball |
+**Status:** **Designed (2026-07-09)** — not built. **Class:** Juggernaut only. Catalog id (planned): `quake_slam`.
+
+**Fantasy:** Juggernaut plants and slams the ground. A three-ring quake fires outward from his feet — center, then mid, then outer — launching enemies mostly upward. Weaker per-target than Speed Blitz (AOE multi-hit). Skill is placement + timing the rings; victims learn the wind-up audio and leave the active band.
+
+### Flow
+
+1. Charge **100%**. **Not** holding the ball. Must be **grounded**. `MatchPhase.Playing` (same gate family as Blitz).
+2. **Hold X** → owner-only **3-ring** ground preview (radii visible only to caster). **RMB** cancels preview (no spend).
+3. **Release X** → **commit**:
+   - Charge → **0%** immediately (`TrySpendFullChargeOnHost`).
+   - **~1.5 s wind-up** — **rooted** (no move), vulnerable. **No self-cancel.** Knockdown (tackle etc.) **fizzles** the ult; charge stays spent (Blitz contract).
+4. **Slam** → origin locked at Juggernaut feet at impact. **Juggernaut free to move** after slam (not rooted through ring phases — 1.5 s post-slam root felt too punishing; revisit if too strong).
+5. **Three ring phases** (defaults; all inspector-tunable):
+   - **Inner** fires at slam → then **~0.5 s** → **mid** → **~0.5 s** → **outer**.
+   - Default radii: inner **70** / mid **135** / outer **200** (horizontal).
+   - Victim in the **active annulus** (or disk for inner) when that phase ticks → knockdown. **Hit at most once** per slam (no double-hits across phases).
+6. **Hit rules:**
+   - **Enemies only** (no FF).
+   - **Through walls** — no LOS required (ground shock).
+   - **Short cylinder** vertical band (tunable; default ~player height) so jumpers cannot clear the quake.
+   - Launch: **mostly up** + **slight outward** from slam origin; impulse **weaker than Blitz**; **inner > mid > outer** multipliers (can flatten to equal later; outer-strong = future variation).
+   - Ball carriers: ball **drops** on knockdown.
+   - **No** ult charge awarded to caster on hits (same as Blitz).
+7. Reuse host **`ApplyKnockdownFromHost`** (or shared knockdown entry) — do not invent a second ragdoll path.
+
+### Preview / telegraph
+
+- **Owner only** during hold-X (Blitz-style). No public ground telegraph for v1 — victims react to wind-up SFX / rooted pose.
+- Public ring VFX (smoke per phase) = polish later; placeholder debug draw OK while building.
+
+### MP (day one)
+
+- Host owns phase machine, ring hit list, knockdowns.
+- Owner: hold preview + local wind-up plant; **predict feel** on local impact punch when a ring would hit (dedupe via `CombatFeelPredictDedupe`).
+- Do **not** predict ragdoll spawn / who got hit as truth.
+
+### Pre-split siblings (implement from line 1)
+
+Pattern → [`ARCHITECTURE.md`](ARCHITECTURE.md) § New mechanic pre-split pattern. Folder: `Code/Ultimates/Juggernaut/`. All tunables on the orchestrator; Max wires siblings on the Juggernaut prefab (no auto-add).
+
+| Component | Role |
+|-----------|------|
+| **`JuggernautQuakeSlamUlt`** | Authority — `[Property]` tunables, `[Sync]` phase, hold/release + host spend, wind-up → slam → 3 ring phases, host hit list → `ApplyKnockdownFromHost` |
+| **`QuakeSlamOwnerPredict`** | Owner — local plant/root during wind-up, impact feel predict + `CombatFeelPredictDedupe` marks |
+| **`QuakeSlamAimPreview`** | Owner-only 3-ring ground preview while holding X |
+| **`QuakeSlamFeel`** | Presentation — wind-up/slam SFX, later smoke/VFX; reads sync, never writes truth |
+| **`QuakeSlamRadiusMath`** | Static pure math — annulus/disk + cylinder vertical; shared by host + predict |
+
+### Tuning knobs (inspector on orchestrator)
+
+- `WindUpDurationSeconds` (default **1.5**)
+- `InnerRadius` / `MidRadius` / `OuterRadius` (70 / 135 / 200)
+- `RingPhaseDelaySeconds` (default **0.5** between phases)
+- `MaxHitVerticalSeparation` (cylinder half-height)
+- `KnockdownLaunchSpeed` / `KnockdownLaunchArc` + per-ring power multipliers
+- Outward knock fraction (slight radial vs pure up)
+
+### Out of scope for v1
+
+- Public telegraph rings, smoke VFX polish, ult comic palette pass, outer-strong variation, expanding continuous wave mode (architecture should allow swapping ring schedule later).
+
+---
+
+## Other class ults (planned)
+
+| Class | Ult | Status |
+|-------|-----|--------|
+| **Juggernaut** | **Quake Slam** | Designed — slice 5 |
+| **Sniper** | Path zones (name TBD) | Not designed in detail — ball throw creates ragdoll zones along path; requires ball |
 
 ---
 
