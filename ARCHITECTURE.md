@@ -258,6 +258,7 @@ Code/Ultimates/
     JuggernautQuakeSlamUlt.cs   ← slice 5 ✅
     QuakeSlamOwnerPredict.cs
     QuakeSlamAimPreview.cs
+    QuakeSlamPreviewAnnulusMesh.cs
     QuakeSlamFeel.cs
     QuakeSlamRadiusMath.cs
   Sniper/

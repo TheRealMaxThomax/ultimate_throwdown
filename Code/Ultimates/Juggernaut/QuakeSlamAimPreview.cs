@@ -2,12 +2,12 @@ using Sandbox;
 
 /// <summary>
 /// Owner-only 3-ring ground preview while <see cref="JuggernautQuakeSlamUlt.IsAiming"/>.
-/// Nested filled discs (v1). Later: true annulus bands — see SESSION_NOTES Open decisions.
+/// Inner = filled disc; mid/outer = procedural annulus bands (no nested alpha overlap).
 /// </summary>
 [Order( 10014 )]
 public sealed class QuakeSlamAimPreview : Component
 {
-	const string DefaultRingModelPath = "models/main/oob_drop_ring.vmdl";
+	const string DefaultDiscModelPath = "models/main/oob_drop_ring.vmdl";
 	const string DefaultRingMaterialPath = "materials/oob_drop_ring.vmat";
 	const string FallbackRingMaterialPath = "materials/turfwarspoly/speed_blitz_preview.vmat";
 
@@ -19,11 +19,12 @@ public sealed class QuakeSlamAimPreview : Component
 		public string LoadedMaterialPath;
 	}
 
-	[Property, Group( "Ring mesh" )] public string RingModelPath { get; set; } = DefaultRingModelPath;
+	[Property, Group( "Ring mesh" )] public string RingModelPath { get; set; } = DefaultDiscModelPath;
 	/// <summary> Fallback mesh diameter when <see cref="Model.Bounds"/> are unavailable — prefer auto bounds. </summary>
 	[Property, Group( "Ring mesh" )] public float RingModelBaseSize { get; set; } = 7.5f;
 	[Property, Group( "Ring mesh" )] public string RingMaterialPath { get; set; } = DefaultRingMaterialPath;
 	[Property, Group( "Ring mesh" )] public float RingGroundLift { get; set; } = 1.5f;
+	[Property, Group( "Ring mesh" )] public int AnnulusSegmentCount { get; set; } = 64;
 	[Property, Group( "Ring mesh" )] public Color InnerRingTint { get; set; } = new( 1f, 0.35f, 0.2f, 1f );
 	[Property, Group( "Ring mesh" )] public Color MidRingTint { get; set; } = new( 1f, 0.55f, 0.15f, 1f );
 	[Property, Group( "Ring mesh" )] public Color OuterRingTint { get; set; } = new( 1f, 0.75f, 0.1f, 1f );
@@ -32,8 +33,8 @@ public sealed class QuakeSlamAimPreview : Component
 	[Property, Group( "Ring mesh" )] public float OuterRingAlpha { get; set; } = 0.35f;
 
 	private JuggernautQuakeSlamUlt ult;
-	private Model ringModel;
-	private string loadedRingModelPath;
+	private Model discModel;
+	private string loadedDiscModelPath;
 	private readonly RingSlot[] rings = new RingSlot[3];
 
 	protected override void OnStart()
@@ -68,16 +69,11 @@ public sealed class QuakeSlamAimPreview : Component
 			return;
 		}
 
-		if ( !EnsureRingModel() )
-		{
-			SetVisible( false );
-			return;
-		}
-
 		ult.GetAimPreviewParams( out var origin, out var innerRadius, out var midRadius, out var outerRadius );
-		UpdateRing( 2, origin, outerRadius, OuterRingTint, OuterRingAlpha );
-		UpdateRing( 1, origin, midRadius, MidRingTint, MidRingAlpha );
-		UpdateRing( 0, origin, innerRadius, InnerRingTint, InnerRingAlpha );
+
+		UpdateAnnulusBand( 2, origin, midRadius, outerRadius, OuterRingTint, OuterRingAlpha );
+		UpdateAnnulusBand( 1, origin, innerRadius, midRadius, MidRingTint, MidRingAlpha );
+		UpdateInnerDisc( 0, origin, innerRadius, InnerRingTint, InnerRingAlpha );
 		SetVisible( true );
 	}
 
@@ -105,16 +101,16 @@ public sealed class QuakeSlamAimPreview : Component
 		}
 	}
 
-	private bool EnsureRingModel()
+	private bool EnsureDiscModel()
 	{
-		var modelPath = string.IsNullOrWhiteSpace( RingModelPath ) ? DefaultRingModelPath : RingModelPath.Trim();
-		if ( !ringModel.IsValid() || loadedRingModelPath != modelPath )
+		var modelPath = string.IsNullOrWhiteSpace( RingModelPath ) ? DefaultDiscModelPath : RingModelPath.Trim();
+		if ( !discModel.IsValid() || loadedDiscModelPath != modelPath )
 		{
-			ringModel = Model.Load( modelPath );
-			loadedRingModelPath = modelPath;
+			discModel = Model.Load( modelPath );
+			loadedDiscModelPath = modelPath;
 		}
 
-		return ringModel.IsValid();
+		return discModel.IsValid();
 	}
 
 	private bool EnsureRingMaterial( RingSlot slot )
@@ -131,7 +127,7 @@ public sealed class QuakeSlamAimPreview : Component
 		return slot.Material.IsValid();
 	}
 
-	private float ResolveRingMeshDiameter( Model model )
+	private float ResolveDiscMeshDiameter( Model model )
 	{
 		if ( model.IsValid() )
 		{
@@ -144,23 +140,55 @@ public sealed class QuakeSlamAimPreview : Component
 		return MathF.Max( 1f, RingModelBaseSize );
 	}
 
-	private void UpdateRing( int index, Vector3 origin, float radius, Color tint, float alpha )
+	private void UpdateInnerDisc( int index, Vector3 origin, float radius, Color tint, float alpha )
+	{
+		var slot = rings[index];
+		if ( slot?.Root is null || slot.Renderer is null || !EnsureDiscModel() || !EnsureRingMaterial( slot ) )
+		{
+			if ( slot?.Root.IsValid() == true )
+				slot.Root.Enabled = false;
+			return;
+		}
+
+		var targetDiameter = MathF.Max( 1f, radius ) * 2f;
+		var meshDiameter = ResolveDiscMeshDiameter( discModel );
+		var scale = targetDiameter / meshDiameter;
+
+		ApplySlotTransform( slot, origin, scale );
+		slot.Renderer.Model = discModel;
+		ApplyRingMaterial( slot.Renderer, slot.Material, tint, alpha );
+		slot.Root.Enabled = true;
+	}
+
+	private void UpdateAnnulusBand( int index, Vector3 origin, float innerRadius, float outerRadius, Color tint, float alpha )
 	{
 		var slot = rings[index];
 		if ( slot?.Root is null || slot.Renderer is null || !EnsureRingMaterial( slot ) )
+		{
+			if ( slot?.Root.IsValid() == true )
+				slot.Root.Enabled = false;
 			return;
+		}
 
-		var targetDiameter = MathF.Max( 1f, radius ) * 2f;
-		var meshDiameter = ResolveRingMeshDiameter( ringModel );
-		var scale = targetDiameter / meshDiameter;
+		var annulusModel = QuakeSlamPreviewAnnulusMesh.GetAnnulusModel( innerRadius, outerRadius, AnnulusSegmentCount );
+		if ( !annulusModel.IsValid() )
+		{
+			slot.Root.Enabled = false;
+			return;
+		}
 
-		slot.Root.WorldPosition = new Vector3( origin.x, origin.y, origin.z + RingGroundLift );
-		slot.Root.WorldRotation = Rotation.Identity;
-		slot.Root.WorldScale = new Vector3( scale, scale, 1f );
-		slot.Renderer.Model = ringModel;
-		slot.Renderer.RenderType = ModelRenderer.ShadowRenderType.Off;
+		ApplySlotTransform( slot, origin, 1f );
+		slot.Renderer.Model = annulusModel;
 		ApplyRingMaterial( slot.Renderer, slot.Material, tint, alpha );
 		slot.Root.Enabled = true;
+	}
+
+	private void ApplySlotTransform( RingSlot slot, Vector3 origin, float uniformScale )
+	{
+		slot.Root.WorldPosition = new Vector3( origin.x, origin.y, origin.z + RingGroundLift );
+		slot.Root.WorldRotation = Rotation.Identity;
+		slot.Root.WorldScale = new Vector3( uniformScale, uniformScale, 1f );
+		slot.Renderer.RenderType = ModelRenderer.ShadowRenderType.Off;
 
 		if ( slot.Renderer.SceneObject.IsValid() )
 		{
