@@ -8,6 +8,17 @@
 
 **Instruction for whoever executes this plan (Composer): implement exactly ONE numbered step, then stop.** Summarize what changed and which editor test(s) from that step's checklist Max should run, then wait for Max to confirm it's working before starting the next step. Do not chain multiple steps together in one pass even if they seem quick — that defeats the point of testing incrementally.
 
+## Status (2026-07-08)
+
+| Track | Recommended steps | Status |
+|-------|-------------------|--------|
+| **A — `PlayerTackle`** | A1–A3 | **✅ Shipped 2026-07-07** |
+| **A — stretch** | A4 (ragdoll orbit camera) | **Deferred** |
+| **B — `SpeedsterSpeedBlitzUlt`** | B1–B2 | **✅ Shipped 2026-07-08** |
+| **B — stretch** | B3 (owner movement extract) | **Optional / deferred** |
+
+Both recommended stopping points are done. Optional A4/B3 only if those areas keep changing. New ults (slice 5/6): use pre-split pattern from line 1 — see `ARCHITECTURE.md` § New mechanic pre-split pattern.
+
 ---
 
 ## Ground rules for every step (read once, apply throughout)

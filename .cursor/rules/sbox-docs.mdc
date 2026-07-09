@@ -1,21 +1,47 @@
 ---
-description: When to use @sbox docs for s&box API questions
+description: When to use indexed s&box docs and MCP before guessing APIs
 alwaysApply: true
 ---
 # Use @sbox Docs for s&box API Questions
 
-When something in s&box is not behaving as expected — unexpected API results, physics not responding, component methods missing, or uncertain about the correct API — **stop and check the indexed docs before guessing**.
+When something in s&box is not behaving as expected — unexpected API results, physics not responding, component methods missing, or uncertain about the correct API — **stop and check the indexed docs (or s&box MCP) before guessing**.
+
+Do **not** guess at s&box APIs from general C#/Unity/Godot knowledge. s&box has its own component model and physics API.
+
+## Indexed Cursor docs (use the right @ mention)
+
+| When working on… | @ mention |
+|------------------|-----------|
+| General / unsure where to look | `@Dev Docs Hub` |
+| Method signatures, component APIs, types | `@API Reference` |
+| `[Sync]`, RPCs, ownership, visibility, dedicated servers | `@Networking` |
+| 2-window MP, `connect local`, editor join testing | `@MP Testing` |
+| Weapons, inventory, hold poses, `BaseCombatWeapon` (slice 7+) | `@Inventory and Weapons` |
+| Physics hub — rigidbodies, colliders, triggers overview | `@Physics` |
+| `Scene.Trace`, ray/sphere/box sweeps, collision rules, LOS | `@Physics Tracing` |
+| Panels, `PanelComponent`, ScreenPanel vs WorldPanel | `@UI` |
+| Razor HUDs, `BuildHash`, `.razor` / `.razor.scss` | `@UI Razor` |
+| **Our** host authority, client predict, combat feel dedupe | `MULTIPLAYER_NETCODE.md` (repo — not s&box) |
 
 ## Rule
 
-- Before suggesting any s&box-specific API call you are not certain about, tell the user: "Let me check the s&box docs — include `@sbox docs` in your next message so I can look this up."
-- Do not guess at s&box APIs from general C#/Unity/Godot knowledge. s&box has its own component model and physics API that differs from other engines.
-- If you already tried an API and it didn't work, always reach for `@sbox docs` before attempting a second guess.
+- Use the **most specific** indexed doc from the table above — do **not** ask Max to `@` generic docs if a row already matches the task.
+- If you already tried an API and it didn't work, reach for the indexed doc (or MCP console) before a second guess.
+- Engine **news/changelogs** are not indexed — Max pastes the update link when a fresh engine change matters. Do not rely on stale news crawls.
+- Optional sitemap: https://sbox.game/llms.txt
 
-## Common areas where docs are needed
+## s&box editor MCP (when editor is open)
 
+- Cursor MCP `sbox` → `http://127.0.0.1:7269/mcp` (editor must be open with Ultimate Throwdown loaded).
+- **OK without asking:** `editor_status`, `read_console`, read-only inspection, screenshots, asset/scene queries.
+- **Still needs Max's explicit yes in that chat:** any MCP tool that edits scenes, prefabs, materials, or other editor-owned assets (same as `editor-asset-ownership.mdc`).
+
+## Common areas that need docs (not Unity muscle memory)
+
+- `Scene.Trace` / ray-sphere-box sweeps, collision rules, triggers
 - `ModelPhysics` / ragdoll body velocity and impulse
 - `PhysicsGroup` / `PhysicsBody` methods
-- `NetworkSpawn` / `[Sync]` / networking patterns
-- `PlayerController` internals (capsule, collision)
+- `NetworkSpawn` / `[Sync]` / `[Rpc.Host]` patterns
+- `PlayerController` internals (capsule, collision, grounding)
+- Razor `PanelComponent`, `WorldPanel`, `ScreenPanel`, `.razor.scss`
 - Any unfamiliar component property or method
