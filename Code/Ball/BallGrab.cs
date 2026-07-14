@@ -23,6 +23,10 @@ public sealed class BallGrab : Component
 	[Property, Range( 0f, 2f )] public float DropVelocityScale { get; set; } = 0.5f;
 	[Property] public string PromptText { get; set; } = "Pick Up With E";
 	[Property] public bool EnableNetDebugLogs { get; set; } = false;
+	/// <summary> Max horizontal gap between client owner sample and host player root when approving pickup RPC. </summary>
+	[Property] public float MaxOwnerPickupSampleSeparation { get; set; } = 120f;
+	[Property] public float OwnerPickupPredictTimeout { get; set; } = 0.35f;
+	[Property] public float OwnerPickupRequestInterval { get; set; } = 0.05f;
 
 	private GameObject ballObject;
 	private GameObject ballOriginalParent;
@@ -41,7 +45,12 @@ public sealed class BallGrab : Component
 	private float dropInheritedSpeed;
 	private bool localDropPending;
 	private bool appliedClientHeldProxyState;
+	private bool ownerPickupPredictActive;
+	private float ownerPickupPredictUntilTime;
 	public bool IsHolding => isHolding;
+	/// <summary> Client owner assumed grab before host <see cref="NetIsHolding"/> sync — colliders off, ball at hand. </summary>
+	public bool IsOwnerPickupPredicting => ownerPickupPredictActive;
+	public bool IsEffectivelyHolding => isHolding || ( Network.IsOwner && ownerPickupPredictActive );
 	public GameObject HeldBall => ballObject;
 	public Vector3 SyncedBallWorldPosition => NetHeldBallWorldPosition;
 	public Rotation SyncedBallWorldRotation => NetHeldBallWorldRotation;
@@ -106,10 +115,15 @@ public sealed class BallGrab : Component
 			UpdateSyncedBallState();
 		}
 
-		// Auto-grab is host-authoritative for every player — same path that makes host self-pickup reliable
-		// (authoritative ball position, no owner-RPC latency). Clients do not request pickup locally.
 		if ( Networking.IsHost )
+		{
+			// Host uses authoritative ball + player roots — instant grab for the host player.
 			TryAutoPickupOnHostAuthority();
+		}
+		else if ( Network.IsOwner )
+		{
+			UpdateOwnerPickupPredict();
+		}
 	}
 
 	private void FindMainBall()
@@ -220,20 +234,20 @@ public sealed class BallGrab : Component
 	}
 
 	[Rpc.Host]
-	private void RequestPickUpBallOnHost()
+	private void RequestPickUpBallOnHost( Vector3 ownerSamplePosition )
 	{
 		if ( EnableNetDebugLogs )
 		{
 			var hostDistanceToBall = ballObject.IsValid()
-				? GetPickupHorizontalDistanceToBall( ballObject.WorldPosition )
+				? GetPickupHorizontalDistanceToBall( ballObject.WorldPosition, WorldPosition )
 				: -1f;
-			Log.Info( $"[NetDebug] Host pickup request received. Caller={Rpc.Caller.DisplayName} HolderObject={GameObject.Name} BallValid={ballObject.IsValid()} IsHolding={isHolding} HostHorizontalToBall={hostDistanceToBall}" );
+			Log.Info( $"[NetDebug] Host pickup request received. Caller={Rpc.Caller.DisplayName} HolderObject={GameObject.Name} BallValid={ballObject.IsValid()} IsHolding={isHolding} HostHorizontalToBall={hostDistanceToBall} OwnerSample={ownerSamplePosition}" );
 		}
 
-		TryAutoPickupOnHostAuthority();
+		TryAutoPickupOnHostAuthority( ownerSamplePosition );
 	}
 
-	void TryAutoPickupOnHostAuthority()
+	void TryAutoPickupOnHostAuthority( Vector3? ownerSamplePosition = null )
 	{
 		if ( !Networking.IsHost )
 			return;
@@ -253,7 +267,18 @@ public sealed class BallGrab : Component
 		if ( NetPickupBlockedRemain > 0f )
 			return;
 
-		if ( !IsBallInPickupRange( ballObject.WorldPosition ) )
+		var playerWorldPosition = WorldPosition;
+		if ( ownerSamplePosition.HasValue )
+		{
+			var sample = ownerSamplePosition.Value;
+			var sampleSeparation = (sample - WorldPosition).WithZ( 0f ).Length;
+			if ( sampleSeparation > MaxOwnerPickupSampleSeparation )
+				return;
+
+			playerWorldPosition = sample;
+		}
+
+		if ( !IsBallInPickupRange( ballObject.WorldPosition, playerWorldPosition ) )
 			return;
 
 		PickUpBall();
@@ -262,6 +287,45 @@ public sealed class BallGrab : Component
 
 		if ( EnableNetDebugLogs )
 			Log.Info( $"[NetDebug] Host approved pickup. HolderObject={GameObject.Name}" );
+	}
+
+	void UpdateOwnerPickupPredict()
+	{
+		if ( isHolding )
+		{
+			ownerPickupPredictActive = false;
+			return;
+		}
+
+		if ( ownerPickupPredictActive && Time.Now >= ownerPickupPredictUntilTime )
+			ownerPickupPredictActive = false;
+
+		if ( !ballObject.IsValid() )
+			return;
+
+		if ( !IsMatchGameplayInputAllowed() )
+			return;
+
+		if ( IsMainBallHeldByAnyone() )
+			return;
+
+		if ( !PlayerAllowsBallPickup() )
+			return;
+
+		if ( NetPickupBlockedRemain > 0f )
+			return;
+
+		if ( !IsBallInPickupRange( ballObject.WorldPosition, WorldPosition ) )
+			return;
+
+		ownerPickupPredictActive = true;
+		ownerPickupPredictUntilTime = Time.Now + OwnerPickupPredictTimeout;
+
+		if ( Time.Now < nextAutoGrabAttemptAt )
+			return;
+
+		nextAutoGrabAttemptAt = Time.Now + OwnerPickupRequestInterval;
+		RequestPickUpBallOnHost( GameObject.WorldPosition );
 	}
 
 	[Rpc.Host]
@@ -421,7 +485,7 @@ public sealed class BallGrab : Component
 
 	private void ApplyClientHeldVisualState()
 	{
-		if ( isHolding )
+		if ( isHolding || ownerPickupPredictActive )
 		{
 			if ( !TryGetHoldAnchorWorldTransform( out var position, out var rotation ) )
 			{
@@ -509,20 +573,20 @@ public sealed class BallGrab : Component
 		NetPickupBlockedRemain = MathF.Max( NetPickupBlockedRemain, seconds );
 	}
 
-	bool IsBallInPickupRange( Vector3 ballWorldPosition )
+	bool IsBallInPickupRange( Vector3 ballWorldPosition, Vector3 playerWorldPosition )
 	{
-		return GetPickupHorizontalDistanceToBall( ballWorldPosition ) <= InteractDistance
-			&& GetPickupVerticalSeparationToBall( ballWorldPosition ) <= MaxPickupVerticalSeparation;
+		return GetPickupHorizontalDistanceToBall( ballWorldPosition, playerWorldPosition ) <= InteractDistance
+			&& GetPickupVerticalSeparationToBall( ballWorldPosition, playerWorldPosition ) <= MaxPickupVerticalSeparation;
 	}
 
-	float GetPickupHorizontalDistanceToBall( Vector3 ballWorldPosition )
+	float GetPickupHorizontalDistanceToBall( Vector3 ballWorldPosition, Vector3 playerWorldPosition )
 	{
-		return (ballWorldPosition - WorldPosition).WithZ( 0f ).Length;
+		return (ballWorldPosition - playerWorldPosition).WithZ( 0f ).Length;
 	}
 
-	float GetPickupVerticalSeparationToBall( Vector3 ballWorldPosition )
+	float GetPickupVerticalSeparationToBall( Vector3 ballWorldPosition, Vector3 playerWorldPosition )
 	{
-		return MathF.Abs( ballWorldPosition.z - WorldPosition.z );
+		return MathF.Abs( ballWorldPosition.z - playerWorldPosition.z );
 	}
 
 	private bool IsMatchGameplayInputAllowed()
@@ -538,5 +602,6 @@ public sealed class BallGrab : Component
 		NetIsHolding = false;
 		localDropPending = false;
 		appliedClientHeldProxyState = false;
+		ownerPickupPredictActive = false;
 	}
 }

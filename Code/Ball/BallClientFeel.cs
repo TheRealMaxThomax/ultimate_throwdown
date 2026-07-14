@@ -52,7 +52,7 @@ public sealed class BallClientFeel : Component
 		if ( !ball.IsValid() )
 			return;
 
-		var isHolding = ballGrab.IsHolding;
+		var isHolding = ballGrab.IsEffectivelyHolding;
 		if ( isHolding || appliedHeldProxyState )
 		{
 			ApplyClientProxyBallState( ball, isHolding );
