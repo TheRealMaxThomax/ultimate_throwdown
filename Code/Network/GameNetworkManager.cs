@@ -495,7 +495,7 @@ public sealed class GameNetworkManager : Component, Component.INetworkListener
 		if ( !director.IsValid() )
 			return;
 
-		if ( director.CurrentPhase != MatchPhase.Intermission )
+		if ( director.CurrentPhase is not MatchPhase.Intermission and not MatchPhase.MatchSetup )
 			return;
 
 		var ballGrab = player.Components.Get<BallGrab>();

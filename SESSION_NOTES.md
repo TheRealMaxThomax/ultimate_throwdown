@@ -20,11 +20,12 @@
 
 ## Right now
 
-**Goal:** **Quake Slam slice 5 ✅ (2026-07-14).** Aim preview + 2-window MP verified. **Next:** tune rings/launch if needed; polish wind-up anim / slam SFX / ring pulse VFX (later).
+**Goal:** **MatchSetup pre-match timer — code ✅ (2026-07-14).** Add **`MatchSetupHud`** on Turf Wars `MatchHUD` root, then 2-window verify.
 
 **Next session:**
-1. Tune `JuggernautQuakeSlamUlt` radii/launch if needed after extended play
-2. Polish: wind-up anim, slam SFX, ring pulse VFX (later)
+1. **Editor:** Add **`MatchSetupHud`** to `MatchHUD` (beside `IntermissionHud`). **Playtest:** 30s setup at match start + rematch; loadout auto-opens; clock shows **10.00** paused; practice arena skips setup.
+2. Tune `JuggernautQuakeSlamUlt` radii/launch if needed
+3. Polish: wind-up anim, slam SFX, ring pulse VFX (later)
 
 ---
 
@@ -36,7 +37,7 @@
 | **2** | Prefab split + loadout v1 | ✅ Shipped 2026-07-06 |
 | **3** | Ult slice 5 — Juggernaut Quake Slam | **✅ Shipped 2026-07-14** (preview + MP) |
 | **4** | Ult slice 6 — Sniper path zones | Planned |
-| **2b** | `MatchSetup` + walkable intermission room | After slice 5 |
+| **2b** | `MatchSetup` pre-match timer | **Code ✅ — add `MatchSetupHud` in editor** |
 | **5** | Combat slice 1 — unarmed melee | Before weapons |
 | **6** | Combat slice 2 — parry | Melee only |
 | **7** | Ult slice 7 — Weapons | After combat 1 |
@@ -190,7 +191,8 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
-- **2026-07-14 (Ball pickup client feel ✅):** Owner predict + `RequestPickUpBallOnHost(ownerSamplePosition)` — client no longer steps on ball before grab; 2-window verified.
+- **2026-07-14 (MatchSetup pre-match ✅ code):** `MatchPhase.MatchSetup` — 30s frozen loadout window (auto-open Q picker), round 1 + rematch; practice skips; tunable `MatchSetupSeconds` on `MatchDirector`.
+- **2026-07-14 (Ball pickup client feel ✅):** Owner predict + host RPC sample position — no step-over on client; 2-window verified.
 - **2026-07-14 (Quake Slam slice 5 ✅):** Aim preview scale/color + 2-window MP verified.
 - **2026-07-09 (Quake Slam slice 5 — code ✅):** `JuggernautQuakeSlamUlt` + siblings; catalog `quake_slam`; loadout enable; `CatchUpSpeedBoost` wind-up plant; design locked in `GAMEPLAY_DESIGN.md`.
 - **2026-07-07 (PlayerTackle Track A ✅):** A1 `TackleRagdollLifecycle`, A2 `TackleImpactRelay`, A3 `PracticeNpcTackleClientRelay` — 2-window MP practice dummy mirroring signed off. Orchestrator ~1,175 lines. **A4** (ragdoll orbit camera extract) **deferred**.

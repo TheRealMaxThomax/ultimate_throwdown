@@ -5,4 +5,6 @@ public enum MatchPhase
 	GoalCelebration = 1,
 	Intermission = 2,
 	MatchOver = 3,
+	/// <summary> Pre-round / rematch loadout window — frozen like intermission. </summary>
+	MatchSetup = 4,
 }

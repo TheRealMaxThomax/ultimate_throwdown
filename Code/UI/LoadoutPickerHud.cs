@@ -43,7 +43,7 @@ public sealed class LoadoutPickerHud : Component
 
 		if ( !clientState.IsPickerOpen )
 		{
-			if ( playerTeam.SyncedMatchPhase == MatchPhase.Intermission )
+			if ( playerTeam.SyncedMatchPhase is MatchPhase.Intermission or MatchPhase.MatchSetup )
 				DrawIntermissionHint( hud );
 			return;
 		}

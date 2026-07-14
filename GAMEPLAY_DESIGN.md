@@ -35,7 +35,7 @@
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
 | Per-class prefabs + spawn | **Built** — `Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; GNM clones from committed class |
 | Loadout v1 (picker, save, join sync) | **Built** — intermission + practice swaps; force-commit; class change = host respawn; join RPC shipped (cross-machine verify at publish) |
-| `MatchSetup` + walkable intermission | **Not built** — v1 intermission = frozen + Q menu (slice 2b, after Jugg stomp) |
+| `MatchSetup` + walkable intermission | **MatchSetup timer ✅** — walkable intermission room still **not built** (slice 2b remainder) |
 | Ultimates (charge + Speed Blitz) | **Partial** — charge + assist ✅ + **Speed Blitz 2a–2d ✅** + per-ult max ✅; **Quake Slam** designed (slice 5 next); Sniper path zones planned (slice 6) |
 | Unarmed melee + parry | **Not built** — combat slices 1–2 (after ults 5–6) |
 | Ball OOB (map slice 1) | **Built** — dwell, whistle, sky-drop, 2-window MP OK |
@@ -135,14 +135,14 @@ Every player has a committed loadout (class + passive + ult when catalog has ent
 
 - **Pending** — highlighted while loadout screen is open (Q).
 - **Committed** — what spawn/combat use.
-- **Force-commit:** when round begins (`Intermission` → `Playing`, future **`MatchSetup`** timer → 0, …) — close UI; pending → committed even if player never pressed Confirm.
+- **Force-commit:** when round begins (`Intermission` → `Playing`, **`MatchSetup`** → `Playing`, …) — close UI; pending → committed even if player never pressed Confirm.
 - **Save writes:** first preset, picker Confirm, force-commit, host apply after class change — **not** every highlight while browsing.
 
 ### When loadout can change
 
 | Phase | Turf Wars / match maps | Practice (`PracticeArenaMode`) |
 |-------|------------------------|--------------------------------|
-| **`MatchSetup`** (future) | Yes — pre-round timer + pick | — |
+| **`MatchSetup`** | Yes — pre-round timer + pick (auto-open picker) | — |
 | **`Intermission`** | Yes (v1: frozen + menu; walkable room later) | — |
 | **`Playing`** | Locked | Anytime |
 | **`GoalCelebration`** | No | Anytime |
@@ -172,7 +172,7 @@ Every player has a committed loadout (class + passive + ult when catalog has ent
 ### MP authority
 
 - On connect: owner sends committed loadout → host `LoadoutAuthority.TryValidateCommittedLoadout` → apply at spawn.
-- Swap requests: host validates phase (`Intermission`, future `MatchSetup`, or practice) → apply.
+- Swap requests: host validates phase (`MatchSetup`, `Intermission`, or practice) → apply.
 - Equipped ids synced on **`PlayerLoadout`** `[Sync(FromHost)]` — **not** on `PlayerTeam`.
 
 Wiring detail → [`ARCHITECTURE.md`](ARCHITECTURE.md) § Loadout & spawn.

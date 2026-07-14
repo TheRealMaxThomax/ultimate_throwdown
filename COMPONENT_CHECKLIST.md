@@ -150,6 +150,7 @@ All on the same UI root object:
 | **`MatchClockHud`** | No match timer |
 | **`GoalBannerHud`** | No “TEAM X SCORED!” banner |
 | **`IntermissionHud`** | No intermission countdown |
+| **`MatchSetupHud`** | No pre-match countdown | Add to **`MatchHUD`** root (same object as other match HUDs) |
 | **`MatchOverHud`** | No match-over / rematch UI |
 
 (`MatchHudDraw` is a static helper — not a component.)

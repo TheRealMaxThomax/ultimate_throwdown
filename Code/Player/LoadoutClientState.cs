@@ -38,7 +38,11 @@ public sealed class LoadoutClientState : Component
 			return;
 
 		var phase = playerTeam.SyncedMatchPhase;
-		if ( lastObservedPhase == MatchPhase.Intermission && phase == MatchPhase.Playing )
+		if ( phase == MatchPhase.MatchSetup && lastObservedPhase != MatchPhase.MatchSetup )
+			IsPickerOpen = true;
+
+		if ( (lastObservedPhase == MatchPhase.Intermission || lastObservedPhase == MatchPhase.MatchSetup)
+			&& phase == MatchPhase.Playing )
 			ForceCommitPending();
 
 		lastObservedPhase = phase;

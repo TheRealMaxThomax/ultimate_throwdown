@@ -22,7 +22,7 @@ public static class LoadoutAuthority
 		return true;
 	}
 
-	/// <summary> Turf Wars: <see cref="MatchPhase.Intermission"/> only. Practice: anytime. </summary>
+	/// <summary> Turf Wars: <see cref="MatchPhase.MatchSetup"/> + <see cref="MatchPhase.Intermission"/>. Practice: anytime. </summary>
 	public static bool IsLoadoutSwapAllowed( Scene scene, PlayerTeam team )
 	{
 		if ( team is null )
@@ -32,6 +32,6 @@ public static class LoadoutAuthority
 		if ( config.IsValid() && config.PracticeArenaMode )
 			return true;
 
-		return team.SyncedMatchPhase == MatchPhase.Intermission;
+		return team.SyncedMatchPhase is MatchPhase.MatchSetup or MatchPhase.Intermission;
 	}
 }

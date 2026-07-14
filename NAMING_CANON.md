@@ -37,7 +37,7 @@
 | `MapMatchConfig` | Per-map team display names; **`PracticeArenaMode`** + **`PracticeSpawnTeamId`** on practice maps only (unlimited clock/goals, single-team spawns, **no top score/clock HUD**) |
 | `MatchTeamIds` | Constants `Team0` / `Team1` (ids `0` / `1`) |
 | `MatchDirector` | Phase state machine, round wins, match timer, debug force goal |
-| `MatchPhase` | Enum: `Playing`, `GoalCelebration`, `Intermission`, `MatchOver` |
+| `MatchPhase` | Enum: `Playing`, `GoalCelebration`, `Intermission`, `MatchOver`, `MatchSetup` |
 | `GoalZone` | Defended goal volume + host dwell scoring (`DefendingTeam`, `ScoreDwellSeconds`) |
 | `OutOfBoundsZone` | Passive oriented box for ball OOB overlap tests (`BoxSize`, gizmo) |
 | `MatchAudioBootstrap` | Play start: dry mixer tree + optional **`DisableRoomSimulation`** (Master `BlockingTags` whitelist); `PlayWorldSoundDry` |
@@ -174,6 +174,7 @@ Design: [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) → Ultimates, Speed Blitz. U
 | `BallOobDropZoneHud` | Spawns white world drop marker from synced `PlayerTeam` OOB fields (auto on main camera) |
 | `BallOobDropZoneMarker` | Ephemeral ground disc mesh + world billboard stack (DROP ZONE / countdown / ▼) |
 | `IntermissionHud` | "Resuming in N…" during intermission |
+| `MatchSetupHud` | "Match starts in N…" during pre-match / rematch setup |
 | `MatchOverHud` | Winner + final score + host rematch (`RematchVoteSlot`, default `1` → `Slot1` key) |
 | `BallCompassHud` | Local viewer bottom-left compass toward match ball (white loose / green teammate / red enemy; needle hidden when local player carries) |
 | `TackleComicTextHud` | Knockdown comic-word spawner (`ComicWords` pool; broadcasts tier + text + `ComicBurstPalette` + shadow dir + `WordTiltMaxDegrees*` + `LetterJitterSeed` + `ComicExitStyle` + `ExitDriftOctant`; `LetterSizeJitter*` / `LetterBaselineJitter*` / `LetterSpacingJitter*` per tier; `EnableHighlightExtrusion` / `EnableComicExitAnimations`; `BurstPanelPadding` for WorldPanel clip headroom; auto on main camera via `GameNetworkManager`) |

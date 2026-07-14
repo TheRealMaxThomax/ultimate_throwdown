@@ -113,7 +113,7 @@ flowchart LR
 | Component | Role |
 |-----------|------|
 | `GameNetworkManager` | Join/spawn, team balance, round-reset teleports, partial auto-add of player components |
-| `MatchDirector` | Host phase machine: Playing → GoalCelebration → Intermission → MatchOver |
+| `MatchDirector` | Host phase machine: `MatchSetup` → Playing → GoalCelebration → Intermission → MatchOver (rematch → `MatchSetup`) |
 | `PlayerTeam` | Team id, **mirrored match HUD state**, round-reset pose, `IsMatchGameplayInputAllowed` |
 | `CatchUpSpeedBoost` | Movement integration hub — class speeds, gates tackle/dodge/ult |
 | `BallGrab` / `BallThrow` | Ball pipeline, gated on match phase |

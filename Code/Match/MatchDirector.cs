@@ -9,6 +9,7 @@ public sealed class MatchDirector : Component
 	[Property] public float MatchDurationSeconds { get; set; } = 600f;
 	[Property] public float GoalCelebrationSeconds { get; set; } = 5f;
 	[Property] public float IntermissionSeconds { get; set; } = 20f;
+	[Property] public float MatchSetupSeconds { get; set; } = 30f;
 	[Property] public float MatchOverCelebrationSeconds { get; set; } = 10f;
 	[Property] public int RoundWinsToWinMatch { get; set; } = 5;
 
@@ -54,7 +55,7 @@ public sealed class MatchDirector : Component
 		if ( !Networking.IsHost )
 			return;
 
-		ResetMatchState();
+		BeginFreshMatch();
 	}
 
 	protected override void OnUpdate()
@@ -133,17 +134,25 @@ public sealed class MatchDirector : Component
 		if ( CurrentPhase != MatchPhase.MatchOver || NetPhaseTimeRemaining > 0f )
 			return;
 
-		PerformRoundReset( 0f );
-		ResetMatchState();
+		PerformRoundReset( IsPracticeArena ? 0f : MatchSetupSeconds );
+		BeginFreshMatch( worldAlreadyReset: true );
 		LogMatch( "Rematch started." );
 	}
 
-	private void ResetMatchState()
+	private void BeginFreshMatch( bool worldAlreadyReset = false )
+	{
+		ResetMatchCounters();
+		if ( IsPracticeArena )
+			BeginPlaying();
+		else
+			BeginMatchSetup( worldAlreadyReset );
+	}
+
+	private void ResetMatchCounters()
 	{
 		if ( !mapMatchConfig.IsValid() )
 			mapMatchConfig = MapMatchConfig.FindInScene( Scene );
 
-		NetPhase = (int)MatchPhase.Playing;
 		NetTeam0RoundWins = 0;
 		NetTeam1RoundWins = 0;
 		NetMatchTimeRemaining = IsPracticeArena ? 0f : MatchDurationSeconds;
@@ -222,6 +231,7 @@ public sealed class MatchDirector : Component
 				OnGoalCelebrationEnded();
 				break;
 			case MatchPhase.Intermission:
+			case MatchPhase.MatchSetup:
 				BeginPlaying();
 				break;
 		}
@@ -364,6 +374,45 @@ public sealed class MatchDirector : Component
 			LogMatch( $"OVERTIME intermission {IntermissionSeconds:0}s — next goal wins." );
 		else
 			LogMatch( $"Intermission {IntermissionSeconds:0}s." );
+	}
+
+	private void BeginMatchSetup( bool worldAlreadyReset )
+	{
+		NetPhase = (int)MatchPhase.MatchSetup;
+		NetPhaseTimeRemaining = MatchSetupSeconds;
+		PushMatchHudStateToPlayers();
+
+		if ( !worldAlreadyReset )
+			PrepareMatchSetupWorldState();
+
+		LogMatch( $"Match setup {MatchSetupSeconds:0}s — choose loadout." );
+	}
+
+	private void PrepareMatchSetupWorldState()
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		BallOutOfBoundsHost.CancelSequenceInScene( Scene );
+
+		foreach ( var grab in Scene.GetAllComponents<BallGrab>() )
+		{
+			if ( !grab.IsValid() || !grab.IsHolding )
+				continue;
+
+			grab.ReleaseHeldBall();
+		}
+
+		ResetBallToSpawn();
+
+		var networkManager = ResolveNetworkManager();
+		networkManager?.ApplyRoundResetToAllPlayers( MatchSetupSeconds );
+
+		foreach ( var grab in Scene.GetAllComponents<BallGrab>() )
+		{
+			if ( grab.IsValid() )
+				grab.BlockPickupForSeconds( MatchSetupSeconds );
+		}
 	}
 
 	private void BeginPlaying()
