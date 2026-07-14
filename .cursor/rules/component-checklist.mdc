@@ -1,0 +1,29 @@
+---
+description: Read and update COMPONENT_CHECKLIST when introducing editor-wired gameplay components
+alwaysApply: true
+---
+
+# Component checklist (manual editor wiring)
+
+When you **add**, **split**, or **introduce a new gameplay component** under `Code/` that Max must wire in the editor (prefab, scene object, or map volume):
+
+1. **Read `COMPONENT_CHECKLIST.md` first** — place the component on the correct GameObject (player prefab, Main Camera, `main_ball`, map object, practice NPC, etc.). Do not invent a new mount point if an existing row fits.
+2. **Update `COMPONENT_CHECKLIST.md` in the same change** when the component is **manual** (not covered by the doc’s runtime-auto-add exceptions). Add:
+   - GameObject / prefab section
+   - “If missing” symptom (one line)
+   - Spawn-warning status if `ComponentRequire.WarnIfMissing` or GNM spawn checks apply
+   - Class-only note (Speedster / Juggernaut / Sniper / practice NPC) when relevant
+3. **Describe editor steps** for Max when introducing the component (which object, what to wire) — same session, even if you only edited code. See `no-auto-add-components.mdc` and `engine-scene-ownership.mdc`.
+4. **Cross-link once:** if `ARCHITECTURE.md` § Component wiring still summarizes the area, add or adjust **one line** there pointing at the new checklist row — do not duplicate the full table.
+
+**Counts as manual (update the checklist):** new `[Property]` components on prefabs/scene objects; new ult/tackle/HUD/map siblings; new `[Sync]` surfaces that need a sibling on the same GO.
+
+**Skip the checklist update** when:
+- Tiny edit inside an existing component (tuning, bugfix) — **no** new component type or new required mount point
+- Runtime-only helpers listed under **Do not add manually** in `COMPONENT_CHECKLIST.md` (`Highlight`, ragdoll outline relays, programmatic child GOs, `GameObjectSystem`s)
+- Pure static/math types with no inspector component
+
+**Good vs bad**
+
+- **Good:** Add `StompImpactFeel` → checklist row under Juggernaut prefab + editor steps: “Add to `Player_Juggernaut` beside `JuggernautGroundStompUlt`.”
+- **Bad:** New `BallPickupPredict` sibling on player prefab with no `COMPONENT_CHECKLIST.md` row — Max won’t know to add it; silent MP break.

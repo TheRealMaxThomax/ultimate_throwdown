@@ -607,6 +607,23 @@
               "ThrowUpForce": 150
             },
             {
+              "__type": "BallClientFeel",
+              "__guid": "97f5447e-f604-42b5-9e08-f93d5624cd03",
+              "__enabled": true,
+              "Flags": 0,
+              "ContactBoostDuration": 0.12,
+              "ContactBoostSharpness": 42,
+              "FreeBallVisualFollowSharpness": 14,
+              "InterpolationDelay": 0.06,
+              "MaxSnapshots": 24,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            },
+            {
               "__type": "ThrowChargeBar",
               "__guid": "42ae48fe-441c-4830-92db-018b6ccf4a27",
               "__enabled": true,
@@ -700,23 +717,6 @@
               "ThrowPlaybackRate": 0.7,
               "ThrowPoseHoldSeconds": 0.9,
               "UseAnimGraphChargePose": true
-            },
-            {
-              "__type": "BallClientFeel",
-              "__guid": "00d1a13e-0a67-4b96-8f6b-5b406823aa22",
-              "__enabled": true,
-              "Flags": 0,
-              "ContactBoostDuration": 0.12,
-              "ContactBoostSharpness": 42,
-              "FreeBallVisualFollowSharpness": 14,
-              "InterpolationDelay": 0.06,
-              "MaxSnapshots": 24,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
             },
             {
               "__type": "PlayerClass",
@@ -3432,7 +3432,7 @@
                   ]
                 },
                 {
-                  "__guid": "6792d58a-43d1-4275-bc51-0e4958d4ca0b",
+                  "__guid": "b3c96203-0561-4674-b734-4d8215c4414e",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3449,7 +3449,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "02bf55db-20c9-4e45-98cc-159aa2798935",
+                      "__guid": "044f061a-5646-44eb-97b9-e80890d52f07",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -3830,6 +3830,23 @@
               "ThrowUpForce": 150
             },
             {
+              "__type": "BallClientFeel",
+              "__guid": "991eb2d5-4d18-40b1-a1da-f95c92676918",
+              "__enabled": true,
+              "Flags": 0,
+              "ContactBoostDuration": 0.12,
+              "ContactBoostSharpness": 42,
+              "FreeBallVisualFollowSharpness": 14,
+              "InterpolationDelay": 0.06,
+              "MaxSnapshots": 24,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            },
+            {
               "__type": "ThrowChargeBar",
               "__guid": "7ab26e0c-4aa3-41fc-8f60-969c35110b71",
               "__enabled": true,
@@ -3923,23 +3940,6 @@
               "ThrowPlaybackRate": 0.7,
               "ThrowPoseHoldSeconds": 0.9,
               "UseAnimGraphChargePose": true
-            },
-            {
-              "__type": "BallClientFeel",
-              "__guid": "dd36d40d-e68e-4f75-be12-050ec8a89947",
-              "__enabled": true,
-              "Flags": 0,
-              "ContactBoostDuration": 0.12,
-              "ContactBoostSharpness": 42,
-              "FreeBallVisualFollowSharpness": 14,
-              "InterpolationDelay": 0.06,
-              "MaxSnapshots": 24,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
             },
             {
               "__type": "PlayerClass",
@@ -6454,7 +6454,7 @@
                   ]
                 },
                 {
-                  "__guid": "4fcd0cde-fc1e-44a9-9701-8231aee191d4",
+                  "__guid": "9274e5c0-a0c0-4be1-9f4c-164a680deb20",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6471,7 +6471,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "faf1023d-2574-4888-8865-1e09e3a18cb1",
+                      "__guid": "f6a3af8b-f22b-4aab-bcc2-89e3ca427dcf",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6852,6 +6852,23 @@
               "ThrowUpForce": 150
             },
             {
+              "__type": "BallClientFeel",
+              "__guid": "6d5dff27-7693-4967-a008-e761b1d36794",
+              "__enabled": true,
+              "Flags": 0,
+              "ContactBoostDuration": 0.12,
+              "ContactBoostSharpness": 42,
+              "FreeBallVisualFollowSharpness": 14,
+              "InterpolationDelay": 0.06,
+              "MaxSnapshots": 24,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            },
+            {
               "__type": "ThrowChargeBar",
               "__guid": "13c000a3-b170-4056-b507-4f67c039653c",
               "__enabled": true,
@@ -6945,23 +6962,6 @@
               "ThrowPlaybackRate": 0.7,
               "ThrowPoseHoldSeconds": 0.9,
               "UseAnimGraphChargePose": true
-            },
-            {
-              "__type": "BallClientFeel",
-              "__guid": "a9d602af-a6be-4715-b0af-e8d755e91e26",
-              "__enabled": true,
-              "Flags": 0,
-              "ContactBoostDuration": 0.12,
-              "ContactBoostSharpness": 42,
-              "FreeBallVisualFollowSharpness": 14,
-              "InterpolationDelay": 0.06,
-              "MaxSnapshots": 24,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
             },
             {
               "__type": "PlayerClass",
@@ -7449,9 +7449,9 @@
               "Flags": 0,
               "AnnulusSegmentCount": 64,
               "InnerRingAlpha": 0.55,
-              "InnerRingTint": "1,0.35,0.2,1",
+              "InnerRingTint": "0.97647,0.34118,0.04706,1",
               "MidRingAlpha": 0.45,
-              "MidRingTint": "1,0.55,0.15,1",
+              "MidRingTint": "0.98039,0.42745,0.17255,1",
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -7459,7 +7459,7 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "OuterRingAlpha": 0.35,
-              "OuterRingTint": "1,0.75,0.1,1",
+              "OuterRingTint": "0.98039,0.51373,0.29804,1",
               "RingGroundLift": 2.5,
               "RingMaterialPath": "materials/oob_drop_ring.vmat",
               "RingModelBaseSize": 7.5,
@@ -9564,7 +9564,7 @@
                   ]
                 },
                 {
-                  "__guid": "b3b7f4ce-06dd-4099-8d18-805654a64b91",
+                  "__guid": "78f4d475-9ee2-4b62-902e-5547f67b7ed7",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -9581,7 +9581,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "df17a6c1-cfeb-40dc-933a-5f8757f2a90f",
+                      "__guid": "c97062d5-71e7-42d1-b1e7-2e0bea5469c1",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -11376,7 +11376,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "cc2dc749-2708-4d4f-a339-7dd87d9a980a"
+                      "$blob": "9c53cd5e-309f-4f26-b47b-081c1e18f9e3"
                     },
                     "Materials": [
                       "materials/turfwarspoly/richmahogany.vmat",
@@ -11433,7 +11433,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f13eb678-f4b1-43ee-960a-48279eab1ceb"
+                      "$blob": "613a2ccf-00f8-4cfa-8c36-dde5b3bcdd7c"
                     },
                     "Materials": [
                       "materials/turfwarspoly/richmahogany.vmat",
@@ -11724,7 +11724,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "29eceb86-8825-4a0d-a2b3-e3a115d41abb"
+                      "$blob": "ec8a2b06-4d80-4b4e-8edd-53084e95bf53"
                     },
                     "Materials": [
                       "materials/turfwarspoly/richmahogany.vmat",
@@ -11781,7 +11781,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f3176a76-5350-4668-88d7-46a44a108060"
+                      "$blob": "92061310-5ecb-4c44-953a-f0aff26b8366"
                     },
                     "Materials": [
                       "materials/turfwarspoly/richmahogany.vmat",
@@ -11859,7 +11859,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "2c537c3c-ba53-48af-ae52-fe4cb85e3408"
+                  "$blob": "cd6b86e3-281f-449c-97dd-7ff8e30b595d"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -11916,7 +11916,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1ece5f28-3122-4448-a383-cd03582bd10a"
+                  "$blob": "8ec7b143-470d-48c3-90fa-cbf9795152cb"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -11973,7 +11973,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6d4a9da3-683f-4777-b941-68c47af6058b"
+                  "$blob": "05f90710-2f3b-49b4-bf8c-9d88f671556d"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12030,7 +12030,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "d13f6408-a4ab-49e1-83c9-75c4f27459a7"
+                  "$blob": "f89f0fcd-8662-455a-aea4-d63b7525a456"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12087,7 +12087,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "66a8cfcf-fb6e-4f9e-86c2-4fd8d036b9d1"
+                  "$blob": "55d3995c-7110-4a76-914a-5d7b94d73ea7"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12144,7 +12144,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9cf25250-ab64-435d-a88a-7535b0daa6be"
+                  "$blob": "a152f4d0-545a-4509-8bf1-63d1e1cd3126"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -12201,7 +12201,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "63297ff2-9b49-4094-9d30-2ebe3fca83bf"
+                  "$blob": "249959a2-dcc5-4482-b434-fc0ae9a49f53"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12258,7 +12258,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "df343ad4-c445-4d07-967f-4d6c31fe2f36"
+                  "$blob": "325b0bde-5293-40df-8113-b7fcf6a980a8"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12315,7 +12315,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "45537a30-90e1-4101-9249-e1f98ece15f3"
+                  "$blob": "ae8c575d-31cc-41a2-9f8b-3cbd772e32ad"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12372,7 +12372,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "91ebf1aa-ef54-496c-97a6-e7e743eeb780"
+                  "$blob": "9822cc02-dc7f-4366-90a2-6dc269655ecc"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12429,7 +12429,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f5b532d9-a76e-496a-9e82-2abf22d20e61"
+                  "$blob": "03b00cc6-23ce-426d-95c2-023b1c09a09a"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12486,7 +12486,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "66977a63-cf11-4b1f-9568-4eea2c8bda0d"
+                  "$blob": "51e5437e-cb08-4e59-b72e-421e572db190"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12543,7 +12543,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6ebd5660-9a1e-47e8-be91-f2f028c5b010"
+                  "$blob": "3ef9b927-cb4e-4014-adaf-b42013c5c0a3"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dustyolive.vmat",
@@ -12600,7 +12600,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "d169e631-b4fd-4295-b216-98a38b6c4f3e"
+                  "$blob": "9e45ee53-9609-4da1-88b0-ab19c1cd76ba"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dustyolive.vmat",
@@ -12657,7 +12657,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "5c912efe-d9e3-46e4-b07c-c9d99ac6e8c8"
+                  "$blob": "92a7eda7-f4e4-48b8-8d88-da3db82f608b"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12714,7 +12714,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b22b2e1b-2d4f-4359-b938-9843331dbeb4"
+                  "$blob": "b71b30d1-e0bb-4b87-be4f-ef428b093e04"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12771,7 +12771,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e07380de-7d53-46d8-af42-c58ed1e6fd86"
+                  "$blob": "18d1dcff-3e5c-4f89-badf-2af9eebe5ef6"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -12828,7 +12828,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "89775da8-f061-4673-af1a-6eeb80e98917"
+                  "$blob": "2f792ff2-4e33-4ecd-ab04-b9f99600aa45"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_20lighter.vmat",
@@ -12885,7 +12885,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6b77f6fe-764e-462f-b442-21a546cc05d3"
+                  "$blob": "e8d7358b-3480-4c49-b3c2-e33ab415b467"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_20lighter.vmat",
@@ -12942,7 +12942,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "16c7bbe3-3419-4ab7-a9ea-fd0305ec705e"
+                  "$blob": "43fa1455-3458-44c3-a4ae-441b9c5aa718"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_20lighter.vmat",
@@ -12999,7 +12999,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "befa4e1d-ff38-4c84-848a-d28d183f1d7d"
+                  "$blob": "e62b4bcb-07ec-42a5-a953-9e4db7af1437"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_20lighter.vmat",
@@ -13056,7 +13056,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "886831af-cda6-4403-bb7c-61ef170a1d78"
+                  "$blob": "ee227910-d7c6-46ef-aa59-a71a2b240d14"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -13113,7 +13113,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "dc9e2c86-813a-44e0-8685-f9a6d0b5bc7c"
+                  "$blob": "d9d64066-44f7-40fa-8f4f-5e93a6c42a56"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -13170,7 +13170,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e05dc6dc-d177-4fff-804a-6dc1dc353691"
+                  "$blob": "b30e227d-f27c-43d7-b972-0a064e874c26"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -13227,7 +13227,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c390a27a-1e49-4726-a000-c137a29a60e1"
+                  "$blob": "6ff196bc-a0c6-42ec-9446-1ebc3c41b0fa"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -13284,7 +13284,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7ec28dc7-f0b2-4c9c-8ba6-7abbd0eaca9c"
+                  "$blob": "e4eddc57-880e-475a-8357-5c3ee1e51c33"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -13341,7 +13341,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e3a0081a-a4fd-4287-84c0-ef77338b5a51"
+                  "$blob": "0d3d75e7-2c89-4539-9402-733478e156c3"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -13398,7 +13398,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0b45e3d1-0df3-4bb6-b97a-480c00ca165d"
+                  "$blob": "4e083f9f-4c00-4149-a961-8630f14bcefa"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -13455,7 +13455,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e7c418dd-b0ec-4c09-bbb7-de7bdaa6b3a1"
+                  "$blob": "4d5ef55e-c31c-4a8e-a68a-30a4c9b501d2"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -13512,7 +13512,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "5c1e0bb9-8a5a-466b-9fe2-8473e18a42e5"
+                  "$blob": "6caf36ba-647c-4601-a0c0-2cf4a19ea153"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -13569,7 +13569,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f11945bb-6f1e-442d-9ad4-3e9cc5472498"
+                  "$blob": "c3991c15-e246-4d8d-b188-be7d9cfe4e2d"
                 },
                 "Materials": [
                   "materials/dev/reflectivity_30.vmat",
@@ -13626,7 +13626,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8de4c0a8-8e24-4350-9301-6eb9f7519890"
+                  "$blob": "fc5708b2-727f-4cbe-8855-7e9394ef9e8f"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goldenearth_50lighter.vmat",
@@ -13683,7 +13683,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "82ad125c-958e-44c8-b418-9615f6acea78"
+                  "$blob": "401b0cf0-b504-4dbd-ae95-03bea483bfa4"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goldenearth_50lighter.vmat",
@@ -13740,7 +13740,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "838ea229-34fc-42d3-8b4f-27159f93386d"
+                  "$blob": "ae5daf0b-0b6b-4f5b-92ed-10d40b56062d"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat"
@@ -13796,7 +13796,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7fa1046e-c010-4492-9cba-471cc87701bf"
+                  "$blob": "1c22d60d-3bee-4047-a9bb-9fa579731bd8"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -13853,7 +13853,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "24da36f1-ac46-4632-a7ca-9f1bbc13044d"
+                  "$blob": "daeb28a4-9bbd-493f-95a7-e12f17cce494"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -13910,7 +13910,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e6faa332-3a3f-4f45-abcf-3b3563afbeec"
+                  "$blob": "8ba49072-a813-4556-a75f-88fb26de8887"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat"
@@ -13966,7 +13966,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "eba02954-365e-4ee9-bba3-291cbfc21765"
+                  "$blob": "923431a4-b4e6-46e2-ac7c-d1685923e34d"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -14023,7 +14023,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b52ac7e9-357d-47d3-b978-7a527a32e254"
+                  "$blob": "301bebcd-1ec7-423c-8cf6-ae4dbbe881e5"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -14080,7 +14080,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9e53a486-e899-4c01-b3f5-a45e9c3e2fc6"
+                  "$blob": "f9321c68-4946-4b13-8020-df30df8763ad"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -14137,7 +14137,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f5f2b62f-af07-4880-9b38-fb3a01396ab2"
+                  "$blob": "9d370e9d-7d03-4af7-8bd3-47a3781cb488"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -14211,7 +14211,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "570d7c5d-287a-46a3-9583-f82ebfe24150"
+                      "$blob": "d24f9a8e-900d-4918-96b5-b43d39086a7f"
                     },
                     "Materials": [
                       "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -14268,7 +14268,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "c7ca5288-87ab-49e8-9471-79f890b585cb"
+                      "$blob": "8aa54a12-4685-48cc-89b1-92074f0aedc3"
                     },
                     "Materials": [
                       "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -14325,7 +14325,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "45b80a38-baf9-454e-83b1-f5c2941b33c5"
+                      "$blob": "a598fa94-984c-409b-8d22-deffb3a84c17"
                     },
                     "Materials": [
                       "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -14382,7 +14382,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "52c89f65-45cf-4781-a327-67ee7438a9df"
+                      "$blob": "058c83e0-6436-47be-a2ad-fd290fb44c31"
                     },
                     "Materials": [
                       "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -14439,7 +14439,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "7d44bc7f-441e-4d8e-8c76-821f413884b7"
+                      "$blob": "04253d75-19f9-404a-9c4f-818ff861e495"
                     },
                     "Materials": [
                       "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -14496,7 +14496,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "db26ce78-7560-4440-93e9-b8eeb51cbb6f"
+                      "$blob": "0aac7897-3cbd-49c0-945f-b340d50cdb80"
                     },
                     "Materials": [
                       "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -14553,7 +14553,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "c340b01a-61e8-41d2-a53d-c4cfa75df552"
+                      "$blob": "9328e28d-d9af-4351-860f-5241d137c8c9"
                     },
                     "Materials": [
                       "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -14610,7 +14610,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "04b941d9-0362-473a-9a1c-02464543b0b5"
+                      "$blob": "01de31db-c3fb-4e40-ab2b-4558dcb8bbe9"
                     },
                     "Materials": [
                       "materials/turfwarspoly/eggshell_50darker.vmat",
@@ -14667,7 +14667,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "c79db736-e1b0-43e7-8a07-ebc34832cb65"
+                      "$blob": "60bce252-497b-4980-8171-a4810e9ed817"
                     },
                     "Materials": [
                       "materials/turfwarspoly/eggshell_50darker.vmat",
@@ -14724,7 +14724,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "52a5d732-d6ff-4327-983a-a1fb5b8fe21d"
+                      "$blob": "77e43431-8a3c-4ba5-b1d3-65b1a471fd87"
                     },
                     "Materials": [
                       "materials/turfwarspoly/eggshell_50darker.vmat",
@@ -14781,7 +14781,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "8cceef4b-50a4-4875-8bae-8ed6fc3e38e3"
+                      "$blob": "c8139785-a0fa-412c-8cfb-1f6a616761d8"
                     },
                     "Materials": [
                       "materials/turfwarspoly/eggshell_50darker.vmat",
@@ -14838,7 +14838,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "c2b76e95-37f2-480c-a484-7129f0ddf5d0"
+                      "$blob": "33d51cf2-7beb-40b7-9694-75f0bfe64e72"
                     },
                     "Materials": [
                       "materials/turfwarspoly/eggshell_50darker.vmat",
@@ -14895,7 +14895,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "1d22f438-5151-4c3c-b456-4910e659e265"
+                      "$blob": "fcd38c79-8f9c-4010-b51d-cb14f36460dc"
                     },
                     "Materials": [
                       "materials/turfwarspoly/eggshell_40darker.vmat",
@@ -14952,7 +14952,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "76bda7fe-4271-4c1a-b24e-f6e9228394b2"
+                      "$blob": "9df2257b-3bfa-4535-bc2e-ea97bd766666"
                     },
                     "Materials": [
                       "materials/turfwarspoly/eggshell_40darker.vmat",
@@ -15009,7 +15009,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "206df3dc-ee6f-40e8-ae82-b57df5c03ecf"
+                      "$blob": "778576c3-62cd-488e-b4c2-a4b8fb3bb011"
                     },
                     "Materials": [
                       "materials/turfwarspoly/eggshell_40darker.vmat",
@@ -15066,7 +15066,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "e0c9ff93-0792-4403-8d77-79be37e44d8e"
+                      "$blob": "8e022fd6-eb18-413e-8ccb-e2e23e704722"
                     },
                     "Materials": [
                       "materials/turfwarspoly/eggshell_40darker.vmat",
@@ -15123,7 +15123,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "6b608d8b-8f8f-4324-be90-a4bf59406e31"
+                      "$blob": "f8d189bd-053d-4a53-811e-3441351f11ec"
                     },
                     "Materials": [
                       "materials/turfwarspoly/eggshell_40darker.vmat",
@@ -15182,7 +15182,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b490a044-b1f6-452e-b7ed-a097e864b0da"
+                  "$blob": "b65cc4b4-9673-4643-881e-2c902271e2e6"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -15239,7 +15239,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7418d6c0-7153-48b6-88c2-35c9088e5275"
+                  "$blob": "887100e4-e448-445c-b99b-55545251fd79"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -15296,7 +15296,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6b342d98-a7c0-4d55-b866-ad21d1d000c6"
+                  "$blob": "30d2e8ea-9f91-43c9-bd6f-7f07c92a1dec"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -15353,7 +15353,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "77219047-04bd-497d-9467-ae381026d5aa"
+                  "$blob": "36e5d94e-7b8a-41fe-814b-93e4f1055520"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -15410,7 +15410,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4fc077c5-1bc8-4bbb-8c66-41b70c7ecaec"
+                  "$blob": "aac827d6-cf8b-4e6c-bed2-e3269fa865cf"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -15467,7 +15467,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "29c486bb-6251-4e2f-af4a-5652b0216112"
+                  "$blob": "ecaf5056-1f79-4895-b432-203e4e0ba9bc"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -15525,7 +15525,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0e79a2d4-b8f8-4923-a4e2-a3f3e506de77"
+                  "$blob": "51db3827-4c20-40de-bf33-6b8b19dde729"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -15583,7 +15583,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "0fc66bb9-488a-4588-8680-71aa11905897"
+                  "$blob": "99971a7c-d00d-436c-b293-d0e9c798f0d1"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -15641,7 +15641,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7ba6ba80-ec5b-41d1-aa74-47f1f91833fe"
+                  "$blob": "bdd14d06-ccef-4926-9a05-4a440f1fc5b6"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat"
@@ -15697,7 +15697,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1adefff4-a910-4fe3-8072-10085b679b83"
+                  "$blob": "e9583305-45ad-430e-9cf9-8138190d1de5"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -15754,7 +15754,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "41d3bb1f-16f0-4552-a8b4-7525815742ec"
+                  "$blob": "839d3e8b-7d00-4b26-b07d-d7ee79888880"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat",
@@ -15811,7 +15811,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "771b36df-48d5-4964-8ed8-7a1c0c465deb"
+                  "$blob": "74401a3d-4e59-4fd4-839b-d15c933e6136"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat"
@@ -15867,7 +15867,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "5fa86e55-7c9e-4b88-a092-ad876906d612"
+                  "$blob": "8b23a15a-0f7f-4142-b873-a0d6e6c65cf3"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat"
@@ -15923,7 +15923,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e75f87d8-2e1c-4ba1-a9b6-a082d56ea217"
+                  "$blob": "db5bb2a5-b21e-4a06-9787-b297c0dc1f52"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat"
@@ -15979,7 +15979,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "20bc408a-ab30-4636-b4ad-57b827e6f9fd"
+                  "$blob": "405d2baf-cde7-4817-8d89-fdf5a492ef06"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat"
@@ -16035,7 +16035,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c12dd5f8-ef1d-4f30-97ee-293347718f9c"
+                  "$blob": "1404249c-3e19-44b2-aa3a-cc595dba0e0e"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat"
@@ -16091,7 +16091,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "97dcde68-741b-434b-a56a-ad1f5eb6c90b"
+                  "$blob": "d43369a5-7533-4d2b-a6d6-7d9da8ebd80b"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey_10darker.vmat"
@@ -16147,7 +16147,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "04e924c3-c982-4f96-a70c-8a61a6a35d94"
+                  "$blob": "e8af8403-b4d0-414c-ac84-13feeea2ec62"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey.vmat"
@@ -17416,7 +17416,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "5817e562-99ec-47f2-ac27-12faf1b4aeac"
+                      "$blob": "d1668c16-d3a1-429a-a6d3-7ab1d83b6db3"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -17473,7 +17473,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "28977531-66af-4ff8-9a2f-f58bfb2e7af6"
+                      "$blob": "c846e368-f28d-423c-8017-088f22f587bf"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -17530,7 +17530,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "7e2f0bc2-b256-4d81-8228-b2ed7c0711ac"
+                      "$blob": "614db735-49ab-456c-ac7b-4cd241f17fa1"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -17587,7 +17587,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "1924a7fb-85d5-4c54-b2ca-6aaaf01abd19"
+                      "$blob": "11483901-63b1-4e3c-b224-9d0c690de53e"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -17644,7 +17644,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "5a8abfb9-050b-492c-b7ff-6a39b634e152"
+                      "$blob": "34cf9cbb-3343-4939-b568-4782161dea9e"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -17701,7 +17701,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "b9e3af77-0240-497c-9850-c8676a3ed4e3"
+                      "$blob": "6f7b04b1-cb7a-47e2-b40c-cfec49a1d99c"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -17758,7 +17758,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "e1ef55e3-7b9c-44df-b9e1-e305e43ec552"
+                      "$blob": "45176153-88ec-48b9-ad2e-e6f3954c9ea6"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -17815,7 +17815,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "d87450e0-d824-45e0-bfef-6a0c9e1ca71a"
+                      "$blob": "92c1d7dc-9324-4d9f-8bb4-258c661972eb"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -17872,7 +17872,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "509b7e81-fc8e-4da9-a841-267e93bd300c"
+                      "$blob": "04830c18-0e3a-4a0d-ab03-ce75c70b3db2"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -17929,7 +17929,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "75aa6da6-bf48-4b0f-9b24-6a2d62a4a1f9"
+                      "$blob": "1e683c0e-18a5-4d33-803c-b2ee7e29c827"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -17986,7 +17986,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "7a9a6635-4ffc-4503-b093-b4b8c7a430bd"
+                      "$blob": "3ad79121-96ba-4709-a400-7486bf17fc69"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18043,7 +18043,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "c3052c34-4fb5-4e0f-8556-5d5fc009b435"
+                      "$blob": "bdeef630-b7e5-4871-9dc2-3e175adc0a98"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18100,7 +18100,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "e0c4512a-c3af-4916-9d79-afd8fea7fe35"
+                      "$blob": "cf17107b-e8ea-474b-af7b-27efbf12c359"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18157,7 +18157,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "487d4728-4c3d-48d0-97bd-b23bed4ccf45"
+                      "$blob": "a6cd1fbe-906e-4dd0-957e-f1f16872f5d1"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18214,7 +18214,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "4c0a12f1-ccba-409f-ba49-65bd0148a4df"
+                      "$blob": "902a8c45-b5c3-4aba-abbe-593152bbd134"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18271,7 +18271,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "ea534c26-d2b8-4d19-aeb6-3434c80ef5e7"
+                      "$blob": "c5af1d93-b637-4034-979b-7cc29efb059b"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18328,7 +18328,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "5163e55b-8264-405c-85bd-bee717b2fa87"
+                      "$blob": "a83a1245-f8c0-460e-9f33-51c1cbfbd06d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18385,7 +18385,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "087712f9-2174-4fb7-a723-dc5e009ec372"
+                      "$blob": "7f69903f-d47f-4c6c-87bd-c62e2319c802"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18442,7 +18442,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "da966ee6-46ca-46e7-acee-1eb460bae43d"
+                      "$blob": "2986d3bf-0a07-47a7-a7ed-d3574c83db59"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18499,7 +18499,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "cb094948-3a11-41ed-9dae-af96d416b9de"
+                      "$blob": "6fe4c67f-4118-4bc4-86b8-f429ca5ae93d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18556,7 +18556,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "60f37377-379f-482e-a518-88a830c0320b"
+                      "$blob": "5ce62539-8855-41ce-8e38-c7a4955a7a30"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18613,7 +18613,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "715db8c0-0cdd-49b8-8194-05b570f44c5c"
+                      "$blob": "fc797361-ab6c-4abc-a4e9-e49f17e41dd4"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18670,7 +18670,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "bab02da2-99c6-4551-858c-7aaf7ba14d7d"
+                      "$blob": "04bf6304-8929-4534-b8bc-11ff366c569c"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18727,7 +18727,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "458c9caa-914e-4d10-b563-5bc47e06047c"
+                      "$blob": "060e36c4-cbd4-4d0d-bf99-1f1939ec8427"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18784,7 +18784,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "1581c38e-e0dc-44d7-aeca-4c8924f9cdd4"
+                      "$blob": "26bfd070-3764-4087-aef8-bfac5276250d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18841,7 +18841,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "e6f58647-5247-4af3-bbb0-8cd2f592081f"
+                      "$blob": "a50c23a8-cf03-47e6-af57-4e206acbf618"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18898,7 +18898,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "1c4ae8ae-9a6f-478b-9f06-31a44096a60c"
+                      "$blob": "69a825df-c0c3-4613-afc5-45caeed5d4eb"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -18955,7 +18955,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f076f717-f799-4ecc-8f2d-3ac7fc1041b1"
+                      "$blob": "44a2e4a4-8c4f-4cbe-9416-4865d20c7ee6"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19012,7 +19012,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "df960369-f1c6-4d6d-89d2-a07cb8434fee"
+                      "$blob": "afe5179b-698c-42e0-ba55-670613b35bb6"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19069,7 +19069,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "cfc60dde-3dbf-4b69-b6e5-7a81da0ba706"
+                      "$blob": "b302377f-3d0a-4cb3-8c59-9591a6b8c722"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19126,7 +19126,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "dcaec2fd-7a41-4300-8d6c-034f73bd384a"
+                      "$blob": "e9508865-1028-4009-a5e0-ad932485d6ea"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19183,7 +19183,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "296aced2-be48-4090-a945-3d4eebb3a98b"
+                      "$blob": "250efeb6-8148-46f3-9358-5ebc2736cd38"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19240,7 +19240,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "41c289c4-7f8a-4a80-a6ad-54891ea72599"
+                      "$blob": "54f6250c-dbaa-4fcb-92a8-34070c2964c6"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19297,7 +19297,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "d58fa6b8-f5d1-41ec-86fc-ff5d8867ea05"
+                      "$blob": "758274a4-34ae-4b93-8430-e20dc70c858d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19354,7 +19354,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "0ea9bf93-d4f7-4dff-bdc7-b2a2f2de9503"
+                      "$blob": "895488fd-6329-48ee-841e-0631ac70d67a"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19411,7 +19411,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "a6fe1d5b-6960-4075-8041-c3fc24dcf5bd"
+                      "$blob": "2024b43c-7550-4735-b5aa-955264c22b25"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19468,7 +19468,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "1fd35f90-829a-4ec4-8df0-241538192c1c"
+                      "$blob": "22c3621c-2496-479a-a037-ea338e7318b2"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19525,7 +19525,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "8c8ee343-3015-4f43-b5ba-4b3a1a6a7578"
+                      "$blob": "b58c5582-519c-4ceb-a73a-4b5532535593"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19582,7 +19582,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "1db7b10f-a6f0-4394-a0a4-3f21bf1ca768"
+                      "$blob": "e651895a-385c-4265-89a4-e987d1efd5f3"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19639,7 +19639,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "d37ebe31-3523-405a-8bb0-4f63abd1db1f"
+                      "$blob": "7f83b3e6-74fd-4b3e-a4ee-79c424fcb001"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19696,7 +19696,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f5a0d9cf-167a-446c-9f81-57d88e4f459d"
+                      "$blob": "484259ec-d94f-41a5-b8a5-a75e2f318b96"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19753,7 +19753,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "7e0c6dab-dffd-4ee9-8692-b90420caefdb"
+                      "$blob": "f7cafd21-8cc1-4015-b1c5-5f7315ca13cc"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19810,7 +19810,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "7029dfc8-552a-442d-b063-03ee56f90597"
+                      "$blob": "12ded4d9-34b7-4d39-9adc-87d5297177a9"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19867,7 +19867,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "a629d007-303b-4bfc-8195-7d0b339c0f1e"
+                      "$blob": "b0857d88-0b28-4878-9e52-ce7705233321"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19924,7 +19924,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "93648e76-34b9-435b-b464-4ae8fe09fe27"
+                      "$blob": "14a8a104-3bb1-4ae6-84eb-473e9e8c6883"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -19981,7 +19981,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "42d985a4-39a2-4819-b127-3dbf234ca31e"
+                      "$blob": "eafe9f7c-1829-4a69-b0ed-5bc9d2e03669"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20038,7 +20038,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "3d8bee27-6ed3-4745-9cc9-f13497339e47"
+                      "$blob": "b45bf356-cd4d-49e7-9fae-d32f659aa496"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20095,7 +20095,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "0f00bf92-df36-4d9d-888d-a91657dfc340"
+                      "$blob": "b40889ce-e3f0-4eac-84b4-40e939bbe2a7"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20152,7 +20152,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "1c792579-a302-46fa-9f83-91fa1b6fc593"
+                      "$blob": "7b3e6b80-dc9b-43e4-845c-e63afb55e500"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20209,7 +20209,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "26e1606a-b956-4bbb-b810-8df2a5e0155c"
+                      "$blob": "56e8462d-0635-4ff5-b17e-b361f083a597"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20266,7 +20266,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "7945e663-2f23-4f1d-b047-0f317f2d4bf1"
+                      "$blob": "874544a7-c174-452d-803c-5c954426908c"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20323,7 +20323,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "eae9b4a3-860d-41de-98e2-9d44fbe538d1"
+                      "$blob": "76a5e4af-229c-4281-a54c-5e7e6efe57b3"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20380,7 +20380,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "cf614a6c-639f-489e-9670-819969473e86"
+                      "$blob": "d69d6536-181d-44e0-b4d0-c6214dc1b400"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20437,7 +20437,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f8e26ddb-519f-45f4-8924-a83d0555e862"
+                      "$blob": "5ee32fb4-91c0-464c-b5ed-f9fb1de2d1b2"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20494,7 +20494,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "4269af23-10c9-4346-8dae-6fe8574c4c3c"
+                      "$blob": "b75a91e9-52e0-4f35-84d5-811799f3b0b8"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20551,7 +20551,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f4969140-9537-4169-8446-b5ccd71197a6"
+                      "$blob": "3c3382e6-78b4-4659-9caa-36f8640646bf"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20608,7 +20608,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "bcfaec49-17d7-4911-b912-858786133a53"
+                      "$blob": "4afda6cb-cea4-46bb-abc5-cfdda92ef195"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20665,7 +20665,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "bdc047df-c5c9-4051-82db-541c4ca7e54d"
+                      "$blob": "cd64c2bc-b11c-4ef9-8807-9165cf28a9de"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20722,7 +20722,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "cb1cf516-04b6-419c-adeb-4ecc8de87310"
+                      "$blob": "e87c3af3-a1dd-4a80-91a1-ad12bbf3c675"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20779,7 +20779,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "df4a9e43-18cd-4e12-9f0a-ea84e98cd9d9"
+                      "$blob": "9f22a68b-a4bb-478b-8a20-c993509229ef"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20836,7 +20836,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "8a7a1768-c945-4736-bb5a-c7c460e5e2ce"
+                      "$blob": "d99e4fcc-e0f7-46b0-8e56-8856b0d8d833"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20893,7 +20893,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "355c1b48-cf18-4bb2-9992-db68f9716dee"
+                      "$blob": "62c3cddb-0ca6-444c-bd4f-f8850d576a16"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -20950,7 +20950,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "78a8d34d-65ee-44d7-9865-3f3e3daac920"
+                      "$blob": "b398d06a-8229-4e9e-a632-b210c042ef81"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21007,7 +21007,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "96fb2411-9624-4122-a365-917a7e64bae3"
+                      "$blob": "5bc5debd-8e51-46d1-948d-10934daffb30"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21064,7 +21064,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "a6b9316a-3f21-4235-9ffd-0eec1777fe18"
+                      "$blob": "caaa1475-d35f-4c0b-9287-fb3393d7f082"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21121,7 +21121,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "8a3aaaf2-e79a-4542-b46c-8e1ea820efb9"
+                      "$blob": "0d3dac0b-633e-4407-b325-306e9f1e9b58"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21178,7 +21178,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "c3d15300-d115-4415-b246-51dd1444e430"
+                      "$blob": "e67e6a9d-ef5b-4191-9e6a-b5d2e84f0d2d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21235,7 +21235,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f507924b-4878-4ea2-8a2c-0367dee8486f"
+                      "$blob": "796473d2-cad1-4a9f-ad63-0c39a4e578b2"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21292,7 +21292,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "4040fa46-9776-4ba3-be58-753bda5ad5f0"
+                      "$blob": "c7de781c-b4a0-4cee-b53e-e0ae9f472c67"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21349,7 +21349,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "8028b40c-fb2a-4951-9649-9172a116f711"
+                      "$blob": "bfe4de18-8a07-4dab-99bd-a4ee703af3c4"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21406,7 +21406,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "d32a0452-2dde-4454-b8ac-a1843d0b521f"
+                      "$blob": "90bf3714-661c-48e4-b300-cb29b2ccda8e"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21463,7 +21463,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "66b5fcce-d6f5-453c-8d2a-dc12e2db86cf"
+                      "$blob": "872f9277-8883-4ba5-a57e-161954f38321"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21520,7 +21520,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "7ae5d378-401e-4356-86df-9fb1c7da4c26"
+                      "$blob": "0621a5b2-5e56-4bc2-9728-4862d33f419b"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21577,7 +21577,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f45f1e6b-a30e-4d6e-a7bd-569b52f154dc"
+                      "$blob": "a7f33bff-af64-4a32-8dba-d2416fcf3436"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21634,7 +21634,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "2a999a93-111a-437a-a5af-3365fe8334d0"
+                      "$blob": "58d088cb-a895-4002-8f10-295fbdd32031"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21691,7 +21691,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "1aeb610c-6f49-4d62-b620-456a36c7507b"
+                      "$blob": "f13eafba-eaaf-4a0f-9e22-d116b9dbcebc"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21748,7 +21748,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "c8a34f48-d37d-4d89-be54-057f8a9a9f60"
+                      "$blob": "8f5ee795-0990-4a18-88d1-b7b8120a099f"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21805,7 +21805,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "6313ca68-7b44-4053-8493-3108fe829be0"
+                      "$blob": "5b7a20d6-fc1b-4d61-b834-87040e627215"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21862,7 +21862,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "d432c71d-42b7-4172-947d-70cdfc1c9d2d"
+                      "$blob": "c21620c1-a608-4bc9-b023-0cc6c44fb72d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21919,7 +21919,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "3fc1d5ab-7c3b-41be-b40f-b829a9e39403"
+                      "$blob": "39693b5e-e63e-4951-9292-2470aa427f70"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -21976,7 +21976,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "5a674b26-9095-4858-b334-fa96e77dd0d7"
+                      "$blob": "e8e24c23-b98c-4606-a807-85acbc75ecbe"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22033,7 +22033,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "5da8f07b-d111-49f3-9386-bcf05773d957"
+                      "$blob": "d0f0cc13-15cf-4b6f-8b28-9a06576a6b0a"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22090,7 +22090,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "84885b57-205a-4ada-bbe3-5239242173f5"
+                      "$blob": "44421782-42dd-49bb-824a-4fe8ec87dd59"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22147,7 +22147,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "e9a7dbf3-d01e-4add-bad2-f573d677a4b2"
+                      "$blob": "6b076789-16b6-479f-ad3e-7e985fffb35f"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22204,7 +22204,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "0ef18106-76e4-4e44-b7d4-26ff37d89d5d"
+                      "$blob": "40360e9c-3ecc-4db9-87c7-d04e017c5c77"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22261,7 +22261,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "53863f0a-9bee-48db-8485-dda28959c558"
+                      "$blob": "e45a5f86-1d9e-4311-96bc-a5366bca2634"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22318,7 +22318,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "46e6650d-8387-499c-ae3d-e370dd0ded57"
+                      "$blob": "298521fb-5305-40af-8661-338072ce377d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22375,7 +22375,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "d0896aa8-ec8b-43dd-9c19-f2776fcecdc6"
+                      "$blob": "ee976705-15e3-41a7-96c3-b0af6e8e543d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22432,7 +22432,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "83e6c0df-3087-4731-b884-990ab0213ece"
+                      "$blob": "e959e716-05eb-4cfb-b0db-7f48464345c8"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22489,7 +22489,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "30b52125-5740-410c-b368-3130708d6dea"
+                      "$blob": "85c69bb8-5075-43fc-85e9-2bd13d9403cb"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22546,7 +22546,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "348ba031-1bd5-440e-a498-3b2c9a544d50"
+                      "$blob": "adb60293-2567-4bef-b298-c217735b95b7"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22603,7 +22603,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "20eb8021-905a-48b0-8065-7aa0fc6f3d34"
+                      "$blob": "ff0bf740-671e-449b-b8d5-608938da1474"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22660,7 +22660,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "12e79487-a361-46ce-963b-4b0804f34503"
+                      "$blob": "21208e35-aeb9-48aa-bebf-abee0195c17a"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22717,7 +22717,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f07d6c55-9294-4a0d-8146-4814cdc6a90d"
+                      "$blob": "b9d7a514-107c-4b2e-a28f-604303307496"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22774,7 +22774,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "05b4fbb3-5e5e-46ca-b059-a99dd91e3b3e"
+                      "$blob": "96435261-761e-4748-a584-3a433c33045a"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22831,7 +22831,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "e33beca5-0137-4858-aa69-f04c8f528897"
+                      "$blob": "f4845e29-48c1-4205-944f-0db4f9696d17"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22888,7 +22888,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f0256104-946a-4fee-9cde-c82e5bce4a42"
+                      "$blob": "30e84b61-02f4-4c96-8cb4-1bcaa3701946"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -22945,7 +22945,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "0be3a909-94d6-4e17-85fa-890f9b13d174"
+                      "$blob": "69ec7d00-1428-4ae7-bbff-2a3bac491516"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23002,7 +23002,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "8285a2c8-7ffe-4070-af9d-b6760c8c7995"
+                      "$blob": "0be383b5-c669-4651-a4df-5c90ef127ff4"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23059,7 +23059,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "7c82b612-7eb8-4b11-b76b-675e9ee1faac"
+                      "$blob": "252e74fe-ba88-49e9-b8ef-40a3fc5d4a02"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23116,7 +23116,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "774362ef-70ae-4212-b82b-60178c7a7aba"
+                      "$blob": "c7c2f027-bef3-4a93-b340-75825f758b10"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23173,7 +23173,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "164a2fb3-8278-4c2b-9625-868159c1f352"
+                      "$blob": "a0009f6d-563b-4c49-a94d-6659cb99503d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23230,7 +23230,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "97613902-26e5-4e26-96b7-e8727b407dbb"
+                      "$blob": "937755ec-5404-477b-9e55-283450f0015b"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23287,7 +23287,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "8c74401d-02ed-440d-973c-9bc71dedb7c8"
+                      "$blob": "adb65ff8-4ae8-4d10-a7d2-4f210034be90"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23344,7 +23344,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "b7a08139-de26-4417-987a-8f2bdcc274cb"
+                      "$blob": "5556ca15-ff06-4cbb-b8b8-830a0421650c"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23401,7 +23401,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "e580d20f-63ff-4a50-85ce-67cf4aaa3063"
+                      "$blob": "684c35c5-d452-4b04-9776-12f09a79218e"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23458,7 +23458,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "c4ea7461-6837-40e4-8c33-84ba10e39909"
+                      "$blob": "a0505d07-e4b6-4e60-9502-6525d14eb3c3"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23515,7 +23515,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "a04b554f-d221-4700-900f-24e4af13cc6c"
+                      "$blob": "244df7a2-de0a-4d24-b7c6-c060cde1abe9"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23572,7 +23572,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "b6de15a7-abdb-4785-b797-34333eab7a98"
+                      "$blob": "271d9a9d-0062-409b-89f6-01222c8fd28f"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23629,7 +23629,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "ada7d16c-2f3e-4dbf-8478-dd26ea2ec434"
+                      "$blob": "0868dc00-cfb9-4876-9e38-4f639158780c"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23686,7 +23686,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "3edbf375-ba1f-4a04-943d-dcaa44c927dd"
+                      "$blob": "67c99550-873d-4158-aad7-3b567b4c56af"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23743,7 +23743,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "214b9d0e-7ee6-47d1-8d89-878aa9ec958a"
+                      "$blob": "1895806e-3227-495b-904e-7f52e5d9d370"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23800,7 +23800,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "e0004261-5702-475e-a481-d91efd86861e"
+                      "$blob": "60a16829-ae0d-46d3-98d5-cb172a0d24f6"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23857,7 +23857,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "d9fc29a1-d948-4b85-905f-f25febe772da"
+                      "$blob": "8f309a4e-f260-4db5-bd2c-efd332d59ad3"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23914,7 +23914,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "87468b3c-4448-41e5-b70f-6642b0db2e18"
+                      "$blob": "c6cb1e79-d6ee-42be-b0d0-0d28c17c6e18"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -23971,7 +23971,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "fd688f41-98c7-4ae9-984c-c1e7a486718d"
+                      "$blob": "f3dd4081-dc56-47dc-afdb-d8364b6f27f7"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24028,7 +24028,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "c669b989-3828-4233-bd52-25e428b9dd71"
+                      "$blob": "fbb54ae9-c1e3-454a-8d12-3d42b4bc9e72"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24085,7 +24085,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "22da4f2b-ad58-48ef-bbfe-c193ed679b29"
+                      "$blob": "57007c8c-dab9-4b68-b248-3591d9bfcb5d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24142,7 +24142,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "f874512c-8f53-4121-8e5b-f1d92069ecb8"
+                      "$blob": "18583add-83d9-4162-8cb6-77fac451787d"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24199,7 +24199,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "ea00bccb-d935-4752-8ac6-2d894ee4256f"
+                      "$blob": "0911acdd-a506-4ba9-aafb-1032687b66bb"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24256,7 +24256,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "d8c01a84-3c45-4071-b533-50affb87b4b8"
+                      "$blob": "c75b1ffc-84d3-4c98-aaea-1f2e22a7133e"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24313,7 +24313,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "72ce3d25-0450-4383-997f-213563d29ca8"
+                      "$blob": "ba2e521d-f006-4fc0-88b4-9ceed87c0008"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24370,7 +24370,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "52bbfcd5-eb64-453b-8951-f39878edee80"
+                      "$blob": "9cd7440b-4dc6-4174-a87f-65bfdb25d681"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24427,7 +24427,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "189d9347-2548-48c6-920a-462132fda960"
+                      "$blob": "9a150d78-811a-40ac-84ba-4579dab5a6ea"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24484,7 +24484,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "95d53df9-593b-44ca-a962-527fe966281d"
+                      "$blob": "d6c585c2-960e-418d-bc10-ce61b081c281"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24541,7 +24541,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "862fc65a-2db6-4266-a1c9-e4af643a8ccc"
+                      "$blob": "bcfda29f-167f-4ded-991e-b506e27b1ff6"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24598,7 +24598,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "742d9d93-671b-44a6-ba7f-148e7af49244"
+                      "$blob": "231c71c4-7d4e-4a18-a932-53da004211ae"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24655,7 +24655,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "e778285d-ab06-43ff-a78d-55f8acb67dfa"
+                      "$blob": "1a05684e-f841-4a83-9248-c0db884a935b"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24712,7 +24712,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "cd110927-33f5-49db-9dbd-3f7b48d80b0c"
+                      "$blob": "61dfa214-42aa-49c6-b0bb-c93f36309fc0"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24769,7 +24769,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "c693a66f-1b0b-46c4-bce9-9585c23e794c"
+                      "$blob": "d45403f0-986a-4b91-a68f-89d644fb527b"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24826,7 +24826,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "fe55102d-fcbf-4021-92e9-d76c25497a41"
+                      "$blob": "e18564dd-587f-4358-b261-e05d1f6cdc5a"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24883,7 +24883,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "d7e2abf1-205d-4103-9762-8b53ae8a1007"
+                      "$blob": "970a4f3e-3d05-4a23-96f7-d59975e581aa"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24940,7 +24940,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "5c4cadfa-171c-4371-9df3-d2e042a0dfdc"
+                      "$blob": "8816c5f9-644b-461b-9701-dfb1a703aae2"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -24997,7 +24997,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "ab43486f-a2a9-4562-b416-dcfb6acccac6"
+                      "$blob": "3c11d017-b7cf-40ed-9422-80ebc1722a74"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25054,7 +25054,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "50460db0-35cc-41c6-a6de-3de686ef0dc5"
+                      "$blob": "6b79f821-f38a-4e93-92fe-be9e77c5a221"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25111,7 +25111,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "8010f3a7-96e1-46ae-a233-cba3bc76d4fc"
+                      "$blob": "1bd04f7c-a51a-4c6c-b190-b5ded65759b2"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25168,7 +25168,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "727e62f8-01ea-46b1-956a-dfbd2fc83819"
+                      "$blob": "71533a2f-933e-4213-a4db-934572125383"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25225,7 +25225,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "6d5bd0b5-1718-41c1-80b0-4f9213b740e6"
+                      "$blob": "0f99c72d-57a1-41c3-ab23-ecaaf1cbb1a9"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25282,7 +25282,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "e1cb7e93-aafd-46c4-8332-366745b03eeb"
+                      "$blob": "0d2ca368-8df8-4d62-ba96-b677a35710bc"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25339,7 +25339,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "accb1345-c4b2-4482-88a2-e44ede9a8a2d"
+                      "$blob": "df5635fb-ad3e-40aa-8b49-676b2f8ac189"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25396,7 +25396,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "29402225-1ce7-4a61-82ac-c6d3ff555e5a"
+                      "$blob": "a6321f72-66c5-42a3-be21-ce712f392c82"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25453,7 +25453,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "65feb260-0d22-4fd8-94bf-fe93795acc59"
+                      "$blob": "a2391699-cfb5-4843-8493-994f414130cb"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25510,7 +25510,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "04b684f3-9c46-40f3-b38c-dc2c1f008d34"
+                      "$blob": "b768b840-bb23-48a6-855f-2cc49b79b4fb"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25567,7 +25567,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "552e48df-9bae-4ea0-a76f-3ce577151155"
+                      "$blob": "69ebceab-af6a-43af-88a2-9127009d6221"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25624,7 +25624,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "6b81fe39-1aa9-40ad-bfeb-03b96fb3a9af"
+                      "$blob": "e1ef9369-0c60-46fc-a15a-e30958757c75"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -25681,7 +25681,7 @@
                   "IsTrigger": false,
                   "Mesh": {
                     "Data": {
-                      "$blob": "b378ff8f-3981-40ef-8c47-5741237501e5"
+                      "$blob": "5ac2898c-8d7d-4e2a-b8c8-98d23df22f19"
                     },
                     "Materials": [
                       "materials/turfwarspoly/goldenearth.vmat",
@@ -40866,7 +40866,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b24b9d83-19a5-4b01-b4f7-29c2e98b23cf"
+                  "$blob": "f24fd699-c714-457c-b2b1-9e85e6bcabb4"
                 },
                 "Materials": [
                   "materials/turfwarspoly/dimgrey.vmat"
@@ -40922,7 +40922,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "930a1339-4ba7-4e2a-8289-a64b2c03dfec"
+                  "$blob": "b2036089-4dfd-4cbb-922d-0b19ccf5894f"
                 },
                 "Materials": [
                   "materials/turfwarspoly/black.vmat"
@@ -40978,7 +40978,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f57c6974-2e60-4cb8-a92a-27d49502907b"
+                  "$blob": "218a9346-9e72-42a3-b2cc-3094d2d900cb"
                 },
                 "Materials": [
                   "materials/turfwarspoly/black.vmat"
@@ -41034,7 +41034,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e3ab5eba-d19a-458a-9f56-b9c07218cb1c"
+                  "$blob": "ff5ac1eb-fe05-4ae5-8cc3-eef28a6a8564"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat"
@@ -41090,7 +41090,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "177c569b-bff1-4558-822a-c33221e2ea76"
+                  "$blob": "824da6f3-82d1-4d27-a28c-78dc8de66d55"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat"
@@ -41146,7 +41146,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f877b2a1-1740-4e0c-bdac-08eff123733c"
+                  "$blob": "db29ddbc-b960-423b-b5f4-4881b63c7fac"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat"
@@ -41202,7 +41202,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "cdbd6371-b8e6-4283-8d30-d545230dbfc7"
+                  "$blob": "ed1e53eb-f5fa-4ccb-b489-63e6db36f2b8"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat"
@@ -41258,7 +41258,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "a7fbff0b-95c5-4d4c-a55a-1225c71f3685"
+                  "$blob": "fba2a8d7-5c4c-46f3-a832-83644daaf98c"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41315,7 +41315,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "40e85343-04bf-4699-853a-7c9728bc06b9"
+                  "$blob": "52a70eb7-36e4-4d6d-b8a1-4de7f1fc0e67"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41372,7 +41372,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "94628a95-00bb-4c70-88b4-387bed90e1c4"
+                  "$blob": "76516a0c-409c-46be-8ce9-dc86c03ef753"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41429,7 +41429,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1b108c44-9d46-4f65-90fc-017b1a325337"
+                  "$blob": "1a7f695e-e742-4a11-9bdb-b2081e3574f8"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41486,7 +41486,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "33086044-9278-4f5e-950a-7ce2b49578be"
+                  "$blob": "f3ae558c-e9e5-448c-bfa5-a24bc80e204e"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41543,7 +41543,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7a5e46a3-2b64-43ab-bd41-eea3f680dbe5"
+                  "$blob": "78a97df0-e1be-4647-903b-af3aec5d4948"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41600,7 +41600,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3344c6d9-9487-47ee-88ef-c56b1e7a7847"
+                  "$blob": "685f5263-428b-438a-9ed5-ac58593b0c5b"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41657,7 +41657,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "049cf514-c3d0-45a3-bc73-f5bbc89a0271"
+                  "$blob": "dd3a88a2-28e1-485d-9290-7476a763cbe2"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41714,7 +41714,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "746d506b-fcab-492f-aa56-63eb39092735"
+                  "$blob": "c3c21809-a686-4dde-858c-edd69b55bca1"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41771,7 +41771,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8d311cf5-eb3b-4c76-9655-9ec7ab473357"
+                  "$blob": "c97c9635-5bf5-4fb4-8460-b5368dc2494e"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41828,7 +41828,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "f3cf5087-f685-4200-a39a-7959cb0f03f3"
+                  "$blob": "69399c34-19e0-4cf9-9748-0940ee3224ea"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41885,7 +41885,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9640945a-4be5-4cd3-98da-f5c1f42aa647"
+                  "$blob": "81e77b1a-8057-4104-a379-c8a39c9cefd1"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -41942,7 +41942,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4f4d4024-d633-4579-ac56-139e936caa89"
+                  "$blob": "ac49206f-b492-481c-bc92-7557b115ef40"
                 },
                 "Materials": [
                   "materials/turfwarspoly/almost black.vmat",
@@ -41999,7 +41999,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "6a3dca9e-4752-44c6-a29e-389ee8be7005"
+                  "$blob": "c7bfea24-f605-4551-9eed-5f34f5ac6400"
                 },
                 "Materials": [
                   "materials/turfwarspoly/almost black.vmat",
@@ -42056,7 +42056,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "85187131-cf83-42e0-b71e-b539fa12ccf3"
+                  "$blob": "fd95a0f2-5579-4efa-a527-3909ed8c823d"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat"
@@ -42112,7 +42112,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "be7a3425-db6a-49e1-9355-0c022af7a1a2"
+                  "$blob": "c437688c-4949-4158-adc5-3e5ec7224184"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat"
@@ -42168,7 +42168,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4ad92c34-c9ea-4e7e-a2c4-ac9a58f9cf9b"
+                  "$blob": "8a3ac4ee-7668-406c-b98e-6472efbe547f"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -42225,7 +42225,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "36af3c10-c934-4245-907b-65c5d07c857c"
+                  "$blob": "74a6763e-9738-430f-85c9-ab3d747025b5"
                 },
                 "Materials": [
                   "materials/turfwarspoly/eggshell.vmat",
@@ -42282,7 +42282,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "54f19b90-4622-4d4e-a12f-091e1d578317"
+                  "$blob": "e1c08528-873b-4cad-a67b-b80113e8417a"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -42339,7 +42339,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8ae45193-2980-42fb-83ca-d7e724f67f4b"
+                  "$blob": "135a429a-32dd-48a0-8233-75404623606c"
                 },
                 "Materials": [
                   "materials/turfwarspoly/richmahogany.vmat",
@@ -42396,7 +42396,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "72edc86d-7a3a-428d-8dd2-461569099b45"
+                  "$blob": "5e4757d4-384d-49a8-9634-f7e1e8f3cb41"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat"
@@ -42452,7 +42452,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "5094ba62-47bf-42b3-8326-eaff8a47dab0"
+                  "$blob": "0ef2c316-84da-4bce-9753-3f3264361296"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat"
@@ -42508,7 +42508,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4b3e23ad-7e60-4096-95a5-1b5257f6c18c"
+                  "$blob": "2bb8a0d7-1a36-46ab-8f76-3da5bd7b8f72"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat"
@@ -42564,7 +42564,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "da57ca7d-2a92-4685-b2d9-691852c404ff"
+                  "$blob": "85ea86cd-90c7-4853-8dc7-5f7fdf1d4a37"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat"
@@ -42620,7 +42620,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "70a6ce60-408e-4e02-a109-3be9cb061c08"
+                  "$blob": "0dfde2b5-94fd-4b12-b6ed-d435437e85fc"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat"
@@ -42676,7 +42676,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "7fa8b248-f1fe-4822-ad6e-ec25683c2b35"
+                  "$blob": "dd1ba4e5-b949-4106-9cc0-128f1b5b42af"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat"
@@ -42732,7 +42732,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "bbcde20b-96d5-46f5-8b61-b9e0bfc5a4ed"
+                  "$blob": "ba73e28e-dcf5-4b39-94c0-829ace2561cf"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat"
@@ -42788,7 +42788,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "bb41a30e-6c9c-44b4-866d-2fd9a9f30c9e"
+                  "$blob": "cfc342f6-d967-492f-8308-a86af62967c9"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat"
@@ -42844,7 +42844,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "bf8825c8-8767-4f72-8922-c26a6b84188b"
+                  "$blob": "89d540ba-6ef3-46ad-8826-0891ac5059a8"
                 },
                 "Materials": [
                   "materials/turfwarspoly/almost black.vmat"

@@ -177,21 +177,9 @@ Previously `GameNetworkManager` auto-added feel/anim/HUD pieces at spawn. **Poli
 
 ### Component wiring (editor checklist)
 
-**Every player class prefab:** `PlayerTeam`, `PlayerLoadout`, `PlayerDisableCrouch`, `PlayerEnemyOutline`, `BallCompassHud`, `PlayerBallHoldAnim`, `PlayerChargeRunAnim`, `TackleImpactFeel`, `CombatFeelPredictDedupe`, `PlayerFootstepAudio`, `PracticeNpcPatrolPoseRelay`, `LoadoutClientState`, `LoadoutPickerHud`, `TackleRagdollLifecycle`, `TackleImpactRelay`, `PracticeNpcTackleClientRelay`, plus core gameplay (`BallGrab`, `BallThrow`, `CatchUpSpeedBoost`, `PlayerDodge`, `PlayerTackle`, `PlayerUltCharge`, `PlayerClass`, throw/charge HUDs, `RagdollClientFeel`, …).
+**Full list (every manual component, spawn warnings, missing symptoms):** [`COMPONENT_CHECKLIST.md`](COMPONENT_CHECKLIST.md).
 
-**Juggernaut prefab additionally:** `JuggernautQuakeSlamUlt`, `QuakeSlamOwnerPredict`, `QuakeSlamAimPreview`, `QuakeSlamFeel`.
-
-**Speedster prefab additionally:** `SpeedsterSpeedBlitzUlt`, `SpeedBlitzDashHitDetector`, `SpeedBlitzConnectImpactRelay`, `SpeedBlitzAimPreview`, `SpeedBlitzDashCamera`, `SpeedBlitzWindUpFeel`, `SpeedBlitzBodyGlow`, `PlayerSpeedBlitzWindUpAnim`, `BlitzConnectPoseFreeze`.
-
-**Main Camera (per gameplay scene):** `EnemyOutlineCameraSetup`, `TackleComicTextHud`, `MatchAudioBootstrap`, `OutOfBoundsBannerHud`, `BallOobDropZoneHud`.
-
-**Ball (`main_ball`):** `BallCarrierOutline`, `BallLastTouchLedger`, `BallPassAssistState`, `BallOutOfBoundsHost`.
-
-**Practice static dummies (`practice_npc`):** at minimum `PlayerTackle`, `TackleRagdollLifecycle`, `TackleImpactRelay`, `PracticeNpcTackleClientRelay`, `CombatFeelPredictDedupe`; add `TackleImpactFeel` if victim knockdown feel should fire on the dummy.
-
-**Practice patrol runner:** above + `PracticeNpcPatrol`, `PracticeNpcPatrolPoseRelay`.
-
-**Practice arena launch lane (`practice_arena` scene):** on **`LaunchReadoutSign`** — `PracticeLaunchReadout`, `WorldPanel`, and **`PracticeLaunchReadoutRoot`** (all three on the same GameObject; root builds the score panel). On **`PracticeLaunchLane`** — `PracticeLaunchMeasure` with **Readout Sign** dragged to `LaunchReadoutSign`.
+Summary — **every player class prefab** needs the shared set (37 custom components including **`BallGrab`**, **`BallThrow`**, **`BallClientFeel`**, throw/charge HUDs, tackle/dodge/loadout/match pieces) plus class ult siblings. **Main Camera:** GNM, `MatchDirector`, `MapMatchConfig`, camera HUD/bootstrap siblings. **Ball:** carrier outline + OOB/assist/ledger. **Practice NPCs** and **Turf Wars map** volumes/spawners — see checklist.
 
 ### Scene-wide lookups
 

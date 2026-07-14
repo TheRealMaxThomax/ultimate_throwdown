@@ -582,6 +582,23 @@
               "ThrowUpForce": 150
             },
             {
+              "__type": "BallClientFeel",
+              "__guid": "f0428f5c-ddab-4cea-a30a-e9358df371ef",
+              "__enabled": true,
+              "Flags": 0,
+              "ContactBoostDuration": 0.12,
+              "ContactBoostSharpness": 42,
+              "FreeBallVisualFollowSharpness": 14,
+              "InterpolationDelay": 0.06,
+              "MaxSnapshots": 24,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            },
+            {
               "__type": "ThrowChargeBar",
               "__guid": "42ae48fe-441c-4830-92db-018b6ccf4a27",
               "__enabled": true,
@@ -675,23 +692,6 @@
               "ThrowPlaybackRate": 0.7,
               "ThrowPoseHoldSeconds": 0.9,
               "UseAnimGraphChargePose": true
-            },
-            {
-              "__type": "BallClientFeel",
-              "__guid": "00d1a13e-0a67-4b96-8f6b-5b406823aa22",
-              "__enabled": true,
-              "Flags": 0,
-              "ContactBoostDuration": 0.12,
-              "ContactBoostSharpness": 42,
-              "FreeBallVisualFollowSharpness": 14,
-              "InterpolationDelay": 0.06,
-              "MaxSnapshots": 24,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
             },
             {
               "__type": "PlayerClass",
@@ -3407,7 +3407,7 @@
                   ]
                 },
                 {
-                  "__guid": "22390301-d476-4de3-8e6f-3063f6b7010a",
+                  "__guid": "0ecd5d5d-1c01-4f07-b6a0-42bafe1b0b15",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -3424,7 +3424,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "4b49eeb3-c8cb-41b2-816e-9f576e62c417",
+                      "__guid": "0aabadc7-e48e-4a31-a85b-cc2fcc80448c",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -3805,6 +3805,23 @@
               "ThrowUpForce": 150
             },
             {
+              "__type": "BallClientFeel",
+              "__guid": "e3064d21-d583-4f3e-8898-7ffedc9a449d",
+              "__enabled": true,
+              "Flags": 0,
+              "ContactBoostDuration": 0.12,
+              "ContactBoostSharpness": 42,
+              "FreeBallVisualFollowSharpness": 14,
+              "InterpolationDelay": 0.06,
+              "MaxSnapshots": 24,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            },
+            {
               "__type": "ThrowChargeBar",
               "__guid": "76f108ae-7e6d-41b1-8b8f-f3e6da8f75cd",
               "__enabled": true,
@@ -3898,23 +3915,6 @@
               "ThrowPlaybackRate": 0.7,
               "ThrowPoseHoldSeconds": 0.9,
               "UseAnimGraphChargePose": true
-            },
-            {
-              "__type": "BallClientFeel",
-              "__guid": "ae560e88-63ec-4f4f-be27-3292ef8f40f0",
-              "__enabled": true,
-              "Flags": 0,
-              "ContactBoostDuration": 0.12,
-              "ContactBoostSharpness": 42,
-              "FreeBallVisualFollowSharpness": 14,
-              "InterpolationDelay": 0.06,
-              "MaxSnapshots": 24,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
             },
             {
               "__type": "PlayerClass",
@@ -6429,7 +6429,7 @@
                   ]
                 },
                 {
-                  "__guid": "4c273ba2-c1d8-46ce-869e-216ebb477ed5",
+                  "__guid": "57e5001a-52f2-453a-a6cc-02bad64e17ba",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -6446,7 +6446,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "ec34a06f-9bd5-451e-801c-e30057f1fe49",
+                      "__guid": "e9e1d3b5-1201-4531-b52c-d0a7d405307d",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -6827,6 +6827,23 @@
               "ThrowUpForce": 150
             },
             {
+              "__type": "BallClientFeel",
+              "__guid": "d172c841-811b-4c95-9240-d031b773e9cf",
+              "__enabled": true,
+              "Flags": 0,
+              "ContactBoostDuration": 0.12,
+              "ContactBoostSharpness": 42,
+              "FreeBallVisualFollowSharpness": 14,
+              "InterpolationDelay": 0.06,
+              "MaxSnapshots": 24,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
+            },
+            {
               "__type": "ThrowChargeBar",
               "__guid": "8745238a-959c-4e9b-a450-f625ba174343",
               "__enabled": true,
@@ -6920,23 +6937,6 @@
               "ThrowPlaybackRate": 0.7,
               "ThrowPoseHoldSeconds": 0.9,
               "UseAnimGraphChargePose": true
-            },
-            {
-              "__type": "BallClientFeel",
-              "__guid": "e2d60075-06ef-48c7-b0f5-5bc65cfbff40",
-              "__enabled": true,
-              "Flags": 0,
-              "ContactBoostDuration": 0.12,
-              "ContactBoostSharpness": 42,
-              "FreeBallVisualFollowSharpness": 14,
-              "InterpolationDelay": 0.06,
-              "MaxSnapshots": 24,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
             },
             {
               "__type": "PlayerClass",
@@ -7424,9 +7424,9 @@
               "Flags": 0,
               "AnnulusSegmentCount": 64,
               "InnerRingAlpha": 0.55,
-              "InnerRingTint": "1,0.35,0.2,1",
+              "InnerRingTint": "0.97647,0.34118,0.04706,1",
               "MidRingAlpha": 0.45,
-              "MidRingTint": "1,0.55,0.15,1",
+              "MidRingTint": "0.98039,0.42745,0.17255,1",
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -7434,7 +7434,7 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "OuterRingAlpha": 0.35,
-              "OuterRingTint": "1,0.75,0.1,1",
+              "OuterRingTint": "0.98039,0.51373,0.29804,1",
               "RingGroundLift": 2.5,
               "RingMaterialPath": "materials/oob_drop_ring.vmat",
               "RingModelBaseSize": 7.5,
@@ -9539,7 +9539,7 @@
                   ]
                 },
                 {
-                  "__guid": "5c5449f8-8894-4ea2-9605-e7dcaf4ad4ad",
+                  "__guid": "8058df34-9388-4ccc-98a6-b43722c296ca",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -9556,7 +9556,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "2696d582-ae6e-483c-b596-b2f4314089da",
+                      "__guid": "13dce277-039e-4d83-a269-7bb8f084be10",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -10481,23 +10481,6 @@
               "ThrowReleaseDelaySeconds": 0.35,
               "ThrowStartOffset": 40,
               "ThrowUpForce": 120
-            },
-            {
-              "__type": "BallClientFeel",
-              "__guid": "8d67d407-9401-4a00-a162-21601f027723",
-              "__enabled": true,
-              "Flags": 0,
-              "ContactBoostDuration": 0.12,
-              "ContactBoostSharpness": 42,
-              "FreeBallVisualFollowSharpness": 14,
-              "InterpolationDelay": 0.06,
-              "MaxSnapshots": 24,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
             },
             {
               "__type": "PlayerCosmeticsSync",
@@ -12774,7 +12757,7 @@
                   ]
                 },
                 {
-                  "__guid": "f4b5f6ad-8a75-4907-a4f4-2da4459d8094",
+                  "__guid": "ae147b9f-d226-4b72-8790-260b32f0c2d4",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -12791,7 +12774,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "2ed8c431-22cb-4ce0-940f-5758d9f766e2",
+                      "__guid": "bfa9fefc-87b5-474d-bc86-e0ee7e701042",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -13195,23 +13178,6 @@
               "ThrowReleaseDelaySeconds": 0.35,
               "ThrowStartOffset": 40,
               "ThrowUpForce": 120
-            },
-            {
-              "__type": "BallClientFeel",
-              "__guid": "15c6012e-41c0-4507-bc2b-c4d584798799",
-              "__enabled": true,
-              "Flags": 0,
-              "ContactBoostDuration": 0.12,
-              "ContactBoostSharpness": 42,
-              "FreeBallVisualFollowSharpness": 14,
-              "InterpolationDelay": 0.06,
-              "MaxSnapshots": 24,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
             },
             {
               "__type": "PlayerCosmeticsSync",
@@ -15585,7 +15551,7 @@
                   ]
                 },
                 {
-                  "__guid": "0b46a667-d876-481b-97cf-2f66ab86bc93",
+                  "__guid": "b9eacb57-6c2a-4839-b36a-8a71f5a39ec6",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -15602,7 +15568,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "7fc168af-7e5b-43be-a35c-06f027fd26a0",
+                      "__guid": "e53602ce-c2b7-4e15-93ab-44bfb2f1e770",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -16006,23 +15972,6 @@
               "ThrowReleaseDelaySeconds": 0.35,
               "ThrowStartOffset": 40,
               "ThrowUpForce": 120
-            },
-            {
-              "__type": "BallClientFeel",
-              "__guid": "b9a8a502-b45a-4b13-bb8f-3c58a678bbe0",
-              "__enabled": true,
-              "Flags": 0,
-              "ContactBoostDuration": 0.12,
-              "ContactBoostSharpness": 42,
-              "FreeBallVisualFollowSharpness": 14,
-              "InterpolationDelay": 0.06,
-              "MaxSnapshots": 24,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
             },
             {
               "__type": "PlayerCosmeticsSync",
@@ -18299,7 +18248,7 @@
                   ]
                 },
                 {
-                  "__guid": "c9fcc1ef-3f10-4201-b109-0a6c5a0e2e76",
+                  "__guid": "1fdd17a1-5b25-434f-a503-2b334f4555fc",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -18316,7 +18265,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "c8777367-06af-4a7a-ab74-9da105384f5e",
+                      "__guid": "97b06d04-29fa-4400-87d7-8f4d86a5fbd4",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -18720,23 +18669,6 @@
               "ThrowReleaseDelaySeconds": 0.35,
               "ThrowStartOffset": 40,
               "ThrowUpForce": 120
-            },
-            {
-              "__type": "BallClientFeel",
-              "__guid": "ff5e867d-5f25-4585-ba9d-9cf65d6b6fd8",
-              "__enabled": true,
-              "Flags": 0,
-              "ContactBoostDuration": 0.12,
-              "ContactBoostSharpness": 42,
-              "FreeBallVisualFollowSharpness": 14,
-              "InterpolationDelay": 0.06,
-              "MaxSnapshots": 24,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null
             },
             {
               "__type": "PlayerCosmeticsSync",
@@ -21013,7 +20945,7 @@
                   ]
                 },
                 {
-                  "__guid": "3189261d-d53f-4f10-8395-2ddaa55f2e18",
+                  "__guid": "9239269c-6880-480d-930a-8846bb6f6f94",
                   "__version": 2,
                   "Flags": 0,
                   "Name": "Clothing - y_front_pants_white",
@@ -21030,7 +20962,7 @@
                   "Components": [
                     {
                       "__type": "Sandbox.SkinnedModelRenderer",
-                      "__guid": "eec88ffa-eb86-4427-acfd-8bcc7e5b6954",
+                      "__guid": "2f417d6e-325a-4320-b91d-8d613cfe3206",
                       "__enabled": true,
                       "Flags": 0,
                       "AnimationGraph": null,
@@ -21367,7 +21299,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "086ae576-f604-4d4b-8beb-39cb08f6a9a9"
+                  "$blob": "85d01cc1-8b82-4856-9e18-8b8ed6a3577d"
                 },
                 "Materials": [
                   "materials/practicearena/charcoal.vmat",
@@ -21425,7 +21357,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "908b8cd7-79cf-4466-b04c-2ac0c8c42c82"
+                  "$blob": "62031425-44e6-45c5-9ef9-183ff9537fd1"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -21481,7 +21413,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "1580f397-9ea5-4fb0-87cb-9b90275b4086"
+                  "$blob": "00e657e5-61b1-48c7-b3d0-4efa900bc480"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21537,7 +21469,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b97f78f9-7b5d-49da-92a1-71e2a2dd6121"
+                  "$blob": "2f95adab-a567-4f26-95df-6268a9a9a44a"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21593,7 +21525,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ecfe83e1-ff76-49b6-823f-f45df9a8ec3e"
+                  "$blob": "f359ef71-59ec-47bb-aba9-d4391cbc8a9e"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21649,7 +21581,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "3713ff77-cad9-4fc7-a162-1606b6857b92"
+                  "$blob": "ff30e285-48cd-436f-9fe3-38ec50f2a408"
                 },
                 "Materials": [
                   "materials/practicearena/mustard_20lighter.vmat"
@@ -21705,7 +21637,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "75738873-3b2d-4017-bfc2-295eeea546bc"
+                  "$blob": "eac09044-d439-478f-b8a6-91a97921691c"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21762,7 +21694,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "03609cfc-dd15-429c-93dd-4e6d44046613"
+                  "$blob": "63cd8d11-ef07-4621-ab0d-f437f84878a0"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21819,7 +21751,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "4dac1d5a-9c01-493e-946b-8dc2c9549adf"
+                  "$blob": "f8fcc2cb-8da1-4be7-bc12-25637c8d4e4a"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21876,7 +21808,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "2606e1f1-29d5-4d19-a8ef-4b7fbfcaaf8f"
+                  "$blob": "ddf5fbaa-2385-48ff-a972-091adfec1a71"
                 },
                 "Materials": [
                   "materials/turfwarspoly/goalzone.vmat",
@@ -21933,7 +21865,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "92f8e1a0-23ac-4f16-8b17-d92e9a675218"
+                  "$blob": "be689056-6c32-4e8c-8861-9efc7692100e"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -21989,7 +21921,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "98d5c666-7dd0-4e30-9801-9750f5e7f4ba"
+                  "$blob": "54054a66-d007-4947-95b3-5c9aa63d66be"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22045,7 +21977,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "291ef9ed-bb8e-4bef-9f8e-f4bad119ce58"
+                  "$blob": "4b4b9970-9815-4784-b61f-0fd52741e550"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22101,7 +22033,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c954229e-630f-4ac9-9753-d77dc32e721f"
+                  "$blob": "347a36ae-ae1a-498f-b296-93146e3abea1"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22157,7 +22089,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "8376fe13-2cae-4a3a-9280-251cad4f889e"
+                  "$blob": "c2785bd2-113f-40e9-8515-149227b4c363"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22213,7 +22145,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "10e6825e-1dda-45e9-9e4e-15267ebe7267"
+                  "$blob": "ec011088-fb4f-4344-b341-6a807668edde"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22269,7 +22201,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "42eb04e1-0ec1-4d2a-990f-9d131165577e"
+                  "$blob": "5a749e43-dcb5-4a22-bf5c-6a7d09c15869"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22325,7 +22257,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "e875b1ff-e917-44dd-b2dd-90b6603d00d9"
+                  "$blob": "fe43b4fc-d2f2-48ef-a8f0-a83ac71ff2f1"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22381,7 +22313,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b8094b35-b230-4c51-940d-1b6f6d5a5bbe"
+                  "$blob": "3b400fa4-44df-43f8-b3f2-79680d430666"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22437,7 +22369,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ac4f8782-9c49-41af-96a5-f6f51ce51546"
+                  "$blob": "b22acf7b-9b7f-497a-ae6b-eff11058fab4"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22493,7 +22425,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "13b11140-c0b8-4eb9-a669-019f1fa9a562"
+                  "$blob": "dca330e3-081b-450b-bc52-40b447b18337"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22549,7 +22481,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "c54250ca-a73a-40a1-8f7d-05b1e45fa741"
+                  "$blob": "baa13b0e-a737-4d91-9fda-a1db88be16c4"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22605,7 +22537,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "9536e313-63e8-41e1-8f68-ad5fed2af7c5"
+                  "$blob": "fb2fe9c9-6015-4324-8456-b6d515f28ec6"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22661,7 +22593,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "acdcae52-bb91-4c40-ac67-035f72ee6806"
+                  "$blob": "029a28c1-0eaf-4b78-9d77-98406bb13a6f"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22717,7 +22649,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "b8c7c4d1-7c76-4e55-9e09-cc19ac7e6fb4"
+                  "$blob": "cd5440ea-d17a-41c8-a71b-2306ce9e1b34"
                 },
                 "Materials": [
                   "materials/practicearena/mustard.vmat"
@@ -22773,7 +22705,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "2e05a3da-9b16-45f0-b10f-7c6c6144bf38"
+                  "$blob": "27f7e55e-0787-4653-ace1-1f9aaad10a8f"
                 },
                 "Materials": [
                   "materials/practicearena/charcoal_20lighter.vmat"
@@ -24261,7 +24193,7 @@
               "IsTrigger": false,
               "Mesh": {
                 "Data": {
-                  "$blob": "ff6a6cb1-4bae-4ecd-b490-dbc87e0e5622"
+                  "$blob": "c29a5017-c2f1-4fe1-9076-d3d6cedc7631"
                 },
                 "Materials": [
                   "materials/practicearena/charcoal_50darker.vmat"

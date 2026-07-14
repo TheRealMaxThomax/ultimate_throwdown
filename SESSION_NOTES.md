@@ -7,7 +7,8 @@
 |------|------------|
 | **This file** | Every session |
 | [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) | Dodge/tackle/classes/ultimates/loadout design, tuning |
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Folder layout, spawn wiring, prefab checklist |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Folder layout, spawn wiring |
+| [`COMPONENT_CHECKLIST.md`](COMPONENT_CHECKLIST.md) | **Every manual prefab/scene component** — by GameObject, spawn warnings, missing symptoms |
 | [`MATCH_FLOW_PLAN.md`](MATCH_FLOW_PLAN.md) | Full match flow (slices 1–6 complete) |
 | [`MULTIPLAYER_NETCODE.md`](MULTIPLAYER_NETCODE.md) | **MP / netcode** — host authority, client predict, **checklist for new combat features**, Testing |
 | [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) | Shipped slice checklists, editor wiring, deep fixes |
@@ -117,12 +118,14 @@ More implementation notes → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE
 
 ## Editor essentials
 
-Full prefab/scene wiring → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) § Editor checklist.
+**Full component list (manual wiring only):** [`COMPONENT_CHECKLIST.md`](COMPONENT_CHECKLIST.md) — use this when something breaks with no code change (missing `BallClientFeel` → client throw drop, etc.).
+
+Legacy narrative checklist → [`SESSION_NOTES_ARCHIVE.md`](SESSION_NOTES_ARCHIVE.md) § Editor checklist.
 
 **Every session:**
-- Main Camera: `GameNetworkManager` (class templates + spawns), `MatchDirector` (`BallSpawn`), `Highlight` post-process
-- Player prefab(s): core gameplay on prefab; GNM auto-adds feel/HUD only — see [`ARCHITECTURE.md`](ARCHITECTURE.md)
-- `main_ball`: `BallGrab`, OOB components (or GNM auto-add)
+- Main Camera: `GameNetworkManager` (class templates + spawns), `MatchDirector` (`BallSpawn`), `EnemyOutlineCameraSetup` (adds `Highlight` post-process)
+- Player prefab(s): **all** gameplay components on prefab — GNM **warns only**, does not auto-add (see checklist)
+- `main_ball`: `BallCarrierOutline`, `BallLastTouchLedger`, `BallPassAssistState`, `BallOutOfBoundsHost`
 - Turf Wars: `GoalZone` ×2, OOB zones, `playerclip` walls, traffic spawners
 
 **Before ship:** `Enable Debug Force Goal` off on `MatchDirector`.
