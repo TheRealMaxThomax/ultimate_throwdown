@@ -5,6 +5,7 @@
 
 | File | Open when… |
 |------|------------|
+| [`PROJECT_PAUSED.md`](PROJECT_PAUSED.md) | **Paused (2026-07-16)** — re-entry ramp when you come back |
 | **This file** | Every session |
 | [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) | Dodge/tackle/classes/ultimates/loadout design, tuning |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Folder layout, spawn wiring |
@@ -20,12 +21,13 @@
 
 ## Right now
 
-**Goal:** **MatchSetup pre-match timer — code ✅ (2026-07-14).** Add **`MatchSetupHud`** on Turf Wars `MatchHUD` root, then 2-window verify.
+**⏸ Paused (2026-07-16).** Unity singleplayer for now. Re-entry → [`PROJECT_PAUSED.md`](PROJECT_PAUSED.md).
 
-**Next session:**
-1. **Editor:** Add **`MatchSetupHud`** to `MatchHUD` (beside `IntermissionHud`). **Playtest:** 30s setup at match start + rematch; loadout auto-opens; clock shows **10.00** paused; practice arena skips setup.
-2. Tune `JuggernautQuakeSlamUlt` radii/launch if needed
-3. Polish: wind-up anim, slam SFX, ring pulse VFX (later)
+**Last goal before pause:** MatchSetup ✅ + Quake Slam slice 5 ✅ (2026-07-14).
+
+**When resumed — pick up:**
+1. Ult slice 6 — Sniper path zones (planned next in ship order), or Quake Slam ring/launch tune + wind-up anim / SFX polish
+2. Slice 2b remainder — walkable intermission room (later)
 
 ---
 
@@ -37,7 +39,7 @@
 | **2** | Prefab split + loadout v1 | ✅ Shipped 2026-07-06 |
 | **3** | Ult slice 5 — Juggernaut Quake Slam | **✅ Shipped 2026-07-14** (preview + MP) |
 | **4** | Ult slice 6 — Sniper path zones | Planned |
-| **2b** | `MatchSetup` pre-match timer | **Code ✅ — add `MatchSetupHud` in editor** |
+| **2b** | `MatchSetup` pre-match timer | **✅ Shipped 2026-07-14** (walkable intermission room later) |
 | **5** | Combat slice 1 — unarmed melee | Before weapons |
 | **6** | Combat slice 2 — parry | Melee only |
 | **7** | Ult slice 7 — Weapons | After combat 1 |
@@ -49,7 +51,7 @@ Full combat/progression specs → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md). Jo
 
 ## Works today (summary)
 
-Match flow, teams, goals, OT, rematch, Turf Wars map (traffic, lamps, OOB), practice arena, ball grab/throw (planted charge, RMB cancel, trajectory preview), dodge channel, tackles + ragdolls + comic text, ult charge + assist + Speed Blitz 2a–2d + **Quake Slam (Jugg)**, per-class prefabs + loadout picker (Q, intermission/practice), join sync RPC. **2-window MP OK** on core flows including Quake Slam.
+Match flow, teams, goals, OT, rematch, **30s pre-match `MatchSetup`** (loadout auto-open, rematch too), Turf Wars map (traffic, lamps, OOB), practice arena, ball grab/throw (planted charge, RMB cancel, trajectory preview), dodge channel, tackles + ragdolls + comic text, ult charge + assist + Speed Blitz 2a–2d + **Quake Slam (Jugg)**, per-class prefabs + loadout picker (Q, setup/intermission/practice), join sync RPC. **2-window MP OK** on core flows.
 
 Mechanics detail → [`GAMEPLAY_DESIGN.md`](GAMEPLAY_DESIGN.md) **Built vs not built**.
 
@@ -178,10 +180,10 @@ Settled items removed 2026-07-06 cleanup → archive decision log.
 ## For AI chats
 
 ```
-Read SESSION_NOTES.md → Quake Slam slice 5 solo OK → next: aim preview scale + material color, tune rings, 2-window MP.
-Quake Slam: Code/Ultimates/Juggernaut/ — JuggernautQuakeSlamUlt + QuakeSlamOwnerPredict + QuakeSlamAimPreview + QuakeSlamFeel + QuakeSlamRadiusMath. Catalog quake_slam. Design: GAMEPLAY_DESIGN.md § Quake Slam.
-PlayerTackle Track A ✅ (A4 deferred). Speed Blitz Track B ✅ (B3 optional).
-Wiring: ARCHITECTURE.md § Juggernaut prefab siblings. Names: NAMING_CANON.md. MP: MULTIPLAYER_NETCODE.md.
+Project PAUSED (2026-07-16) — read PROJECT_PAUSED.md first, then SESSION_NOTES.md.
+Last shipped: MatchSetup + Quake Slam slice 5 (MP OK). Next: Sniper path zones (slice 6) or Quake Slam polish.
+Quake Slam: Code/Ultimates/Juggernaut/. PlayerTackle Track A ✅ (A4 deferred). Speed Blitz Track B ✅.
+Wiring: ARCHITECTURE.md + COMPONENT_CHECKLIST.md. MP: MULTIPLAYER_NETCODE.md. Names: NAMING_CANON.md.
 Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 ```
 
@@ -191,7 +193,7 @@ Do not edit .scene / .vmdl / .vanmgrph unless I explicitly say yes.
 
 ## Recent session notes
 
-- **2026-07-14 (MatchSetup pre-match ✅ code):** `MatchPhase.MatchSetup` — 30s frozen loadout window (auto-open Q picker), round 1 + rematch; practice skips; tunable `MatchSetupSeconds` on `MatchDirector`.
+- **2026-07-14 (MatchSetup pre-match ✅):** 30s frozen loadout window, auto-open picker, round 1 + rematch; practice skips; `MatchSetupHud` wired — playtest OK.
 - **2026-07-14 (Ball pickup client feel ✅):** Owner predict + host RPC sample position — no step-over on client; 2-window verified.
 - **2026-07-14 (Quake Slam slice 5 ✅):** Aim preview scale/color + 2-window MP verified.
 - **2026-07-09 (Quake Slam slice 5 — code ✅):** `JuggernautQuakeSlamUlt` + siblings; catalog `quake_slam`; loadout enable; `CatchUpSpeedBoost` wind-up plant; design locked in `GAMEPLAY_DESIGN.md`.

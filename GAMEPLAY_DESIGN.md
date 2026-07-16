@@ -35,7 +35,7 @@
 | Class passives | **Partial** — Juggernaut tackle ramp built; others not built |
 | Per-class prefabs + spawn | **Built** — `Player_Speedster` / `Player_Juggernaut` / `Player_Sniper`; GNM clones from committed class |
 | Loadout v1 (picker, save, join sync) | **Built** — intermission + practice swaps; force-commit; class change = host respawn; join RPC shipped (cross-machine verify at publish) |
-| `MatchSetup` + walkable intermission | **MatchSetup timer ✅** — walkable intermission room still **not built** (slice 2b remainder) |
+| `MatchSetup` + walkable intermission | **MatchSetup timer ✅ shipped** — walkable intermission room still **not built** |
 | Ultimates (charge + Speed Blitz) | **Partial** — charge + assist ✅ + **Speed Blitz 2a–2d ✅** + per-ult max ✅; **Quake Slam** designed (slice 5 next); Sniper path zones planned (slice 6) |
 | Unarmed melee + parry | **Not built** — combat slices 1–2 (after ults 5–6) |
 | Ball OOB (map slice 1) | **Built** — dwell, whistle, sky-drop, 2-window MP OK |
